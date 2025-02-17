@@ -1271,7 +1271,7 @@ END
 
 IF @option = 2 -- Campa?as de un Area
 BEGIN
-    SELECT DISTINCT a1.cam_id, cam_descripcion, frame, cam_procesando, isnull(IDArea, 0) IDArea, dbo.fn_CampEspWG(a1.cam_id, 3) relationsWG, CASE WHEN a1.ivrScript <> 0 AND a1.callsBySurvey <> 0 THEN 8 ELSE ISNULL(a1.CampType, 0) END as mode
+    SELECT DISTINCT a1.cam_id, cam_descripcion, frame, cam_procesando, isnull(IDArea, 0) IDArea, dbo.fn_CampEspWG(a1.cam_id, 3) relationsWG, CASE WHEN a1.ivrScript <> 0 AND a1.callsBySurvey <> 0 THEN 8 WHEN a1.CampType = 9 then 10 ELSE ISNULL(a1.CampType, 0) END as mode
     FROM ccCamps a1
     JOIN ccRIACampsGraph a2 ON a1.cam_id = a2.cam_id
     JOIN ccRIAGraphics a3 ON a2.graphic_id = a3.graphic_id
@@ -1372,7 +1372,7 @@ BEGIN
     (SELECT DISTINCT a1.cam_id as CamID, cam_descripcion as CamDescription, frame as Frame, isnull(IDArea, 0) IDArea, dbo.fn_CampEspWG(a1.cam_id, 3) as RelationsWG,
 	1 CamType, 
     ISNULL((select  count(IdCampEsp) from ccRIACampEspWG where tipo = 1 and IdCampEsp = a1.cam_id and IDWG = @WGID group by IdCampEsp),0) IsAssignedToCurrentWG,
-    CAST(CASE WHEN a1.progDial = 3 THEN 6 WHEN a1.CampType = 4 THEN 4 WHEN a1.CampType = 5 THEN 5 WHEN a1.CampType=7 THEN 7 WHEN a1.ivrScript <> 0 AND a1.callsBySurvey <> 0 THEN 8 WHEN a1.CampType = 9 THEN 9  ELSE 0 END as [tinyint]) [MediaType]
+    CAST(CASE WHEN a1.progDial = 3 THEN 6 WHEN a1.CampType = 4 THEN 4 WHEN a1.CampType = 5 THEN 5 WHEN a1.CampType=7 THEN 7 WHEN a1.ivrScript <> 0 AND a1.callsBySurvey <> 0 THEN 8 WHEN a1.CampType = 9 THEN 10  ELSE 0 END as [tinyint]) [MediaType]
 	FROM ccCamps a1
     JOIN ccRIACampsGraph a2 ON a1.cam_id = a2.cam_id
     JOIN ccRIAGraphics a3 ON a2.graphic_id = a3.graphic_id
@@ -1656,7 +1656,7 @@ SET NOCOUNT OFF
 						DECLARE @CurrentStatus TABLE (userId INT, CurrentState INT, IdCampEsp INT, camType INT
 							);
 						DECLARE @campDataTotal TABLE (
-							camId INT, CampName VARCHAR(500), Total INT, Area VARCHAR(100), PRIMARY KEY (camId
+							camId INT, CampName VARCHAR(500), Total INT, Area VARCHAR(100), NumberOfVirtualAgents INT, PRIMARY KEY (camId
 								)
 							);
 
@@ -1802,10 +1802,11 @@ SET NOCOUNT OFF
 								GROUP BY camId
 								)
 							INSERT INTO @campDataTotal
-							SELECT A.camId, B.cam_descripcion AS campName, A.Total, C.AreaName AS Area
+							SELECT A.camId, B.cam_descripcion AS campName, A.Total, C.AreaName AS Area, ISNULL(va.concurrentSessionsLimit,0) as NumberOfVirtualAgents 
 							FROM campDataTotal A
 							INNER JOIN ccCamps B ON A.camId = B.cam_id
 							INNER JOIN ccRIACat_Areas C ON C.IDArea = B.IDArea
+                            LEFT JOIN ccVirtualAgent va ON B.cam_id = va.idCampaign AND va.campType = 1
 						END
 						ELSE
 						BEGIN
@@ -1818,7 +1819,7 @@ SET NOCOUNT OFF
 								GROUP BY camId
 								)
 							INSERT INTO @campDataTotal
-							SELECT A.camId, B.descripcion AS campName, A.Total, C.AreaName AS Area
+							SELECT A.camId, B.descripcion AS campName, A.Total, C.AreaName AS Area, 0 as NumberOfVirtualAgents 
 							FROM campDataTotal A
 							INNER JOIN ccInbound B ON A.camId = B.Inbound_id
 							INNER JOIN ccRIACat_Areas C ON C.IDArea = B.IDArea
@@ -1841,10 +1842,10 @@ SET NOCOUNT OFF
 							INNER JOIN @CurrentStatus C ON A.userId = C.userId
 							GROUP BY A.CampId
 							)
-						SELECT A.camId, A.campName, A.Total, ISNULL(B.ready, 0) AS Ready, ISNULL(B.notReady, 
+						SELECT A.camId, A.campName, (A.Total + A.NumberOfVirtualAgents) AS Total, ISNULL(B.ready, 0) AS Ready, ISNULL(B.notReady, 
 								0) AS NotReady, ISNULL(B.dialog, 0) AS Dialog, CASE WHEN B.disconnected IS NULL 
 									THEN A.Total ELSE A.Total - B.ready - B.dialog - B.notReady - B.auxiliaryReady END 
-							Disconnected, ISNULL(B.auxiliaryReady, 0) AS AuxiliaryReady,A.Area
+							Disconnected, ISNULL(B.auxiliaryReady, 0) AS AuxiliaryReady, A.NumberOfVirtualAgents ,A.Area
 						FROM @campDataTotal A
 						LEFT JOIN stateCamp B ON A.camId = B.CampId
 						ORDER BY A.campName
@@ -2893,10 +2894,18 @@ IF @action = 6 begin
 
     select @cam_id = cam_id from ccRIARegistryLists where list_id = @list_id
     select @sequence = max(sequence) from ccRIARegistryLists where cam_id = @cam_id
-    exec ccsp_RIARegistryLists @action = 3, @status = 0, @list_id = @list_id
-    exec ccsp_RIARegistryLists @action = 2, @sequence = @sequence, @list_id = @list_id
-    SELECT 200 as ReturnValue
-
+    
+    IF(SELECT cam_procesando from ccCamps WHERE cam_id = @cam_id) = 0
+	BEGIN
+		exec ccsp_RIARegistryLists @action = 3, @status = 0, @list_id = @list_id
+		exec ccsp_RIARegistryLists @action = 2, @sequence = @sequence, @list_id = @list_id
+		SELECT 200 as ReturnValue
+		RETURN
+	END
+	ELSE
+	BEGIN
+		SELECT -8 as ReturnValue
+	END
 end
 
 -- Detalle de numero de registros

@@ -60,7 +60,9 @@ BEGIN
                 mediaType TINYINT NULL,
                 campType TINYINT NULL,
                 location VARCHAR(50),
-				quantumAgentId VARCHAR(50)
+				quantumAgentId VARCHAR(50),
+				scriptAgent VARCHAR(500),
+				voice VARCHAR(50)
             );
 		END'
 	EXEC(@sql)
@@ -252,7 +254,17 @@ BEGIN
 			select @result
 			
 		END
-
+		ELSE IF (@action = 7) --- Get virtual agents by campaign id and camptype
+        BEGIN
+                SELECT 
+                cva.idAgent
+                , ISNULL(cva.quantumAgentId,'''') AS QuantumAgentId
+                , ISNULL(cva.location,'''') AS Location
+                , ISNULL('''','''')  AS ProjectId
+				, ISNULL(cva.voice,'''')  AS Voice
+                FROM dbo.ccVirtualAgent AS cva
+                WHERE cva.idCampaign = @campaignId AND cva.campType = @campType;
+        END
         ELSE IF (@action = 8) --- Reload virtual agent association
 		BEGIN
 			SELECT 

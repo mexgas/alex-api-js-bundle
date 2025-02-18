@@ -2782,7 +2782,7 @@ if @action= 0 begin
     if @nType=2 
         set @sql=@sql+'' AND cc.cam_bNew = 2 ''
     else if @nType=3
-        set @sql=@sql+'' AND cc.am_bNew in (1,2) ''
+        set @sql=@sql+'' AND cc.cam_bNew in (1,2) ''
     set @sql=@sql+'' ORDER BY cc.cam_descripcion''
     --print(@sql)
     exec (@sql)

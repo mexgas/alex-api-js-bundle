@@ -3787,8 +3787,8 @@ SET @process = 'Se agregan nuevas configuraciones al procedimiento de guardado c
     '
     EXEC(@sql)
 
-    @process = 'Se modifica ccsp_GalateaAdminCampaignsSurvey, para obtener campañas de IA'
-    @sql = '
+    SET @process = 'Se modifica ccsp_GalateaAdminCampaignsSurvey, para obtener campañas de IA'
+    SET @sql = '
             ALTER PROCEDURE [dbo].[ccsp_GalateaAdminCampaignsSurvey] 
             @Option AS      INT, 
             @CampType AS    INT = 0,

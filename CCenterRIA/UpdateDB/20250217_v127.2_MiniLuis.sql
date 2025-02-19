@@ -4038,6 +4038,247 @@ SET @process = 'Se agregan nuevas configuraciones al procedimiento de guardado c
 
 ---------------------------------End Jonathan Ramirez           -------------------------------------
 
+---------------------------------- BEGIN Luis Zamora ----------------------------------------------
+
+    SET @process = 'K070035 ScriptVariables DROP PROCEDURE [ccsp_GalateaGetOutboundConfiguration]'
+    SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaGetOutboundConfiguration'')
+begin
+    DROP PROCEDURE ccsp_GalateaGetOutboundConfiguration;
+end'
+    EXEC(@sql)
+
+    SET @process = 'K070035 ScriptVariables ccsp_GalateaGetOutboundConfiguration. Se agrega ScriptVariables'
+    SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaGetOutboundConfiguration]
+    @adminID INT
+    ,@campID INT
+    AS
+    BEGIN
+
+        DECLARE @AllCampaigns TABLE (
+        cam_id SMALLINT
+        ,cam_Descripcion VARCHAR(60)
+        ,cam_tNotas SMALLINT
+        ,cam_ocupado SMALLINT
+        ,cam_noInt_ocupado SMALLINT
+        ,cam_inter_ocupado SMALLINT
+        ,cam_nocontesto SMALLINT
+        ,cam_noInt_nocontesto SMALLINT
+        ,cam_inter_nocontesto SMALLINT
+        ,cam_fax SMALLINT
+        ,cam_noInt_fax SMALLINT
+        ,cam_inter_fax SMALLINT
+        ,cam_modomanual SMALLINT
+        ,ANI VARCHAR(15)
+        ,cam_ShowCalifWnd BIT
+        ,cam_StartTimerOnHangUp BIT
+        ,editableCallKey BIT
+        ,cam_tNoContesta SMALLINT
+        ,iTipoDial SMALLINT
+        ,detectAnswerMachine SMALLINT
+        ,detectVoiceMail SMALLINT
+        ,compliance SMALLINT
+        ,cam_inter_graba SMALLINT
+        ,cam_noint_graba SMALLINT
+        ,progDial SMALLINT
+        ,excCallBack SMALLINT
+        ,dialOrder SMALLINT
+        ,dialPrefix VARCHAR(10)
+        ,dialPrefixMan VARCHAR(10)
+        ,dialPrefixXfe VARCHAR(10)
+        ,listenManualCall BIT
+        ,stopRecording BIT
+        ,abandonCallback BIT
+        ,frame SMALLINT
+        ,t_autoCB SMALLINT
+        ,id_anilist INT
+        ,tDialonWrapUp SMALLINT
+        ,viewMode TINYINT
+        ,queSize SMALLINT
+        ,DNCScrub INT
+        ,callerIdDesc VARCHAR(15)
+        ,timeZoneRule INT
+        ,callsBySurvey INT
+        ,ivrScript INT
+        ,surveyPctg INT
+        ,call_record SMALLINT
+        ,startStopRecording BIT
+        ,leaveRecMessage BIT
+        ,manualCallOnChat BIT
+        ,callBackSurveyAgent BIT
+        ,callBackSurveyClient BIT
+        ,isRelationSurvey BIT
+        ,funcEspDtmf INT
+        ,sipHdrFormat VARCHAR(255)
+        ,cam_inter_cancelled SMALLINT
+        ,prefijo VARCHAR(40)
+        ,enbleprefix BIT
+        ,exitAssisted BIT
+        ,previewDiscard BIT
+        ,CampType INT
+        ,conexionInfo VARCHAR(50)
+        ,connUser VARCHAR(15)
+        ,closeConversationTime INT
+        ,answerTimeoutClient INT
+        ,allowFileAttachments BIT
+        ,selectRotativeANI INT
+        ,rotativeAlgo TINYINT
+        ,autoStart BIT
+        ,messagingOrder BIT
+        ,CamTPreview SMALLINT
+        ,TimesPreview TINYINT
+        ,timesDiscard TINYINT
+        ,recordHold BIT
+        ,zipCodeSchedule BIT
+        ,RecordCalls tinyint
+        ,simultaneousRecs smallint
+        ,EditableContactData bit
+        ,internationalDialingPortsAssigned bit
+        ,AssignConversationSameAgent bit
+        ,maxLimitQueueConversations SMALLINT
+        ,MaxDaysPerWAConvo SMALLINT
+        ,RecordIvr BIT
+        ,CamCanceled INT
+        -- Outbound AI Campaign Special Settings
+        ,RescheduledSurveyAI BIT
+        ,ImmediateSurveyAI BIT
+        ,ApplyRescheduledSurveyForCompletedCallsAI BIT
+        ,EnableCallRecordingAI BIT
+        )
+        DECLARE @numbers VARCHAR(max)
+
+        SELECT @numbers = COALESCE(@numbers + '','', '''')+ number
+        FROM ccWhatsAppNumbers
+        WHERE camp_id = 0
+        AND STATUS = 1
+            
+        SELECT @numbers = COALESCE(@numbers + '','', '''')+ number
+        FROM ccMetaWhatsAppNumbers
+        WHERE Cam_Id = 0 or Cam_Id is null
+        AND STATUS = 1
+
+        INSERT INTO @AllCampaigns
+        EXEC ccsp_RIAConfCamp @adminID
+        ,@campID
+
+        -- consulta para extraer las variables del script
+        DECLARE @ScriptVariables NVARCHAR(MAX);
+        WITH RecursiveExtraction AS (
+            SELECT
+                CAST(SUBSTRING(scriptAgent, CHARINDEX(''{{'', scriptAgent) + 2,
+                CHARINDEX(''}}'', scriptAgent) - CHARINDEX(''{{'', scriptAgent) - 2) AS VARCHAR(MAX)) AS Variable,
+                CAST(STUFF(scriptAgent, CHARINDEX(''{{'', scriptAgent),
+                CHARINDEX(''}}'', scriptAgent) - CHARINDEX(''{{'', scriptAgent) + 2, '''') AS VARCHAR(MAX)) AS RemainingText
+            FROM dbo.ccVirtualAgent
+            WHERE CHARINDEX(''{{'', scriptAgent) > 0
+              AND idCampaign = @campID
+
+            UNION ALL
+
+            SELECT
+                CAST(SUBSTRING(RemainingText, CHARINDEX(''{{'', RemainingText) + 2,
+                CHARINDEX(''}}'', RemainingText) - CHARINDEX(''{{'', RemainingText) - 2) AS VARCHAR(MAX)) AS Variable,
+                CAST(STUFF(RemainingText, CHARINDEX(''{{'', RemainingText),
+                CHARINDEX(''}}'', RemainingText) - CHARINDEX(''{{'', RemainingText) + 2, '''') AS VARCHAR(MAX)) AS RemainingText
+            FROM RecursiveExtraction
+            WHERE CHARINDEX(''{{'', RemainingText) > 0
+        )
+        SELECT @ScriptVariables = STRING_AGG(Variable, '', '')
+        FROM RecursiveExtraction;
+
+        SELECT 
+        dialPrefixMan DialPrefixMan
+        ,dialPrefixXfe DialPrefixXfe
+        ,listenManualCall ListenManualCall
+        ,stopRecording StopRecording
+        ,abandonCallback AbandonCallBack
+        ,t_autoCB AutoCB
+        ,id_anilist IdIstANI
+        ,tDialonWrapUp TDialOnWrapup
+        ,queSize Quesize
+        ,DNCScrub
+        ,callerIdDesc CallerIdDesc
+        ,timeZoneRule TimeZoneRule
+        ,callsBySurvey CallsBySurvey
+        ,ivrScript IvrScript
+        ,surveyPctg SurveyPctg
+        ,call_record CallRecord
+        ,startStopRecording StartStopRecording
+        ,leaveRecMessage LeaveRecMessage
+        ,manualCallOnChat ManualCallOnChat
+        ,callBackSurveyClient CallBackSurveyClient
+        ,callBackSurveyAgent CallBackSurveyAgent
+        ,funcEspDtmf FuncEspDtmf
+        ,sipHdrFormat SipHdrsCfg
+        ,dialPrefix DialPrefix
+        ,prefijo Prefix
+        ,dialOrder DialOrder
+        ,progDial ProgDial
+        ,cam_Descripcion CamDescription
+        ,cam_tNotas CamTnotas
+        ,cam_ocupado CamBusy
+        ,cam_noInt_ocupado CamNoIntBusy
+        ,cam_inter_ocupado CamInterBusy
+        ,cam_nocontesto CamNoAnswer
+        ,cam_noInt_nocontesto CamNoIntNoAnswer
+        ,cam_inter_nocontesto CamInterNoAnswer
+        ,(cam_inter_cancelled / 60) CamInterCancelled
+        ,cam_fax CamFax
+        ,cam_noInt_fax CamNoIntFax
+        ,cam_inter_fax CamInterFax
+        ,cam_modomanual CamModoManual
+        ,ANI
+        ,cam_StartTimerOnHangUp CamStartTimerOnHangUp
+        ,editableCallKey EditableCallKey
+        ,cam_tNoContesta CamTNoAnswer
+        ,iTipoDial CamIntensiveDialing
+        ,detectAnswerMachine DetectAnswerMachine
+        ,detectVoiceMail DetectVoiceMail
+        ,compliance Compliance
+        ,cam_inter_graba CamInterRecord
+        ,cam_noint_graba CamNoIntRecord
+        ,excCallBack ExcCallBack
+        ,cam_ShowCalifWnd CamShowCalifWnd
+        ,frame Frame
+        ,exitAssisted ExitAssistedDialMode
+        ,previewDiscard PreviewDiscard
+        ,CampType
+        ,conexionInfo ConexionInfo
+        ,connUser ConnUser
+        ,closeConversationTime CloseConversationTime
+        ,answerTimeoutClient MUTimeOutClient
+        ,allowFileAttachments AllowFileAttachments
+        ,CamTPreview
+        ,CAST(TimesPreview AS SMALLINT) TimesPreview
+        ,@numbers AS FreeNumbers
+        ,selectRotativeANI SelectRotativeANIManualCall
+        ,rotativeAlgo RotativeAlgo
+        ,autoStart AutoStart
+        ,messagingOrder MessagingOrder
+        ,timesDiscard TimesDiscard
+        ,recordHold RecordHold
+        ,zipCodeSchedule ZipCodeSchedule
+        ,RecordCalls RecordCalls
+        ,simultaneousRecs SimultaneousRecs
+        ,EditableContactData EditableContactData
+        ,internationalDialingPortsAssigned internationalDialingPortsAssigned
+        ,AssignConversationSameAgent AssignConversationSameAgent
+        ,maxLimitQueueConversations MaxLimitQueueConversations
+        ,MaxDaysPerWAConvo DaysVisualConversationWhatsApp
+        ,RecordIvr
+        ,ISNULL(CamCanceled, 0) CamCanceled
+        -- Outbound AI Campaign Special Settings
+        ,RescheduledSurveyAI
+        ,ImmediateSurveyAI
+        ,ApplyRescheduledSurveyForCompletedCallsAI
+        ,EnableCallRecordingAI
+        ,@ScriptVariables AS ScriptVariables
+        FROM @AllCampaigns
+        WHERE cam_id = @campID
+    END'
+    EXEC(@sql)
+
+---------------------------------- END Luis Zamora -----------------------------------------------
+
 
 
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */

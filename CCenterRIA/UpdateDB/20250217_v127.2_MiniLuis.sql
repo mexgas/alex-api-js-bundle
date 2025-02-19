@@ -607,14 +607,6 @@ BEGIN
     END'
     EXEC(@sql)
 
-    SET @process = 'Se elimina procedure ccsp_GalateaGetOutboundConfiguration'
-    SET @sql = '
-    IF EXISTS (SELECT 1 FROM sys.procedures WHERE name = N''ccsp_GalateaGetOutboundConfiguration'')
-    BEGIN
-        DROP PROCEDURE ccsp_GalateaGetOutboundConfiguration;
-    END'
-    EXEC(@sql)
-
     SET @process = 'Se elimina procedure ccsp_RIA_ABCCamps'
     SET @sql = '
     IF EXISTS (SELECT 1 FROM sys.procedures WHERE name = N''ccsp_RIA_ABCCamps'')
@@ -636,211 +628,6 @@ BEGIN
     IF EXISTS (SELECT 1 FROM sys.procedures WHERE name = N''ccsp_RIAUpdateCamConfigExtend'')
     BEGIN
         DROP PROCEDURE ccsp_RIAUpdateCamConfigExtend;
-    END'
-    EXEC(@sql)
-
-    SET @process = 'Se agregan nuevas configuraciones al procedimiento de guardado ccsp_GalateaGetOutboundConfiguration'
-	SET @sql= '
-    CREATE PROCEDURE [dbo].[ccsp_GalateaGetOutboundConfiguration]
-    @adminID INT
-    ,@campID INT
-    AS
-    BEGIN
-
-        DECLARE @AllCampaigns TABLE (
-        cam_id SMALLINT
-        ,cam_Descripcion VARCHAR(60)
-        ,cam_tNotas SMALLINT
-        ,cam_ocupado SMALLINT
-        ,cam_noInt_ocupado SMALLINT
-        ,cam_inter_ocupado SMALLINT
-        ,cam_nocontesto SMALLINT
-        ,cam_noInt_nocontesto SMALLINT
-        ,cam_inter_nocontesto SMALLINT
-        ,cam_fax SMALLINT
-        ,cam_noInt_fax SMALLINT
-        ,cam_inter_fax SMALLINT
-        ,cam_modomanual SMALLINT
-        ,ANI VARCHAR(15)
-        ,cam_ShowCalifWnd BIT
-        ,cam_StartTimerOnHangUp BIT
-        ,editableCallKey BIT
-        ,cam_tNoContesta SMALLINT
-        ,iTipoDial SMALLINT
-        ,detectAnswerMachine SMALLINT
-        ,detectVoiceMail SMALLINT
-        ,compliance SMALLINT
-        ,cam_inter_graba SMALLINT
-        ,cam_noint_graba SMALLINT
-        ,progDial SMALLINT
-        ,excCallBack SMALLINT
-        ,dialOrder SMALLINT
-        ,dialPrefix VARCHAR(10)
-        ,dialPrefixMan VARCHAR(10)
-        ,dialPrefixXfe VARCHAR(10)
-        ,listenManualCall BIT
-        ,stopRecording BIT
-        ,abandonCallback BIT
-        ,frame SMALLINT
-        ,t_autoCB SMALLINT
-        ,id_anilist INT
-        ,tDialonWrapUp SMALLINT
-        ,viewMode TINYINT
-        ,queSize SMALLINT
-        ,DNCScrub INT
-        ,callerIdDesc VARCHAR(15)
-        ,timeZoneRule INT
-        ,callsBySurvey INT
-        ,ivrScript INT
-        ,surveyPctg INT
-        ,call_record SMALLINT
-        ,startStopRecording BIT
-        ,leaveRecMessage BIT
-        ,manualCallOnChat BIT
-        ,callBackSurveyAgent BIT
-        ,callBackSurveyClient BIT
-        ,isRelationSurvey BIT
-        ,funcEspDtmf INT
-        ,sipHdrFormat VARCHAR(255)
-        ,cam_inter_cancelled SMALLINT
-        ,prefijo VARCHAR(40)
-        ,enbleprefix BIT
-        ,exitAssisted BIT
-        ,previewDiscard BIT
-        ,CampType INT
-        ,conexionInfo VARCHAR(50)
-        ,connUser VARCHAR(15)
-        ,closeConversationTime INT
-        ,answerTimeoutClient INT
-        ,allowFileAttachments BIT
-        ,selectRotativeANI INT
-        ,rotativeAlgo TINYINT
-        ,autoStart BIT
-        ,messagingOrder BIT
-        ,CamTPreview SMALLINT
-        ,TimesPreview TINYINT
-        ,timesDiscard TINYINT
-        ,recordHold BIT
-        ,zipCodeSchedule BIT
-        ,RecordCalls tinyint
-        ,simultaneousRecs smallint
-        ,EditableContactData bit
-        ,internationalDialingPortsAssigned bit
-        ,AssignConversationSameAgent bit
-        ,maxLimitQueueConversations SMALLINT
-        ,MaxDaysPerWAConvo SMALLINT
-        ,RecordIvr BIT
-        ,CamCanceled INT
-        -- Outbound AI Campaign Special Settings
-        ,RescheduledSurveyAI BIT
-        ,ImmediateSurveyAI BIT
-        ,ApplyRescheduledSurveyForCompletedCallsAI BIT
-        ,EnableCallRecordingAI BIT
-        )
-        DECLARE @numbers VARCHAR(max)
-
-        SELECT @numbers = COALESCE(@numbers + '','', '''')+ number
-        FROM ccWhatsAppNumbers
-        WHERE camp_id = 0
-        AND STATUS = 1
-            
-        SELECT @numbers = COALESCE(@numbers + '','', '''')+ number
-        FROM ccMetaWhatsAppNumbers
-        WHERE Cam_Id = 0 or Cam_Id is null
-        AND STATUS = 1
-
-        INSERT INTO @AllCampaigns
-        EXEC ccsp_RIAConfCamp @adminID
-        ,@campID
-
-        SELECT 
-        dialPrefixMan DialPrefixMan
-        ,dialPrefixXfe DialPrefixXfe
-        ,listenManualCall ListenManualCall
-        ,stopRecording StopRecording
-        ,abandonCallback AbandonCallBack
-        ,t_autoCB AutoCB
-        ,id_anilist IdIstANI
-        ,tDialonWrapUp TDialOnWrapup
-        ,queSize Quesize
-        ,DNCScrub
-        ,callerIdDesc CallerIdDesc
-        ,timeZoneRule TimeZoneRule
-        ,callsBySurvey CallsBySurvey
-        ,ivrScript IvrScript
-        ,surveyPctg SurveyPctg
-        ,call_record CallRecord
-        ,startStopRecording StartStopRecording
-        ,leaveRecMessage LeaveRecMessage
-        ,manualCallOnChat ManualCallOnChat
-        ,callBackSurveyClient CallBackSurveyClient
-        ,callBackSurveyAgent CallBackSurveyAgent
-        ,funcEspDtmf FuncEspDtmf
-        ,sipHdrFormat SipHdrsCfg
-        ,dialPrefix DialPrefix
-        ,prefijo Prefix
-        ,dialOrder DialOrder
-        ,progDial ProgDial
-        ,cam_Descripcion CamDescription
-        ,cam_tNotas CamTnotas
-        ,cam_ocupado CamBusy
-        ,cam_noInt_ocupado CamNoIntBusy
-        ,cam_inter_ocupado CamInterBusy
-        ,cam_nocontesto CamNoAnswer
-        ,cam_noInt_nocontesto CamNoIntNoAnswer
-        ,cam_inter_nocontesto CamInterNoAnswer
-        ,(cam_inter_cancelled / 60) CamInterCancelled
-        ,cam_fax CamFax
-        ,cam_noInt_fax CamNoIntFax
-        ,cam_inter_fax CamInterFax
-        ,cam_modomanual CamModoManual
-        ,ANI
-        ,cam_StartTimerOnHangUp CamStartTimerOnHangUp
-        ,editableCallKey EditableCallKey
-        ,cam_tNoContesta CamTNoAnswer
-        ,iTipoDial CamIntensiveDialing
-        ,detectAnswerMachine DetectAnswerMachine
-        ,detectVoiceMail DetectVoiceMail
-        ,compliance Compliance
-        ,cam_inter_graba CamInterRecord
-        ,cam_noint_graba CamNoIntRecord
-        ,excCallBack ExcCallBack
-        ,cam_ShowCalifWnd CamShowCalifWnd
-        ,frame Frame
-        ,exitAssisted ExitAssistedDialMode
-        ,previewDiscard PreviewDiscard
-        ,CampType
-        ,conexionInfo ConexionInfo
-        ,connUser ConnUser
-        ,closeConversationTime CloseConversationTime
-        ,answerTimeoutClient MUTimeOutClient
-        ,allowFileAttachments AllowFileAttachments
-        ,CamTPreview
-        ,CAST(TimesPreview AS SMALLINT) TimesPreview
-        ,@numbers AS FreeNumbers
-        ,selectRotativeANI SelectRotativeANIManualCall
-        ,rotativeAlgo RotativeAlgo
-        ,autoStart AutoStart
-        ,messagingOrder MessagingOrder
-        ,timesDiscard TimesDiscard
-        ,recordHold RecordHold
-        ,zipCodeSchedule ZipCodeSchedule
-        ,RecordCalls RecordCalls
-        ,simultaneousRecs SimultaneousRecs
-        ,EditableContactData EditableContactData
-        ,internationalDialingPortsAssigned internationalDialingPortsAssigned
-        ,AssignConversationSameAgent AssignConversationSameAgent
-        ,maxLimitQueueConversations MaxLimitQueueConversations
-        ,MaxDaysPerWAConvo DaysVisualConversationWhatsApp
-        ,RecordIvr
-        ,ISNULL(CamCanceled, 0) CamCanceled
-        -- Outbound AI Campaign Special Settings
-        ,RescheduledSurveyAI
-        ,ImmediateSurveyAI
-        ,ApplyRescheduledSurveyForCompletedCallsAI
-        ,EnableCallRecordingAI
-        FROM @AllCampaigns
-        WHERE cam_id = @campID
     END'
     EXEC(@sql)
 
@@ -1091,204 +878,7 @@ BEGIN
     '
     EXEC(@sql)
 
-    SET @process = 'Se agregan nuevas configuraciones al procedimiento de guardado ccsp_RIAConfCamp'
-	SET @sql= '
-    CREATE PROCEDURE [dbo].[ccsp_RIAConfCamp]
-        @User_id SMALLINT,
-        @campID INT = NULL
-    AS
-        SET NOCOUNT ON;
-
-        DECLARE @tableExistsRec TABLE (
-            camId INT PRIMARY KEY,
-            existRec BIT
-        );
-        DECLARE @camByUser TABLE (
-            camId INT PRIMARY KEY,
-            isCheck BIT
-        );
-        DECLARE @camId INT, @id INT;
-        DECLARE @intenationalDialingPorts BIT;
-        DECLARE @tempInternationalCode INT;
-
-        IF (
-            SELECT COUNT(*)
-            FROM (
-                SELECT TOP 1 IdCode
-                FROM ccoDialers ccoDial
-                INNER JOIN ccoDialerCamp ccoDialCamp ON ccoDialCamp.dialer_id = ccoDial.dialer_id
-                WHERE ccoDialCamp.cam_id = @campID
-                    AND ccoDial.DialingType = 0
-            ) result
-        ) > 0
-        BEGIN
-            SET @intenationalDialingPorts = 1;
-        END
-        ELSE
-        BEGIN
-            SET @intenationalDialingPorts = 0;
-        END;
-
-        IF NOT EXISTS (
-            SELECT *
-            FROM ccUsers_Roles
-            WHERE User_id = @User_id
-                AND Rol_id = 7
-        )
-        BEGIN
-            INSERT INTO @camByUser
-            SELECT *, 0
-            FROM dbo.fGet_CampAcd_Area(@User_id, 1) B
-            WHERE @campID IS NULL
-                OR cam_id = @campID;
-        END
-        ELSE
-        BEGIN
-            INSERT INTO @camByUser
-            SELECT cam_id, 0
-            FROM ccCamps
-            WHERE (IDArea > 0 OR IDArea IS NULL)
-                AND (@campID IS NULL OR cam_id = @campID);
-        END;
-
-        WHILE EXISTS (
-            SELECT *
-            FROM @camByUser
-            WHERE isCheck = 0
-        )
-        BEGIN
-            SELECT TOP 1 @camId = camId
-            FROM @camByUser
-            WHERE isCheck = 0;
-
-            IF EXISTS (
-                SELECT cam_id
-                FROM ccoCallsOut
-                WHERE cam_id = @camId
-            )
-            BEGIN
-                INSERT INTO @tableExistsRec
-                VALUES (@camId, 1);
-            END
-            ELSE
-            BEGIN
-                INSERT INTO @tableExistsRec
-                VALUES (@camId, 0);
-            END;
-
-            UPDATE @camByUser
-            SET isCheck = 1
-            WHERE camId = @camId;
-        END;
-
-        SELECT 
-            a1.cam_id,
-            cam_Descripcion,
-            cam_tNotas,
-            CAST(cam_ocupado AS INT) AS cam_ocupado,
-            cam_noInt_ocupado,
-            cam_inter_ocupado,
-            CAST(cam_nocontesto AS INT) AS cam_nocontesto,
-            cam_noInt_nocontesto,
-            cam_inter_nocontesto,
-            CAST(cam_fax AS INT) AS cam_fax,
-            cam_noInt_fax,
-            cam_inter_fax,
-            CAST(cam_modomanual AS INT) AS cam_modomanual,
-            ANI,
-            cam_ShowCalifWnd,
-            cam_StartTimerOnHangUp,
-            editableCallKey,
-            cam_tNoContesta,
-            iTipoDial,
-            detectAnswerMachine,
-            detectVoiceMail,
-            compliance,
-            cam_inter_graba,
-            cam_noint_graba,
-            CAST(progDial AS TINYINT) progDial,
-            CAST(excCallBack AS TINYINT) excCallBack,
-            dialOrder,
-            dialPrefix,
-            dialPrefixMan,
-            dialPrefixXfe,
-            listenManualCall,
-            stopRecording,
-            CAST(abandonCallback AS TINYINT) abandonCallback,
-            a3.frame,
-            a1.t_autoCB,
-            a1.id_anilist,
-            a1.tDialonWrapUp,
-            dbo.fn_viewMode(@User_id, 10) viewMode,
-            cam_maxqueue AS queSize,
-            DNCScrub,
-            callerIdDesc,
-            timeZoneRule,
-            callsBySurvey,
-            ivrScript,
-            surveyPctg,
-            ISNULL(a1.call_record, 1) AS call_record,
-            CAST(startStopRecording AS TINYINT) startStopRecording,
-            leaveRecMessage,
-            manualCallOnChat,
-            callBackSurveyAgent,
-            callBackSurveyClient,
-            CASE 
-                WHEN surveycamid IS NULL OR surveycamid = 0 THEN 0
-                ELSE 1
-            END isRelationSurvey,
-            ISNULL(a1.funcEspDtmf, 0),
-            ISNULL(sipHdrFormat, '''') sipHdrFormat,
-            cam_inter_cancelled,
-            prefijo,
-            enbleprefix = CASE 
-                WHEN existRec = 0 THEN 1
-                ELSE 0
-            END,
-            ISNULL(exitAssisted, 0) exitAssisted,
-            ISNULL(previewDiscard, 0) PreviewDiscard,
-            case when CampType = 9 then 10 else ISNULL(CampType, 0) end as CampType,
-            ISNULL(contact.conexionInfo, '''') conexionInfo,
-            ISNULL(contact.connUser, '''') connUser,
-            ISNULL(contact.closeConversationTime, 0) closeConversationTime,
-            ISNULL(contact.answerTimeoutClient, 0) answerTimeoutClient,
-            ISNULL(contact.allowFileAttachments, 0) allowFileAttachments,
-            ISNULL(selectRotativeANI, 0) selectRotativeANI,
-            ISNULL(rotativeAlgo, 0) rotativeAlgo,
-            ISNULL(autoStart, 0) autoStart,
-            ISNULL(messagingOrder, 0) messagingOrder,
-            ISNULL(cam_tPreview, 0) AS CamTPreview,
-            ISNULL(timesPreview, 0) AS TimesPreview,
-            ISNULL(timesDiscard, 0) TimesDiscard,
-            ISNULL(recordHold, 0) recordHold,
-            ISNULL(campsExtention.zipCodeSchedule, 0) ZipCodeSchedule,
-            ISNULL(campsExtention.RecordCalls, 1) RecordCalls,
-            ISNULL(campsExtention.simultaneousRecs, 1) simultaneousRecs,
-            ISNULL(campsExtention.EditableContactData, 0) EditableContactData,
-            @intenationalDialingPorts intenationalDialingPorts,
-            ISNULL(campsExtention.AssignConversationSameAgent, 0) AssignConversationSameAgent,
-            ISNULL(contact.maxLimitQueueConversations, 99) maxLimitQueueConversations,
-            ISNULL(contact.MaxDaysPerWAConvo, 5) MaxDaysPerWAConvo,
-            ISNULL(RecordIvr, 0) AS RecordIvr,
-            ISNULL(CamCanceled, 0) AS CamCanceled,
-            -- Outbound AI Campaign Special Settings
-            ISNULL(campsExtention.RescheduledSurveyAI, 0) RescheduledSurveyAI,
-            ISNULL(campsExtention.ImmediateSurveyAI, 0) ImmediateSurveyAI,
-            ISNULL(campsExtention.ApplyRescheduledSurveyForCompletedCallsAI, 0) ApplyRescheduledSurveyForCompletedCallsAI,
-            ISNULL(campsExtention.EnableCallRecordingAI, 0) EnableCallRecordingAI
-        FROM ccCamps a1
-        INNER JOIN ccRIACampsGraph a2 ON (a1.cam_id = a2.cam_id)
-        INNER JOIN ccRIAGraphics a3 ON (a2.graphic_id = a3.graphic_id)
-        INNER JOIN @tableExistsRec a4 ON a1.cam_id = a4.camId
-        LEFT JOIN contactMeanOut contact ON a1.cam_id = contact.camp_id
-        LEFT JOIN ccCampsExtend campsExtention ON a1.cam_id = campsExtention.cam_id
-        ORDER BY cam_descripcion;
-
-        RETURN (0);
-
-        SET NOCOUNT OFF;
-    '
-    EXEC(@sql)
+    
 
     SET @process = 'Se agregan nuevas configuraciones al procedimiento de actualización'
 	SET @sql= '
@@ -3779,6 +3369,458 @@ END'
 
 
 ---------------------------------End Marco García           -------------------------------------
+---------------------------------Start Jonathan Ramirez          -------------------------------------
+
+SET @process = 'Se agregan nuevas configuraciones al procedimiento de guardado ccsp_RIAConfCamp, Se agrega campo surveyCamId'
+    SET @sql= '
+    CREATE PROCEDURE [dbo].[ccsp_RIAConfCamp]
+        @User_id SMALLINT,
+        @campID INT = NULL
+    AS
+        SET NOCOUNT ON;
+
+        DECLARE @tableExistsRec TABLE (
+            camId INT PRIMARY KEY,
+            existRec BIT
+        );
+        DECLARE @camByUser TABLE (
+            camId INT PRIMARY KEY,
+            isCheck BIT
+        );
+        DECLARE @camId INT, @id INT;
+        DECLARE @intenationalDialingPorts BIT;
+        DECLARE @tempInternationalCode INT;
+
+        IF (
+            SELECT COUNT(*)
+            FROM (
+                SELECT TOP 1 IdCode
+                FROM ccoDialers ccoDial
+                INNER JOIN ccoDialerCamp ccoDialCamp ON ccoDialCamp.dialer_id = ccoDial.dialer_id
+                WHERE ccoDialCamp.cam_id = @campID
+                    AND ccoDial.DialingType = 0
+            ) result
+        ) > 0
+        BEGIN
+            SET @intenationalDialingPorts = 1;
+        END
+        ELSE
+        BEGIN
+            SET @intenationalDialingPorts = 0;
+        END;
+
+        IF NOT EXISTS (
+            SELECT *
+            FROM ccUsers_Roles
+            WHERE User_id = @User_id
+                AND Rol_id = 7
+        )
+        BEGIN
+            INSERT INTO @camByUser
+            SELECT *, 0
+            FROM dbo.fGet_CampAcd_Area(@User_id, 1) B
+            WHERE @campID IS NULL
+                OR cam_id = @campID;
+        END
+        ELSE
+        BEGIN
+            INSERT INTO @camByUser
+            SELECT cam_id, 0
+            FROM ccCamps
+            WHERE (IDArea > 0 OR IDArea IS NULL)
+                AND (@campID IS NULL OR cam_id = @campID);
+        END;
+
+        WHILE EXISTS (
+            SELECT *
+            FROM @camByUser
+            WHERE isCheck = 0
+        )
+        BEGIN
+            SELECT TOP 1 @camId = camId
+            FROM @camByUser
+            WHERE isCheck = 0;
+
+            IF EXISTS (
+                SELECT cam_id
+                FROM ccoCallsOut
+                WHERE cam_id = @camId
+            )
+            BEGIN
+                INSERT INTO @tableExistsRec
+                VALUES (@camId, 1);
+            END
+            ELSE
+            BEGIN
+                INSERT INTO @tableExistsRec
+                VALUES (@camId, 0);
+            END;
+
+            UPDATE @camByUser
+            SET isCheck = 1
+            WHERE camId = @camId;
+        END;
+
+        SELECT 
+            a1.cam_id,
+            cam_Descripcion,
+            cam_tNotas,
+            CAST(cam_ocupado AS INT) AS cam_ocupado,
+            cam_noInt_ocupado,
+            cam_inter_ocupado,
+            CAST(cam_nocontesto AS INT) AS cam_nocontesto,
+            cam_noInt_nocontesto,
+            cam_inter_nocontesto,
+            CAST(cam_fax AS INT) AS cam_fax,
+            cam_noInt_fax,
+            cam_inter_fax,
+            CAST(cam_modomanual AS INT) AS cam_modomanual,
+            ANI,
+            cam_ShowCalifWnd,
+            cam_StartTimerOnHangUp,
+            editableCallKey,
+            cam_tNoContesta,
+            iTipoDial,
+            detectAnswerMachine,
+            detectVoiceMail,
+            compliance,
+            cam_inter_graba,
+            cam_noint_graba,
+            CAST(progDial AS TINYINT) progDial,
+            CAST(excCallBack AS TINYINT) excCallBack,
+            dialOrder,
+            dialPrefix,
+            dialPrefixMan,
+            dialPrefixXfe,
+            listenManualCall,
+            stopRecording,
+            CAST(abandonCallback AS TINYINT) abandonCallback,
+            a3.frame,
+            a1.t_autoCB,
+            a1.id_anilist,
+            a1.tDialonWrapUp,
+            dbo.fn_viewMode(@User_id, 10) viewMode,
+            cam_maxqueue AS queSize,
+            DNCScrub,
+            callerIdDesc,
+            timeZoneRule,
+            callsBySurvey,
+            ivrScript,
+            surveyPctg,
+            ISNULL(a1.call_record, 1) AS call_record,
+            CAST(startStopRecording AS TINYINT) startStopRecording,
+            leaveRecMessage,
+            manualCallOnChat,
+            callBackSurveyAgent,
+            callBackSurveyClient,
+            CASE 
+                WHEN surveycamid IS NULL OR surveycamid = 0 THEN 0
+                ELSE 1
+            END isRelationSurvey,
+            ISNULL(a1.funcEspDtmf, 0),
+            ISNULL(sipHdrFormat, '''') sipHdrFormat,
+            cam_inter_cancelled,
+            prefijo,
+            enbleprefix = CASE 
+                WHEN existRec = 0 THEN 1
+                ELSE 0
+            END,
+            ISNULL(exitAssisted, 0) exitAssisted,
+            ISNULL(previewDiscard, 0) PreviewDiscard,
+            case when CampType = 9 then 10 else ISNULL(CampType, 0) end as CampType,
+            ISNULL(contact.conexionInfo, '''') conexionInfo,
+            ISNULL(contact.connUser, '''') connUser,
+            ISNULL(contact.closeConversationTime, 0) closeConversationTime,
+            ISNULL(contact.answerTimeoutClient, 0) answerTimeoutClient,
+            ISNULL(contact.allowFileAttachments, 0) allowFileAttachments,
+            ISNULL(selectRotativeANI, 0) selectRotativeANI,
+            ISNULL(rotativeAlgo, 0) rotativeAlgo,
+            ISNULL(autoStart, 0) autoStart,
+            ISNULL(messagingOrder, 0) messagingOrder,
+            ISNULL(cam_tPreview, 0) AS CamTPreview,
+            ISNULL(timesPreview, 0) AS TimesPreview,
+            ISNULL(timesDiscard, 0) TimesDiscard,
+            ISNULL(recordHold, 0) recordHold,
+            ISNULL(campsExtention.zipCodeSchedule, 0) ZipCodeSchedule,
+            ISNULL(campsExtention.RecordCalls, 1) RecordCalls,
+            ISNULL(campsExtention.simultaneousRecs, 1) simultaneousRecs,
+            ISNULL(campsExtention.EditableContactData, 0) EditableContactData,
+            @intenationalDialingPorts intenationalDialingPorts,
+            ISNULL(campsExtention.AssignConversationSameAgent, 0) AssignConversationSameAgent,
+            ISNULL(contact.maxLimitQueueConversations, 99) maxLimitQueueConversations,
+            ISNULL(contact.MaxDaysPerWAConvo, 5) MaxDaysPerWAConvo,
+            ISNULL(surveyCamId, 0) surveyCamId,
+            ISNULL(RecordIvr, 0) AS RecordIvr,
+            ISNULL(CamCanceled, 0) AS CamCanceled,
+            -- Outbound AI Campaign Special Settings
+            ISNULL(campsExtention.RescheduledSurveyAI, 0) RescheduledSurveyAI,
+            ISNULL(campsExtention.ImmediateSurveyAI, 0) ImmediateSurveyAI,
+            ISNULL(campsExtention.ApplyRescheduledSurveyForCompletedCallsAI, 0) ApplyRescheduledSurveyForCompletedCallsAI,
+            ISNULL(campsExtention.EnableCallRecordingAI, 0) EnableCallRecordingAI
+        FROM ccCamps a1
+        INNER JOIN ccRIACampsGraph a2 ON (a1.cam_id = a2.cam_id)
+        INNER JOIN ccRIAGraphics a3 ON (a2.graphic_id = a3.graphic_id)
+        INNER JOIN @tableExistsRec a4 ON a1.cam_id = a4.camId
+        LEFT JOIN contactMeanOut contact ON a1.cam_id = contact.camp_id
+        LEFT JOIN ccCampsExtend campsExtention ON a1.cam_id = campsExtention.cam_id
+        ORDER BY cam_descripcion;
+
+        RETURN (0);
+
+        SET NOCOUNT OFF;
+    '
+    EXEC(@sql)
+
+       SET @process = 'Se modifica ccsp_GalateaAdminCampaignsSurvey, para obtener campañas de IA'
+    SET @sql = '
+            ALTER PROCEDURE [dbo].[ccsp_GalateaAdminCampaignsSurvey] 
+            @Option AS      INT, 
+            @CampType AS    INT = 0,
+            @AdminId AS     INT = 0,
+            @CampId AS      INT = 0,
+            @SurveyCampId   INT = 0,
+            @Module AS SMALLINT = 12,
+            @HistoryAction AS SMALLINT = 1
+
+            AS
+            BEGIN
+                DECLARE @idArea SMALLINT = NULL;
+                DECLARE @operation INT = -1;
+                DECLARE @mediaType INT = 0;
+
+                IF(@Option IN (3, 4)) BEGIN
+                    IF(@Module <> 12) BEGIN
+                        IF(@CampType = 0)BEGIN
+                            SET @mediaType = (SELECT [chat] FROM ccInbound WHERE Inbound_id = @CampId);
+                            SET @operation = CASE WHEN @HistoryAction = 1 THEN 
+                                                                                CASE 
+                                                                                        WHEN @mediaType = 1  THEN 63
+                                                                                        WHEN @mediaType = 5  THEN 40
+                                                                                        ELSE 60 END
+                                                                                ELSE 
+                                                                                    CASE 
+                                                                                        WHEN @mediaType = 1  THEN 64
+                                                                                        WHEN @mediaType = 5  THEN 53
+                                                                                        ELSE 52 END
+                                                                                END;
+                        END ELSE BEGIN
+                            SET @mediaType = (SELECT [CampType] FROM ccCamps WHERE cam_id = @CampId);
+                            SET @operation = CASE WHEN @HistoryAction = 1 THEN 
+                                                                                CASE 
+                                                                                        WHEN @mediaType = 6  THEN 44
+                                                                                        WHEN @mediaType = 5  THEN 46
+                                                                                        WHEN @mediaType = 4  THEN 48
+                                                                                        WHEN @mediaType = 7  THEN 50
+                                                                                        ELSE 42 END
+                                                                                ELSE 
+                                                                                    CASE 
+                                                                                        WHEN @mediaType = 6  THEN 55
+                                                                                        WHEN @mediaType = 5  THEN 56
+                                                                                        WHEN @mediaType = 4  THEN 57
+                                                                                        WHEN @mediaType = 7  THEN 58
+                                                                                        ELSE 54 END
+                                                                                END;
+                        END
+                    END ELSE BEGIN
+                        SET @operation = CASE WHEN @Option = 3 THEN 93 ELSE 94 END;
+                    END
+                END
+
+                IF @Option = 1 -- Otption 1 - Get all campaigns
+                BEGIN
+                IF NOT EXISTS
+                        (
+                            SELECT *
+                            FROM ccUsers_Roles NOLOCK
+                            WHERE User_id = @AdminId
+                                    AND Rol_id = 7
+                        )
+                        BEGIN
+                            IF @CampType = 1 BEGIN
+                                WITH wgId
+                                    AS (SELECT IDWG
+                                        FROM ccRIAWorkGroupUsers NOLOCK
+                                        WHERE user_id = @AdminId)
+                                    SELECT DISTINCT 
+                                        CAST(IdCampEsp AS INT) AS CampId,
+                                        cam_descripcion AS Description,
+                                        CAST(isnull(IDArea, -1) AS INT) AS AreaID,
+                                        CAST(CASE WHEN CampType = 9 THEN 10 ELSE CampType END AS INT) AS Channel,
+                                        CAST(surveyCamId AS INT) AS SurveyCamId,
+                                        CAST(ccRCG.graphic_id AS INT) As Frame,
+                                        CAST(1 AS INT) As CampType
+                                    FROM ccRIACampEspWG A
+                                        INNER JOIN wgId ON wgId.IDWG = A.IDWG AND A.Tipo = 1
+                                        INNER JOIN ccCamps ccc (NOLOCK) ON A.IdCampEsp = ccc.cam_id AND ccc.CampType IN (0,4,9,6) AND ccc.ivrScript = 0 AND ccc.callsBySurvey = 0
+                                        LEFT JOIN ccRIACampsGraph ccRCG ON (ccc.cam_id = ccRCG.cam_id)
+                            END ELSE BEGIN
+                                WITH wgId
+                                    AS (SELECT IDWG
+                                        FROM ccRIAWorkGroupUsers NOLOCK
+                                        WHERE user_id = @AdminId)
+                                    SELECT DISTINCT 
+                                        CAST(IdCampEsp AS INT) AS CampId,
+                                        descripcion AS Description,
+                                        CAST(isnull(IDArea, -1) AS INT) AS AreaID,
+                                        CAST(chat AS INT) AS Channel,
+                                        CAST(isnull(ccie.SurveyCamId, 0) AS INT) AS SurveyCamId,
+                                        CAST(isnull(ccRCG.graphic_id,1) AS INT) As Frame,
+                                        CAST(0 AS INT) As CampType
+                                    FROM ccRIACampEspWG A
+                                        INNER JOIN wgId ON wgId.IDWG = A.IDWG AND A.Tipo = 0
+                                        INNER JOIN ccInbound cci (NOLOCK) ON A.IdCampEsp = cci.Inbound_id AND cci.chat IN (0)
+                                        LEFT JOIN ccRIACampsGraph ccRCG ON (cci.Inbound_id = ccRCG.cam_id)
+                                        LEFT JOIN ccInboundExtend ccie ON (cci.Inbound_id = ccie.Inbound_id)
+                                    ORDER BY CampId ASC
+                            END
+                        END ELSE BEGIN
+                            IF @CampType = 1 BEGIN
+                                    SELECT DISTINCT 
+                                        CAST(ccc.cam_id AS INT) AS CampId,
+                                        cam_descripcion AS Description,
+                                        CAST(isnull(IDArea, -1) AS INT) AS AreaID,
+                                        CAST(CampType AS INT) AS Channel,
+                                        CAST(surveyCamId AS INT) AS SurveyCamId,
+                                        CAST(ccRCG.graphic_id AS INT) As Frame,
+                                        CAST(1 AS INT) As CampType
+                                    FROM ccCamps ccc (NOLOCK)
+                                        LEFT JOIN ccRIACampsGraph ccRCG ON (ccc.cam_id = ccRCG.cam_id)
+                                    WHERE ccc.CampType IN (0,4,6) AND ccc.ivrScript = 0 AND ccc.callsBySurvey = 0
+                            END ELSE BEGIN
+                                    SELECT DISTINCT 
+                                        CAST(cci.Inbound_id AS INT) AS CampId,
+                                        descripcion AS Description,
+                                        CAST(isnull(IDArea, -1) AS INT) AS AreaID,
+                                        CAST(chat AS INT) AS Channel,
+                                        CAST(isnull(ccie.SurveyCamId, 0) AS INT) AS SurveyCamId,
+                                        CAST(isnull(ccRCG.graphic_id,1) AS INT) As Frame,
+                                        CAST(0 AS INT) As CampType
+                                    FROM ccInbound cci (NOLOCK)
+                                        LEFT JOIN ccRIACampsGraph ccRCG ON (cci.Inbound_id = ccRCG.cam_id)
+                                        LEFT JOIN ccInboundExtend ccie ON (cci.Inbound_id = ccie.Inbound_id)
+                                    WHERE cci.chat = 0 
+                                    ORDER BY CampId ASC
+                            END
+                        END
+                END -- Option 1 - Get all campaigns
+                IF @Option = 2 BEGIN -- Option 2 - Get all survey camps
+                    WITH wgId
+                            AS (SELECT IDWG
+                                FROM ccRIAWorkGroupUsers NOLOCK
+                                WHERE user_id = @AdminId)
+                            SELECT DISTINCT 
+                                CAST(IdCampEsp AS INT) AS CampId,
+                                cam_descripcion AS Description,
+                                CAST(isnull(IDArea, -1) AS INT) AS AreaID,
+                                CAST(8 AS INT) AS Channel,
+                                CAST(surveyCamId AS INT) AS SurveyCamId,
+                                CAST(ccRCG.graphic_id AS INT) As Frame,
+                                CAST(8 AS INT) As CampType
+                            FROM ccRIACampEspWG A
+                                INNER JOIN wgId ON wgId.IDWG = A.IDWG AND A.Tipo = 1
+                                INNER JOIN ccCamps ccc (NOLOCK) ON A.IdCampEsp = ccc.cam_id AND ccc.CampType IN (0) AND ccc.ivrScript <> 0 AND ccc.callsBySurvey <> 0
+                                LEFT JOIN ccRIACampsGraph ccRCG ON (ccc.cam_id = ccRCG.cam_id)
+                            ORDER BY CampId ASC
+                END -- Option 2 - Get all survey camps
+                IF(@Option = 3) BEGIN --Option 3 - Associate Survey Campaign to Campaign
+                    IF(@CampType = 0) BEGIN
+                        IF EXISTS(SELECT * FROM ccInbound WHERE Inbound_id = @CampId) BEGIN
+                            IF EXISTS(SELECT * FROM ccInboundExtend WHERE Inbound_id = @CampId) BEGIN
+                                UPDATE ccInboundExtend SET SurveyCamId = @SurveyCampId WHERE Inbound_id = @CampId;
+                            END ELSE BEGIN
+                                INSERT INTO ccInboundExtend (Inbound_id, SurveyCamId)
+                                VALUES(@CampId, @SurveyCampId);
+                            END
+
+                            IF(@idArea IS NULL OR @idArea = -1) SET @idArea = (SELECT [IDArea] FROM ccInbound WHERE Inbound_id = @CampId)
+                                
+                            INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+                            SELECT
+                                (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idArea),
+                                getDate(), 
+                                (SELECT [Login] FROM ccUsers WHERE User_id = @AdminId), 
+                                @operation,
+                                @Module,
+                                CASE WHEN @Module = 12 THEN '''' ELSE ''ASSOCIATED_CAMP_SURVEY'' END,
+                                (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = (SELECT [surveyCamId] FROM ccInboundExtend WHERE Inbound_id = @CampId)),
+                                (SELECT [descripcion] FROM ccInbound WHERE Inbound_id = @CampId)
+
+                            SELECT 1 AS Status
+                        END ELSE BEGIN
+                            SELECT -1 AS Status
+                        END
+                    END 
+                    ELSE BEGIN
+                        IF EXISTS(SELECT * FROM ccCamps WHERE cam_id = @CampId) BEGIN
+                            UPDATE ccCamps SET SurveyCamId = @SurveyCampId WHERE cam_id = @CampId;
+
+                            IF(@idArea IS NULL OR @idArea = -1) SET @idArea = (SELECT [IDArea] FROM ccCamps WHERE cam_id = @CampId)
+
+                            INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+                            SELECT
+                                (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idArea),
+                                getDate(), 
+                                (SELECT [Login] FROM ccUsers WHERE User_id = @AdminId), 
+                                @operation,
+                                @Module,
+                                CASE WHEN @Module = 12 THEN '''' ELSE ''ASSOCIATED_CAMP_SURVEY'' END,
+                                (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = (SELECT [surveyCamId] FROM ccCamps WHERE cam_id = @CampId)),
+                                (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @CampId)
+                            SELECT 1 AS Status
+                        END ELSE BEGIN
+                            SELECT -1 AS Status
+                        END
+                    END
+                END
+                IF(@Option = 4) BEGIN --Option 4 - Disassociate Survey Campaign from Campaign
+                    IF(@CampType = 0) BEGIN
+                        IF EXISTS(SELECT * FROM ccInbound WHERE Inbound_id = @CampId) BEGIN
+                            IF(@idArea IS NULL OR @idArea = -1) SET @idArea = (SELECT [IDArea] FROM ccInbound WHERE Inbound_id = @CampId)
+
+                            INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+                            SELECT
+                                (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idArea),
+                                getDate(), 
+                                (SELECT [Login] FROM ccUsers WHERE User_id = @AdminId), 
+                                @operation,
+                                @Module,
+                                CASE WHEN @Module = 12 THEN '''' ELSE ''DISASSOCIATED_CAMP_SURVEY'' END,
+                                (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = (SELECT [surveyCamId] FROM ccInboundExtend WHERE Inbound_id = @CampId)),
+                                (SELECT [descripcion] FROM ccInbound WHERE Inbound_id = @CampId)
+
+                            UPDATE ccInboundExtend SET SurveyCamId = 0 WHERE Inbound_id = @CampId;
+                            SELECT 1 AS Status
+                        END ELSE BEGIN
+                            SELECT -2 AS Status
+                        END         
+                    END 
+                    ELSE BEGIN
+                        IF EXISTS(SELECT * FROM ccCamps WHERE cam_id = @CampId) BEGIN
+                            IF(@idArea IS NULL OR @idArea = -1) SET @idArea = (SELECT [IDArea] FROM ccCamps WHERE cam_id = @CampId)
+
+                            INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+                            SELECT
+                                (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idArea),
+                                getDate(), 
+                                (SELECT [Login] FROM ccUsers WHERE User_id = @AdminId), 
+                                @operation,
+                                @Module,
+                                CASE WHEN @Module = 12 THEN '''' ELSE ''DISASSOCIATED_CAMP_SURVEY'' END,
+                                (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = (SELECT [surveyCamId] FROM ccCamps WHERE cam_id = @CampId)),
+                                (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @CampId)
+
+                            UPDATE ccCamps SET SurveyCamId = 0 WHERE cam_id = @CampId;
+                            SELECT 1 AS Status
+                        END ELSE BEGIN
+                            SELECT -2 AS Status
+                        END
+                    END
+                END
+            END;
+    '
+    EXEC(@sql);
+
+---------------------------------End Jonathan Ramirez           -------------------------------------
 
 ---------------------------------- BEGIN Luis Zamora ----------------------------------------------
 
@@ -3880,6 +3922,7 @@ end'
         ,MaxDaysPerWAConvo SMALLINT
         ,RecordIvr BIT
         ,CamCanceled INT
+        ,surveyCamId int
         -- Outbound AI Campaign Special Settings
         ,RescheduledSurveyAI BIT
         ,ImmediateSurveyAI BIT
@@ -3912,7 +3955,7 @@ end'
                 CHARINDEX(''}}'', scriptAgent) - CHARINDEX(''{{'', scriptAgent) + 2, '''') AS VARCHAR(MAX)) AS RemainingText
             FROM dbo.ccVirtualAgent
             WHERE CHARINDEX(''{{'', scriptAgent) > 0
-              AND idCampaign = @campID
+            AND idCampaign = @campID
 
             UNION ALL
 
@@ -3924,8 +3967,10 @@ end'
             FROM RecursiveExtraction
             WHERE CHARINDEX(''{{'', RemainingText) > 0
         )
-        SELECT @ScriptVariables = STRING_AGG(Variable, '', '')
-        FROM RecursiveExtraction;
+        SELECT @ScriptVariables = STUFF((
+            SELECT '', '' + Variable
+            FROM RecursiveExtraction
+            FOR XML PATH(''''), TYPE).value(''.'', ''NVARCHAR(MAX)''), 1, 2, '''');
 
         SELECT 
         dialPrefixMan DialPrefixMan
@@ -4008,6 +4053,7 @@ end'
         ,MaxDaysPerWAConvo DaysVisualConversationWhatsApp
         ,RecordIvr
         ,ISNULL(CamCanceled, 0) CamCanceled
+        ,surveyCamId SurveyCamId
         -- Outbound AI Campaign Special Settings
         ,RescheduledSurveyAI
         ,ImmediateSurveyAI

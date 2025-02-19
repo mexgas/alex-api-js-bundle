@@ -3832,7 +3832,7 @@ end'
     EXEC(@sql)
 
     SET @process = 'K070035 ScriptVariables ccsp_GalateaGetOutboundConfiguration. Se agrega ScriptVariables'
-    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaGetOutboundConfiguration]
+    SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaGetOutboundConfiguration]
     @adminID INT
     ,@campID INT
     AS
@@ -3955,7 +3955,7 @@ end'
                 CHARINDEX(''}}'', scriptAgent) - CHARINDEX(''{{'', scriptAgent) + 2, '''') AS VARCHAR(MAX)) AS RemainingText
             FROM dbo.ccVirtualAgent
             WHERE CHARINDEX(''{{'', scriptAgent) > 0
-              AND idCampaign = @campID
+            AND idCampaign = @campID
 
             UNION ALL
 
@@ -3967,8 +3967,10 @@ end'
             FROM RecursiveExtraction
             WHERE CHARINDEX(''{{'', RemainingText) > 0
         )
-        SELECT @ScriptVariables = STRING_AGG(Variable, '', '')
-        FROM RecursiveExtraction;
+        SELECT @ScriptVariables = STUFF((
+            SELECT '', '' + Variable
+            FROM RecursiveExtraction
+            FOR XML PATH(''''), TYPE).value(''.'', ''NVARCHAR(MAX)''), 1, 2, '''');
 
         SELECT 
         dialPrefixMan DialPrefixMan

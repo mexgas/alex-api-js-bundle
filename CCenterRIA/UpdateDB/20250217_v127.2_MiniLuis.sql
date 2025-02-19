@@ -402,6 +402,13 @@ BEGIN
 	END'
     EXEC(@sql)
 
+    SET @process = 'Se agrega setting donde se incluye api key de agentes virtuales'
+	SET @sql= 'IF NOT EXISTS (select * from ccSettings2 where setting_id = 284)
+	BEGIN
+        INSERT INTO ccSettings2 VALUES (284, '''',''Key para agente virtual'',1,''GRL'',''Key para agente virtual'',''Key for virtual agent'',0,NULL)
+	END'
+    EXEC(@sql)
+
     SET @process = 'Se elimina procedure ccsp_RIA_mnuReciclar'
     SET @sql = '
     IF EXISTS (SELECT 1 FROM sys.procedures WHERE name = N''ccsp_RIA_mnuReciclar'')

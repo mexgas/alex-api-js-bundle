@@ -3832,7 +3832,7 @@ end'
     EXEC(@sql)
 
     SET @process = 'K070035 ScriptVariables ccsp_GalateaGetOutboundConfiguration. Se agrega ScriptVariables'
-    SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaGetOutboundConfiguration]
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaGetOutboundConfiguration]
     @adminID INT
     ,@campID INT
     AS
@@ -3922,6 +3922,7 @@ end'
         ,MaxDaysPerWAConvo SMALLINT
         ,RecordIvr BIT
         ,CamCanceled INT
+        ,surveyCamId int
         -- Outbound AI Campaign Special Settings
         ,RescheduledSurveyAI BIT
         ,ImmediateSurveyAI BIT

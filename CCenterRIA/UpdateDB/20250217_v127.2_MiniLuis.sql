@@ -2327,7 +2327,7 @@ SET NOCOUNT OFF
 					BEGIN
 								SELECT DISTINCT 
 								CAST(Inbound_id AS INT) AS CampId,descripcion AS Description,isnull(IDArea, -1) AS AreaID,CAST(chat AS SMALLINT) AS CampaignType,CAST(isnull(cam_id,-1) AS INT) AS RelatedCampId
-								FROM ccInbound NOLOCK where cam_id = @Id
+								FROM ccInbound NOLOCK where cam_id = @Id and chat IN (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,'',''))
 					END
 					ELSE IF  @Option=16
 					begin

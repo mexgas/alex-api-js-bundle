@@ -11369,28 +11369,6 @@ SET @sql = '
 EXEC(@sql)
 ----------------------------------------------------------- Brian Omar Mejia Magos -------------------------------------------------------------------------
 
------------------------------------------------------------ Start Hugo Longoria -------------------------------------------------------------------------
-
-    set @process = 'Alter SP ccsp_DLRInsertCall'
-    set @sql='ALTER PROCEDURE [dbo].[ccsp_DLRInsertCall]
-        @callout_id int,
-        @cam_id smallint,
-        @cal_Key varchar(20),
-        @cal_Telefono varchar(14),
-        @Puerto smallint,
-        @logDial_id int=0
-        AS
-
-        INSERT ccoCallsOUT ( callout_id, cam_id, cal_Key, cal_telefono, cal_puerto, cal_Inicio, statusCall_id ) --Status 6=Pide Agente
-          VALUES ( @callout_id, @cam_id, @cal_Key, @cal_Telefono, @Puerto, getdate(), 6 )
-
-        select scope_identity() as cal_id
-        '
-    EXEC(@sql)
-
-
-
------------------------------------------------------------ End Hugo Longoria -------------------------------------------------------------------------
 ---------------------------------------- End fix/125.20231211.0.9 fix/125.20231211.0.15 fix/125.20231211.0.16- -------------------------------------------------
     SET @process = 'Alter ccsp_AvrsSyncronization para cambiar la duration cuando se graba el hold, se agrega para IsVoicemail y borrado de varios registros'
     SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_AvrsSyncronization]

@@ -85,26 +85,26 @@ EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N''ReportMa
         @freq_type=4, 
         @freq_interval=1, 
         @freq_subday_type=4, 
-        @freq_subday_interval=10, 
+        @freq_subday_interval=20, 
         @freq_relative_interval=0, 
         @freq_recurrence_factor=0, 
         @active_start_date=20130912, 
         @active_end_date=99991231, 
         @active_start_time=0, 
-        @active_end_time=40000
+        @active_end_time=34000
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N''RepotsMasterProcess'', 
         @enabled=1, 
         @freq_type=4, 
         @freq_interval=1, 
         @freq_subday_type=4, 
-        @freq_subday_interval=15, 
+        @freq_subday_interval=25, 
         @freq_relative_interval=0, 
         @freq_recurrence_factor=0, 
         @active_start_date=20201113, 
         @active_end_date=99991231, 
-        @active_start_time=43000, 
-        @active_end_time=235959
+        @active_start_time=45500, 
+        @active_end_time=234000
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_add_jobserver @job_id = @jobId, @server_name = N''(local)''
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
@@ -289,48 +289,128 @@ EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N''ReportMasterProcessGenerate
         @category_name=N''[Uncategorized (Local)]'', 
         @owner_login_name=N''sa'', @job_id = @jobId OUTPUT
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+/****** Object:  Step [Execute_LowLoad_Replication]    Script Date: 21/11/2023 02:24:39 p. m. ******/
+EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N''Execute_LowLoad_Replication'', 
+		@step_id=1, 
+		@cmdexec_success_code=0, 
+		@on_success_action=3, 
+		@on_success_step_id=0, 
+		@on_fail_action=2, 
+		@on_fail_step_id=0, 
+		@retry_attempts=0, 
+		@retry_interval=0, 
+		@os_run_priority=0, @subsystem=N''TSQL'', 
+		@command=N''EXEC ReportsMasterProcessPublicationLowLoad'', 
+		@database_name=N''CCReportsRIA'', 
+		@flags=0
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 /****** Object:  Step [GenerateReport]    Script Date: 21/11/2023 02:24:39 p. m. ******/
 EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N''GenerateReport'', 
-        @step_id=1, 
-        @cmdexec_success_code=0, 
-        @on_success_action=1, 
-        @on_success_step_id=0, 
-        @on_fail_action=2, 
-        @on_fail_step_id=0, 
-        @retry_attempts=0, 
-        @retry_interval=0, 
-        @os_run_priority=0, @subsystem=N''TSQL'', 
-        @command=N''EXEC ReportsMasterProcessWIthOnlyGenerate @isAllReport=1'', 
-        @database_name=N''CCReportsRIA'', 
-        @flags=0
+		@step_id=2, 
+		@cmdexec_success_code=0, 
+		@on_success_action=1, 
+		@on_success_step_id=0, 
+		@on_fail_action=2, 
+		@on_fail_step_id=0, 
+		@retry_attempts=0, 
+		@retry_interval=0, 
+		@os_run_priority=0, @subsystem=N''TSQL'', 
+		@command=N''EXEC ReportsMasterProcessWIthOnlyGenerate @isAllReport=1'', 
+		@database_name=N''CCReportsRIA'', 
+		@flags=0
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_update_job @job_id = @jobId, @start_step_id = 1
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
-EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N''ReportGenateLow'', 
-        @enabled=1, 
-        @freq_type=4, 
-        @freq_interval=1, 
-        @freq_subday_type=8, 
-        @freq_subday_interval=4, 
-        @freq_relative_interval=0, 
-        @freq_recurrence_factor=0, 
-        @active_start_date=20231121, 
-        @active_end_date=99991231, 
-        @active_start_time=0, 
-        @active_end_time=40000
+EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N''ScheduleGenerateLow1'', 
+		@enabled=1, 
+		@freq_type=4, 
+		@freq_interval=1, 
+		@freq_subday_type=1, 
+		@freq_subday_interval=0, 
+		@freq_relative_interval=0, 
+		@freq_recurrence_factor=0, 
+		@active_start_date=20250224, 
+		@active_end_date=99991231, 
+		@active_start_time=1000, 
+		@active_end_time=235959
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
-EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N''ReportGenateLowAfter'', 
-        @enabled=1, 
-        @freq_type=4, 
-        @freq_interval=1, 
-        @freq_subday_type=8, 
-        @freq_subday_interval=4, 
-        @freq_relative_interval=0, 
-        @freq_recurrence_factor=0, 
-        @active_start_date=20231121, 
-        @active_end_date=99991231, 
-        @active_start_time=43000, 
-        @active_end_time=235959     
+EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N''ScheduleGenerateLow2'', 
+		@enabled=1, 
+		@freq_type=4, 
+		@freq_interval=1, 
+		@freq_subday_type=1, 
+		@freq_subday_interval=0, 
+		@freq_relative_interval=0, 
+		@freq_recurrence_factor=0, 
+		@active_start_date=20250224, 
+		@active_end_date=99991231, 
+		@active_start_time=40000, 
+		@active_end_time=235959
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N''ScheduleGenerateLow3'', 
+		@enabled=1, 
+		@freq_type=4, 
+		@freq_interval=1, 
+		@freq_subday_type=1, 
+		@freq_subday_interval=0, 
+		@freq_relative_interval=0, 
+		@freq_recurrence_factor=0, 
+		@active_start_date=20250224, 
+		@active_end_date=99991231, 
+		@active_start_time=83000, 
+		@active_end_time=235959
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N''ScheduleGenerateLow4'', 
+		@enabled=1, 
+		@freq_type=4, 
+		@freq_interval=1, 
+		@freq_subday_type=1, 
+		@freq_subday_interval=0, 
+		@freq_relative_interval=0, 
+		@freq_recurrence_factor=0, 
+		@active_start_date=20250224, 
+		@active_end_date=99991231, 
+		@active_start_time=124000, 
+		@active_end_time=235959
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N''ScheduleGenerateLow5'', 
+		@enabled=1, 
+		@freq_type=4, 
+		@freq_interval=1, 
+		@freq_subday_type=1, 
+		@freq_subday_interval=0, 
+		@freq_relative_interval=0, 
+		@freq_recurrence_factor=0, 
+		@active_start_date=20250224, 
+		@active_end_date=99991231, 
+		@active_start_time=162500, 
+		@active_end_time=235959
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N''ScheduleGenerateLow6'', 
+		@enabled=1, 
+		@freq_type=4, 
+		@freq_interval=1, 
+		@freq_subday_type=1, 
+		@freq_subday_interval=0, 
+		@freq_relative_interval=0, 
+		@freq_recurrence_factor=0, 
+		@active_start_date=20250224, 
+		@active_end_date=99991231, 
+		@active_start_time=203500, 
+		@active_end_time=235959
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N''ScheduleGenerateLow7'', 
+		@enabled=1, 
+		@freq_type=4, 
+		@freq_interval=1, 
+		@freq_subday_type=1, 
+		@freq_subday_interval=0, 
+		@freq_relative_interval=0, 
+		@freq_recurrence_factor=0, 
+		@active_start_date=20250224, 
+		@active_end_date=99991231, 
+		@active_start_time=233000, 
+		@active_end_time=235959
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_add_jobserver @job_id = @jobId, @server_name = N''(local)''
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback

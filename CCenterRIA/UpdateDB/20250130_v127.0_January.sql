@@ -476,6 +476,89 @@ END;
 
         -------------------------------------------  END Isaac  ----------------------------------------
 
+        -------------------------------------------  BEGIN David  ----------------------------------------
+		SET @process = 'creación de índice IX_ccListaNegra_telefono_idtipolistapara tabla ccListaNegra'
+        SET @sql = '
+        IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = ''IX_ccListaNegra_telefono_idtipolista'' AND object_id = OBJECT_ID(''ccListaNegra''))
+		BEGIN
+			CREATE NONCLUSTERED INDEX IX_ccListaNegra_telefono_idtipolista
+			ON ccListaNegra (idtipolista, telefono)
+			INCLUDE (calKey);
+		END'
+        EXEC(@sql)
+
+		SET @process = 'creación de índice IX_ccHistorialListaNegra_telefono_idtipolista tabla ccHistorialListaNegra'
+        SET @sql = '
+        IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = ''IX_ccHistorialListaNegra_telefono_idtipolista'' AND object_id = OBJECT_ID(''ccHistorialListaNegra''))
+		BEGIN
+			CREATE NONCLUSTERED INDEX IX_ccHistorialListaNegra_telefono_idtipolista
+			ON ccHistorialListaNegra (idtipolista, telefono, idtipomov)
+			INCLUDE (fecha);
+		END'
+        EXEC(@sql)
+
+		SET @process = 'DROP PROCEDURE ccsp_GalateaAdminBlackListPhones'
+        SET @sql = '
+        if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminBlackListPhones'')
+        begin
+            DROP PROCEDURE ccsp_GalateaAdminBlackListPhones
+        end'
+        EXEC(@sql)
+
+		SET @process = 'optimización de SP ccsp_GalateaAdminBlackListPhones'
+        SET @sql = '
+        CREATE PROCEDURE [dbo].[ccsp_GalateaAdminBlackListPhones]
+			@type TINYINT,
+			@idBlackList INT
+		AS
+		BEGIN
+			SET NOCOUNT ON;
+    
+			IF(@type = 1)
+			BEGIN
+				;WITH PhoneCTE AS (
+					SELECT 
+						cln.telefono,
+						cln.calKey,
+						MAX(chln.fecha) AS fecha,
+						COUNT(*) OVER (PARTITION BY cln.telefono) AS phone_count
+					FROM dbo.ccListaNegra cln
+					INNER JOIN dbo.ccHistorialListaNegra chln ON 
+						chln.telefono = cln.telefono
+						AND chln.idtipolista = cln.idtipolista
+					WHERE 
+						cln.idtipolista = @idBlackList
+						AND chln.idtipolista = @idBlackList
+						AND chln.idtipomov IN (1,7)
+					GROUP BY 
+						cln.telefono,
+						cln.calKey
+				)
+				SELECT 
+					p.telefono,
+					ISNULL(
+						CASE 
+							WHEN p.phone_count > 1 THEN 
+								(SELECT TOP 1 calKey 
+								 FROM PhoneCTE 
+								 WHERE telefono = p.telefono 
+								 ORDER BY fecha ASC)
+							ELSE p.calKey
+						END, 
+					'''') AS calKey,
+					p.fecha
+				FROM PhoneCTE p
+				GROUP BY 
+					p.telefono,
+					p.calKey,
+					p.fecha,
+					p.phone_count
+				ORDER BY 
+					p.fecha DESC;
+			END;
+		END;'
+        EXEC(@sql)
+		-------------------------------------------  END David  ------------------------------------------
 
 SET @process = 'K038009-Servicio IA Service replicación de Drop TRIGGER tg_ccCamps_IA'
         SET @sql = 'if exists (select * from sys.triggers where name = N''tg_ccCamps_IA'' and parent_id = OBJECT_ID(N''ccCamps''))

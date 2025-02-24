@@ -1054,8 +1054,8 @@ select @prefix as sDialPrefix, @tNoContesta as tNoContesta,@ani as ani, @detectA
 		,twrapup
 		,userId
 		,0 TypeNotReady
-		,'' descripcion
-		,'_Time' descripcion_time
+		,'''' descripcion
+		,''_Time'' descripcion_time
 		,0 [time]
 		,0 transferStatus
 		,0 ringingTime
@@ -1066,8 +1066,8 @@ select @prefix as sDialPrefix, @tNoContesta as tNoContesta,@ani as ani, @detectA
 		,0 undefinedTime
 		,0 dialingStatus
 		,null TipoReadyAuxiliarId
-		,'' auxiliarRedy_descripcion
-		,'' descripcion_auxiliarRedyTime_time
+		,'''' auxiliarRedy_descripcion
+		,'''' descripcion_auxiliarRedyTime_time
 		,0 auxiliarRedyTime
 		from RepAgentSummary_VersionAmatech
 		union

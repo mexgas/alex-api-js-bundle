@@ -737,6 +737,158 @@ SET @process = 'KR1170000 Create table RepAgentTimeShift'
             END';
     EXEC(@sql);
    -------------------------------------------  END Hector Chavez    -------------------------------------------
+   -------------------------------------------  BEGIN Carlos Chavez    -------------------------------------------
+
+   SET @process = 'Se comenta sp ccSpCreateIndexReport al modificar schema_option en replicacion'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ReportsMasterProcessWIthOnlyGenerate] @from AS DATETIME = NULL
+,@to AS DATETIME = NULL
+,@scheduleTime INT = 10
+,@dateStart DATETIME = NULL
+,@isAllReport tinyint =0 --0 Only table ReportHighUse,1  not in table ReportHighUse, 2 all 
+AS
+SET ANSI_WARNINGS OFF
+SET NOCOUNT ON
+
+DECLARE @i INT,@count INT
+DECLARE @SQL nVARCHAR(4000)
+DECLARE @name SYSNAME
+DECLARE @descError NVARCHAR(max)
+DECLARE @dateSP DATETIME
+
+IF @from IS NULL
+BEGIN
+    SELECT @from = convert(DATETIME, convert(VARCHAR(11), getdate()))
+END
+
+IF @to IS NULL
+BEGIN
+    SET @to = getdate()
+END
+
+IF @dateStart IS NULL
+BEGIN
+    SET @dateStart = getdate()
+END
+
+--exec ccSpCreateIndexReport
+
+EXEC ccspTmpTimesInterval @from = @from ,@to = @to  ,@interval = 15 --Tabla TmpTimesInterval Temporal para tener Intervalos de 15 Minutos
+EXEC ccspTmpSessionGeneral @from = @from    ,@to = @to              --Tabla tmpSessionGeneral para tener la sesiones de agentes
+EXEC ccspTmpSessionTimeGroup @from = @from  ,@to = @to              --Tabla tmpSessionTimeGroup para dividir la sesion en intervalos de 15 Minutos
+EXEC ccspTimesccLogAgentesDia @from = @from ,@to = @to              --Tabla tmpccLogAgentesDia tener los movimientos de los agentes
+EXEC ccspTimesOutboundData @from = @from    ,@to = @to              --Tabla tmpTimesOutboundData para los tiempos de las llamadas de salida
+EXEC ccspTimesInboundData @from = @from ,@to = @to                  --Tabla tmpTimesInboundData para los tiempos de las llamadas de entrada
+exec ccspTmpTimesccLogtransfers @from = @from, @to = @to            --Tabla TmpTimesccLogtransfers para los tiempos de las llamadas que son trasferidas
+exec ccsptmpTimesHoldIn @from = @from, @to = @to                    --Tabla tmpTimesHoldIn para los tiempos cuando se pone en hold en llamadas de entrada
+
+CREATE TABLE #tmpProcedureReports (
+    id INT
+    ,name SYSNAME
+    )
+
+declare @tableSpDontProcess table(nameSp varchar(300) primary key not null)
+
+insert into @tableSpDontProcess values(''ccspRepCatalogos'') -- ccspRepCatalogos es para catalogos por eso no se debe correr
+insert into @tableSpDontProcess values(''ccspRepAgentSession'') -- ccspRepAgentSession Genera el reporte de sesiones para alimentar  
+insert into @tableSpDontProcess values(''ccspRepAgentNotReadyDet'') -- ccspRepAgentNotReadyDet sabemos cuando inicia y cuando termina los no disponibles 
+insert into @tableSpDontProcess values(''ccspRepAgentNotReady'') -- ccspRepAgentNotReady Agrupa por hora
+insert into @tableSpDontProcess values(''ccspRepAgentGI'')      -- ccspRepAgentGI Agrupa por hora
+
+
+if @isAllReport =0 begin
+
+    INSERT INTO #tmpProcedureReports
+    SELECT ROW_NUMBER() OVER (
+            ORDER BY [name]
+            ) AS id
+        ,[name]
+    FROM sys.procedures
+    WHERE [name] LIKE ''ccspRep%''  
+        AND [name] NOT IN (select nameSp from @tableSpDontProcess)
+        AND [name] IN (select nameSp from ReportHighUse)        
+end
+else if @isAllReport =1 begin
+    INSERT INTO #tmpProcedureReports
+    SELECT ROW_NUMBER() OVER (
+            ORDER BY [name]
+            ) AS id
+        ,[name]
+    FROM sys.procedures
+    WHERE [name] LIKE ''ccspRep%''
+        AND [name] NOT IN (select nameSp from @tableSpDontProcess)
+        AND [name] Not IN (select nameSp from ReportHighUse)        
+end
+else begin
+    INSERT INTO #tmpProcedureReports
+    SELECT ROW_NUMBER() OVER (
+            ORDER BY [name]
+            ) AS id
+        ,[name]
+    FROM sys.procedures
+    WHERE [name] LIKE ''ccspRep%''
+        AND [name] NOT IN (select nameSp from @tableSpDontProcess)        
+end
+
+
+exec ccspRepAgentSession @action=1,@from=@from,@to=@to --Saca el detalle de las sesiones
+exec ccspRepAgentNotReadyDet @action=1,@from=@from,@to=@to --Saca el detalle de los no disponibles
+exec ccspRepAgentNotReady @action=1,@from=@from,@to=@to --Agrupa a los no disponibles por hora
+exec ccspRepAgentGI @action=1,@from=@from,@to=@to   --Agrupa por 15 minutos
+
+INSERT INTO [logsReportsMaster] (name,STATUS,dateStart,dateEnd,error,maxTime)
+SELECT name,0 [status]  ,''19000101'' as dateStart,''19000101'' dateEnd,'''' error,@scheduleTime
+FROM #tmpProcedureReports
+
+SELECT @i = 1, @count = count(*) FROM #tmpProcedureReports
+
+WHILE @i <= @count  
+BEGIN
+    SELECT @name = name
+    FROM #tmpProcedureReports
+    WHERE id = @i
+
+    SET @sql = ''EXEC '' + @name + '' @action=1, @from=@from, @to=@to''
+    
+    SET @dateSP = getdate()
+
+    BEGIN TRY
+        --print @sql
+        
+        exec sp_executesql @sql, N''@from DATETIME, @to DATETIME'',@from, @to
+
+        UPDATE [logsReportsMaster]
+        SET STATUS = 1
+            ,dateStart = @dateSP
+            ,dateEnd = getdate()
+        WHERE name = @name
+            AND STATUS = 0
+            AND dateStart = ''19000101''
+            AND dateEnd = ''19000101''
+            
+    END TRY
+
+    BEGIN CATCH
+        SELECT @descError = ''Line: '' + cast(error_line() AS NVARCHAR) + '' Number: '' + cast(@@error AS NVARCHAR) + '' Message: '' + error_message()
+
+        SELECT @descError,@name
+
+        UPDATE [logsReportsMaster]
+        SET STATUS = 3
+            ,dateStart = @dateSP
+            ,dateEnd = getdate()
+            ,error = @descError
+        WHERE name = @name
+            AND STATUS = 0
+            AND dateStart = ''19000101''
+            AND dateEnd = ''19000101''
+    END CATCH
+
+    SET @i = @i + 1
+END
+
+DROP TABLE #tmpProcedureReports';
+    EXEC(@sql);
+   -------------------------------------------  END Carlos Chavez    -------------------------------------------
 	
 	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version
 

@@ -1031,6 +1031,261 @@ select @prefix as sDialPrefix, @tNoContesta as tNoContesta,@ani as ani, @detectA
 
  ---------------------------------------------------- END CW-8987 Hugo Longoria --------------------------------------------------------------
 
+ ---------------------------------------------------- Begin Ulises Espinosa ------------------------------------------------------------------
+		
+ 		SET @process = 'Se ajusta las condiciones para mostrar las campañas de encuesta para asiciar a campañas'
+        SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminCampaignsSurvey] 
+			@Option AS      INT, 
+			@CampType AS    INT = 0,
+			@AdminId AS     INT = 0,
+			@CampId AS		INT = 0,
+			@SurveyCampId   INT = 0,
+			@Module AS SMALLINT = 12,
+			@HistoryAction AS SMALLINT = 1
+
+			AS
+			BEGIN
+				DECLARE @idArea SMALLINT = NULL;
+				DECLARE @operation INT = -1;
+				DECLARE @mediaType INT = 0;
+
+				IF(@Option IN (3, 4)) BEGIN
+					IF(@Module <> 12) BEGIN
+						IF(@CampType = 0)BEGIN
+							SET @mediaType = (SELECT [chat] FROM ccInbound WHERE Inbound_id = @CampId);
+							SET @operation = CASE WHEN @HistoryAction = 1 THEN 
+																				CASE 
+																						WHEN @mediaType = 1  THEN 63
+																						WHEN @mediaType = 5  THEN 40
+																						ELSE 60 END
+																				ELSE 
+																					CASE 
+																						WHEN @mediaType = 1  THEN 64
+																						WHEN @mediaType = 5  THEN 53
+																						ELSE 52 END
+																				END;
+						END ELSE BEGIN
+							SET @mediaType = (SELECT [CampType] FROM ccCamps WHERE cam_id = @CampId);
+							SET @operation = CASE WHEN @HistoryAction = 1 THEN 
+																				CASE 
+																						WHEN @mediaType = 6  THEN 44
+																						WHEN @mediaType = 5  THEN 46
+																						WHEN @mediaType = 4  THEN 48
+																						WHEN @mediaType = 7  THEN 50
+																						ELSE 42 END
+																				ELSE 
+																					CASE 
+																						WHEN @mediaType = 6  THEN 55
+																						WHEN @mediaType = 5  THEN 56
+																						WHEN @mediaType = 4  THEN 57
+																						WHEN @mediaType = 7  THEN 58
+																						ELSE 54 END
+																				END;
+						END
+					END ELSE BEGIN
+						SET @operation = CASE WHEN @Option = 3 THEN 93 ELSE 94 END;
+					END
+				END
+
+				IF @Option = 1 -- Otption 1 - Get all campaigns
+				BEGIN
+				IF NOT EXISTS
+						(
+							SELECT *
+							FROM ccUsers_Roles NOLOCK
+							WHERE User_id = @AdminId
+									AND Rol_id = 7
+						)
+						BEGIN
+							IF @CampType = 1 BEGIN
+								WITH wgId
+									AS (SELECT IDWG
+										FROM ccRIAWorkGroupUsers NOLOCK
+										WHERE user_id = @AdminId)
+									SELECT DISTINCT 
+										CAST(IdCampEsp AS INT) AS CampId,
+										cam_descripcion AS Description,
+										CAST(isnull(IDArea, -1) AS INT) AS AreaID,
+										CAST(CampType AS INT) AS Channel,
+										CAST(surveyCamId AS INT) AS SurveyCamId,
+										CAST(isnull(ccRCG.graphic_id,1) AS INT) As Frame,
+										CAST(1 AS INT) As CampType
+									FROM ccRIACampEspWG A
+										INNER JOIN wgId ON wgId.IDWG = A.IDWG AND A.Tipo = 1
+										INNER JOIN ccCamps ccc (NOLOCK) ON A.IdCampEsp = ccc.cam_id AND ccc.CampType IN (0,4,6) AND ccc.ivrScript = 0 AND ccc.callsBySurvey = 0
+										LEFT JOIN ccRIACampsGraph ccRCG ON (ccc.cam_id = ccRCG.cam_id)
+							END ELSE BEGIN
+								WITH wgId
+									AS (SELECT IDWG
+										FROM ccRIAWorkGroupUsers NOLOCK
+										WHERE user_id = @AdminId)
+									SELECT DISTINCT 
+										CAST(IdCampEsp AS INT) AS CampId,
+										descripcion AS Description,
+										CAST(isnull(IDArea, -1) AS INT) AS AreaID,
+										CAST(chat AS INT) AS Channel,
+										CAST(isnull(ccie.SurveyCamId, 0) AS INT) AS SurveyCamId,
+										CAST(isnull(ccRCG.graphic_id,1) AS INT) As Frame,
+										CAST(0 AS INT) As CampType
+									FROM ccRIACampEspWG A
+										INNER JOIN wgId ON wgId.IDWG = A.IDWG AND A.Tipo = 0
+										INNER JOIN ccInbound cci (NOLOCK) ON A.IdCampEsp = cci.Inbound_id AND cci.chat IN (0)
+										LEFT JOIN ccRIACampsGraph ccRCG ON (cci.Inbound_id = ccRCG.cam_id)
+										LEFT JOIN ccInboundExtend ccie ON (cci.Inbound_id = ccie.Inbound_id)
+									ORDER BY CampId ASC
+							END
+						END ELSE BEGIN
+							IF @CampType = 1 BEGIN
+									SELECT DISTINCT 
+										CAST(ccc.cam_id AS INT) AS CampId,
+										cam_descripcion AS Description,
+										CAST(isnull(IDArea, -1) AS INT) AS AreaID,
+										CAST(CampType AS INT) AS Channel,
+										CAST(surveyCamId AS INT) AS SurveyCamId,
+										CAST(isnull(ccRCG.graphic_id,1) AS INT) As Frame,
+										CAST(1 AS INT) As CampType
+									FROM ccCamps ccc (NOLOCK)
+										LEFT JOIN ccRIACampsGraph ccRCG ON (ccc.cam_id = ccRCG.cam_id)
+									WHERE ccc.CampType IN (0,4,6) AND ccc.ivrScript = 0 AND ccc.callsBySurvey = 0
+							END ELSE BEGIN
+									SELECT DISTINCT 
+										CAST(cci.Inbound_id AS INT) AS CampId,
+										descripcion AS Description,
+										CAST(isnull(IDArea, -1) AS INT) AS AreaID,
+										CAST(chat AS INT) AS Channel,
+										CAST(isnull(ccie.SurveyCamId, 0) AS INT) AS SurveyCamId,
+										CAST(isnull(ccRCG.graphic_id,1) AS INT) As Frame,
+										CAST(0 AS INT) As CampType
+									FROM ccInbound cci (NOLOCK)
+										LEFT JOIN ccRIACampsGraph ccRCG ON (cci.Inbound_id = ccRCG.cam_id)
+										LEFT JOIN ccInboundExtend ccie ON (cci.Inbound_id = ccie.Inbound_id)
+									WHERE cci.chat = 0 
+									ORDER BY CampId ASC
+							END
+						END
+				END -- Option 1 - Get all campaigns
+				IF @Option = 2 BEGIN -- Option 2 - Get all survey camps
+					WITH wgId
+							AS (SELECT IDWG
+								FROM ccRIAWorkGroupUsers NOLOCK
+								WHERE user_id = @AdminId)
+							SELECT DISTINCT 
+								CAST(IdCampEsp AS INT) AS CampId,
+								cam_descripcion AS Description,
+								CAST(isnull(IDArea, -1) AS INT) AS AreaID,
+								CAST(8 AS INT) AS Channel,
+								CAST(surveyCamId AS INT) AS SurveyCamId,
+								CAST(ccRCG.graphic_id AS INT) As Frame,
+								CAST(8 AS INT) As CampType
+							FROM ccRIACampEspWG A
+								INNER JOIN wgId ON wgId.IDWG = A.IDWG AND A.Tipo = 1
+								INNER JOIN ccCamps ccc (NOLOCK) ON A.IdCampEsp = ccc.cam_id AND ccc.CampType IN (0,8) AND ccc.ivrScript <> 0 AND ccc.callsBySurvey <> 0
+								LEFT JOIN ccRIACampsGraph ccRCG ON (ccc.cam_id = ccRCG.cam_id)
+							ORDER BY CampId ASC
+				END -- Option 2 - Get all survey camps
+				IF(@Option = 3) BEGIN --Option 3 - Associate Survey Campaign to Campaign
+					IF(@CampType = 0) BEGIN
+						IF EXISTS(SELECT * FROM ccInbound WHERE Inbound_id = @CampId) BEGIN
+							IF EXISTS(SELECT * FROM ccInboundExtend WHERE Inbound_id = @CampId) BEGIN
+								UPDATE ccInboundExtend SET SurveyCamId = @SurveyCampId WHERE Inbound_id = @CampId;
+							END ELSE BEGIN
+								INSERT INTO ccInboundExtend (Inbound_id, SurveyCamId)
+								VALUES(@CampId, @SurveyCampId);
+							END
+
+							IF(@idArea IS NULL OR @idArea = -1) SET @idArea = (SELECT [IDArea] FROM ccInbound WHERE Inbound_id = @CampId)
+								
+							INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+							SELECT
+								(SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idArea),
+								getDate(), 
+								(SELECT [Login] FROM ccUsers WHERE User_id = @AdminId), 
+								@operation,
+								@Module,
+								CASE WHEN @Module = 12 THEN '''' ELSE ''ASSOCIATED_CAMP_SURVEY'' END,
+								(SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = (SELECT [surveyCamId] FROM ccInboundExtend WHERE Inbound_id = @CampId)),
+								(SELECT [descripcion] FROM ccInbound WHERE Inbound_id = @CampId)
+
+							SELECT 1 AS Status
+						END ELSE BEGIN
+							SELECT -1 AS Status
+						END
+					END 
+					ELSE BEGIN
+						IF EXISTS(SELECT * FROM ccCamps WHERE cam_id = @CampId) BEGIN
+							UPDATE ccCamps SET SurveyCamId = @SurveyCampId WHERE cam_id = @CampId;
+
+							IF(@idArea IS NULL OR @idArea = -1) SET @idArea = (SELECT [IDArea] FROM ccCamps WHERE cam_id = @CampId)
+
+							INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+							SELECT
+								(SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idArea),
+								getDate(), 
+								(SELECT [Login] FROM ccUsers WHERE User_id = @AdminId), 
+								@operation,
+								@Module,
+								CASE WHEN @Module = 12 THEN '''' ELSE ''ASSOCIATED_CAMP_SURVEY'' END,
+								(SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = (SELECT [surveyCamId] FROM ccCamps WHERE cam_id = @CampId)),
+								(SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @CampId)
+							SELECT 1 AS Status
+						END ELSE BEGIN
+							SELECT -1 AS Status
+						END
+					END
+				END
+				IF(@Option = 4) BEGIN --Option 4 - Disassociate Survey Campaign from Campaign
+					IF(@CampType = 0) BEGIN
+						IF EXISTS(SELECT * FROM ccInbound WHERE Inbound_id = @CampId) BEGIN
+							IF(@idArea IS NULL OR @idArea = -1) SET @idArea = (SELECT [IDArea] FROM ccInbound WHERE Inbound_id = @CampId)
+
+							INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+							SELECT
+								(SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idArea),
+								getDate(), 
+								(SELECT [Login] FROM ccUsers WHERE User_id = @AdminId), 
+								@operation,
+								@Module,
+								CASE WHEN @Module = 12 THEN '''' ELSE ''DISASSOCIATED_CAMP_SURVEY'' END,
+								(SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = (SELECT [surveyCamId] FROM ccInboundExtend WHERE Inbound_id = @CampId)),
+								(SELECT [descripcion] FROM ccInbound WHERE Inbound_id = @CampId)
+
+							UPDATE ccInboundExtend SET SurveyCamId = 0 WHERE Inbound_id = @CampId;
+							SELECT 1 AS Status
+						END ELSE BEGIN
+							SELECT -2 AS Status
+						END			
+					END 
+					ELSE BEGIN
+						IF EXISTS(SELECT * FROM ccCamps WHERE cam_id = @CampId) BEGIN
+							IF(@idArea IS NULL OR @idArea = -1) SET @idArea = (SELECT [IDArea] FROM ccCamps WHERE cam_id = @CampId)
+
+							INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+							SELECT
+								(SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idArea),
+								getDate(), 
+								(SELECT [Login] FROM ccUsers WHERE User_id = @AdminId), 
+								@operation,
+								@Module,
+								CASE WHEN @Module = 12 THEN '''' ELSE ''DISASSOCIATED_CAMP_SURVEY'' END,
+								(SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = (SELECT [surveyCamId] FROM ccCamps WHERE cam_id = @CampId)),
+								(SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @CampId)
+
+							UPDATE ccCamps SET SurveyCamId = 0 WHERE cam_id = @CampId;
+							SELECT 1 AS Status
+						END ELSE BEGIN
+							SELECT -2 AS Status
+						END
+					END
+				END
+			END;'
+		EXEC(@sql)
+
+		SET @process = 'Se modifican las campañas de encuesta para que tengan el campType 8'
+        SET @sql = 'update ccCamps set CampType = 8 where ivrScript <> 0 and callsBySurvey <> 0'
+		EXEC(@sql)
+		
+ ------------------------------------------------------ End Ulises Espinosa ------------------------------------------------------------------
+
 	
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

@@ -190,6 +190,90 @@ end'
 
 ---------------------------------------END Jesus Gallardo hotfix/125.20231211.0.22---------------------------------------------------------
 
+---------------------------------------------------- BEGIN TT14523 Luis Zamora 127.20250130.0.5 --------------------------------------------------------------
+ SET @process = 'Delete view RepViewSummary'
+SET @sql = '
+IF EXISTS (SELECT * FROM sys.views WHERE name = N''RepViewSummary'')
+BEGIN
+    DROP VIEW RepViewSummary;
+END'
+EXEC(@sql)
+SET @process = 'TT14523 --Reportes-Error en reporte de resumen de agentes  VIEW RepViewSummary'
+SET @sql = '
+        CREATE VIEW [dbo].[RepViewSummary] AS -- Correccion del Ticket TT14523
+        select 
+        [date]
+        ,[login]
+        ,[user]
+        ,sessionTime
+        ,loginMktTime
+        ,logoutMktTime
+        ,0 callTengaged
+        ,ndTime
+        ,NCallsOut
+        ,NCallsIn
+        ,NCallsCorta
+        ,NAtend
+        ,NNoCalif
+        ,Available
+        ,0 avgCallTengaged
+        ,twrapup
+        ,userId
+        ,0 TypeNotReady
+        ,'''' descripcion
+        ,''_Time'' descripcion_time
+        ,0 [time]
+        ,0 transferStatus
+        ,0 ringingTime
+        ,0 unknownStatus
+        ,0 otherStatus
+        ,0 failureStatus
+        ,0 chatTengaged
+        ,0 undefinedTime
+        ,0 dialingStatus
+        ,null TipoReadyAuxiliarId
+        ,'''' auxiliarRedy_descripcion
+        ,'''' descripcion_auxiliarRedyTime_time
+        ,0 auxiliarRedyTime
+        from RepAgentSummary_VersionAmatech
+        union
+        select date
+        ,login
+        ,[user]
+        ,sessionTime
+        ,loginMktTime
+        ,logoutMktTime
+        ,callTengaged
+        ,ndTime
+        ,NCallsOut
+        ,NCallsIn
+        ,NCallsCorta
+        ,NAtend
+        ,NNoCalif
+        ,Available
+        ,avgCallTengaged
+        ,twrapup
+        ,userId
+        ,TypeNotReady
+        ,descripcion
+        ,descripcion_time
+        ,time
+        ,transferStatus
+        ,ringingTime
+        ,unknownStatus
+        ,otherStatus
+        ,failureStatus
+        ,chatTengaged
+        ,undefinedTime
+        ,dialingStatus
+        ,TipoReadyAuxiliarId
+        ,auxiliarRedy_descripcion
+        ,descripcion_auxiliarRedyTime_time
+        ,auxiliarRedyTime
+        from RepAgentSummary'
+        EXEC(@sql)
+ -----------------------------------------------------------------END Luis Zamora---------------------------------------------------------------------
+
     set @process = 'Alter SP '
     set @sql=''
     EXEC(@sql)

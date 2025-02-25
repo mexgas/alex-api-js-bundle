@@ -541,7 +541,7 @@ delete from ccMenus where menu_id in(11000,11010,11020,11030,11040)
 				EXEC [ccsp_KolobUpdateCallback_AbandonIVR] @idIvr, @callbackCamId
 	end
 		END'
-	--EXEC(@sql);
+	EXEC(@sql);
 
 	SET @process = 'Drop procedure spInsertCall'
     SET @sql = 'IF EXISTS (SELECT * FROM sysobjects WHERE name=''spInsertCall'')

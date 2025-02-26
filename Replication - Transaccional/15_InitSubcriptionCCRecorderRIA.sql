@@ -1,8 +1,5 @@
 set nocount on
-
-use [CCReportsRIA]
-
-SET NOCOUNT ON
+use [CCRecorderRIA]
 
 DECLARE @version INT
 DECLARE @actualVersion INT
@@ -10,27 +7,18 @@ DECLARE @sql VARCHAR(max)
 DECLARE @errorGenerated VARCHAR(max)
 DECLARE @process VARCHAR(max)
 
-/* Version to release (use the version of your own databse)*/
-SET @version = 104
+---------------- VERSION ----------------
+Set @Version = '9'
 
-/* Actual version (use your own script to do it) */
-EXEC @actualVersion = ccsp_getVersion 'BD'
+select @actualVersion = par_valor from TREC_PARAMETROS where par_id = 30 
 
 IF @actualVersion >= @version
  begin
  	BEGIN TRAN
 
 	BEGIN TRY
-
-	set @process = 'Drop Table migration'
-	set @Sql = '--
-
-IF EXISTS (SELECT * FROM dbo.sysobjects WHERE [name] = ''migration'')
-BEGIN
-	drop table migration
-END	'
-	EXEC(@Sql)
-
+	
+	---------------- INICIO SCRIPT ----------------
 	set @process = 'CREATE Table migration'
 	set @Sql = 'IF NOT EXISTS (SELECT * FROM dbo.sysobjects WHERE [name] = ''migration'')
 BEGIN
@@ -48,13 +36,12 @@ truncate table migration;
 
 insert into migration
 select
+
 ROW_NUMBER() OVER(ORDER BY B.name desc)+99 AS id, B.name as [description],0 as status,'''' as error,''1901-01-01'' as dateStart,''1901-01-01'' as dateEnd
 ,null db_name
-
 from sysmergesubscriptions A
-inner join sysmergepublications B on A.pubid=B.pubid
-where A.db_name in(''CCReportsRIA'')
-order by B.name,A.db_name
+inner join sysmergepublications B on A.pubId=B.pubid
+where A.db_name=''CCRecorderRIA'' and B.publisher_db=''CCenterRia''
 
 
 ;with dbNamePublication as(
@@ -63,30 +50,29 @@ select A.description,s.db_name,S.status
 from migration A
 inner join sysmergepublications B on A.description=B.name
 inner join sysmergesubscriptions S on B.pubid=S.pubid 
-where S.db_name in(''CCenterRIA'',''CCRecorderRIA'')
+where S.db_name in(''CCRecorderRIA'')
 )
 update M
 set M.db_name=A.db_name
 from dbNamePublication A
 inner join migration M on A.description=M.description
 '
+
 	EXEC(@Sql)
 
-	set @Sql = 'exec msdb..sp_update_job @job_name = ''ReportsMasterProcess'', @enabled = 0 --Enable
-exec msdb..sp_update_job @job_name = ''ReportMasterProcessGenerateLow'', @enabled = 0 --Enable
-exec msdb..sp_update_job @job_name = ''ReportsMasterProcessPublicationHighLoad'', @enabled = 0 --Enable
-exec msdb..sp_update_job @job_name = ''ReportsMasterProcessPublicationLowLoad'', @enabled = 0 --Enable
-exec msdb..sp_update_job @job_name = ''ReportsMasterProcessYesterday'', @enabled = 0 --Enable
-'
-	EXEC(@Sql)
+	set @Sql = 'exec msdb..sp_update_job @job_name = ''ReportsMasterProcessAVRS'', @enabled = 0 --disable
+exec msdb..sp_update_job @job_name = ''ReportsMasterProcessAVRSPublicationHighLoad'', @enabled = 0 --disable
+exec msdb..sp_update_job @job_name = ''ReportsMasterProcessAVRSPublicationLowLoad'', @enabled = 0 --disable'
 
-	set @process = 'Create Job CW_Merge_Replication_CCreportsRIA'
+		EXEC(@Sql)
+	
+	set @process = 'Create Job CW_Merge_Replication_CCRecorderRIA'
 	set @Sql='USE [msdb]
 
-if exists( select * from msdb.dbo.sysjobs where name=''CW_Merge_Replication_CCreportsRIA'')
-EXEC msdb.dbo.sp_delete_job @job_name=N''CW_Merge_Replication_CCreportsRIA'', @delete_unused_schedule=1
+if exists( select * from msdb.dbo.sysjobs where name=''CW_Merge_Replication_CCRecorderRIA'')
+EXEC msdb.dbo.sp_delete_job @job_name=N''CW_Merge_Replication_CCRecorderRIA'', @delete_unused_schedule=1
 
-/****** Object:  Job [CW Merge Replication]    Script Date: 23/06/2018 11:12:45 a.m. ******/
+
 BEGIN TRANSACTION
 DECLARE @ReturnCode INT
 SELECT @ReturnCode = 0
@@ -98,7 +84,7 @@ IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 END
 
 DECLARE @jobId BINARY(16)
-EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N''CW_Merge_Replication_CCreportsRIA'', 
+EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N''CW_Merge_Replication_CCRecorderRIA'', 
 		@enabled=1, 
 		@notify_level_eventlog=0, 
 		@notify_level_email=0, 
@@ -110,7 +96,7 @@ EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N''CW_Merge_Replication_CCrepo
 		@owner_login_name=N''sa'', @job_id = @jobId OUTPUT
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 
-EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N''CW_Merge_Replication_CCreportsRIA'', 
+EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N''CW_Merge_Replication_CCRecorderRIA'', 
 		@step_id=1, 
 		@cmdexec_success_code=0, 
 		@on_success_action=1, 
@@ -159,7 +145,7 @@ begin
 
 	select @jobName= A.[name] from msdb.dbo.sysjobs A 		
 	where A.[name] like ''''%''''+DB_NAME()+''''- 0%'''' and A.[name] like ''''%''''+@dbName+''''%''''
-	and A.[name] like ''''%''''+@publicationName+''''-%''''
+	and A.[name] like ''''%''''+@publicationName+''''%''''
 
 
 	
@@ -205,18 +191,13 @@ select @dateNow, DATEDIFF(ss,@dateNow,getdate())
 
 
 if not exists(select * from migration where status in(0,1)) begin
-	exec msdb..sp_update_job @job_name = ''''ReportsMasterProcess'''', @enabled = 1 --Enable
-	--exec msdb..sp_update_job @job_name = ''''ReportsMasterProcessPublicationHighLoad'''', @enabled = 1 --Enable
-	--exec msdb..sp_update_job @job_name = ''''ReportsMasterProcessPublicationLowLoad'''', @enabled = 1 --Enable
-	exec msdb..sp_update_job @job_name = ''''ReportsMasterProcessYesterday'''', @enabled = 0 --Enable
-	exec msdb..sp_update_job @job_name = ''''ReportsMasterSubProcess'''', @enabled = 1 --Enable
-	exec msdb..sp_update_job @job_name = ''''ReportMasterProcessGenerateLow'''', @enabled = 1 --Enable
-	exec msdb..sp_update_job @job_name = ''''CW_Merge_Replication_CCreportsRIA'''', @enabled = 0 --Disable
-
-	--exec ccSpCreateIndexReport
+	exec msdb..sp_update_job @job_name = ''''ReportsMasterProcessAVRS'''', @enabled = 1 --Enable
+	exec msdb..sp_update_job @job_name = ''''ReportsMasterProcessAVRSPublicationHighLoad'''', @enabled = 1 --Enable
+	exec msdb..sp_update_job @job_name = ''''ReportsMasterProcessAVRSPublicationLowLoad'''', @enabled = 1 --Enable
+	exec msdb..sp_update_job @job_name = ''''CW_Merge_Replication_CCRecorderRIA'''', @enabled = 0 --Disable
 end
 '', 
-		@database_name=N''CCReportsRIA'', 
+		@database_name=N''CCRecorderRIA'', 
 		@flags=0
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_update_job @job_id = @jobId, @start_step_id = 1
@@ -242,14 +223,11 @@ QuitWithRollback:
     IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION
 EndSave:
 	'
-
-		EXEC(@Sql)
-
+	EXEC(@Sql)
 	------------------ FIN SCRIPT @Sql ------------------
 
 	select 'Merge Snapshots Finished'
-
-	COMMIT TRAN
+ COMMIT TRAN
 	END TRY
 
 	BEGIN CATCH

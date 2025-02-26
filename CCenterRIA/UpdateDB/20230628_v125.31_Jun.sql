@@ -224,8 +224,9 @@ else if @action=4 begin
 	truncate table ccSmsConversationsResult
 end
 else if @action=5 begin
-	if not exists(select * from ccSmsConversationsResult where camId=@camId) begin
-		insert into ccSmsConversationsResult values(@camId,@SentMsg,0,0,0,0,@InsufficientBalance)
+	if not exists(select * from ccSmsConversationsResult where camId=@camId) begin		
+		insert into ccSmsConversationsResult(camId,SentMsg,Delivered,NotDelivered,RecipientRejected,CarrierRejected,InsufficientBalance)
+		values(@camId,@SentMsg,0,0,0,0,@InsufficientBalance)
 	end
 	else begin
 		update ccSmsConversationsResult set SentMsg=SentMsg+@SentMsg 

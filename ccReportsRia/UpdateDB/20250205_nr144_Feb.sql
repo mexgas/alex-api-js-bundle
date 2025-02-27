@@ -1025,6 +1025,30 @@ begin
     
 end'
    EXEC(@sql)
+
+
+   SET @process = 'DROP SP ccspRepTwitterACD'
+   SET @sql = '-- Eliminar si existen antes de crearlos
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''ccspRepTwitterACD'') AND type = ''P'')
+    DROP PROCEDURE [dbo].[ccspRepTwitterACD];'
+   EXEC(@sql)
+
+   SET @process = 'DROP SP ccspRepTwitterAgente'
+   SET @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''ccspRepTwitterAgente'') AND type = ''P'')
+    DROP PROCEDURE [dbo].[ccspRepTwitterAgente];
+'
+   EXEC(@sql)
+
+   SET @process = 'DROP SP ccspRepTwitterDetail'
+   SET @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''ccspRepTwitterDetail'') AND type = ''P'')
+    DROP PROCEDURE [dbo].[ccspRepTwitterDetail];
+'
+   EXEC(@sql)
+
+   SET @process = 'DROP SP ccspRepTwitterGeneral'
+   SET @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''ccspRepTwitterGeneral'') AND type = ''P'')
+    DROP PROCEDURE [dbo].[ccspRepTwitterGeneral];'
+   EXEC(@sql)
 	
 	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version
 

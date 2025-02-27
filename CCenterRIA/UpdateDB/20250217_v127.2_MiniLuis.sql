@@ -3638,7 +3638,8 @@ END'
 	@isChatCall bit = 0,
 	@isErroManualCall bit =0,
 	@isTransferEngine bit =0,
-	@cal_twait float = null
+	@cal_twait float = null,
+	@cal_whoHung smallint = null
 	AS
 	set nocount on
 	if @IDCall<=0 
@@ -3692,7 +3693,8 @@ END'
 		cal_colgada=0, statusCall_id=case when @isErroManualCall=0 then 13 else statusCall_id end,
 		totalCall_Time=case when totalCall_Time is null then @cal_tDialog else totalCall_Time end 
 		,@calloutId=callout_id,
-		cal_twait = ISNULL(@cal_twait, cal_twait)
+		cal_twait = ISNULL(@cal_twait, cal_twait),
+		cal_whoHung = ISNULL(@cal_whoHung, cal_whoHung)
 		Where cal_id=@IDCall
 
 		exec ccspSaveDispositionResult @action=2, @callid=@IDCall,@callType=1,@statusCallId=13

@@ -44,7 +44,7 @@ BEGIN
     BEGIN TRAN
     BEGIN TRY
         ------------------------------------------- BEGIN Ricardo Nunez LRSV ----------------------------------------
-        SET @process = 'Facturacion - Columna TemplateId en ccoWhatsLogDials'
+        SET @process = 'Facturacion - Columna TemplateId en ccoWhatsLogDials.TemplateId'
         SET @sql = 'IF NOT EXISTS ( SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ''ccoWhatsLogDials'' AND COLUMN_NAME = ''TemplateId'')
 					BEGIN
 						ALTER TABLE ccoWhatsLogDials 
@@ -424,7 +424,7 @@ BEGIN
 		 	   '
 		EXEC(@sql)
 		------------------------------------------- End Hector Chavez   --------------------------------------
-         SET @process = 'Facturacion - Columna TemplateId en ccoWhatsLogDials'
+         SET @process = 'Facturacion - Columna TemplateId en ccoWhatsLogDials delete from ccMenuRol'
         SET @sql = 'delete from ccMenuRol where menu_id in(11000,11010,11020,11030,11040)
 delete from ccMenuUser where id_Menu in(11000,11010,11020,11030,11040)
 delete from ccMenus where menu_id in(11000,11010,11020,11030,11040)
@@ -553,48 +553,48 @@ delete from ccMenus where menu_id in(11000,11010,11020,11030,11040)
 	SET @process = 'CREATE procedure spInsertCall'
     SET @sql = 'CREATE PROCEDURE [dbo].[spInsertCall]
 		@Pto smallint,
-		@DNIS varchar(14),
-		@ANI as varchar(14),
-		@inbound_id smallint=0,
-		@IVR_id int = 0, --Id del IVR
-		@CALLDATA as varchar(1275) = ''''
-		AS
-		declare @dni_id as smallint
-		declare @cal_id as int
-		declare @datacall as varchar(100)
+@DNIS varchar(14),
+@ANI as varchar(14),
+@inbound_id smallint=0,
+@IVR_id int = 0, --Id del IVR
+@CALLDATA as varchar(1275) = ''''
+AS
+DECLARE @dni_id as smallint
+DECLARE @cal_id as int
+DECLARE @datacall as varchar(100)
 
-		select @Ani = left(rtrim(ltrim(@ANI)), 13)
-		select @DNIS = rtrim(ltrim(@DNIS))
+SELECT @ANI = LEFT(RTRIM(LTRIM(@ANI)), 13)
+SELECT @DNIS = RTRIM(LTRIM(@DNIS))
 
-		  --busca dni_id
-		  select @dni_id = isnull ( ( select dni_id From ccDNIS Where dni_numero =  @DNIS and dni_status = 1 ), 0)
-  
-		  --busca especialidad
-		  IF @inbound_id =0 and @dni_id >0
-			select @Inbound_id=ED.Inbound_id from ccInboundDnis ED where ED.dni_id = @dni_id
-  
-		  INSERT ccCallsIN ( cal_ANI, dni_id, cal_puerto, cal_Inicio, inbound_id, IVR_id )
-		  VALUES ( @ANI, @dni_id, @Pto, getdate(), @inbound_id, @IVR_id )
+-- Busca dni_id
+SELECT @dni_id = ISNULL((SELECT dni_id FROM ccDNIS WHERE dni_numero = @DNIS AND dni_status = 1), 0)
 
-		  select @cal_id = scope_identity()
+-- Busca especialidad
+IF @inbound_id = 0 AND @dni_id > 0
+	SELECT @inbound_id = ED.Inbound_id FROM ccInboundDnis ED WHERE ED.dni_id = @dni_id
 
-		  exec ccspSaveDispositionResult @action=1,@callid=@cal_id, @camId=@inbound_id,@callType=0,@statusCallId=1
+INSERT INTO ccCallsIN (cal_ANI, dni_id, cal_puerto, cal_Inicio, inbound_id, IVR_id)
+VALUES (@ANI, @dni_id, @Pto, GETDATE(), @inbound_id, @IVR_id)
 
-		  IF @inbound_id > 0 
-		  BEGIN
-			insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
-			select idwg, @cal_id, 0 as user_id, getdate() timestamp, 0 as tipo from ccRIACampEspWG wg   
-			where wg.tipo = 0 and wg.IdCampEsp = @Inbound_id
+SELECT @cal_id = SCOPE_IDENTITY()
 
-		  END
+EXEC ccspSaveDispositionResult @action=1, @callid=@cal_id, @camId=@inbound_id, @callType=0, @statusCallId=1
 
-		  IF @CALLDATA <> ''''  BEGIN -- Transfer Reminder
-			set @CALLDATA=SUBSTRING(@CALLDATA,0,len(@CALLDATA)-2)
-			insert into DataCallIn (CallId, Data, Description) 
-			select @cal_id,value,''Dato ''+cast(id as varchar(max)) from dbo.[fn_RIASplitDelimited](@CALLDATA,''~'')
-		  END
+IF @inbound_id > 0 
+BEGIN
+	INSERT INTO ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
+	SELECT idwg, @cal_id, 0 as user_id, GETDATE(), 0 as tipo FROM ccRIACampEspWG wg   
+	WHERE wg.tipo = 0 AND wg.IdCampEsp = @Inbound_id
+END
 
-		  Select @cal_id as IDCall, @dni_id as IDdnis'
+IF @CALLDATA <> ''''  
+BEGIN -- Transfer Reminder
+	SET @CALLDATA = SUBSTRING(@CALLDATA, 0, LEN(@CALLDATA) - 2)
+	INSERT INTO DataCallIn (CallId, Data, Description) 
+	SELECT @cal_id, value, ''Dato '' + CAST(id AS VARCHAR(MAX)) FROM dbo.[fn_RIASplitDelimited](@CALLDATA, ''~'')
+END
+
+SELECT @cal_id AS IDCall'
 	EXEC(@sql);
 
 	SET @process = 'Drop procedure getPrefixByAcdId'
@@ -606,19 +606,23 @@ delete from ccMenus where menu_id in(11000,11010,11020,11030,11040)
 
 	SET @process = 'CREATE procedure getPrefixByAcdId'
     SET @sql = 'CREATE procedure [dbo].[getPrefixByAcdId] 
-		@inboundId int,@phone varchar(50) = ''''
-		as
-		declare @prefijo varchar(40),@recordHold tinyint,@call_record as tinyint
-		declare @countryId as tinyint 
+		@inboundId int, @phone varchar(50) = ''''
+AS
+DECLARE @prefijo varchar(40), @recordHold bit, @call_record tinyint
+DECLARE @countryId tinyint 
 
-		select @countryId = valor from ccsettings with(nolock) where setting_id = 104
+SELECT @countryId = valor FROM ccsettings WITH(NOLOCK) WHERE setting_id = 104
 
-		select @prefijo= isnull(prefijo,''''),@recordHold= ISNULL(recordHold,0)  ,@call_record=ISNULL(B.RecordCalls,1)
-		from ccInbound A
-		left join ccInboundExtend B on A.Inbound_id=B.Inbound_id
-		where A.Inbound_id = @inboundId
+SELECT @prefijo = ISNULL(prefijo, ''''), 
+		@recordHold = CAST(ISNULL(recordHold, 0) AS bit),  
+		@call_record = ISNULL(B.RecordCalls, 1)
+FROM ccInbound A
+LEFT JOIN ccInboundExtend B ON A.Inbound_id = B.Inbound_id
+WHERE A.Inbound_id = @inboundId
 
-		select @prefijo recordPrefix,@recordHold recordHold ,dbo.EnableCallRecord(@call_record,@countryId,@phone) callRecord'
+SELECT @prefijo AS recordPrefix, 
+		@recordHold AS recordHold, 
+		dbo.EnableCallRecord(@call_record, @countryId, @phone) AS callRecord'
 	EXEC(@sql);
 
 

@@ -138,6 +138,9 @@ insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'cc
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccriaworkgroupusers',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'cctipocalifout',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccBaseXDB',@idInt,0)
+insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccCamps_consulta',@idInt,0)
+	insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccInbound_consulta',@idInt,0)
+
 
 set @idInt=@idInt+1
 insert into publicationTableCCenterRIA(publicationName,status) values(N'ccRIAWorkGroup_Calid',0)	

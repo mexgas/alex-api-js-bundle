@@ -51,9 +51,63 @@ BEGIN
 		BEGIN
 			ALTER TABLE ccWhatsOringCountry
 			ADD CountryAbbreviation VARCHAR(2) NULL;
-
-			
 		END'
+        EXEC(@sql)
+
+
+    SET @process = 'CREATE TABLE [dbo].[ccCamps_consulta] Reports'
+        SET @sql = 'IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''ccCamps_consulta'') AND type in (N''U''))
+BEGIN
+    CREATE TABLE [dbo].[ccCamps_consulta](
+    [cam_id] [smallint] NOT NULL,
+    [cli_id] [int] NOT NULL,
+    [cam_descripcion] [varchar](40) NOT NULL,
+    [cam_activo] [smallint] NOT NULL,
+    [cam_ModoManual] [tinyint] NOT NULL,
+    [cam_modpredictivo] [tinyint] NOT NULL,
+    [cam_TipoJobs] [tinyint] NOT NULL,
+    [cam_tNoContesta] [tinyint] NOT NULL,
+    [cam_SortColumns] [tinyint] NOT NULL,
+    [cam_ocupado] [tinyint] NOT NULL,
+    [cam_nocontesto] [tinyint] NOT NULL,
+    [cam_graba] [tinyint] NOT NULL,
+    [cam_fax] [tinyint] NOT NULL,
+    [cam_callratio] [tinyint] NOT NULL,
+    [cam_inter_ocupado] [smallint] NOT NULL,
+    [cam_inter_nocontesto] [smallint] NOT NULL,
+    [cam_inter_graba] [smallint] NOT NULL,
+    [cam_inter_fax] [smallint] NOT NULL,
+    [cam_NoInt_ocupado] [tinyint] NOT NULL,
+    [cam_NoInt_nocontesto] [tinyint] NOT NULL,
+    [cam_NoInt_graba] [tinyint] NOT NULL,
+    [cam_NoInt_fax] [tinyint] NOT NULL,
+    [cam_procesando] [bit] NOT NULL,
+    [cam_dsn] [varchar](10) NOT NULL,
+    [cam_sql] [varchar](10) NOT NULL,
+    [cam_tnotas] [smallint] NOT NULL,
+    [cam_tDialAfterWU] [smallint] NOT NULL,
+    [cam_tDialAfterDLG] [smallint] NOT NULL,
+    [cam_fDialOnWU] [tinyint] NOT NULL,
+    [cam_fDialOnDLG] [tinyint] NOT NULL,
+    [cam_tDialBeforeWU] [smallint] NOT NULL,
+    [cam_tDialBeforeReady] [smallint] NOT NULL,
+    [cam_bValidaTel] [tinyint] NOT NULL,
+    [cam_bNew] [tinyint] NULL,
+    [cam_ShowCalifWnd] [bit] NOT NULL,
+    [cam_StartTimerOnHangUp] [bit] NOT NULL,
+    [cam_fCreate] [smalldatetime] NOT NULL,
+    [cam_MaxDlrXage] [decimal](3, 1) NULL,
+    [ani] [varchar](15) NOT NULL,
+    [IDArea] [smallint] NULL,
+    [EditableCallKey] [bit] NOT NULL,
+    [iTipoDial] [tinyint] NOT NULL,
+    [detectAnswerMachine] [smallint] NOT NULL,
+    [detectVoiceMail] [tinyint] NOT NULL,
+    [compliance] [tinyint] NOT NULL,
+    [surveyCamId] [int] NULL    
+) 
+END
+'
         EXEC(@sql)
 
 	set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
@@ -889,6 +943,112 @@ END
 DROP TABLE #tmpProcedureReports';
     EXEC(@sql);
    -------------------------------------------  END Carlos Chavez    -------------------------------------------
+
+   SET @process = 'DROP VIEW [dbo].[ccCampsView] '
+   SET @sql = 'IF EXISTS (SELECT * FROM sys.views WHERE object_id = OBJECT_ID(N''ccCampsView''))
+BEGIN
+    DROP VIEW [dbo].[ccCampsView];
+END;'
+   EXEC(@sql)
+
+   SET @process = 'CREATE VIEW [dbo].[ccCampsView]'
+   SET @sql = 'CREATE VIEW [dbo].[ccCampsView] AS
+SELECT 
+    cam_id, cam_descripcion, IDArea
+FROM ccCamps
+UNION
+SELECT 
+    cam_id, cam_descripcion, IDArea
+FROM ccCamps_consulta;'
+   EXEC(@sql)
+
+   SET @process = 'ALTER PROCEDURE [dbo].[ccspRepOutDials] Se modifica para usar vista ccCampsView'
+   SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepOutDials]
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+AS
+
+if @from is null
+    select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null 
+    select @to = getdate()
+
+if @action = 1 
+begin
+    declare @total decimal(10,2)
+        
+        
+
+    select @total = count(*) from ccologdials as a WITH(NOLOCK, INDEX(IX_ccoLogDials_8))
+    inner join ccTipoResultadoDial as b (NOLOCK) on (a.tipoResDial_id = b.tipoResDial_id)
+    where fecha >= @from and fecha < @to        
+    and cal_id is not null
+        
+    delete from RepOutDials where date >= @from AND date < @to
+        
+        
+    ;with tmpRepOutDials as(
+    select  DATEADD(HOUR, DATEDIFF(HOUR, 0, fecha), 0) as fecha ,cal_id
+    ,a.tipoResDial_id, descripcion,cam_id
+    from ccologdials as a WITH(NOLOCK, INDEX(IX_ccoLogDials_8))
+    inner join ccTipoResultadoDial as b (NOLOCK) on (a.tipoResDial_id = b.tipoResDial_id)
+    where fecha >= @from and fecha < @to        
+    and a.cal_id is not null
+    )
+
+    
+    insert into RepOutDials
+
+    select fecha as [date]      
+    ,isnull(a.cam_id,0) as campaignId, isnull(c.cam_descripcion,'''') as campaign
+    , isnull(min(d.idwg),1) as workgroupId, isnull(min(wgname),'''') as workgroup, isnull(min(c.idarea),1) as areaId, isnull(min(areaname),'''') as area
+        
+    ,a.tipoResDial_id, descripcion,
+    descripcion + ''_Count'' as descripcion_count,
+    count(*) as count,
+    descripcion + ''_Avg'' as descripcion_avg,
+    convert(decimal(10,2), (count(*)/@total)*100.00) as avg,
+    datepart(yyyy,fecha) AS [year],
+    datepart(mm,fecha) as [month],
+    datepart(dd,fecha) as [day],
+    datepart(hh,fecha) as [hour],
+    0 as [minutes]
+    from  tmpRepOutDials as a
+    left join ccCampsView as c (NOLOCK) on (a.cam_id = c.cam_id)
+    left join ccRIACampEspWG as d (NOLOCK) on a.cam_id = d.IdCampEsp and d.tipo = 1 
+    left join ccRIACat_WorkGroup as e (NOLOCK) on (d.idwg = e.idwg)
+    left join ccRIAAreaWorkGroup as f (NOLOCK) on (e.idwg = f.idwg)
+    left join ccRIACat_Areas as g (NOLOCK) on (c.idarea = g.idarea)     
+    group by fecha ,        
+    a.cam_id, c.cam_descripcion, a.tipoResDial_id, descripcion  
+    
+end'
+   EXEC(@sql)
+
+
+   SET @process = 'DROP SP ccspRepTwitterACD'
+   SET @sql = '-- Eliminar si existen antes de crearlos
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''ccspRepTwitterACD'') AND type = ''P'')
+    DROP PROCEDURE [dbo].[ccspRepTwitterACD];'
+   EXEC(@sql)
+
+   SET @process = 'DROP SP ccspRepTwitterAgente'
+   SET @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''ccspRepTwitterAgente'') AND type = ''P'')
+    DROP PROCEDURE [dbo].[ccspRepTwitterAgente];
+'
+   EXEC(@sql)
+
+   SET @process = 'DROP SP ccspRepTwitterDetail'
+   SET @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''ccspRepTwitterDetail'') AND type = ''P'')
+    DROP PROCEDURE [dbo].[ccspRepTwitterDetail];
+'
+   EXEC(@sql)
+
+   SET @process = 'DROP SP ccspRepTwitterGeneral'
+   SET @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''ccspRepTwitterGeneral'') AND type = ''P'')
+    DROP PROCEDURE [dbo].[ccspRepTwitterGeneral];'
+   EXEC(@sql)
 	
 	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version
 

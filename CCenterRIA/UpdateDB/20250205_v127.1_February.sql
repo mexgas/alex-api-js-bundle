@@ -28,7 +28,7 @@ EXEC @actualVersion = ccsp_getVersion 'BD'
 EXEC @actualVersionFix = ccsp_getVersion 'BDF'
 SELECT @versionALL = valor
 FROM ccsettings
-WHERE setting_id = 77;
+WHERE setting_id = 77;--
 SELECT @actualVersionFix = cast(isnull(max(value), '0') AS INT)
 FROM dbo.fn_RIASplitDelimited(@versionALL, '.')
 WHERE id = 5;

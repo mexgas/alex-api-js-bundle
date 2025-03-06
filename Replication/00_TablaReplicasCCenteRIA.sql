@@ -163,11 +163,6 @@ insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'cc
 set @idInt=@idInt+1
 insert into publicationTableCCenterRIA(publicationName,status) values(N'AVRSSettings',0)	
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccSettings',@idInt,0)
-
-set @idInt=@idInt+1
-insert into publicationTableCCenterRIA(publicationName,status) values(N'MenuReportsRia',0)	
-insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccMenus',@idInt,0)
-insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccMenuUser',@idInt,0)
 	
 set @idInt=@idInt+1
 insert into publicationTableCCenterRIA(publicationName,status) values(N'ConversationMail',0)	

@@ -3366,14 +3366,6 @@ drop table #tempCampLaw2
 	EXEC(@sql)
 
 
-	SET @process = 'TT14496-Outbound-Inicio lento DROP PROCEDURE ccsp_CampHorario'
-	SET @sql = '
-	IF EXISTS (SELECT 1 FROM sys.procedures WHERE name = N''ccsp_CampHorario'')
-	BEGIN
-		DROP PROCEDURE ccsp_CampHorario;
-	END'
-	EXEC(@sql)
-
 ------------------------------------------------End Gaby -----------------------------------------------------------------
 	
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */

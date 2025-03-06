@@ -1051,14 +1051,28 @@ IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''ccspRepTwitt
    EXEC(@sql)
    ------------------------------------begin ulises ----------------------------------------------------------------
    set @process = 'Se crean indices'
-	set @sql='CREATE NONCLUSTERED INDEX [IX_RepInCallsDetail_IVR_ID]
-ON [dbo].[RepInCallsDetail] ([IVR_ID])'
+	set @sql='IF NOT EXISTS (
+    SELECT * FROM sys.indexes 
+    WHERE name = ''IX_RepInCallsDetail_IVR_ID'' 
+      AND object_id = OBJECT_ID(''dbo.RepInCallsDetail'')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX [IX_RepInCallsDetail_IVR_ID]
+    ON [dbo].[RepInCallsDetail] ([IVR_ID])
+END'
 	EXEC(@sql)
 
 	set @process = 'Se crean indices'
-	set @sql='CREATE NONCLUSTERED INDEX [IX_RepIVRDetail_IVR_ID]
-ON [dbo].[RepIVRDetail] ([IVR_ID])
-INCLUDE ([callid],[callStatus])'
+	set @sql='IF NOT EXISTS (
+    SELECT * FROM sys.indexes 
+    WHERE name = ''IX_RepIVRDetail_IVR_ID'' 
+      AND object_id = OBJECT_ID(''dbo.RepIVRDetail'')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX [IX_RepIVRDetail_IVR_ID]
+    ON [dbo].[RepIVRDetail] ([IVR_ID])
+    INCLUDE ([callid],[callStatus])
+END'
 	EXEC(@sql)
    ------------------------------------End Ulises  -----------------------------------------------------------------
 	

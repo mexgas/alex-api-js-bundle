@@ -1049,6 +1049,18 @@ IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''ccspRepTwitt
    SET @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''ccspRepTwitterGeneral'') AND type = ''P'')
     DROP PROCEDURE [dbo].[ccspRepTwitterGeneral];'
    EXEC(@sql)
+   ------------------------------------begin ulises ----------------------------------------------------------------
+   set @process = 'Se crean indices'
+	set @sql='CREATE NONCLUSTERED INDEX [IX_RepInCallsDetail_IVR_ID]
+ON [dbo].[RepInCallsDetail] ([IVR_ID])'
+	EXEC(@sql)
+
+	set @process = 'Se crean indices'
+	set @sql='CREATE NONCLUSTERED INDEX [IX_RepIVRDetail_IVR_ID]
+ON [dbo].[RepIVRDetail] ([IVR_ID])
+INCLUDE ([callid],[callStatus])'
+	EXEC(@sql)
+   ------------------------------------End Ulises  -----------------------------------------------------------------
 	
 	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version
 

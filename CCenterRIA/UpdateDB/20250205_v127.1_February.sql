@@ -3280,7 +3280,7 @@ drop table #tempCampLaw2
 
 	SET @process = 'TT14545 - se modifica set de @ani en ccsp_DLRgetDialPrefix'
 	SET @sql = '
-	ALTER procedure [dbo].[ccsp_DLRgetDialPrefix]
+	create procedure ccsp_DLRgetDialPrefix
 					@cam_id smallint=0,
 					@iPortNumber smallint = 0,
 					@phone varchar(30) = '''',

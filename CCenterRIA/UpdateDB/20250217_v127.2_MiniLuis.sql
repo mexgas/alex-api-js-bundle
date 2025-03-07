@@ -3540,7 +3540,7 @@ END'
 	FROM ccCampsMsgs VE (nolock) join ccMsgfiles V (nolock) ON VE.Msg_id = V.Msg_id WHERE cam_id = @cam_id and TYPE = 15 ORDER BY orden
 
 	--Agrega prefijo Marcacion con directo
-	declare @mainPrefix varchar(1), @phones varchar(max), @apikeyQuantum VARCHAR(50);
+	declare @mainPrefix varchar(1), @phones varchar(max), @apikeyQuantum VARCHAR(300);
 	set @prefixCalKey=''''
 	select @mainPrefix = valor from ccSettings where setting_id=202
 	select @apikeyQuantum = ISNULL(valor, '''') from dbo.ccSettings2 where setting_id=284

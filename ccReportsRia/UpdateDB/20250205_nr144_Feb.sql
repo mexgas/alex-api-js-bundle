@@ -1049,6 +1049,11 @@ IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''ccspRepTwitt
    SET @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''ccspRepTwitterGeneral'') AND type = ''P'')
     DROP PROCEDURE [dbo].[ccspRepTwitterGeneral];'
    EXEC(@sql)
+
+    SET @process = 'DROP SP RepOutCallsOnChatDetail'
+   SET @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''RepOutCallsOnChatDetail'') AND type = ''P'')
+    DROP PROCEDURE [dbo].[RepOutCallsOnChatDetail];'
+   EXEC(@sql)
       ------------------------------------begin ulises ----------------------------------------------------------------
    set @process = 'Se crean indices'
 	set @sql='IF NOT EXISTS (

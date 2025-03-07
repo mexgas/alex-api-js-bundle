@@ -3367,6 +3367,21 @@ drop table #tempCampLaw2
 
 
 ------------------------------------------------End Gaby -----------------------------------------------------------------
+
+	SET @process = 'Jesus Gallardo K075001 - Eliminar el reporte "Detalle de llamadas en chat contestadas"'
+	SET @sql = 'delete from ccMenuRol where menu_id=4140 and type=3
+delete from ccMenuUser where id_Menu=4140 and type=3
+delete from ccMenus where menu_id=4140 and type=3
+'
+	EXEC(@sql)
+
+	SET @process = ''
+	SET @sql = ''
+	EXEC(@sql)
+
+	SET @process = ''
+	SET @sql = ''
+	EXEC(@sql)
 	
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

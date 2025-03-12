@@ -3555,62 +3555,38 @@ drop table #tempCampLaw2
 	        set @node=''R02''
 	    end
 
-	    set @CidNameOut=''$CID_OUT_''+@node
-	    set @CidNameIn=''$CID_In_''+@node
+	    set @CidNameOut=''$CID_OUT''
+	    set @CidNameIn=''$CID_IN''
 
 	    set @filterCamId=''''
 	    
-
-	    if @node = ''R02''
-	    begin
-	        select @filterCamId=@filterCamId+''"''+ convert(varchar(max), WGCam.IdCampEsp) +''",''
-	        from ccRIAWorkGroupUsers Wguser
-	        inner join ccRIACampEspWG WGCam on WGCam.IDWG=Wguser.IDWG
-	        inner join ccCamps c on c.cam_id=WGCam.IdCampEsp and c.CampType not in(5,7)
-	        where Wguser.User_id=@userId and WGCam.Tipo=1                               
-	    end
-	    else if @node = ''R05''
-	    begin       
-	        select @filterCamId=@filterCamId+''"''+ convert(varchar(max), WGCam.IdCampEsp) +''",''
-	        from ccRIAWorkGroupUsers Wguser
-	        inner join ccRIACampEspWG WGCam on WGCam.IDWG=Wguser.IDWG
-	        inner join ccCamps c on c.cam_id=WGCam.IdCampEsp and c.CampType =5
-	        where Wguser.User_id=@userId and WGCam.Tipo=1                       
-	    end
+	    select @filterCamId=@filterCamId+''"''+ convert(varchar(max), WGCam.IdCampEsp) +''",''
+	    from ccRIAWorkGroupUsers Wguser
+	    inner join ccRIACampEspWG WGCam on WGCam.IDWG=Wguser.IDWG
+	    inner join ccCamps c on c.cam_id=WGCam.IdCampEsp --and c.CampType not in(5,7)
+	    where Wguser.User_id=@userId and WGCam.Tipo=1                               
+	    
 
 	    if @filterCamId<>'''' begin
-	        if @node in( ''R02'',''R05'') begin
-	            set @filterWg=''let ''+@CidNameOut+'':=(''
-	        end
+	        set @filterWg=''let ''+@CidNameOut+'':=(''
 
 	        set @filterCamId=SUBSTRING(@filterCamId,0,len(@filterCamId))
 	        set @filterCamId=@filterCamId+'')''+char(10)    
 
 	        set @filterWg=@filterWg+@filterCamId
-	    end 
-		else begin 
+	        set @cidOut=''(exists(index-of($CID_OUT, $r/@CID)) and $r/@CType = CTYPE_REMPLACE)''
+	    end
+	    else begin 
 		 set @filterWg=''let ''+@CidNameOut+'':=(0)''
 		 set @filterCamId=0
 		end
-	        
-	    set @tipo = case when @node in(''R01'',''R02'',''R03'',''R04'') then 1  
-	        when @node =''R05'' then 5 
-	        when @node =''R06'' then 6 
-	        else 0 end -- revisar ccsp_CreateNodeMultimedia CTYPE
-
-	    set @campType = case when @node =''R01'' then 1 
-	        when @node =''R02'' then 0
-	        when @node =''R03'' then 3
-	        when @node =''R04'' then 4
-	        when @node =''R05'' then 5
-	        when @node =''R06'' then 6 else 0 end
 
 	    SET @filterInboundId= ''''
 	            
 	    select @filterInboundId=@filterInboundId+''"''+ convert(varchar(max), WGCam.IdCampEsp) +''",''
 	    from ccRIAWorkGroupUsers Wguser
 	        inner join ccRIACampEspWG WGCam on WGCam.IDWG=Wguser.IDWG
-	        inner join ccInbound c on c.Inbound_id=WGCam.IdCampEsp and c.chat =@campType
+	        inner join ccInbound c on c.Inbound_id=WGCam.IdCampEsp
 	        where Wguser.User_id=@userId and WGCam.Tipo=0
 	    
 	    if @filterInboundId<>'''' begin
@@ -3618,27 +3594,12 @@ drop table #tempCampLaw2
 	        set @filterInboundId=@filterInboundId+'')''+char(10)    
 
 	        set @filterWg=@filterWg+''let ''+@CidNameIn+'':=(''+@filterInboundId
+	        set @cidin=''(exists(index-of($CID_IN, $r/@CID)) and $r/@CType = CTYPE_REMPLACE)''
 	    end
-		else begin
+	    else begin
 		  set @filterWg=@filterWg+''let ''+@CidNameIn+'':=(0)''
 		  set @filterInboundId=0
 		end
-	    
-	    if @node = ''R02'' BEGIN
-	        IF(@filterCamId <> '''')
-	        BEGIN
-	            SET @cidOut=''(exists(index-of(''+@CidNameOut+'',@CID)) and @CType=2)''
-	        END
-	    end
-	    else if @node = ''R06'' begin
-	        set @cidOut=''(exists(index-of(''+@CidNameOut+'',@CID)) and @CType=6)''
-	    end
-	    if @node not in(''R05'') BEGIN
-	        IF(@filterInboundId <> '''')
-	        BEGIN
-	            set @cidin=''(exists(index-of(''+@CidNameIn+'',@CID)) and @CType=''+ convert(varchar(max), @tipo)+'')''
-	        END
-	    end
 	    
 	    select @filterWg as VarCamInOut,@cidOut as CidOut,@cidin as CidIn
 	end

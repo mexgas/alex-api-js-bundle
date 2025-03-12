@@ -740,6 +740,25 @@ begin
 end
 ';
         EXEC(@sql);
+
+		-----------------------------------------------  BEGIN Ivan Martin release/127.20250130.0.6  ---------------------------------------------------
+		SET @process = 'Se agrega setting 286 en la tabla ccSettings2 con el dominio del server para uso general'
+        SET @sql = '
+		IF NOT EXISTS (SELECT * FROM ccSettings2 WHERE setting_id = 286)
+		BEGIN
+			INSERT INTO ccSettings2 VALUES (286, 
+											'''',
+											''Dominio del servidor para uso general'',
+											1,
+											''GRL'',
+											''Dominio del servidor para uso general'',
+											''Server domain for general purpose'',
+											0,
+											NULL)
+		END';
+        EXEC(@sql);
+		-----------------------------------------------  END Ivan Martin release/127.20250130.0.6  ---------------------------------------------------
+
         
 	
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */

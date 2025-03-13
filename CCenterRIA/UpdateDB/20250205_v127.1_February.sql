@@ -12756,7 +12756,15 @@ END
 ELSE IF @Option = 8 -- whats outbound conversations
 BEGIN
 	DECLARE @ActualDay DATE = GETDATE()
-	;with conversationOut as(
+
+	declare @conversationOut table (
+	camId int not null,
+	Active int not null,
+	Queued int not null,
+	FinishedAgent int not null,
+	FinishedSystem int not null
+	)
+	insert into @conversationOut
 	SELECT cco.camId ,
 		COUNT(CASE WHEN cco.conversationStatus NOT IN (10,11,17,18) THEN 1 ELSE NULL END) Active
 		,COUNT(CASE WHEN conversationStatus = 1 THEN 1 ELSE null END) Queued
@@ -12765,10 +12773,15 @@ BEGIN
 	FROM ccWhatsAppConversationsOut cco WITH(NOLOCK)
 	WHERE cco.camId = @camId AND cco.conversationDate>= @ActualDay
 	group by cco.camId 
-	)
+	
+	update B 
+	set B.EndedBySystem=A.FinishedSystem,
+	B.OnQueue=A.Queued
+	from @conversationOut A
+	inner join ccWAOperatingSummaryOut B on A.camId=B.CamId
 
 	select A.Active,B.OnQueue Queued,A.FinishedAgent,B.EndedBySystem as FinishedSystem
-	from conversationOut A
+	from @conversationOut A
 	inner join ccWAOperatingSummaryOut B on A.camId=B.CamId
 END
 IF @Option = 9
@@ -12798,8 +12811,7 @@ BEGIN
 		waco.camid;
 END
 			
-SET NOCOUNT OFF
-    '
+SET NOCOUNT OFF'
 	EXEC(@sql)
 
 	SET @process = ''

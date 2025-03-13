@@ -3122,6 +3122,23 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
 		EXEC(@sql);
 	END'
     EXEC(@sql)
+
+	SET @process = 'Se borra didentificador para etiquetas al modificar areas'
+	SET @sql = '	
+		IF EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''T&SET_MAX_WHATS_IN'')
+		BEGIN
+			Delete ccGalateaIdentifiers where Description = ''T&SET_MAX_WHATS_IN''
+		END'
+	EXEC(@sql)
+
+	SET @process = 'Se insertan identificadores para mostrar etiquetas en historial de actividad al editar areas'
+	SET @sql = '	
+		IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''T&SET_MAX_WHATS'')
+		BEGIN
+			insert into ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) 
+			values (''T&SET_MAX_WHATS'', ''Conversaciones de WhatsApp de entrada por agente'', ''Inbound WhatsApp conversations per agent'', ''Conversas de WhatsApp de entrada por agente'')
+		END'
+	EXEC(@sql)
 	-----------------------------------------------  END David  ---------------------------------------------------
 	---------------------------------------------------------------------------------------------------------------
 

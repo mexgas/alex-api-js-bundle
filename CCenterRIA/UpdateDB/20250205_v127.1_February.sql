@@ -1850,6 +1850,7 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
 
 		IF OBJECT_ID(''tempdb..#TmpCampAgentWg'') IS NOT NULL DROP TABLE #TmpCampAgentWg;
 	END
+
 	DECLARE @PageSize INT = 10;
 	DECLARE @TotalConversations INT = 0;
 	DECLARE @Offset INT;
@@ -1882,9 +1883,9 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
 		END
 
 		SELECT 
-			@TotalConversations = COUNT(DISTINCT ConversationId)
+			@TotalConversations = COUNT(*)
 		FROM (
-			SELECT c.ConversationId 
+			SELECT DISTINCT c.ConversationId, ''Inbound'' AS MsgType
 			FROM ccWhatsAppConversations c
 			LEFT JOIN ccWAMessagesConversations m ON m.conversationId = c.ConversationId
 			WHERE c.AgentId = @agentId 
@@ -1897,7 +1898,7 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
 
 			UNION ALL
 
-		SELECT c.ConversationId 
+		SELECT DISTINCT c.ConversationId, ''Outbound'' AS MsgType
 		FROM ccWhatsAppConversationsOut c
 		LEFT JOIN ccWAMessagesConversationsOut m ON m.conversationId = c.ConversationId
 		WHERE c.AgentId = @agentId 
@@ -1991,6 +1992,16 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
 				AND (@ClientNumbersLst IS NULL OR c.clientId IN (SELECT ClientNumber FROM @ClientNumberTable))
 				AND (@OutboundIdsLst IS NULL OR c.camId IN (SELECT OutboundId FROM @OutboundIdTable))
 				AND c.conversationStatus IN (4, 7, 10, 11, 12, 13, 14, 16, 17, 18, 19)
+				AND NOT (
+				c.conversationStatus = 18
+				AND EXISTS (  
+					SELECT 1 
+					FROM ccWAMessagesConversationsOut mo 
+					WHERE mo.conversationId = c.ConversationId 
+					GROUP BY mo.conversationId 
+					HAVING COUNT(*) = 1 AND MAX(mo.messageStatus) = ''error''
+				)
+			)
 		),
 
 		CombinedMessages AS (

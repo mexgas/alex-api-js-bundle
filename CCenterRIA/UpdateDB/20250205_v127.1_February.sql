@@ -12541,7 +12541,7 @@ ELSE IF @action = 20 BEGIN
 END;'
 	EXEC(@sql)
 
-	SET @process = 'CW-9131 correcion para que tome la misma fuente datos '
+	SET @process = 'CW-9131 ALTER PROCEDURE [dbo].[ccsp_WhatsAppInformationOut] correcion para que tome la misma fuente datos '
 	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_WhatsAppInformationOut]
 @Option SMALLINT,
 @camId SMALLINT = 0,
@@ -12628,41 +12628,40 @@ BEGIN
 
 	if exists (select * from ccWAOperatingSummaryOut where CamId=@camId
 	and (OnQueue<0 or Assigned<0)
-	)
-						
-	set @Today =convert(date,getdate(),121)
+	) begin							
+		set @Today =convert(date,getdate(),121)
 
-	;with waOperationSummary as(
-	select 
-	CamId
-	,count(case when finishedBy=1 then 1 end) Attended
-	,COUNT(CASE WHEN conversationStatus = 1 THEN 1 ELSE null END) onQueue
-	,count(case when finishedBy=0 and agentId>0 then 1 end) Assigned
-	,count(*) Request
-	,count(case when finishedBy=2 then 1 end) EndedBySystem
-	from ccWhatsAppConversationsOut with(nolock)
-	where camId = @camId and requestDate>=@Today
-	group by CamId
-	)
-	update A 
-	set A.Attended=B.Attended, A.Assigned=B.Assigned
+		;with waOperationSummary as(
+		select 
+		CamId
+		,count(case when finishedBy=1 then 1 end) Attended
+		,COUNT(CASE WHEN conversationStatus = 1 THEN 1 ELSE null END) onQueue
+		,count(case when finishedBy=0 and agentId>0 then 1 end) Assigned
+		,count(*) Request
+		,count(case when finishedBy=2 then 1 end) EndedBySystem
+		from ccWhatsAppConversationsOut with(nolock)
+		where camId = @camId and requestDate>=@Today
+		group by CamId
+		)
+		update A 
+		set A.Attended=B.Attended, A.Assigned=B.Assigned
 					
-	,A.Request=B.Request,A.EndedBySystem=B.EndedBySystem
-	from ccWAOperatingSummaryOut A 
-	inner join waOperationSummary B on A.CamId=B.CamId
-	
+		,A.Request=B.Request,A.EndedBySystem=B.EndedBySystem
+		from ccWAOperatingSummaryOut A 
+		inner join waOperationSummary B on A.CamId=B.CamId
+	end
 	
 	SELECT ISNULL(conv.AverageConversationTime, 0) AS AverageConversationTime,
-			ISNULL(AverageDialogTime, 0) AS AverageDialogTime,
-			ISNULL(AverageWaitingTime, 0) AS AverageWaitingTime,
-			ISNULL(MaximumWaitingTime, 0) AS MaximumWaitingTime,
-			ISNULL(ServiceLevel, 0) AS ServiceLevel,
-			ISNULL(summary.Attended, 0) AS Attended,
-			ISNULL(summary.Assigned, 0) AS Assigned,
-			ISNULL(summary.OnQueue, 0) AS OnQueue,
-			ISNULL(summary.EndedBySystem, 0) AS EndedBySystem,
-			ISNULL(summary.Available, 0) AS Available,
-			ISNULL(summary.Request, 0) AS Request
+		ISNULL(AverageDialogTime, 0) AS AverageDialogTime,
+		ISNULL(AverageWaitingTime, 0) AS AverageWaitingTime,
+		ISNULL(MaximumWaitingTime, 0) AS MaximumWaitingTime,
+		ISNULL(ServiceLevel, 0) AS ServiceLevel,
+		ISNULL(summary.Attended, 0) AS Attended,
+		ISNULL(summary.Assigned, 0) AS Assigned,
+		ISNULL(summary.OnQueue, 0) AS OnQueue,
+		ISNULL(summary.EndedBySystem, 0) AS EndedBySystem,
+		ISNULL(summary.Available, 0) AS Available,
+		ISNULL(summary.Request, 0) AS Request
 	FROM ccWAAverageConversationsOut conv
 	RIGHT JOIN ccWAOperatingSummaryOut summary ON conv.CamId = summary.camId
 	WHERE conv.CamId = @camId OR summary.camId = @camId
@@ -12774,11 +12773,11 @@ BEGIN
 	WHERE cco.camId = @camId AND cco.conversationDate>= @ActualDay
 	group by cco.camId 
 	
-	update B 
-	set B.EndedBySystem=A.FinishedSystem,
-	B.OnQueue=A.Queued
-	from @conversationOut A
-	inner join ccWAOperatingSummaryOut B on A.camId=B.CamId
+	--update B 
+	--set B.EndedBySystem=A.FinishedSystem,
+	--B.OnQueue=A.Queued
+	--from @conversationOut A
+	--inner join ccWAOperatingSummaryOut B on A.camId=B.CamId
 
 	select A.Active,B.OnQueue Queued,A.FinishedAgent,B.EndedBySystem as FinishedSystem
 	from @conversationOut A
@@ -12811,7 +12810,8 @@ BEGIN
 		waco.camid;
 END
 			
-SET NOCOUNT OFF'
+SET NOCOUNT OFF
+    '
 	EXEC(@sql)
 
 	SET @process = ''

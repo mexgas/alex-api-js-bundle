@@ -12626,7 +12626,7 @@ BEGIN
 	END
 	--------------------------------- Results -----------------------------------
 
-	if exists (select * from ccWAOperatingSummaryOut where CamId=@camId
+	if exists (select * from ccWAOperatingSummaryOut WITH (NOLOCK) where CamId=@camId
 	and (OnQueue<0 or Assigned<0)
 	) begin							
 		set @Today =convert(date,getdate(),121)

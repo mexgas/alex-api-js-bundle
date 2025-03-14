@@ -163,11 +163,6 @@ insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'cc
 set @idInt=@idInt+1
 insert into publicationTableCCenterRIA(publicationName,status) values(N'AVRSSettings',0)	
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccSettings',@idInt,0)
-
-set @idInt=@idInt+1
-insert into publicationTableCCenterRIA(publicationName,status) values(N'MenuReportsRia',0)	
-insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccMenus',@idInt,0)
-insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccMenuUser',@idInt,0)
 	
 set @idInt=@idInt+1
 insert into publicationTableCCenterRIA(publicationName,status) values(N'ConversationMail',0)	
@@ -232,7 +227,6 @@ insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'LogAge
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'Callbacks',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'SpecialAVRS',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'ccRIAWorkGroup_Calid',0)
-insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'MenuReportsRia',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'AVRSCampEsp',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'Chats',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'ConversationMail',0)

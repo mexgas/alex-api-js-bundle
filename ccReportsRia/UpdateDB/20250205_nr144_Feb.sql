@@ -1049,6 +1049,286 @@ IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''ccspRepTwitt
    SET @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''ccspRepTwitterGeneral'') AND type = ''P'')
     DROP PROCEDURE [dbo].[ccspRepTwitterGeneral];'
    EXEC(@sql)
+
+    SET @process = 'DROP SP RepOutCallsOnChatDetail'
+   SET @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''RepOutCallsOnChatDetail'') AND type = ''P'')
+    DROP PROCEDURE [dbo].[RepOutCallsOnChatDetail];'
+   EXEC(@sql)
+      ------------------------------------begin ulises ----------------------------------------------------------------
+   set @process = 'Se crean indices'
+	set @sql='IF NOT EXISTS (
+    SELECT * FROM sys.indexes 
+    WHERE name = ''IX_RepInCallsDetail_IVR_ID'' 
+      AND object_id = OBJECT_ID(''dbo.RepInCallsDetail'')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX [IX_RepInCallsDetail_IVR_ID]
+    ON [dbo].[RepInCallsDetail] ([IVR_ID])
+END'
+	EXEC(@sql)
+	set @process = 'Se crean indices'
+	set @sql='IF NOT EXISTS (
+    SELECT * FROM sys.indexes 
+    WHERE name = ''IX_RepIVRDetail_IVR_ID'' 
+      AND object_id = OBJECT_ID(''dbo.RepIVRDetail'')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX [IX_RepIVRDetail_IVR_ID]
+    ON [dbo].[RepIVRDetail] ([IVR_ID])
+    INCLUDE ([callid],[callStatus])
+END'
+	EXEC(@sql)
+   ------------------------------------End Ulises  -----------------------------------------------------------------
+   ------------------------------------- Begin Gaby ---------------------------------------------------------------
+
+    set @process = 'TT13556, TT14757 - Se modifica delete en sp ccspRepSpececialAgent'
+    set @sql='
+    ALTER   PROCEDURE [dbo].[ccspRepSpececialAgent] @action AS TINYINT
+    ,@from AS DATETIME = NULL
+    ,@to AS DATETIME = NULL
+AS
+IF @action = 1
+BEGIN
+    IF @from IS NULL
+        SELECT @from = convert(DATETIME, convert(VARCHAR(11), getdate()))
+
+    IF @to IS NULL
+        SELECT @to = getdate()
+
+    DELETE RepSpececialAgent    WHERE [loginTime] BETWEEN @from          AND @to
+
+    ;WITH outCall
+    AS (
+        SELECT convert([date], timegroup, 121) [date]
+            ,User_id AS userId
+            ,COUNT(CASE WHEN statuscall_id >= 10
+                        AND ntotal > 0 THEN 1 ELSE NULL END) AS ncalls
+            ,sum(nabnd_xfer + nabnd_ring + nabnd_dialog) nabnd
+            ,sum(nanswer) AS nanswer
+            ,COUNT(CASE WHEN statuscall_id = 13
+                        AND ntotal > 0
+                        AND (
+                            calif_id IS NULL
+                            OR calif_id = 0
+                            ) THEN 1 ELSE NULL END) AS nocalif
+        FROM tmpTimesOutboundData
+        GROUP BY convert([date], timegroup, 121)
+            ,User_id
+        )
+        ,inCall
+    AS (
+        SELECT convert([date], timegroup, 121) [date]
+            ,User_id AS userId
+            ,COUNT(CASE WHEN statuscall_id >= 10
+                        AND ntotal > 0 THEN 1 ELSE NULL END) AS ncalls
+            ,sum(nabnd_xfer + nabnd_ring + nabnd_dialog) nabnd
+            ,sum(nanswer) AS nanswer
+            ,COUNT(CASE WHEN statuscall_id = 13
+                        AND ntotal > 0
+                        AND (
+                            calif_id IS NULL
+                            OR calif_id = 0
+                            ) THEN 1 ELSE NULL END) AS nocalif
+        FROM tmpTimesInboundData
+        GROUP BY convert([date], timegroup, 121)
+            ,User_id
+        )
+        ,AgentGI
+    AS (
+        SELECT convert([date], [date], 121) [date]
+            ,userId
+            ,[user]
+            ,[login]
+            ,sum(tlog) [session]
+            ,sum(tnotav) ndTime
+            ,sum(tdialogin + tnotesin + tdialogout + tnotesout) dialogTime
+            ,sum(tauxiliarready) as tauxiliarready
+        FROM RepAgentGI WITH (NOLOCK)
+        WHERE [date] BETWEEN @from
+                AND @to
+        GROUP BY convert([date], [date], 121)
+            ,userId
+            ,[user]
+            ,[login]
+        )
+        ,ses
+    AS (
+        SELECT convert([date], [date], 121) [date]
+            ,userId
+            ,min(logintime) loginTime
+            ,max(logouttime) logoutTime
+        FROM RepAgentsession WITH (NOLOCK)
+        WHERE [date] BETWEEN @from
+                AND @to
+        GROUP BY convert([date], [date], 121)
+            ,userId
+        )
+    INSERT RepSpececialAgent
+    SELECT A.[date]
+        ,A.userId
+        ,A.[user]
+        ,A.[login]
+        ,A.[session]
+        ,ses.loginTime
+        ,ses.logoutTime
+        ,A.dialogTime
+        ,A.ndTime
+        ,ISNULL(cout.ncalls, 0) callsOut
+        ,ISNULL(cin.ncalls, 0) callsIn
+        ,isnull(cout.nabnd, 0) + isnull(cin.nabnd, 0) AS abandonedCalls
+        ,ISNULL(cout.nanswer, 0) + ISNULL(cin.nanswer, 0) nanswer2
+        ,ISNULL(cout.nocalif, 0) + ISNULL(cin.nocalif, 0) unrated
+        ,isnull(A.tauxiliarReady,0) as tauxiliarready
+    FROM AgentGI A
+    INNER JOIN ses ON ses.[date] = A.[date]
+        AND ses.userId = A.userId
+    LEFT JOIN outCall cout ON cout.[date] = A.[date]
+        AND cout.userId = A.userId
+    LEFT JOIN inCall cin ON cin.[date] = A.[date]
+        AND cin.userId = A.userId
+END'
+    EXEC(@sql)
+
+
+
+    set @process = 'TT14595 - Se agrega modo 7 para telephone en ccspRepOutAnswAndXferCalls'
+    set @sql='ALTER PROCEDURE [dbo].[ccspRepOutAnswAndXferCalls]
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = NULL
+
+AS
+
+SET NOCOUNT ON
+
+IF @from IS NULL
+    SELECT @from = CONVERT(DATETIME,CONVERT(VARCHAR(11),GETDATE()))
+IF @to IS NULL
+    SELECT @to = GETDATE()
+
+DECLARE @IVA INT
+DECLARE @country AS TINYINT
+SELECT @IVA = CONVERT(INT,ISNULL(valor,0)) FROM ccsettings WHERE setting_id = 25
+SELECT @country = CONVERT(TINYINT,ISNULL(valor,1)) FROM ccsettings WHERE setting_id = 104
+
+IF @country IS NULL SET @country = 1
+
+IF @action = 1
+BEGIN
+--Borrar lo que esta para no repetir
+DELETE FROM RepOutAnswAndXferCalls WHERE DATE >= @from AND DATE < @TO
+
+declare @descriptionXfer varchar(100)
+
+SELECT @descriptionXfer=[description] FROM dialType WHERE dialId = 3
+
+;with ccld as(
+    SELECT *, [dbo].[GetProveedor](Telefono, Puerto,tipoLlamada_id) AS proBIDs,tipoLlamada_id as CallType  FROM ccologdials
+    WHERE fecha between @from and @to and answerbit = 1
+)
+
+INSERT INTO RepOutAnswAndXferCalls
+SELECT COALESCE([Call].cal_inicio,ccld.fecha) AS [date],
+    ISNULL(ccld.cal_id,0) AS [callid],
+    ISNULL(ccld.cam_id,0) AS [campaignId],
+    ISNULL(camps.cam_descripcion, ''systemTranslated_NoCampaign'') AS [campaign],
+    ISNULL([Call].user_id,0) AS [userId],
+    ISNULL(Usr.ApellidoPaterno + '' '' + ISNULL(Usr.ApellidoMaterno, '''') + '' '' + Usr.Nombres, ''N/A'') AS [Agent],
+    dbo.tDialog(Call.totalCall_Time, ccld.tdialing, cal_tMsg) AS [dialog],
+    ccld.telefono AS [telephone],
+    ISNULL(Call.cal_manual,0) AS [dialId],
+    ISNULL(dialType.[description],''systemTranslated_Auto'') AS [dialType],
+    ISNULL(tl.descrip, ''systemTranslated_Indefinite'') AS [CallTypes],
+    CASE 
+        WHEN provedor_id IS NOT NULL THEN dbo.fnGetCstoTarifa(COALESCE(Call.tipoLlamada_id, ccld.CallType),COALESCE(Call.provedor_id,ccld.proBIDs),
+            dbo.tDialog(Call.totalCall_Time, ccld.tdialing, cal_tMsg), @country)
+        ELSE  CONVERT(DECIMAL(10,2),(CCost.cost_per_min + ((COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0) + ISNULL(ccld.tdialing,0), ccld.tdialing) / 60) * ccost.additional_min)))
+    END AS [ncost],
+    @IVA AS iva,
+    CASE
+        WHEN provedor_id IS NOT NULL THEN CONVERT(DECIMAL(10,2),ISNULL(dbo.fnGetCstoTarifa(COALESCE(Call.tipoLlamada_id, ccld.CallType),
+                COALESCE(Call.provedor_id,ccld.proBIDs), dbo.tDialog(Call.totalCall_Time, ccld.tdialing, cal_tMsg), @country),0.00) * (1 + (@IVA / 100.00)))
+        ELSE  CONVERT(DECIMAL(10,2),((CCost.cost_per_min + ((COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0) + ISNULL(ccld.tdialing,0), ccld.tdialing) / 60) * ccost.additional_min)) * (1 + (@IVA / 100.00))))
+    END AS total,
+    COALESCE(ccld.Puerto, Call.cal_puerto, 0) as [trunk],
+    case when (ccld.ani is not null and ccld.ani<>'''') then ccld.ani when dbo.TelAni(ccld.Telefono, camps.id_anilist) <> '''' then dbo.TelAni(ccld.Telefono, camps.id_anilist) else camps.ani end [ANI],
+    COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0) + ISNULL(ccld.tdialing,0), ccld.tdialing) as dialTimeSec
+FROM ccld
+    LEFT JOIN ccoCallsOut Call WITH(NOLOCK) ON ccld.cal_id = Call.cal_id
+            AND ccld.answerbit = 1
+    LEFT JOIN ccCamps camps ON camps.[cam_id] = ccld.[cam_id]
+    LEFT JOIN ccUsers Usr ON Usr.[user_id] = Call.[user_id]
+    LEFT JOIN cstoTipoLlamada tl ON (tl.[tipoLlamada_id] = COALESCE(Call.[tipoLlamada_id],ccld.CallType) and tl.Country_id = @country)
+    LEFT JOIN ccCallCost_RIA ccost (NOLOCK) ON ccost.tipoLlamada_id = tl.tipoLlamada_id     AND ccost.country_id = tl.country_id
+    left join dialType on dialType.dialId = Call.cal_manual
+
+
+;with clt as (
+
+SELECT *
+, DATEADD(ss,-(tAntesXfer + tDespuesXfer),fechaFin) AS [date]
+, tipoLlamada_id AS  CallType 
+,case WHEN modo in(5,6) then abs(destino) else null end posicion
+    FROM cclogtransfers WITH(NOLOCK) 
+    WHERE modo not in (1,2) 
+        AND (tAntesXfer > 0 or tDespuesXfer > 0) 
+        AND fechaFin between @from and @to
+)
+
+
+INSERT INTO RepOutAnswAndXferCalls  
+SELECT clt.[date],
+    clt.cal_id AS [callid],
+    COALESCE(co.cam_id,ci.inbound_id,''0'')  AS [campaignId],
+    COALESCE(camps.cam_descripcion, ACD.descripcion, ''systemTranslated_NoCampaign'') AS [campaign],
+    ISNULL((CASE tipo 
+                WHEN 1 THEN ci.User_id 
+                ELSE co.User_id 
+            END),0) AS [userId],
+    ISNULL((SELECT nombres + '' '' + apellidopaterno + '' '' + apellidomaterno FROM ccusers NOLOCK WHERE user_id = 
+                (CASE tipo 
+                    WHEN 1 THEN ci.User_id 
+                    ELSE co.User_id 
+                END)),''systemTranslated_NoName'') as [Agent],
+    dbo.tDialog(clt.tAntesXfer,clt.tDespuesXfer,0) AS [dialog],
+    CASE 
+        WHEN modo = 0 THEN clt.destino
+        WHEN modo = 3 THEN clt.destino 
+        WHEN modo = 4 THEN clt.destino 
+        WHEN modo = 7 THEN clt.destino
+        WHEN modo in(5,6) THEN isnull((SELECT top 1 Computer FROM ccposicion WHERE pos_id = posicion),clt.destino) 
+    END AS [telephone],
+    3 AS [dialId],
+    @descriptionXfer AS [dialType],
+    ISNULL(tl.descrip, ''systemTranslated_Indefinite'') AS [CallTypes],
+    CASE 
+        WHEN tarifa.provedor_id IS NOT NULL THEN ISNULL(dbo.fnGetCstoTarifa(clt.CallType, channel.proveedorId,
+            dbo.tDialog(clt.tAntesXfer,clt.tDespuesXfer,0) ,@country), 0) 
+        ELSE cCall.cost_per_min + (CEILING((ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0) + 1) / 60) * cCall.additional_min)
+    END AS [ncost],
+    @IVA AS iva,
+    CASE 
+        WHEN tarifa.provedor_id IS NOT NULL THEN CONVERT(DECIMAL(10,2),ISNULL(dbo.fnGetCstoTarifa(clt.CallType, channel.proveedorId,
+            dbo.tDialog(clt.tAntesXfer,clt.tDespuesXfer,0)
+            ,@country),0.00) * (1 + (@IVA / 100.00))) 
+        ELSE (cCall.cost_per_min + (CEILING((ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0) + 1) / 60) * cCall.additional_min)) * (1 + (@IVA / 100.00))
+    END AS [total],
+    IsNull(clt.channel, 0) as [trunk],
+    case when (@country = 1 and modo = 4) then case when dbo.TelAni(clt.destino, camps.id_anilist) <> '''' then dbo.TelAni(clt.destino,camps.id_anilist) else camps.ani end else '''' end [ANI],
+    ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0) as dialTimeSec
+FROM clt
+    LEFT JOIN cccallsin ci WITH(NOLOCK) ON ci.cal_id=clt.cal_id AND tipo=1
+    LEFT JOIN ccocallsout co WITH(NOLOCK) ON co.cal_id=clt.cal_id AND tipo=2 
+    LEFT JOIN ccChannelTransfer channel ON clt.pbxId=channel.pbxId AND clt.channel BETWEEN channel.startChannel AND channel.endChannel
+    LEFT JOIN cstoTarifa tarifa ON tarifa.provedor_id=channel.proveedorId AND tarifa.tipoLlamada_id = clt.CallType
+    LEFT JOIN cstoTipoLlamada tl ON (tl.[tipoLlamada_id] = clt.CallType AND tl.Country_id = @country)
+    LEFT JOIN ccCallCost_RIA cCall ON cCall.country_id = tl.country_id AND cCall.tipoLlamada_id = tl.tipoLlamada_id
+    LEFT JOIN ccCamps camps ON camps.[cam_id] = co.cam_id
+    LEFT JOIN ccInbound ACD ON ACD.[Inbound_id] = ci.Inbound_id
+
+end'
+    EXEC(@sql)
+    ------------------------------------ End Gaby ---------------------------------------------------------------------
 	
 	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version
 

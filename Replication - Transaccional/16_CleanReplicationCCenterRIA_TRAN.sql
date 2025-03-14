@@ -106,12 +106,13 @@ EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N''Clean M
 set @aggressive_cleanup_only=0
 set @dateStart=GETDATE()
 
-
+/*
 EXEC sp_mergemetadataretentioncleanup 
    @num_genhistory_rows= @num_genhistory_rows out
    ,@num_contents_rows= @num_contents_rows out
    ,@num_tombstone_rows= @num_tombstone_rows out
    ,@aggressive_cleanup_only= @aggressive_cleanup_only
+*/
 
 '', 
 		@database_name=N''CCenterRIA'', 

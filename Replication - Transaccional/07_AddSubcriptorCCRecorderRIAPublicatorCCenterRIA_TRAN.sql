@@ -27,16 +27,47 @@ if @Version_Actual >= @Version
 		while exists(select publicationName from subcripcionTableCCRecorderRIA where status=0) begin
 			select top 1 @publicationName=publicationName,@publicationId=Id from subcripcionTableCCRecorderRIA where status=0
 
-			IF NOT EXISTS (SELECT * FROM dbo.syssubscriptions 
-                           WHERE publication_id = (SELECT publication_id 
-                                                   FROM dbo.syspublications 
-                                                   WHERE name = @publicationName) 
-                           AND subscriber_db = 'CCRecorderRIA')
-			begin
-				EXEC sp_addsubscription @publication = @publicationName,
-			      @subscriber = @subscriptionServer,
-			      @destination_db = N'CCRecorderRIA',
-			      @subscription_type = N'pull'; -- 🔥 Cambiar a 'pull' si prefieres que el suscriptor obtenga los datos				
+		if not exists
+			(
+				select 
+					1 
+				from 
+					dbo.syssubscriptions 
+				where 
+					dest_db= 'CCRecorderRIA' 
+					AND artid in
+								(
+									select 
+										artid 
+									from 
+										dbo.sysarticles 
+									where
+										pubid = 
+												(
+													select 
+														pubid 
+													FROM 
+														dbo.syspublications 
+													WHERE 
+														name = @publicationName --and UPPER(publisher)=UPPER(publishingservername()) and publisher_db=db_name()
+												)
+								)
+					--the status and subscription_types are different on transactional publications
+					--AND status <>2 
+						--and subscription_type <> 2 and subscription_type <> 3
+			)	
+		begin
+				
+				exec sp_addsubscription @publication = @publicationName, 
+				@subscriber = @subscriptionServer, 
+				@destination_db = N'CCRecorderRIA', 
+				@subscription_type = N'Pull', 
+				@sync_type = N'automatic', 
+				--@article = N'all', 
+				@update_mode = N'read only', 
+				@subscriber_type = 0, 
+				@memory_optimized = 1
+	
 		end
 
 			update subcripcionTableCCRecorderRIA set status=1 where id=@publicationId
@@ -45,7 +76,7 @@ if @Version_Actual >= @Version
 
 	------------------ FIN SCRIPT ------------------
 
-	select 'Merge Publications Finished'
+	SELECT 'Subscriptions successfully added to the transactional publications';
  end
 
 else

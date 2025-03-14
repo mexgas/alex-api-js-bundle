@@ -26,7 +26,7 @@ if @Version_Actual >= @Version
 
 	if @subscriptionServer <> '' begin
 		use [CCenterRia]		
-
+		
 		update subcripcionTableCCReportsRIA set status=0
 
 		declare @publicationId int,@publicationName varchar(100)
@@ -36,28 +36,56 @@ if @Version_Actual >= @Version
 		while exists(select publicationName from subcripcionTableCCReportsRIA where status=0) begin
 			select top 1 @publicationName=publicationName,@publicationId=Id from subcripcionTableCCReportsRIA where status=0
 
-			if not exists(select * FROM dbo.sysmergesubscriptions  WHERE db_name = 'ccReportsRia' 
-					AND pubid = (select pubid FROM dbo.sysmergepublications WHERE
-						name = @publicationName and UPPER(publisher)=UPPER(publishingservername()) and publisher_db=db_name()) AND status <>2 
-						and subscription_type <> 2 and subscription_type <> 3) begin
+		if not exists
+			(
+				select 
+					1 
+				from 
+					dbo.syssubscriptions 
+				where 
+					dest_db= 'ccReportsRia' 
+					AND artid in
+								(
+									select 
+										artid 
+									from 
+										dbo.sysarticles 
+									where
+										pubid = 
+												(
+													select 
+														pubid 
+													FROM 
+														dbo.syspublications 
+													WHERE 
+														name = @publicationName --and UPPER(publisher)=UPPER(publishingservername()) and publisher_db=db_name()
+												)
+								)
+					--the status and subscription_types are different on transactional publications
+					--AND status <>2 
+						--and subscription_type <> 2 and subscription_type <> 3
+			)	
+		begin
 				
-				exec sp_addmergesubscription @publication = @publicationName, 
+				exec sp_addsubscription @publication = @publicationName, 
 				@subscriber = @subscriptionServer, 
-				@subscriber_db = N'ccReportsRia', 
-				@subscription_type = N'pull', 
-				@subscriber_type = N'local', 
-				@subscription_priority = 0, 
-				@sync_type = N'Automatic'
+				@destination_db = N'ccReportsRia', 
+				@subscription_type = N'Pull', 
+				@sync_type = N'automatic', 
+				--@article = N'all', 
+				@update_mode = N'read only', 
+				@subscriber_type = 0, 
+				@memory_optimized = 1
 		end
 
 			update subcripcionTableCCReportsRIA set status=1 where id=@publicationId
-		end		
+		end
 
 	end
 
 	------------------ FIN SCRIPT ------------------
 
-	select 'Merge Publications Finished'
+	SELECT 'Subscriptions successfully added to the transactional publications';
  end
 
 else

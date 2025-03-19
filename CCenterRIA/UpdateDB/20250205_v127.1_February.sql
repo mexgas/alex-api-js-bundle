@@ -3292,6 +3292,81 @@ drop table #tempCampLaw2
 '
 		EXEC(@sql)
 
+		SET @process = 'CW-9377 Add column to ccoWhatsLogDials'
+        SET @sql = '
+        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ''ccoWhatsLogDials'' AND COLUMN_NAME = ''IsManual'')
+		BEGIN
+			ALTER TABLE ccoWhatsLogDials 
+			ADD IsManual BIT NOT NULL DEFAULT 0;
+		END'
+        EXEC(@sql)
+
+		SET @process = 'CW-9377 Delete sp ccsp_WAOUTGetLogDials'
+		SET @sql = '
+		IF EXISTS (SELECT 1 FROM sys.procedures WHERE name = N''ccsp_WAOUTGetLogDials'')
+		BEGIN
+			DROP PROCEDURE ccsp_WAOUTGetLogDials;
+		END'
+		EXEC(@sql)
+
+		SET @process = 'CW-9377 Create sp ccsp_WAOUTGetLogDials, modify select in action 1 filter by IsManual'
+		SET @sql = '
+CREATE PROCEDURE ccsp_WAOUTGetLogDials
+@Action				INT,
+@CamId				INT = NULL,
+@CamNumber			VARCHAR(50) = NULL,
+@ClientId			VARCHAR(50) = NULL,
+@ConversationId		INT = NULL,
+@MetaId				VARCHAR(1000) = NULL
+AS
+BEGIN
+
+	DECLARE @LastMetaId VARCHAR(1000);
+	DECLARE @Answered BIT;
+
+	IF @Action = 1 -- Verifica para el último registro guardado en ccowhatslogdials si han pasado menos de 24 horas desde su envio 
+	BEGIN
+		DECLARE @InitialTime DATETIME;       
+		DECLARE @LastConversationId BIGINT; 
+		DECLARE @ConvId INT; 
+        
+		SET @InitialTime = DATEADD(HH, -24, GETDATE());
+
+		SELECT TOP(1) @LastMetaId = cwld.MetaId, @LastConversationId = cwld.ConversationId,@Answered = cwld.answered, @ConvId = cwld.conversationId
+		FROM ccoWhatsLogDials cwld WITH(NOLOCK)
+		WHERE cwld.CamId = @CamID 
+		AND cwld.PhoneWa = @CamNumber
+		AND cwld.PhoneClient = @ClientId
+		AND cwld.TimeSpam >= @InitialTime
+		AND cwld.IsManual = 0
+		ORDER BY cwld.TimeSpam DESC;
+
+		IF @Answered = 0 
+		BEGIN
+
+			update ccowhatslogdials set answered = 1 where metaid = @LastMetaId
+			update ccWhatsAppConversationsOut set conversationStatus = 1 where conversationId = @ConvId
+
+			SELECT @LastMetaId AS MetaId, 
+					@LastConversationId AS ConversationId;
+		END
+		ELSE
+		BEGIN
+			SELECT '''' AS MetaId, 
+					CAST(0 AS BIGINT) AS ConversationId;
+		END
+	END
+
+	ELSE IF @Action = 2 -- Obtiene el texto del mensaje de plantilla enviado masivamente
+	BEGIN
+		SELECT wld.timeSpam as TimeStamp, waos.MessageContent as Content, wld.CamId as CamId 
+		FROM ccoWhatsLogDials wld 
+		JOIN ccWhatsAppOutSource waos ON wld.WaOutId = waos.WAOut_Id
+		JOIN ccMetaWAOutboundTemplates mwat ON waos.TemplateId = mwat.Id WHERE wld.MetaId = @MetaId; 
+	END
+END'
+		EXEC(@sql)
+
 
 
         -------------------------------------------  END Isaac  ----------------------------------------

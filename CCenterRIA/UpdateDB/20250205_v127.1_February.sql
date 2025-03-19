@@ -3352,7 +3352,7 @@ BEGIN
 		END
 		ELSE
 		BEGIN
-			SELECT '' AS MetaId, 
+			SELECT '''' AS MetaId, 
 					CAST(0 AS BIGINT) AS ConversationId;
 		END
 	END

@@ -11998,7 +11998,7 @@ BEGIN --save agent, assigdate and tqueue
 	ELSE BEGIN
 		UPDATE ccWhatsAppConversationsOut
 				SET agentId = @agentId,
-				assignDate = getdate(),ccsp_ConversationWASaveOut
+				assignDate = getdate(),
 				conversationStatus = @conversationStatus,
 				tQueue = case when onQueue = 1 then DATEDIFF(ss,requestDate,isnull(assignDate,getdate())) else 0 end,
 				IsTransfered = @IsTransfered

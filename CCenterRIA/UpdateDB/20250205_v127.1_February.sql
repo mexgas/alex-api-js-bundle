@@ -11725,6 +11725,24 @@ AS
  END
 		';
 		EXEC(@sql);
+
+-------------------------------------------------------BEGIN MACL---------------------------------------------------------------------
+	SET @process = 'Alter tables ccWAMessagesConversationsOut y ccWAMessagesConversations add AgentLogin'
+	SET @sql = 'IF NOT EXISTS(SELECT 1 FROM sys.columns 
+          WHERE Name = N''AgentLogin''
+          AND Object_ID = Object_ID(N''ccWAMessagesConversationsOut''))
+BEGIN
+    ALTER TABLE ccWAMessagesConversationsOut ADD AgentLogin VARCHAR(50)
+END
+
+IF NOT EXISTS(SELECT 1 FROM sys.columns 
+          WHERE Name = N''AgentLogin''
+          AND Object_ID = Object_ID(N''ccWAMessagesConversations''))
+BEGIN
+    ALTER TABLE ccWAMessagesConversations ADD AgentLogin VARCHAR(50)
+END'
+	EXEC(@sql)
+--------------------------------------------------------END MACL----------------------------------------------------------------------
 	------------------------------------------------End Omar Mejia -----------------------------------------------------------------
 
 	SET @process = 'CW-8714 ALTER TABLE ccWhatsAppConversationsOut ALTER COLUMN tQueue bigint'
@@ -11786,6 +11804,7 @@ END'
 , @IsAgentLoggingOut  BIT = 0
 , @ConvId             INT = NULL OUTPUT
 , @IsTransfered		  BIT = 0
+, @AgentLogin		  VARCHAR(50) = ''''
 AS
 BEGIN
 	DECLARE @isEndConversation BIT;
@@ -11924,11 +11943,16 @@ else IF @action = 4 BEGIN --save messages from conversation
 				    WHERE conversationId = @conversationId;
 			END
 
+		IF(@originType = ''Client'')
+		BEGIN
+			SET @AgentLogin = ''''
+		END
+
 		INSERT INTO [ccWAMessagesConversationsOut](
-				                            messageId, messageIdUi, clientNum, vonageNum, typeMessage, content, conversationId, timeStampMessage, timeStampMessageUTC, originType, currency, price, messageStatus) values
-				                            (@messageId, @messageIdUi, @clientNum, @vonageNum, @typeMessage, @content, @conversationId, @timeStampMessage, @timeStampMessageUTC, @originType, @currency, @price, @messageStatus)
+				                            messageId, messageIdUi, clientNum, vonageNum, typeMessage, content, conversationId, timeStampMessage, timeStampMessageUTC, originType, currency, price, messageStatus, AgentLogin) values
+				                            (@messageId, @messageIdUi, @clientNum, @vonageNum, @typeMessage, @content, @conversationId, @timeStampMessage, @timeStampMessageUTC, @originType, @currency, @price, @messageStatus, @AgentLogin)
 		SELECT @messageId=SCOPE_IDENTITY()
-				    
+
 	SELECT @camId=camId FROM ccWhatsAppConversationsOut A with(nolock) WHERE A.conversationId=@conversationId
 		if not exists(select * from ccWAConversationsResult where camId=@camId)begin
 			insert into ccWAConversationsResult values(@camId,0,0,0,0,0)
@@ -11974,7 +11998,7 @@ BEGIN --save agent, assigdate and tqueue
 	ELSE BEGIN
 		UPDATE ccWhatsAppConversationsOut
 				SET agentId = @agentId,
-				assignDate = getdate(),
+				assignDate = getdate(),ccsp_ConversationWASaveOut
 				conversationStatus = @conversationStatus,
 				tQueue = case when onQueue = 1 then DATEDIFF(ss,requestDate,isnull(assignDate,getdate())) else 0 end,
 				IsTransfered = @IsTransfered
@@ -12209,6 +12233,7 @@ END;'
 , @IsAgentLoggingOut  BIT = 0
 , @IsTransfered		  BIT = 0
 , @IsReopenedConversation BIT =0
+, @AgentLogin		  VARCHAR(50) = ''
 AS
 BEGIN
 	DECLARE @isEndConversation BIT;
@@ -12392,10 +12417,15 @@ IF EXISTS(SELECT A.conversationId conversationId FROM ccWhatsAppConversations A 
 					SET FirstMessageAgent = @timeStampMessage
 					WHERE conversationId = @conversationId;
 			END
+			
+		IF(@originType = 'Client')
+		BEGIN
+			SET @AgentLogin = ''
+		END
 
 		INSERT INTO [ccWAMessagesConversations](
-											messageId, messageIdUi, clientNum, vonageNum, typeMessage, content, conversationId, timeStampMessage, timeStampMessageUTC, originType, currency, price, messageStatus) values
-											(@messageId, @messageIdUi, @clientNum, @vonageNum, @typeMessage, @content, @conversationId, @timeStampMessage, @timeStampMessageUTC, @originType, @currency, @price, @messageStatus)
+											messageId, messageIdUi, clientNum, vonageNum, typeMessage, content, conversationId, timeStampMessage, timeStampMessageUTC, originType, currency, price, messageStatus, AgentLogin) values
+											(@messageId, @messageIdUi, @clientNum, @vonageNum, @typeMessage, @content, @conversationId, @timeStampMessage, @timeStampMessageUTC, @originType, @currency, @price, @messageStatus, @AgentLogin)
 		SELECT @messageId=SCOPE_IDENTITY()
 		SELECT @messageId as MessageId
 		RETURN (0)
@@ -12613,7 +12643,8 @@ ELSE IF @action = 20 BEGIN
 		SET tQueue = tQueue+@tQueue
 		WHERE conversationId = @conversationId;
 	END;
-END;'
+END;
+'
 	EXEC(@sql)
 
 	SET @process = 'CW-9131 ALTER PROCEDURE [dbo].[ccsp_WhatsAppInformationOut] correcion para que tome la misma fuente datos '
@@ -12888,6 +12919,307 @@ END
 SET NOCOUNT OFF
     '
 	EXEC(@sql)
+
+-------------------------------------------------------BEGIN MACL---------------------------------------------------------------------
+	SET @process = 'alter ccsp_createMessageAndGlobalId'
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_createMessageAndGlobalId] 
+@Type INT,
+@Messages VARCHAR(MAX)
+    
+AS
+BEGIN
+	SET NOCOUNT ON;
+
+	IF @Type = 1
+	BEGIN
+		DECLARE @SplitResults TABLE (Id INT, Value NVARCHAR(255))
+		INSERT INTO @SplitResults
+		SELECT Id, Value FROM dbo.fn_RIASplitDelimited(@Messages, '','')
+
+		DECLARE @CamId VARCHAR(7)
+		DECLARE @PhoneClient VARCHAR(15)
+		DECLARE @PhoneWa VARCHAR(15)
+		DECLARE @MetaId VARCHAR(150)
+		DECLARE @TimeStamp varchar (50)
+		DECLARE @TimeStampUTC varchar (50)
+		DECLARE @TemplateCategory varchar(50);
+		DECLARE @TemplateContent varchar(1000);
+		DECLARE @ConvId int
+	
+		DECLARE @CurrentId INT = 1
+		DECLARE @RowCount INT
+
+		SELECT @RowCount = COUNT(*) FROM @SplitResults 
+
+		WHILE @CurrentId <= @RowCount
+		BEGIN
+
+			SELECT @MetaId = Value FROM @SplitResults WHERE Id = @CurrentId 
+
+			SELECT  @TemplateCategory = Category, @TemplateContent = waos.MessageContent,
+				@CamId = wld.CamId, @PhoneClient = PhoneClient, @PhoneWa = PhoneWa, @TimeStamp = TimeSpam,
+				@TimeStampUTC = CONVERT(varchar(23), DATEADD(HOUR, -tz.tz_offset, wld.TimeSpam), 121) 
+				FROM ccoWhatsLogDials wld
+				JOIN ccWhatsAppOutSource waos ON wld.WaOutId = waos.WAOut_Id
+				JOIN ccMetaWAOutboundTemplates mwat ON waos.TemplateId = mwat.Id 
+
+				JOIN ccTimeZones tz ON tz.tz_id = waos.TimeZone
+				WHERE wld.MetaId = @MetaId;
+
+			EXEC ccsp_ConversationWASaveOut @action = 1, @camId = @CamId, @phoneCam = @PhoneWa, @clientId = @PhoneClient, @conversationStatus = 20, @ConvId = @ConvId OUTPUT;
+
+			EXEC ccsp_ConversationWASaveOut @action = 4, @messageId = @MetaId, @messageIdUi = 0, @clientNum = @PhoneClient, @vonageNum = @PhoneWa, @typeMessage = ''template'', 
+			@content = @TemplateContent, @conversationId = @ConvId,  @timeStampMessage = @TimeStamp, @timeStampMessageUTC = @TimeStampUTC, @originType = ''Admin'', @AgentLogin = ''Admin''
+
+			update ccoWhatsLogDials set conversationId = @convId where MetaId = @MetaId
+
+			EXEC ccsp_WhatsAppGlobalIds  @ConversationType =1, @ConversationId = @ConvId, @MessageId = @MetaId, @AssociatedNumber= @PhoneWa, @ClientNumber= @PhoneClient, @TemplateCategory = @TemplateCategory
+
+			SET @CurrentId = @CurrentId + 1
+		END  
+	END
+END'
+	EXEC(@sql)
+
+	SET @process = 'alter function fn_GetMessagesByConversationOrMessageId to get userAgent'
+	SET @sql = 'ALTER FUNCTION [dbo].[fn_GetMessagesByConversationOrMessageId]
+(
+    @CampType INT,                           -- Parameter to select the table (0 = Inbound, 1 = Outbound)
+    @conversationId INT = NULL,              -- Optional parameter for filtering by conversationId
+    @messageIdList NVARCHAR(MAX) = NULL      -- Optional parameter for filtering by a list of messageIds
+)
+RETURNS @Messages TABLE
+(
+    MessageId VARCHAR(150),	
+    Status VARCHAR(50),
+    Origin VARCHAR(50),	
+    OriginType INT,
+    Timestamp DATETIME,
+    Content	NVARCHAR(MAX),
+    Type VARCHAR(20),
+    Caption	VARCHAR(MAX),
+    Url	VARCHAR(MAX),
+    FileSize VARCHAR(20),
+    FileName VARCHAR(MAX),
+    Address	VARCHAR(MAX),
+    Lat	VARCHAR(MAX),
+    Long VARCHAR(MAX),
+    Name VARCHAR(MAX),	
+    LocationURL VARCHAR(MAX),
+	userAgent VARCHAR(50)
+)
+AS
+BEGIN
+
+
+    DECLARE @tmpMessageConversations TABLE(
+            [messageId] VARCHAR(150) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
+            [conversationId] INT NOT NULL,
+            [timeStampMessage] DATETIME NOT NULL,
+            [originType] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
+            [price] VARCHAR(10) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
+            [messageIdUi] INT NULL,
+            [currency] VARCHAR(10) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+            [typeMessage] VARCHAR(25) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+            [content] NVARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+            [clientNum] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+            [vonageNum] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+            [timeStampMessageUTC] DATETIME NULL,
+            [messageStatus] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+			[userAgent] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
+        );
+    DECLARE @baseFilePath VARCHAR(MAX)
+    SELECT @baseFilePath = valor FROM ccSettings WHERE setting_id = 230
+
+    IF (@CampType = 0)
+    BEGIN
+        INSERT INTO @tmpMessageConversations (messageId, conversationId, timeStampMessage, originType, price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC, messageStatus, userAgent)
+        SELECT messageId, conversationId, timeStampMessageUTC AS timeStampMessage, originType, price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC, messageStatus, ISNULL(AgentLogin,'''')
+        FROM ccWAMessagesConversations
+        WHERE 
+        (@messageIdList IS NULL OR messageId IN (SELECT value FROM dbo.fn_RIASplitDelimited(@messageIdList, '','')))
+        AND
+        (@conversationId IS NULL OR conversationId = @conversationId)
+    END
+    IF (@CampType = 1)
+    BEGIN
+        INSERT INTO @tmpMessageConversations (messageId, conversationId, timeStampMessage, originType, price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC, messageStatus, userAgent)
+        SELECT messageId, conversationId, timeStampMessageUTC AS timeStampMessage, originType, price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC, messageStatus, ISNULL(AgentLogin,'''')
+        FROM ccWAMessagesConversationsOut
+        WHERE
+        (@messageIdList IS NULL OR messageId IN (SELECT value FROM dbo.fn_RIASplitDelimited(@messageIdList, '','')))
+        AND
+        (@conversationId IS NULL OR conversationId = @conversationId)
+    END
+
+    INSERT INTO @Messages
+    SELECT
+        messageId AS MessageId,
+        messageStatus AS Status,
+        originType AS Origin,
+        CASE 
+            WHEN originType =''Client'' THEN 3
+            WHEN originType =''Agent'' THEN 2
+            WHEN originType =''Admin'' THEN 1
+            ELSE 0 
+        END AS OriginType,
+        timeStampMessage AS [Timestamp],
+        CASE 
+            WHEN typeMessage IN (''text'', ''template'') THEN content
+            ELSE '''' 
+        END AS Content,
+        typeMessage AS Type,
+        CASE
+            WHEN originType = ''Client''
+            THEN
+                CASE
+                    WHEN typeMessage = ''file'' 
+					THEN 
+						CASE 
+							WHEN NOT EXISTS (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 1),'':'') WHERE id=2)
+							THEN ''''
+							ELSE (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 1),'':'') WHERE id=2)
+						END
+                    WHEN typeMessage IN (''image'', ''video'')
+                    THEN 
+                        CASE 
+                            WHEN NOT EXISTS(SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 4) -- soporte con mensajes de vonage
+							THEN content
+							WHEN NOT EXISTS (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 1),'':'') WHERE id=2) -- cuando no tiene caption
+							THEN ''''
+							ELSE (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 1),'':'') WHERE id=2)
+                        END
+                    ELSE ''''
+                END
+            WHEN (originType = ''Agent'' OR originType = ''Admin'')
+            THEN
+                CASE
+                    WHEN typeMessage = ''file''
+                    THEN
+                        CASE 
+                            WHEN (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 1),'':'') WHERE id=2) <> (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 4),'':'') WHERE id=2)
+                            THEN (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 1),'':'') WHERE id=2)
+                            ELSE ''''
+                        END
+                    WHEN typeMessage IN (''image'', ''video'')
+                    THEN
+                        CASE 
+                            WHEN NOT EXISTS(SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 4) -- soporte con mensajes de vonage
+							THEN ''''
+							WHEN NOT EXISTS (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 1),'':'') WHERE id=2) -- cuando no tiene caption
+							THEN ''''
+							ELSE (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 1),'':'') WHERE id=2)
+                        END
+                    ELSE ''''
+                END
+        END AS Caption,
+        CASE 
+            WHEN originType = ''Client'' THEN
+                CASE
+                    WHEN 
+                        (typeMessage = ''text'' 
+                        OR typeMessage = ''location''
+                        OR (typeMessage = ''file'' 
+                            AND 
+                            (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 2),'':'') WHERE id=2) = '''' )
+                        )
+                    THEN ''''
+                    WHEN typeMessage = ''file''
+                    THEN (SELECT SUBSTRING(value, 5, LEN(value)) FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE Id = 2)
+                    WHEN typeMessage IN (''image'', ''video'')
+                    THEN
+                        CASE
+                            WHEN NOT EXISTS(SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 4) -- soporte con mensajes de vonage
+                            THEN (@baseFilePath + CHAR(92) + CASE WHEN @CampType = 0 THEN ''INBOUND'' ELSE ''OUTBOUND'' END + CHAR(92) + CAST(conversationId/1000 AS VARCHAR(30)) + char(92) + CAST(conversationId AS VARCHAR(20)) + CHAR(92) + typeMessage + CHAR(92) + messageId + CASE WHEN typeMessage = ''video'' THEN ''.mp4'' WHEN typeMessage = ''image'' THEN ''.jpg'' END)
+                            ELSE (SELECT SUBSTRING(value, 5, LEN(value)) FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE Id = 2)
+                        END
+                    WHEN typeMessage = ''audio''
+                    THEN
+                        CASE
+                            WHEN content = ''''
+                            THEN (@baseFilePath + CHAR(92) + CASE WHEN @CampType = 0 THEN ''INBOUND'' ELSE ''OUTBOUND'' END + CHAR(92) + CAST(conversationId/1000 AS VARCHAR(30)) + char(92) + CAST(conversationId AS VARCHAR(20)) + CHAR(92) + typeMessage + CHAR(92) + messageId + ''.mp3'')
+                            ELSE content
+                        END
+					ELSE ''''
+                END
+            WHEN (originType = ''Agent'' OR originType = ''Admin'') THEN
+                CASE
+                    WHEN typeMessage IN (''text'', ''location'', ''template'') THEN ''''
+                    WHEN typeMessage  = ''file'' THEN (SELECT SUBSTRING(Value, 5, LEN(Value)) FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 2)
+                    WHEN typeMessage IN (''image'', ''video'')
+                    THEN
+                        CASE
+                            WHEN NOT EXISTS(SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 4)
+                            THEN content
+                            ELSE (SELECT SUBSTRING(Value, 5, LEN(Value)) FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 2)
+                        END
+                    WHEN typeMessage = ''audio'' THEN content
+                END
+        END AS [Url],
+        CASE 
+            WHEN typeMessage = ''file'' THEN (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 3),'':'') WHERE id=2)
+            WHEN typeMessage IN (''image'', ''video'')
+            THEN
+                CASE
+                    WHEN (SELECT COUNT(value) FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 3),'':'') WHERE id=2) = 0 -- soporte con mensajes de vonage
+                    THEN ''''
+                    ELSE (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 3),'':'') WHERE id=2)
+                END
+            ELSE '''' 
+        END AS [FileSize],
+        CASE 
+            WHEN typeMessage = ''file'' THEN (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 4),'':'') WHERE id=2)
+            WHEN typeMessage IN (''image'', ''video'')
+            THEN
+                CASE
+                    WHEN (SELECT COUNT(value) FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 4),'':'') WHERE id=2) = 0 -- soporte con mensajes de vonage
+                    THEN ''''
+                    ELSE (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 4),'':'') WHERE id=2)
+                END
+            ELSE '''' 
+        END AS [FileName],
+        CASE 
+            WHEN 
+                typeMessage = ''location''
+            THEN  (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 1),'':'') WHERE id=2) 
+            ELSE '''' 
+        END AS [Address],
+        CASE 
+            WHEN 
+                typeMessage = ''location''
+            THEN  (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 2),'':'') WHERE id=2) 
+            ELSE '''' 
+        END AS [Lat],
+        CASE
+            WHEN 
+                typeMessage = ''location''
+            THEN  (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 3),'':'') WHERE id=2) 
+            ELSE '''' 
+        END AS [Long],
+        CASE 
+            WHEN 
+                typeMessage = ''location''
+            THEN  (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 4),'':'') WHERE id=2) 
+            ELSE '''' 
+        END AS [Name],
+        CASE 
+            WHEN 
+                typeMessage = ''location''
+            THEN 
+                (''https://www.google.com/maps/search/'' + 
+                (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 2),'':'') WHERE id=2) + '','' +
+                (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 3),'':'') WHERE id=2)) 
+            ELSE '''' 
+        END AS [LocationURL],
+		userAgent
+    FROM @tmpMessageConversations
+    ORDER BY Timestamp ASC
+
+    RETURN;
+END
+'
+	EXEC(@sql)
+--------------------------------------------------------END MACL----------------------------------------------------------------------
 
 	SET @process = ''
 	SET @sql = ''

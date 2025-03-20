@@ -12233,7 +12233,7 @@ END;'
 , @IsAgentLoggingOut  BIT = 0
 , @IsTransfered		  BIT = 0
 , @IsReopenedConversation BIT =0
-, @AgentLogin		  VARCHAR(50) = ''
+, @AgentLogin		  VARCHAR(50) = ''''
 AS
 BEGIN
 	DECLARE @isEndConversation BIT;
@@ -12418,9 +12418,9 @@ IF EXISTS(SELECT A.conversationId conversationId FROM ccWhatsAppConversations A 
 					WHERE conversationId = @conversationId;
 			END
 			
-		IF(@originType = 'Client')
+		IF(@originType = ''Client'')
 		BEGIN
-			SET @AgentLogin = ''
+			SET @AgentLogin = ''''
 		END
 
 		INSERT INTO [ccWAMessagesConversations](

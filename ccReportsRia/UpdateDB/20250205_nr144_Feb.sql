@@ -1499,8 +1499,7 @@ ALTER  PROCEDURE [dbo].[ccspRepCatalogos]
                 +''end
                 else begin
                     SELECT 0 as id, ''''N/A'''' as description, ''''inboundId'''' as dbColumn
-                end'';
-                --+ @consult + '' inner join @tablatemp A on B.inbound_id = A.id'' + @condition + '' return;'';     
+                end'';   
         END
         ELSE BEGIN
             SET @SQL = @consult + @condition;

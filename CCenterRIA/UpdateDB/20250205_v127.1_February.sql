@@ -13445,9 +13445,6 @@ IF @TipoMov = 9 BEGIN--RING CallNoAnswered
 	EXEC(@sql)
 --------------------------------------------------------END MACL----------------------------------------------------------------------
 
-	SET @process = ''
-	SET @sql = ''
-	EXEC(@sql)
 	
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

@@ -1959,6 +1959,56 @@ end
 
 end'
     EXEC(@sql)
+    set @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
+    set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+    begin
+    DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+    end'
+EXEC(@sql)
+ 
+  SET @process = ''
+    SET @sql = 'if not exists (select * from sys.tables where name = N''ccInbound_consulta'')
+begin
+        CREATE TABLE [dbo].[ccInbound_consulta](
+    [cli_id] [smallint] NULL,
+    [Inbound_id] [smallint] NOT NULL,
+    [descripcion] [varchar](50) NOT NULL,
+    [Status] [smallint] NOT NULL,
+    [dnis] [varchar](4) NOT NULL,
+    [standby] [smallint] NOT NULL,
+    [tNotas] [int] NOT NULL,
+    [tMaxWaitCall] [smallint] NOT NULL,
+    [nMaxQue] [smallint] NOT NULL,
+    [Msg_id] [int] NULL,
+    [tel_maxwait] [varchar](15) NOT NULL,
+    [tel_maxqueue] [varchar](15) NOT NULL,
+    [tel_outservice] [varchar](15) NOT NULL,
+    [tel_noct] [varchar](15) NOT NULL,
+    [bnocturno] [tinyint] NOT NULL,
+    [ShowCalifWnd] [bit] NOT NULL,
+    [StartTimerOnHangUp] [bit] NOT NULL,
+    [voicePath] [varchar](30) NULL,
+    [IDArea] [smallint] NULL,
+    [editableCallKey] [bit] NOT NULL,
+    [cam_id] [smallint] NULL
+)
+end'
+    EXEC(@sql)
+
+      SET @process = ''
+    SET @sql = ''
+    EXEC(@sql)
+    
+ 
+set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+        begin
+        ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+        end'
+EXEC(@sql)
+
+  
+
 
  SET @process = 'DROP VIEW [dbo].[ccInboundView] '
    SET @sql = 'IF EXISTS (SELECT * FROM sys.views WHERE object_id = OBJECT_ID(N''ccInboundView''))

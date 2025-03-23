@@ -13445,9 +13445,446 @@ IF @TipoMov = 9 BEGIN--RING CallNoAnswered
 	EXEC(@sql)
 --------------------------------------------------------END MACL----------------------------------------------------------------------
 
+--------------------------------------------------------BEGIN 127.20250130.0.7 Jesus Gallardo----------------------------------------------------------------------
+	SET @process = 'Alter FN TimeInterval correcion visita muñoz'
+	SET @sql = 'ALTER FUNCTION [dbo].[TimeInterval] (
+    @start DATETIME,
+    @stop DATETIME,
+    @state1 DATETIME,
+    @state2 DATETIME
+)  
+RETURNS INT
+AS  
+BEGIN 
+    DECLARE @overlapStart DATETIME
+    DECLARE @overlapEnd DATETIME
+    DECLARE @time INT
+
+    -- Calcular el máximo entre @start y @state1
+    IF @start > @state1
+        SET @overlapStart = @start
+    ELSE
+        SET @overlapStart = @state1
+
+    -- Calcular el mínimo entre @stop y @state2
+    IF @stop < @state2
+        SET @overlapEnd = @stop
+    ELSE
+        SET @overlapEnd = @state2
+
+    -- Calcular el tiempo
+    IF @overlapEnd > @overlapStart
+        SET @time = DATEDIFF(SECOND, @overlapStart, @overlapEnd)
+    ELSE
+        SET @time = 0
+
+    RETURN @time
+END'
+	EXEC(@sql)
+
+	SET @process = 'Alter Sp ReportsMasterProcessWIthOnlyGenerate Correcion para indices y filtro para tomar 02:59:30'
+	SET @sql = 'ALTER PROCEDURE [dbo].[ReportsMasterProcessWIthOnlyGenerate] @from AS DATETIME = NULL
+,@to AS DATETIME = NULL
+,@scheduleTime INT = 10
+,@dateStart DATETIME = NULL
+,@isAllReport tinyint =0 --0 Only table ReportHighUse,1  not in table ReportHighUse, 2 all 
+AS
+SET ANSI_WARNINGS OFF
+SET NOCOUNT ON
+
+DECLARE @i INT,@count INT
+DECLARE @SQL nVARCHAR(4000)
+DECLARE @name SYSNAME
+DECLARE @descError NVARCHAR(max)
+DECLARE @dateSP DATETIME
+
+
+set @dateSP = getdate()
+
+-- Asumimos que @from y @to pueden venir con valores, o nulos
+
+if @from is null begin -- Tomar las 2:59:30
+	set @from= convert(date, GETDATE())
+	set @from=dateadd(ss,(179*60)+30, @from)
+end
+
+SET @to = ISNULL(@to, GETDATE());
+
+IF @dateStart IS NULL
+BEGIN
+    SET @dateStart = getdate()
+END
+
+-- Si @from es antes de las 03:00:00 → ajustarlo a 02:59:00 del día anterior
+IF CAST(@from AS TIME) < ''02:59:00''
+BEGIN
+    SET @from = DATEADD(MINUTE, -1, DATEADD(HOUR, 3, CAST(DATEADD(DAY, -1, CAST(@from AS DATE)) AS DATETIME))); -- 02:59:00 del día anterior
+END
+
+IF CAST(@to AS TIME) = ''00:00:00''
+BEGIN
+    set @to=dateadd(ss,(179*60)+30, @to) -- 02:59:00 del día siguiente
+END
+
+
+exec ccSpCreateIndexReport
+
+
+insert into logsReportsMaster(name,status,dateStart,dateEnd,error,maxTime)
+values (''ReportsMasterProcessWIthOnlyGenerate'',2,@from,@to,'''',@scheduleTime)
+
+EXEC ccspTmpTimesInterval @from = @from ,@to = @to  ,@interval = 15 --Tabla TmpTimesInterval Temporal para tener Intervalos de 15 Minutos
+
+
+declare @tableSpTmp table (id int identity primary key, nameSp varchar(300))
+
+insert into @tableSpTmp (nameSp) values (''ccspTmpSessionGeneral'')		--Tabla tmpSessionGeneral para tener la sesiones de agentes
+insert into @tableSpTmp (nameSp) values (''ccspTmpSessionTimeGroup'')	--Tabla tmpSessionTimeGroup para dividir la sesion en intervalos de 15 Minutos
+
+insert into @tableSpTmp (nameSp) values (''ccspTimesccLogAgentesDia'')	--Tabla tmpccLogAgentesDia tener los movimientos de los agentes
+insert into @tableSpTmp (nameSp) values (''ccspTimesOutboundData'')		--Tabla tmpTimesOutboundData para los tiempos de las llamadas de salida
+insert into @tableSpTmp (nameSp) values (''ccspTimesInboundData'')		--Tabla tmpTimesInboundData para los tiempos de las llamadas de entrada
+
+insert into @tableSpTmp (nameSp) values (''ccspTmpTimesccLogtransfers'')	--Tabla TmpTimesccLogtransfers para los tiempos de las llamadas que son trasferidas
+insert into @tableSpTmp (nameSp) values (''ccsptmpTimesHoldIn'')			--Tabla tmpTimesInboundData para los tiempos de las llamadas de entrada
+
+insert into [logsReportsMaster] (name,status,dateStart,dateEnd,error,maxTime)
+select nameSp,0,''19000101'',''19000101'','''',@scheduleTime from @tableSpTmp
+
+select @i=1,@count =count(*) from @tableSpTmp
+
+while @i<=@count
+begin
+	select @name = nameSp from @tableSpTmp where id=@i	
+
+	set @sql =''EXEC ''+ @name +'' @from=''''''+convert(varchar(max),@from,121)+'''''', @to=''''''+convert(varchar(max),@to,121)+''''''''
+	set @dateSP = getdate()	
+	begin try
+		--print (@sql)
+		exec (@sql)		
+		update [logsReportsMaster] set status=1,dateStart=@dateSP,dateEnd=getdate() where name =@name and status=0 and dateStart=''19000101'' and dateEnd=''19000101''
+	end try
+	begin catch
+	    
+		select @descError = ''Line: '' + cast(error_line() as nvarchar) + '' Number: '' + cast(@@error as nvarchar) + '' Message: '' + error_message()
+		select @descError,@name
+		update [logsReportsMaster] set status=3,dateStart=@dateSP,dateEnd=getdate(),error=@descError where name =@name and status=0 and dateStart=''19000101'' and dateEnd=''19000101''		
+		
+	end catch
+
+	set @i = @i+1
+end
+
+CREATE TABLE #tmpProcedureReports (
+    id INT
+    ,name SYSNAME
+    )
+
+declare @tableSpDontProcess table(nameSp varchar(300),id int identity primary key)
+
+insert into @tableSpDontProcess(nameSp) values(''ccspRepCatalogos'')			-- ccspRepCatalogos es para catalogos por eso no se debe correr
+insert into @tableSpDontProcess(nameSp) values(''ccspRepAgentSession'')		--Saca el detalle de las sesiones
+insert into @tableSpDontProcess(nameSp) values(''ccspRepAgentNotReadyDet'')	-- ccspRepAgentNotReadyDet sabemos cuando inicia y cuando termina los no disponibles 
+insert into @tableSpDontProcess(nameSp) values(''ccspRepAgentNotReady'')		-- ccspRepAgentNotReady Agrupa por hora
+insert into @tableSpDontProcess(nameSp) values(''ccspRepAgentGI'')			-- ccspRepAgentGI Agrupa por hora
+
+INSERT INTO #tmpProcedureReports
+    SELECT id
+        ,[nameSp]
+    FROM @tableSpDontProcess
+    WHERE [nameSp] <>''ccspRepCatalogos''
+
+if @isAllReport =0 begin
+
+    INSERT INTO #tmpProcedureReports
+    SELECT ROW_NUMBER() OVER (
+            ORDER BY [name]
+            ) AS id
+        ,[name]
+    FROM sys.procedures
+    WHERE [name] LIKE ''ccspRep%''  
+        AND [name] NOT IN (select nameSp from @tableSpDontProcess)
+        AND [name] IN (select nameSp from ReportHighUse)        
+end
+else if @isAllReport =1 begin
+    INSERT INTO #tmpProcedureReports
+    SELECT ROW_NUMBER() OVER (
+            ORDER BY [name]
+            ) AS id
+        ,[name]
+    FROM sys.procedures
+    WHERE [name] LIKE ''ccspRep%''
+        AND [name] NOT IN (select nameSp from @tableSpDontProcess)
+        AND [name] Not IN (select nameSp from ReportHighUse)        
+end
+else begin
+    INSERT INTO #tmpProcedureReports
+    SELECT ROW_NUMBER() OVER (
+            ORDER BY [name]
+            ) AS id
+        ,[name]
+    FROM sys.procedures
+    WHERE [name] LIKE ''ccspRep%''
+        AND [name] NOT IN (select nameSp from @tableSpDontProcess)        
+end
+
+
+exec ccspRepAgentSession @action=1,@from=@from,@to=@to 
+exec ccspRepAgentNotReadyDet @action=1,@from=@from,@to=@to 
+exec ccspRepAgentNotReady @action=1,@from=@from,@to=@to 
+exec ccspRepAgentGI @action=1,@from=@from,@to=@to   --Agrupa por 15 minutos
+
+INSERT INTO [logsReportsMaster] (name,STATUS,dateStart,dateEnd,error,maxTime)
+SELECT name,0 [status]  ,''19000101'' as dateStart,''19000101'' dateEnd,'''' error,@scheduleTime
+FROM #tmpProcedureReports
+
+SELECT @i = 1, @count = count(*) FROM #tmpProcedureReports
+
+WHILE @i <= @count  
+BEGIN
+    SELECT @name = name
+    FROM #tmpProcedureReports
+    WHERE id = @i
+
+    SET @sql = ''EXEC '' + @name + '' @action=1, @from=@from, @to=@to''
+    
+    SET @dateSP = getdate()
+
+    BEGIN TRY
+        --print @sql
+        
+        exec sp_executesql @sql, N''@from DATETIME, @to DATETIME'',@from, @to
+
+        UPDATE [logsReportsMaster]
+        SET STATUS = 1
+            ,dateStart = @dateSP
+            ,dateEnd = getdate()
+        WHERE name = @name
+            AND STATUS = 0
+            AND dateStart = ''19000101''
+            AND dateEnd = ''19000101''
+            
+    END TRY
+
+    BEGIN CATCH
+        SELECT @descError = ''Line: '' + cast(error_line() AS NVARCHAR) + '' Number: '' + cast(@@error AS NVARCHAR) + '' Message: '' + error_message()
+
+        SELECT @descError,@name
+
+        UPDATE [logsReportsMaster]
+        SET STATUS = 3
+            ,dateStart = @dateSP
+            ,dateEnd = getdate()
+            ,error = @descError
+        WHERE name = @name
+            AND STATUS = 0
+            AND dateStart = ''19000101''
+            AND dateEnd = ''19000101''
+    END CATCH
+
+    SET @i = @i + 1
+END
+
+DROP TABLE #tmpProcedureReports'
+	EXEC(@sql)
+
+	SET @process = 'Alter SP ccSpCreateIndexReport se deja los inidices de los casos para reportes'
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccSpCreateIndexReport]  
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+declare @tIndexMerge table(id int identity,tableName varchar(255),status bit)
+declare @sql nvarchar(max),@tableName varchar(255),@id int
+declare @column varchar(255),@indexName varchar(255)
+
+
+
+/****************************INDICES PARA REPORTES *******************************/
+if not exists (select * from sys.indexes where name = N''IX_ccoCallsOut13'' and object_id = OBJECT_ID(N''ccoCallsOut''))
+begin
+   CREATE NONCLUSTERED INDEX IX_ccoCallsOut13
+ON [dbo].[ccoCallsOut] ([cal_Inicio])
+INCLUDE ([cal_id],[cal_telefono],[cal_puerto],[cam_id],[User_id],[statusCall_id],[calif_id],[cal_tDialog],[cal_tNotas],[cal_tXfer],[cal_tRing],[cal_manual],[cal_tMoh],[cal_whoHung],[cal_twait])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_RIA_GRABACION_11'' and object_id = OBJECT_ID(N''RIA_GRABACION''))
+begin
+CREATE NONCLUSTERED INDEX IX_RIA_GRABACION_11
+ON [dbo].[RIA_GRABACION] ([tipo_llamada],[cal_id])
+INCLUDE ([grab_id])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_ccLogTransfers_3'' and object_id = OBJECT_ID(N''ccLogtransfers''))
+begin
+   CREATE NONCLUSTERED INDEX IX_ccLogTransfers_3
+ON [dbo].[ccLogtransfers] ([fechaFin])
+INCLUDE ([cal_id],[tipo],[modo],[destino],[tAntesXfer],[tDespuesXfer])
+end
+
+
+if not exists (select * from sys.indexes where name = N''IX_ccLogAgentesDia_6'' and object_id = OBJECT_ID(N''ccLogAgentesDia''))
+begin
+   CREATE NONCLUSTERED INDEX IX_ccLogAgentesDia_6
+ON [dbo].[ccLogAgentesDia] ([fecha])
+INCLUDE ([User_id],[TipoStatusAge_id],[tStatus])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_ccLogAgentesNotReady_5'' and object_id = OBJECT_ID(N''cclogagentesnotready''))
+begin
+   CREATE NONCLUSTERED INDEX IX_ccLogAgentesNotReady_5
+ON [dbo].[cclogagentesnotready] ([fecha])
+INCLUDE ([User_id],[TipoNotReady_id],[tStatus])
+end
+
+    
+if not exists (select * from sys.indexes where name = N''IX_ccLogLogin_6'' and object_id = OBJECT_ID(N''ccloglogin''))
+begin
+   CREATE NONCLUSTERED INDEX IX_ccLogLogin_6
+ON [dbo].[ccloglogin] ([fecha])
+INCLUDE ([User_id],[Extension],[TipoMov])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_ccoLogDials_8'' and object_id = OBJECT_ID(N''ccoLogDials''))
+begin
+CREATE NONCLUSTERED INDEX IX_ccoLogDials_8
+ON [dbo].[ccoLogDials] ([fecha],[cal_id])
+INCLUDE ([tipoResDial_id])
+end
+
+
+
+if not exists (select * from sys.indexes where name = N''IX_ccCallsIn_8'' and object_id = OBJECT_ID(N''ccCallsIn''))
+begin
+CREATE NONCLUSTERED INDEX IX_ccCallsIn_8
+ON [dbo].[ccCallsIn] ([IVR_id])
+INCLUDE ([cal_id])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_ccCallsIn_9'' and object_id = OBJECT_ID(N''ccCallsIn''))
+begin
+CREATE NONCLUSTERED INDEX IX_ccCallsIn_9
+ON [dbo].[ccCallsIn] ([cal_Inicio])
+INCLUDE ([cal_id])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_tmpSessionTimeGroup_1'' and object_id = OBJECT_ID(N''tmpSessionTimeGroup''))
+begin
+CREATE NONCLUSTERED INDEX IX_tmpSessionTimeGroup_1
+ON [dbo].[tmpSessionTimeGroup] ([user_id])
+INCLUDE ([timegroup],[tlog])
+end
+
+   
+if not exists (select * from sys.indexes where name = N''IX_tmpccLogAgentesDia_2'' and object_id = OBJECT_ID(N''tmpccLogAgentesDia''))
+begin
+CREATE NONCLUSTERED INDEX IX_tmpccLogAgentesDia_2
+ON [dbo].[tmpccLogAgentesDia] ([userId],[timeGroup])
+INCLUDE ([TipoStatusAge_id],[tStatus])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_tmpTimesInboundData_1'' and object_id = OBJECT_ID(N''tmpTimesInboundData''))
+begin
+CREATE NONCLUSTERED INDEX IX_tmpTimesInboundData_1
+ON [dbo].[tmpTimesInboundData] ([statusCall_id])
+INCLUDE ([timegroup],[Inbound_id],[nabnd],[tque],[txfer],[tring])
+end
+
+    
+if not exists (select * from sys.indexes where name = N''IX_tmpTimesInboundData_2'' and object_id = OBJECT_ID(N''tmpTimesInboundData''))
+begin
+CREATE NONCLUSTERED INDEX IX_tmpTimesInboundData_2
+ON [dbo].[tmpTimesInboundData] ([cal_id])
+INCLUDE ([Inbound_id],[User_id])
+end
+
+
+if not exists (select * from sys.indexes where name = N''IX_tmpTimesOutboundData_1'' and object_id = OBJECT_ID(N''tmpTimesOutboundData''))
+begin
+CREATE NONCLUSTERED INDEX IX_tmpTimesOutboundData_1
+ON [dbo].[tmpTimesOutboundData] ([timegroup],[cal_id])
+INCLUDE ([User_id])
+end
+    
+if not exists (select * from sys.indexes where name = N''IX_tmpTimesOutboundData_2'' and object_id = OBJECT_ID(N''tmpTimesOutboundData''))
+begin
+CREATE NONCLUSTERED INDEX IX_tmpTimesOutboundData_2
+ON [dbo].[tmpTimesOutboundData] ([cal_manual])
+INCLUDE ([timegroup],[User_id],[nabnd_xfer],[nabnd_ring],[tdialog],[tnotes],[cal_id])
+end
+
+
+
+/**************************** INDICES Reportes *******************************/
+
+
+
+set @column=''date''
+delete from @tIndexMerge
+
+insert into @tIndexMerge(tableName,status)
+SELECT     
+    t.TABLE_NAME,0
+FROM 
+    INFORMATION_SCHEMA.COLUMNS c
+INNER JOIN 
+    INFORMATION_SCHEMA.TABLES t 
+    ON c.TABLE_NAME = t.TABLE_NAME AND c.TABLE_SCHEMA = t.TABLE_SCHEMA
+WHERE 
+    t.TABLE_NAME LIKE ''Rep%''   -- Las tablas que comienzan con ''Rep''
+    AND c.COLUMN_NAME = ''date'' -- Que contienen una columna llamada ''date''
+    AND t.TABLE_TYPE = ''BASE TABLE'' -- Solo tablas (no vistas)
+ORDER BY 
+    t.TABLE_SCHEMA, t.TABLE_NAME;
+
+
+while exists(select 1 from @tIndexMerge where status=0) begin
+    select top 1 @tableName=tableName,@id=id from @tIndexMerge where status=0 
+    set @indexName=N''IX_''+ @tableName+''_date'' 
+    set @sql=''if not exists(SELECT 1 FROM sys.indexes i
+INNER JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+INNER JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+WHERE i.is_hypothetical = 0 -- Excluir índices hipotéticos
+    and i.name = @tableName
+    and c.name=@column
+)
+and not exists (select * from sys.indexes where name = @indexName and object_id = OBJECT_ID(@tableName)) 
+and exists (select * from sys.columns where name = @column and Object_ID = Object_ID(@tableName))
+begin
+CREATE NONCLUSTERED INDEX ''+@indexName+''
+ON [dbo].[''+@tableName+''] ([date])
+end
+    ''
+    EXEC sp_executesql @sql, 
+    N''@tableName varchar(255),@column varchar(255),@indexName varchar(255)'', 
+    @tableName = @tableName, 
+    @indexName = @indexName,
+    @column = @column;
+    --print (@sql)
+    update @tIndexMerge set status=1 where @id=id
+end
+    
+if not exists (select * from sys.indexes where name = N''IX_RepAgentNotReadyDet_2'' and object_id = OBJECT_ID(N''RepAgentNotReadyDet''))
+begin
+CREATE NONCLUSTERED INDEX IX_RepAgentNotReadyDet_2
+ON [dbo].[RepAgentNotReadyDet] ([tiponotreadyId],[startDate])
+INCLUDE ([userId],[status],[statusTime])
+end
+
+ 
+
+end'
+	EXEC(@sql)
+
 	SET @process = ''
 	SET @sql = ''
 	EXEC(@sql)
+
+	SET @process = ''
+	SET @sql = ''
+	EXEC(@sql)
+
+--------------------------------------------------------END 127.20250130.0.7 Jesus Gallardo----------------------------------------------------------------------
 	
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

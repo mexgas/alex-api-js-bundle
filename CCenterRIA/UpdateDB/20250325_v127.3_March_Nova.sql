@@ -12640,6 +12640,36 @@ IF @TipoMov = 9 BEGIN--RING CallNoAnswered
  SET NOCOUNT OFF'
     EXEC(@sql)
 --------------------------------------------------------END MACL----------------------------------------------------------------------
+-------------------------------------------------------- Begin MAGV -----------------------------------------------------------------
+ SET @process = 'alter ccsp_RIAChatDispositions CW-8811
+ Se le agregó en el where la condición para que valide que no ha sido calificada'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAChatDispositions] @action         SMALLINT
+                                               , @chatId         SMALLINT
+                                               , @disposition    SMALLINT
+                                               , @subDisposition SMALLINT
+                                               , @wrapUpTime     SMALLINT = 0
+AS
+     IF @action = 1
+     BEGIN
+
+         UPDATE ccRIAChats
+                SET
+                    disposition = @disposition
+                  , subDisposition = @subDisposition
+                  , tWrapUp = @wrapUpTime
+         WHERE chatId = @chatId AND (ISNULL(disposition,0) = 0)
+         
+		 exec ccsp_CreateNodeMultimedia @conversationId=@chatId, @type=1
+		 		 
+
+     END;'
+    EXEC(@sql)
+
+
+
+
+
+-------------------------------------------------------- END MAGV --------------------------------------------------------------------
 
 
 

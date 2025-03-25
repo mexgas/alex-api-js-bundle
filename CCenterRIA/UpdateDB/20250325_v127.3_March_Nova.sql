@@ -12845,6 +12845,120 @@ CREATE PROCEDURE SaveDispositionsAI
 	END'
 EXEC(@sql);
 --------------------------------------------------------END DMM-----------------------------------------------------------------------
+-------------------------------------------------------- Begin MAGV -----------------------------------------------------------------
+ SET @process = 'alter ccsp_RIAChatDispositions CW-8811
+ Se le agregó en el where la condición para que valide que no ha sido calificada'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAChatDispositions] @action         SMALLINT
+                                               , @chatId         SMALLINT
+                                               , @disposition    SMALLINT
+                                               , @subDisposition SMALLINT
+                                               , @wrapUpTime     SMALLINT = 0
+AS
+     IF @action = 1
+     BEGIN
+
+         UPDATE ccRIAChats
+                SET
+                    disposition = @disposition
+                  , subDisposition = @subDisposition
+                  , tWrapUp = @wrapUpTime
+         WHERE chatId = @chatId AND (ISNULL(disposition,0) = 0)
+         
+		 exec ccsp_CreateNodeMultimedia @conversationId=@chatId, @type=1
+		 		 
+
+     END;'
+    EXEC(@sql)
+
+	SET @process = 'K070104 Crear tabla variables Muñoz - Creación de tabla xxClienteLayout'
+    SET @sql= 'IF NOT EXISTS (SELECT * 
+                     FROM INFORMATION_SCHEMA.TABLES 
+                     WHERE TABLE_SCHEMA = ''dbo'' 
+                     AND  TABLE_NAME = ''xxClienteLayout'')
+    BEGIN
+       CREATE TABLE xxClienteLayout (
+			cam_id INT NOT NULL,
+			customerId VARCHAR(50),
+			accountNumber VARCHAR(50) NOT NULL,
+			name VARCHAR(100) NULL,
+			fatherLastName VARCHAR(100) NULL,
+			motherLastName VARCHAR(100) NULL,
+			phone VARCHAR(13) NULL,
+			phone2 VARCHAR(13) NULL,
+			phone3 VARCHAR(13) NULL,
+			balanceDue DECIMAL(18,2) NULL,
+			promotion DECIMAL(18,2) NULL,
+			daysPastDue SMALLINT NULL,
+			paymentDueDate DATE NULL,
+			field1 VARCHAR(255) NULL,
+			field2 VARCHAR(255) NULL,
+			field3 VARCHAR(255) NULL,
+			field4 VARCHAR(255) NULL,
+			field5 VARCHAR(255) NULL,
+			field6 VARCHAR(255) NULL,
+			field7 VARCHAR(255) NULL,
+			field8 VARCHAR(255) NULL,
+			field9 VARCHAR(255) NULL,
+			field10 VARCHAR(255) NULL,
+			field11 VARCHAR(255) NULL,
+			field12 VARCHAR(255) NULL,
+			PRIMARY KEY (cam_id, accountNumber) 
+		);
+    END'
+    EXEC(@sql);
+
+	SET @process = 'K070104 Crear tabla variables Muñoz - Creación de tabla xxClienteCargaIA'
+    SET @sql= 'IF NOT EXISTS (SELECT * 
+                     FROM INFORMATION_SCHEMA.TABLES 
+                     WHERE TABLE_SCHEMA = ''dbo'' 
+                     AND  TABLE_NAME = ''xxClienteCargaIA'')
+    BEGIN
+        CREATE TABLE [dbo].[xxClienteCargaIA](
+			[cuenta] [VARCHAR](20) NOT NULL,
+			[tel1] [VARCHAR](13) NULL,
+			[tel2] [VARCHAR](13)  NULL,
+			[tel3] [VARCHAR](13)  NULL,
+			[tel4] [VARCHAR](13)  NULL,
+			[tel5] [VARCHAR](13)  NULL,
+			[dato1] [VARCHAR](255)  NULL,
+			[dato2] [VARCHAR](255)  NULL,
+			[dato3] [VARCHAR](255)  NULL,
+			[dato4] [VARCHAR](255)  NULL,
+			[dato5] [VARCHAR](255)  NULL,
+			[callout_id] [INT] NULL,
+			[cam_id] [INT] NULL,
+			[FCallBack] [SMALLDATETIME] NULL,
+			[User_id] [INT]  NULL,
+			[dialPrefix] [VARCHAR](30) NULL,
+		) ;
+    END'
+    EXEC(@sql);
+
+	 SET @process = 'K070104 Crear tabla variables Muñoz - Drop procedure xx_ObtieneAgenteVirtual'
+    SET @sql = 'IF EXISTS (SELECT * FROM sysobjects WHERE name=''xx_ObtieneAgenteVirtual'')
+        BEGIN
+            DROP PROCEDURE dbo.xx_ObtieneAgenteVirtual
+        END'
+    EXEC(@sql);
+
+    SET @process = 'K070104 Crear tabla variables Muñoz - CREATE procedure xx_ObtieneAgenteVirtual'
+    SET @sql = 'CREATE PROCEDURE [dbo].[xx_ObtieneAgenteVirtual]
+    @campaignId INT = NULL,
+    @campType INT = NULL
+    AS
+    BEGIN
+                SELECT 
+                cva.idAgent
+                , ISNULL(cva.quantumAgentId,'''') AS QuantumAgentId
+                , ISNULL(cva.location,'''') AS Location
+                , ISNULL('''','''')  AS ProjectId
+                , ISNULL(cva.voice,'''')  AS Voice
+                , ISNULL(cva.scriptAgent, '''') AS ScriptAgent
+                FROM dbo.ccVirtualAgent AS cva
+                WHERE cva.idCampaign = @campaignId AND cva.campType = @campType;
+    END'
+    EXEC(@sql);
+-------------------------------------------------------- END MAGV --------------------------------------------------------------------
 
 
 

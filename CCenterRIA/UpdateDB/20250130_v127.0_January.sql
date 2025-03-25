@@ -472,6 +472,143 @@ END;
         '
         EXEC(@sql)
 
+		SET @process = 'TT14496-Outbound-Inicio lento DROP PROCEDURE ccsp_CampHorario'
+		SET @sql = '
+		IF EXISTS (SELECT 1 FROM sys.procedures WHERE name = N''ccsp_CampHorario'')
+		BEGIN
+			DROP PROCEDURE ccsp_CampHorario;
+		END'
+		EXEC(@sql)
+
+		SET @process = 'TT14496-Outbound-Inicio lento CREATE PROCEDURE ccsp_CampHorario'
+		SET @sql = '
+CREATE PROCEDURE ccsp_CampHorario
+@campId as int=null
+AS
+declare @horaUniversal datetime
+declare @isShudulerLey bit, @valueShudulerLey varchar(max),@hourStart int,@hourEnd int,@minStart int,@minEnd int
+declare @shourStart varchar(max),@shourEnd varchar(max),@revHorario bit
+select @revHorario=valor from ccsettings where setting_id = 112
+select @valueShudulerLey = valor from ccsettings where setting_id=166
+select @isShudulerLey = cast(substring(@valueShudulerLey, 0, charindex(''|'',@valueShudulerLey)) as int),@valueShudulerLey=substring(@valueShudulerLey, charindex(''|'',@valueShudulerLey) + 1, len(@valueShudulerLey))
+if @valueShudulerLey='''' begin
+ set @valueShudulerLey=''0|07:00|22:00''
+ update ccsettings set valor=@valueShudulerLey where setting_id=166
+end
+if @isShudulerLey = 1 begin
+ select @shourStart=substring(@valueShudulerLey, 0, charindex(''|'',@valueShudulerLey)),@shourEnd=substring(@valueShudulerLey, charindex(''|'',@valueShudulerLey) + 1, len(@valueShudulerLey))
+ select @hourStart=substring(@shourStart, 0, charindex('':'',@shourStart)),@minStart=substring(@shourStart, charindex('':'',@shourStart) + 1, len(@shourStart))
+ select @hourEnd=substring(@shourEnd, 0, charindex('':'',@shourEnd)),@minEnd=substring(@shourEnd, charindex('':'',@shourEnd) + 1, len(@shourEnd))
+end
+else begin
+ select @hourStart=0,@minStart=0,@hourEnd=23,@minEnd=59
+end
+SET DATEFIRST 1
+set @horaUniversal = getutcdate()
+select c.cam_id, h.horario_id,Descripcion, c.cam_tNoContesta,  -- Correccion del ticket TT14496
+ case when HoraInicio>@hourStart then HoraInicio else @hourStart end HoraInicio,
+ case when (horaInicio>@hourStart or (horaInicio=@hourStart and MinInicio>=@minStart) ) then MinInicio  else @minStart end MinInicio,
+ case when horaFin<@hourEnd then horaFin else @hourEnd end HoraFin,
+ case when ((horaFin < @hourEnd or (horaFin=@hourEnd and MinFin<=@minEnd) )) then MinFin  else @minEnd end MinFin,
+ Lunes,Martes,Miercoles,Jueves,Viernes,Sabado,Domingo
+ into #tempCampLaw
+ from cchorarios h
+ inner join ccCampsHorarios with(index(IX_ccCampsHorarios)) on h.horario_id = ccCampsHorarios.horario_id --and 
+ inner join ccCamps c on c.cam_id=ccCampsHorarios.cam_id 
+ where (@campId is null or @campId=0 ) or ccCampsHorarios.cam_id = @campId
+select distinct cam_id, horario_id,HoraInicio,MinInicio,horaFin,MinFin into #tempCampLaw2 from
+(
+ select tz_id,
+ dateadd(mi, tz_offset*60, @horaUniversal) as fecha,
+ datepart(hh, dateadd(mi, tz_offset*60, @horaUniversal) ) as hora,
+ datepart(mi, dateadd(mi, tz_offset*60, @horaUniversal) ) as minuto,
+ datepart(dw, dateadd(mi, tz_offset*60, @horaUniversal) ) as dia
+ from ccTimeZones
+)zonas
+inner join #tempCampLaw on
+(
+ (
+  hora > HoraInicio OR  (hora = HoraInicio AND minuto >= MinInicio)
+ )
+ AND
+ (
+  hora < HoraFin  OR  (hora = HoraFin AND minuto <= (MinFin-cam_tNoContesta) )  -- Correccion del ticket TT14496
+ )
+ AND
+ (
+  Lunes  = dia or
+  Martes *2 = dia or
+  Miercoles*3 = dia or
+  Jueves*4 = dia or
+  Viernes*5 = dia or
+  Sabado*6 = dia or
+  domingo*7 = dia
+ )
+)
+select distinct #tempCampLaw2.cam_id, #tempCampLaw2.horario_id id,
+(HoraInicio*3600)+(MinInicio*60) ini,
+(HoraFin*3600)+(MinFin*60) fin,
+(case when HoraInicio<10 then ''0''+convert(varchar(2),HoraInicio) else convert(varchar(2),HoraInicio) end) + '':'' + (case when MinInicio<10 then ''0''+convert(varchar(2),MinInicio) else convert(varchar(2),MinInicio) end ) as HoraInicio ,
+(case when HoraFin<10 then ''0''+convert(varchar(2),HoraFin) else convert(varchar(2),HoraFin) end) + '':'' + (case when MinFin<10 then ''0''+convert(varchar(2),MinFin) else convert(varchar(2),MinFin) end ) as HoraFin
+into #tempCamp from #tempCampLaw2
+;WITH tempCamp AS (
+    SELECT DISTINCT #tempCampLaw2.cam_id, #tempCampLaw2.horario_id AS id,
+        (HoraInicio * 3600) + (MinInicio * 60) AS ini,
+        (HoraFin * 3600) + (MinFin * 60) AS fin,
+        RIGHT(''0'' + CONVERT(VARCHAR(2), HoraInicio), 2) + '':'' + RIGHT(''0'' + CONVERT(VARCHAR(2), MinInicio), 2) AS HoraInicio,
+        RIGHT(''0'' + CONVERT(VARCHAR(2), HoraFin), 2) + '':'' + RIGHT(''0'' + CONVERT(VARCHAR(2), MinFin), 2) AS HoraFin
+    FROM #tempCampLaw2
+),
+OrderedIntervals AS (
+    SELECT 
+        cam_id,
+        ini,
+        fin,
+        ROW_NUMBER() OVER (PARTITION BY cam_id ORDER BY ini) AS RowNum
+    FROM tempCamp
+),
+MergedIntervals AS (
+    SELECT 
+        o1.cam_id,
+        o1.ini,
+        MAX(o2.fin) AS fin
+    FROM OrderedIntervals o1
+    LEFT JOIN OrderedIntervals o2
+        ON o1.cam_id = o2.cam_id
+        AND o2.ini <= o1.fin -- Verifica si los intervalos se solapan
+    GROUP BY o1.cam_id, o1.ini
+),
+CleanedIntervals AS (
+    SELECT 
+        cam_id,
+        ini,
+        fin
+    FROM (
+        SELECT 
+            cam_id,
+            ini,
+            fin,
+            LAG(fin) OVER (PARTITION BY cam_id ORDER BY ini) AS PrevFin
+        FROM MergedIntervals
+    ) t
+    WHERE PrevFin IS NULL OR ini > PrevFin -- Elimina duplicados y solapamientos residuales
+)
+SELECT 
+    ci.cam_id,
+    ci.ini,
+    ci.fin,
+    RIGHT(''0'' + CONVERT(VARCHAR(2), ci.ini / 3600), 2) + '':'' + RIGHT(''0'' + CONVERT(VARCHAR(2), (ci.ini % 3600) / 60), 2) AS HoraInicio,
+    RIGHT(''0'' + CONVERT(VARCHAR(2), ci.fin / 3600), 2) + '':'' + RIGHT(''0'' + CONVERT(VARCHAR(2), (ci.fin % 3600) / 60), 2) AS HoraFin,
+	c.cam_tNoContesta AS timeMaxContestacion  -- Correccion del ticket TT14496
+FROM CleanedIntervals ci
+INNER JOIN ccCamps c ON c.cam_id = ci.cam_id  -- Correccion del ticket TT14496
+ORDER BY cam_id, ini;
+drop table #tempCamp
+drop table #tempCampLaw
+drop table #tempCampLaw2
+'
+		EXEC(@sql)
+
 
 
         -------------------------------------------  END Isaac  ----------------------------------------
@@ -558,8 +695,8 @@ END;
 			END;
 		END;'
         EXEC(@sql)
-		-------------------------------------------  END David  ------------------------------------------
-
+		-----------------------------------------------  END David  ---------------------------------------------------
+						
 SET @process = 'K038009-Servicio IA Service replicación de Drop TRIGGER tg_ccCamps_IA'
         SET @sql = 'if exists (select * from sys.triggers where name = N''tg_ccCamps_IA'' and parent_id = OBJECT_ID(N''ccCamps''))
 begin      
@@ -603,6 +740,25 @@ begin
 end
 ';
         EXEC(@sql);
+
+		-----------------------------------------------  BEGIN Ivan Martin release/127.20250130.0.6  ---------------------------------------------------
+		SET @process = 'Se agrega setting 286 en la tabla ccSettings2 con el dominio del server para uso general'
+        SET @sql = '
+		IF NOT EXISTS (SELECT * FROM ccSettings2 WHERE setting_id = 286)
+		BEGIN
+			INSERT INTO ccSettings2 VALUES (286, 
+											'''',
+											''Dominio del servidor para uso general'',
+											1,
+											''GRL'',
+											''Dominio del servidor para uso general'',
+											''Server domain for general purpose'',
+											0,
+											NULL)
+		END';
+        EXEC(@sql);
+		-----------------------------------------------  END Ivan Martin release/127.20250130.0.6  ---------------------------------------------------
+
         
 	
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */

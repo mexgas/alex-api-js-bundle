@@ -12640,6 +12640,46 @@ IF @TipoMov = 9 BEGIN--RING CallNoAnswered
  SET NOCOUNT OFF'
     EXEC(@sql)
 --------------------------------------------------------END MACL----------------------------------------------------------------------
+-------------------------------------------------------BEGIN DMM----------------------------------------------------------------------
+SET @process = 'Creación de tabla ccoCallsOutDispositionIA para guardar resultados de llamada IA '
+SET @sql= 'IF NOT EXISTS (SELECT * 
+                 FROM INFORMATION_SCHEMA.TABLES 
+                 WHERE TABLE_SCHEMA = ''dbo'' 
+                 AND  TABLE_NAME = ''ccoCallsOutDispositionIA'')
+BEGIN
+    CREATE TABLE ccoCallsOutDispositionIA (
+	call_id int Primary key ,
+	Qualification VARCHAR(MAX),
+	result VARCHAR(MAX),
+	Observations VARCHAR(MAX),
+	CONSTRAINT FK_ccoCallsOutDispositionIA_cal_id FOREIGN KEY (call_id)
+	REFERENCES ccoCallsOut(cal_id)
+	ON DELETE CASCADE
+	);
+END'
+EXEC(@sql);
+
+SET @process = 'Drop procedure SaveDispositionsAI'
+SET @sql = 'IF EXISTS (SELECT * FROM sysobjects WHERE name=''SaveDispositionsAI'')
+    BEGIN
+        DROP PROCEDURE dbo.SaveDispositionsAI
+    END'
+EXEC(@sql);
+
+SET @process = 'Creación de SP SaveDispositionsAI para guardar resultados de llamada IA'
+SET @sql = '
+CREATE PROCEDURE SaveDispositionsAI
+	@call_Id int = null,
+	@Qualification varchar(max) = null,
+	@result VARCHAR(MAX) = null,
+	@Observations VARCHAR(MAX) = null
+
+	AS
+	BEGIN
+		insert into ccoCallsOutDispositionIA (call_id, Qualification, result, Observations) values (@call_Id, @Qualification, @result, @Observations)
+	END'
+EXEC(@sql);
+--------------------------------------------------------END DMM-----------------------------------------------------------------------
 
 
 

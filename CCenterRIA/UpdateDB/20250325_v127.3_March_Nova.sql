@@ -11356,7 +11356,7 @@ BEGIN --save agent, assigdate and tqueue
                 assignDate = getdate(),
                 conversationStatus = @conversationStatus,
                 tQueue = case when onQueue = 1 then DATEDIFF(ss,requestDate,isnull(assignDate,getdate())) else 0 end,
-                IsTransfered = @IsTransfered
+                IsTransfered = CASE WHEN ISNULL(IsTransfered, 0) = 0 THEN @IsTransfered ELSE IsTransfered END
         WHERE conversationId = @conversationId;
     END
                         
@@ -11829,7 +11829,7 @@ BEGIN --save agent, assigdate and tqueue
                 assignDate = getdate(),
                 conversationStatus = @conversationStatus,
                 tQueue = case when onQueue = 1 then DATEDIFF(ss,requestDate,isnull(assignDate,getdate())) else 0 end,
-                IsTransfered = @IsTransfered
+                IsTransfered = CASE WHEN ISNULL(IsTransfered, 0) = 0 THEN @IsTransfered ELSE IsTransfered END
         WHERE conversationId = @conversationId;
 
         SELECT @conversationId as conversationId

@@ -13839,7 +13839,217 @@ EXEC(@sql)
 
 	 
 ---------------------------------------------------------END Ivan Martin fix/IM-CW-9280-CW9276-Activity-History ---------------------------------------------------------
+---------------------------------------------------------BEGIN Ivan Martin fix/IM-CW-9282-Update-Cam-Canceled ---------------------------------------------------------
 
+    SET @process = 'Drop procedure ccsp_RIAConfCamp'
+    SET @sql = 'IF EXISTS (SELECT * FROM sysobjects WHERE name=''ccsp_RIAConfCamp'')
+        BEGIN
+            DROP PROCEDURE dbo.ccsp_RIAConfCamp
+        END'
+    EXEC(@sql);
+
+    SET @process = 'Se reordena el select para que el mapeo de columnas coincida con el sp ccsp_GalateaGetOutboundConfiguration'
+    SET @sql = '
+    CREATE PROCEDURE [dbo].[ccsp_RIAConfCamp]
+    @User_id SMALLINT,
+    @campID INT = NULL
+AS
+    SET NOCOUNT ON;
+
+    DECLARE @tableExistsRec TABLE (
+        camId INT PRIMARY KEY,
+        existRec BIT
+    );
+    DECLARE @camByUser TABLE (
+        camId INT PRIMARY KEY,
+        isCheck BIT
+    );
+    DECLARE @camId INT, @id INT;
+    DECLARE @intenationalDialingPorts BIT;
+    DECLARE @tempInternationalCode INT;
+
+    IF (
+        SELECT COUNT(*)
+        FROM (
+            SELECT TOP 1 IdCode
+            FROM ccoDialers ccoDial
+            INNER JOIN ccoDialerCamp ccoDialCamp ON ccoDialCamp.dialer_id = ccoDial.dialer_id
+            WHERE ccoDialCamp.cam_id = @campID
+                AND ccoDial.DialingType = 0
+        ) result
+    ) > 0
+    BEGIN
+        SET @intenationalDialingPorts = 1;
+    END
+    ELSE
+    BEGIN
+        SET @intenationalDialingPorts = 0;
+    END;
+
+    IF NOT EXISTS (
+        SELECT *
+        FROM ccUsers_Roles
+        WHERE User_id = @User_id
+            AND Rol_id = 7
+    )
+    BEGIN
+        INSERT INTO @camByUser
+        SELECT *, 0
+        FROM dbo.fGet_CampAcd_Area(@User_id, 1) B
+        WHERE @campID IS NULL
+            OR cam_id = @campID;
+    END
+    ELSE
+    BEGIN
+        INSERT INTO @camByUser
+        SELECT cam_id, 0
+        FROM ccCamps
+        WHERE (IDArea > 0 OR IDArea IS NULL)
+            AND (@campID IS NULL OR cam_id = @campID);
+    END;
+
+    WHILE EXISTS (
+        SELECT *
+        FROM @camByUser
+        WHERE isCheck = 0
+    )
+    BEGIN
+        SELECT TOP 1 @camId = camId
+        FROM @camByUser
+        WHERE isCheck = 0;
+
+        IF EXISTS (
+            SELECT cam_id
+            FROM ccoCallsOut
+            WHERE cam_id = @camId
+        )
+        BEGIN
+            INSERT INTO @tableExistsRec
+            VALUES (@camId, 1);
+        END
+        ELSE
+        BEGIN
+            INSERT INTO @tableExistsRec
+            VALUES (@camId, 0);
+        END;
+
+        UPDATE @camByUser
+        SET isCheck = 1
+        WHERE camId = @camId;
+    END;
+
+    SELECT 
+        a1.cam_id,
+        cam_Descripcion,
+        cam_tNotas,
+        CAST(cam_ocupado AS INT) AS cam_ocupado,
+        cam_noInt_ocupado,
+        cam_inter_ocupado,
+        CAST(cam_nocontesto AS INT) AS cam_nocontesto,
+        cam_noInt_nocontesto,
+        cam_inter_nocontesto,
+        CAST(cam_fax AS INT) AS cam_fax,
+        cam_noInt_fax,
+        cam_inter_fax,
+        CAST(cam_modomanual AS INT) AS cam_modomanual,
+        ANI,
+        cam_ShowCalifWnd,
+        cam_StartTimerOnHangUp,
+        editableCallKey,
+        cam_tNoContesta,
+        iTipoDial,
+        detectAnswerMachine,
+        detectVoiceMail,
+        compliance,
+        cam_inter_graba,
+        cam_noint_graba,
+        CAST(progDial AS TINYINT) progDial,
+        CAST(excCallBack AS TINYINT) excCallBack,
+        dialOrder,
+        dialPrefix,
+        dialPrefixMan,
+        dialPrefixXfe,
+        listenManualCall,
+        stopRecording,
+        CAST(abandonCallback AS TINYINT) abandonCallback,
+        a3.frame,
+        a1.t_autoCB,
+        a1.id_anilist,
+        a1.tDialonWrapUp,
+        dbo.fn_viewMode(@User_id, 10) viewMode,
+        cam_maxqueue AS queSize,
+        DNCScrub,
+        callerIdDesc,
+        timeZoneRule,
+        callsBySurvey,
+        ivrScript,
+        surveyPctg,
+        ISNULL(a1.call_record, 1) AS call_record,
+        CAST(startStopRecording AS TINYINT) startStopRecording,
+        leaveRecMessage,
+        manualCallOnChat,
+        callBackSurveyAgent,
+        callBackSurveyClient,
+        CASE 
+            WHEN surveycamid IS NULL OR surveycamid = 0 THEN 0
+            ELSE 1
+        END isRelationSurvey,
+        ISNULL(a1.funcEspDtmf, 0) funcEspDtmf,
+        ISNULL(sipHdrFormat, '''') sipHdrFormat,
+        cam_inter_cancelled,
+        prefijo,
+        enbleprefix = CASE 
+            WHEN existRec = 0 THEN 1
+            ELSE 0
+        END,
+        ISNULL(exitAssisted, 0) exitAssisted,
+        ISNULL(previewDiscard, 0) PreviewDiscard,
+        case when CampType = 9 then 10 else ISNULL(CampType, 0) end as CampType,
+        ISNULL(contact.conexionInfo, '''') conexionInfo,
+        ISNULL(contact.connUser, '''') connUser,
+        ISNULL(contact.closeConversationTime, 0) closeConversationTime,
+        ISNULL(contact.answerTimeoutClient, 0) answerTimeoutClient,
+        ISNULL(contact.allowFileAttachments, 0) allowFileAttachments,
+        ISNULL(selectRotativeANI, 0) selectRotativeANI,
+        ISNULL(rotativeAlgo, 0) rotativeAlgo,
+        ISNULL(autoStart, 0) autoStart,
+        ISNULL(messagingOrder, 0) messagingOrder,
+        ISNULL(cam_tPreview, 0) AS CamTPreview,
+        ISNULL(timesPreview, 0) AS TimesPreview,
+        ISNULL(timesDiscard, 0) TimesDiscard,
+        ISNULL(recordHold, 0) recordHold,
+        ISNULL(campsExtention.zipCodeSchedule, 0) ZipCodeSchedule,
+        ISNULL(campsExtention.RecordCalls, 1) RecordCalls,
+        ISNULL(campsExtention.simultaneousRecs, 1) simultaneousRecs,
+        ISNULL(campsExtention.EditableContactData, 0) EditableContactData,
+        @intenationalDialingPorts intenationalDialingPorts,
+        ISNULL(campsExtention.AssignConversationSameAgent, 0) AssignConversationSameAgent,
+        ISNULL(contact.maxLimitQueueConversations, 99) maxLimitQueueConversations,
+        ISNULL(contact.MaxDaysPerWAConvo, 5) MaxDaysPerWAConvo,
+        isnull(recordIvr, 1) recordIvr,
+        ISNULL(CamCanceled, 4) CamCanceled,
+        ISNULL(surveyCamId, 0) surveyCamId,
+        -- Outbound AI Campaign Special Settings
+        ISNULL(campsExtention.RescheduledSurveyAI, 0) RescheduledSurveyAI,
+        ISNULL(campsExtention.ImmediateSurveyAI, 0) ImmediateSurveyAI,
+        ISNULL(campsExtention.ApplyRescheduledSurveyForCompletedCallsAI, 0) ApplyRescheduledSurveyForCompletedCallsAI,
+        ISNULL(campsExtention.EnableCallRecordingAI, 0) EnableCallRecordingAI
+    FROM ccCamps a1
+    INNER JOIN ccRIACampsGraph a2 ON (a1.cam_id = a2.cam_id)
+    INNER JOIN ccRIAGraphics a3 ON (a2.graphic_id = a3.graphic_id)
+    INNER JOIN @tableExistsRec a4 ON a1.cam_id = a4.camId
+    LEFT JOIN contactMeanOut contact ON a1.cam_id = contact.camp_id
+    LEFT JOIN ccCampsExtend campsExtention ON a1.cam_id = campsExtention.cam_id
+    ORDER BY cam_descripcion;
+
+    RETURN (0);
+
+    SET NOCOUNT OFF;
+'
+    EXEC(@sql);
+
+---------------------------------------------------------END Ivan Martin fix/IM-CW-9282-Update-Cam-Canceled ---------------------------------------------------------
+    
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
     EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
     EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)

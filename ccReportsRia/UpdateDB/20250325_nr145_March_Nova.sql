@@ -48,14 +48,28 @@ BEGIN
       AND DATA_TYPE = ''smallint''
 )
 BEGIN
-    PRINT ''🔁 Iniciando migración de dialTimeSec de SMALLINT a INT (sin bloquear)...'';
-
-    -- Paso 1: Agrega columna temporal solo si no existe
-    IF COL_LENGTH(''RepOutAnswAndXferCalls'', ''dialTimeSec_int'') IS NULL
-    BEGIN
+  	-- Paso 1: Agrega columna temporal solo si no existe
+	IF not EXISTS (
+		SELECT 1 
+		FROM INFORMATION_SCHEMA.COLUMNS 
+		WHERE TABLE_NAME = ''RepOutAnswAndXferCalls'' 
+		  AND COLUMN_NAME = ''dialTimeSec_int'' 		 
+	)
+	BEGIN
         ALTER TABLE RepOutAnswAndXferCalls ADD dialTimeSec_int INT NULL;
-    END
+    END  
+END'
+    EXEC(@sql)
 
+	SET @process = 'Alter RepOutAnswAndXferCalls migración de dialTimeSec de SMALLINT a INT'
+    SET @sql = 'IF EXISTS (
+    SELECT 1 
+    FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE TABLE_NAME = ''RepOutAnswAndXferCalls'' 
+      AND COLUMN_NAME = ''dialTimeSec'' 
+      AND DATA_TYPE = ''smallint''
+)
+BEGIN    
     -- Paso 2: Copia los datos en bloques para evitar bloqueos masivos
     DECLARE @BatchSize INT = 10000;
 
@@ -77,13 +91,8 @@ BEGIN
         ''dialTimeSec'', 
         ''COLUMN'';
 
-    PRINT ''✅ Migración finalizada con éxito.'';
+    PRINT ''Migración finalizada con éxito.'';
 END
-ELSE
-BEGIN
-    PRINT ''✅ La columna ya es INT. No se requiere migración.'';
-END
-
 '
     EXEC(@sql)
 

@@ -14264,6 +14264,70 @@ AS
     EXEC(@sql);
 
 ---------------------------------------------------------END Ivan Martin fix/IM-CW-9282-Update-Cam-Canceled ---------------------------------------------------------
+
+---------------------------------------------------------END Jesus Gallardo ---------------------------------------------------------
+
+       SET @process = 'Update ccInbound y ccInboundExtend cam_id callback and survey'
+        SET @sql = '
+IF OBJECT_ID(''dbo.ccinbound_Survey'', ''U'') IS NULL begin
+    
+    CREATE TABLE dbo.ccinbound_Backup (
+        inbound_id INT NOT NULL,
+        cam_id INT NULL,
+        SurveyCamId INT NULL,
+        backupDate DATETIME NOT NULL DEFAULT GETDATE()
+    );
+
+    -- 2. Insertar respaldo de los datos actuales antes de modificar
+    INSERT INTO dbo.ccinbound_Backup (inbound_id, cam_id, SurveyCamId)
+    SELECT i.Inbound_id, i.cam_id, e.SurveyCamId
+    FROM ccinbound i
+    LEFT JOIN ccinboundExtend e ON i.Inbound_id = e.Inbound_id;
+
+    INSERT INTO ccinboundExtend (Inbound_id,RecordCalls, SurveyCamId)
+    SELECT i.Inbound_id, 0, 0  -- Puedes ajustar valor inicial si es necesario
+    FROM ccinbound i
+    LEFT JOIN ccinboundExtend e ON i.Inbound_id = e.Inbound_id
+    WHERE e.Inbound_id IS NULL;
+
+
+    -- ✅ Ya tienes respaldo antes de hacer cambios
+
+    declare @inboundCamIdSurvey table(inboundId int not null,camId int not null)
+    declare @inboundCamIdCallback table(inboundId int not null,camId int not null)
+
+    declare @ccCampsSurvey table(camId int not null)
+    declare @ccCampsCallback table(camId int not null)
+
+    insert into @ccCampsSurvey
+    select cam_id from ccCamps where CampType=8 or (ivrScript>0 and callsBySurvey>0)
+
+    insert into @ccCampsCallback
+    select cam_id from ccCamps where CampType not in(5,7,8) 
+    and isnull(ivrScript,0)=0 and isnull(callsBySurvey,0)=0
+
+    insert into @inboundCamIdSurvey
+    select inbound_Id,cam_id from ccinbound where isnull(cam_id,0)>0 and cam_id in (select camId from @ccCampsSurvey)
+
+    insert into @inboundCamIdCallback
+    select inbound_Id,cam_id from ccinbound where isnull(cam_id,0)>0 and cam_id in (select camId from @ccCampsCallback)
+
+    update ccinboundExtend set SurveyCamId=0
+    update ccinbound set cam_id=0
+
+    update A set A.SurveyCamId=B.camId
+    from ccinboundExtend A
+    inner join @inboundCamIdSurvey B on A.Inbound_id=B.inboundId
+
+
+    update A set A.cam_id=B.camId
+    from ccinbound A
+    inner join @inboundCamIdCallback B on A.Inbound_id=B.inboundId
+
+end
+'
+        EXEC(@sql)
+---------------------------------------------------------END Jesus Gallardo ---------------------------------------------------------
     
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
     EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

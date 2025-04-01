@@ -6,7 +6,7 @@ declare @Sql varchar(max)
 declare @errorGenerated varchar(max)
 declare @process varchar(max)
 ---------------- VERSION ----------------
-    Set @Version = 98
+    Set @Version = 99
     Set @Version_Actual = (select par_valor from trec_parametros where par_id = 30)
 
 if @Version_Actual in(@Version, @Version -1) -- Aqui poner numero de nueva version
@@ -14,68 +14,32 @@ begin
     begin tran
     begin try
 
-	------------------------------Begin Jesus Landus
-	-------------------------------------------- Begin Jesus Gallardo hotfix/125.20231211.0.18 -------------------------------------------------------------------------------
-
-    SET @process = 'feature/KR179003 CREATE TABLE [dbo].[RIA_GRABACION_TEMP]'
-    SET @sql = 'if not exists(select * from sys.tables where name=''RIA_GRABACION_TEMP'') begin
-    CREATE TABLE [dbo].[RIA_GRABACION_TEMP](
-    [AvrTransferId] int,
-    [tipo_llamada] [smallint] NULL,
-    [cal_id] [int] NULL,
-    [age_id] [int] NULL,
-    [cam_id] [smallint] NULL,
-    [calif_id] [smallint] NULL,
-    [cal_extension] [int] NULL,
-    [finicio] [datetime] NOT NULL,
-    [ffin] [datetime] NOT NULL,
-    [ani] [varchar](30) NOT NULL,
-    [duracion] [int] NULL,
-    [cal_key] [varchar](40) NOT NULL,
-    [puerto_id] [int] NULL,
-    [dni_id] [smallint] NULL,
-    [id_repositorio] [tinyint] NULL,
-    [razon_id] [tinyint] NULL,
-    [tipo_grab_id] [tinyint] NULL,
-    [fvalida] [datetime] NULL,
-    [cal_whoHung] [smallint] NULL,
-    [califSub_id] [smallint] NOT NULL,
-    [cal_tMoh] [smallint] NOT NULL,
-    [cal_manual] [tinyint] NULL,
-    [id_nivel_grito] [int] NULL,
-    [Prefijo] [varchar](512) NULL,
-    [dni] [varchar](15) NULL,
-    [IDWG] [varchar](800) NULL,
-    [extra_info] [varchar](50) NULL,
-    [extra_info2] [varchar](50) NULL    
-    )
-
-    
-end
-'
-    EXEC(@sql)
-
-    SET @process = 'feature/KR179003 CREATE INDEX IX_RIA_GRABACION_TEMP_I'
-    SET @sql = 'IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = ''IX_RIA_GRABACION_TEMP_I'')
+	-------------------------------------------------BEGIN MACL-------------------------------------------------
+    SET @process = 'ALTER TABLES TO ADD VirtualAgentId'
+    SET @sql = 'IF NOT EXISTS(SELECT 1 FROM sys.columns 
+          WHERE Name = N''virtualAgentId''
+          AND Object_ID = Object_ID(N''ria_grabacion''))
 BEGIN
-    -- Crea el índice utilizando las columnas tipo_llamada y cal_id
-    CREATE INDEX IX_RIA_GRABACION_TEMP_I
-    ON [dbo].[RIA_GRABACION_TEMP] ([tipo_llamada], [cal_id]);
+    ALTER TABLE ria_grabacion ADD virtualAgentId VARCHAR(50)
+END
+
+IF NOT EXISTS(SELECT 1 FROM sys.columns 
+          WHERE Name = N''virtualAgentId''
+          AND Object_ID = Object_ID(N''ria_grabacionconsulta''))
+BEGIN
+    ALTER TABLE ria_grabacionconsulta ADD virtualAgentId VARCHAR(50)
+END
+
+IF NOT EXISTS(SELECT 1 FROM sys.columns 
+          WHERE Name = N''virtualAgentId''
+          AND Object_ID = Object_ID(N''ria_grabacion_temp''))
+BEGIN
+    ALTER TABLE ria_grabacion_temp ADD virtualAgentId VARCHAR(50)
 END'
     EXEC(@sql)
 
-
-    
-    SET @process = 'feature/KR179003 Drop procedure ccsp_InsertOrUpdateRecordingRIA_Grabacion'
-    SET @sql = 'if exists (select 1 from sys.procedures where name = N''ccsp_InsertOrUpdateRecordingRIA_Grabacion'')
-                begin
-                    DROP PROCEDURE ccsp_InsertOrUpdateRecordingRIA_Grabacion;
-                end'
-    EXEC(@sql);
-
-
-    SET @process = 'feature/KR179003 Create SP ccsp_InsertOrUpdateRecordingRIA_Grabacion'
-    SET @sql = 'CREATE PROCEDURE ccsp_InsertOrUpdateRecordingRIA_Grabacion
+	SET @process = 'Alter sp ccsp_InsertOrUpdateRecordingRIA_Grabacion to add VirtualAgentId'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_InsertOrUpdateRecordingRIA_Grabacion]
 AS
 BEGIN
     -- Declaramos una tabla temporal para almacenar grab_id, cal_id, tipo_llamada y AvrTransferId de los registros procesados
@@ -100,14 +64,15 @@ BEGIN
             Target.cal_extension = Source.cal_extension,
             Target.IDWG = Source.IDWG,
             Target.extra_info = Source.extra_info,
-            Target.extra_info2 = Source.extra_info2
+            Target.extra_info2 = Source.extra_info2,
+			Target.virtualAgentId = source.virtualAgentId
         --OUTPUT ''UPDATE'' AS ActionType, inserted.grab_id, inserted.cal_id, inserted.tipo_llamada INTO @ProcessedRecords
     WHEN NOT MATCHED BY TARGET THEN
         INSERT (tipo_llamada, cal_id, age_id, cam_id, calif_id, cal_extension, finicio, ffin, ani, duracion, cal_key, puerto_id, dni_id, id_repositorio, razon_id, tipo_grab_id,
-                fvalida, cal_whohung, califSub_id, cal_tMoh, cal_manual, id_nivel_grito, prefijo, dni, IDWG, extra_info, extra_info2)
+                fvalida, cal_whohung, califSub_id, cal_tMoh, cal_manual, id_nivel_grito, prefijo, dni, IDWG, extra_info, extra_info2, virtualAgentId)
         VALUES (Source.tipo_llamada, Source.cal_id, Source.age_id, Source.cam_id, Source.calif_id, Source.cal_extension, Source.finicio, Source.ffin, Source.ani, Source.duracion, 
                 Source.cal_key, Source.puerto_id, Source.dni_id, Source.id_repositorio, Source.razon_id, Source.tipo_grab_id, Source.fvalida, Source.cal_whohung, Source.califSub_id, 
-                Source.cal_tMoh, Source.cal_manual, Source.id_nivel_grito, Source.prefijo, Source.dni, Source.IDWG, Source.extra_info, Source.extra_info2)
+                Source.cal_tMoh, Source.cal_manual, Source.id_nivel_grito, Source.prefijo, Source.dni, Source.IDWG, Source.extra_info, Source.extra_info2, source.virtualAgentId)
        
        OUTPUT inserted.grab_id, inserted.cal_id, inserted.tipo_llamada 
        INTO @ProcessedRecords(grab_id,cal_id,tipo_llamada)
@@ -127,16 +92,8 @@ END;
 '
     EXEC(@sql)
 
-    SET @process = 'Drop procedure trsp_InsertRecNodeGrabIds'
-    SET @sql = 'if exists (select * from sys.procedures where name = N''trsp_InsertRecNodeGrabIds'')
-    begin
-        DROP PROCEDURE trsp_InsertRecNodeGrabIds;
-    end'
-    EXEC(@sql)
-
-
-    SET @process = 'feature/KR179003 Alter SP trsp_InsertRecNode'
-    SET @sql = 'CREATE PROCEDURE [dbo].[trsp_InsertRecNodeGrabIds]
+	SET @process = 'alter sp trsp_InsertRecNodeGrabIds to add Virtual Agent Name to the call in the finder'
+    SET @sql = 'ALTER PROCEDURE [dbo].[trsp_InsertRecNodeGrabIds]
 @grabIds varchar(8000),
 @rateEvaluationFormatKolob int = -1
 AS
@@ -210,7 +167,7 @@ end
     rec.cal_id, rec.finicio, rec.extra_info, rec.extra_info2, rec.video, 
     isnull(E.total,0) AS total_forma
     ,calif_id,cam_id,duracion,ani,dni,cal_key,id_repositorio,califSub_id,age_id
-    ,cal_extension
+    ,cal_extension, rec.virtualAgentId
     FROM ria_grabacion rec with(nolock)
     inner join @grabIdTmp t on rec.grab_id=t.grabId
     left join @tEvaluationTmp E on t.grabId=E.grabId    
@@ -219,7 +176,7 @@ end
     rec.cal_id, rec.finicio, rec.extra_info, rec.extra_info2, NULL AS video,
     isnull(E.total,0) AS total_forma
     ,calif_id,cam_id,duracion,ani,dni,cal_key,id_repositorio,califSub_id,age_id
-    ,cal_extension
+    ,cal_extension, rec.virtualAgentId
     FROM RIA_GRABACIONCONSULTA rec with(nolock)
     inner join @grabIdTmp t on rec.grab_id=t.grabId
     left join @tEvaluationTmp E on t.grabId=E.grabId
@@ -234,7 +191,8 @@ rec.grab_id AS ''@C01'',
 CASE WHEN rec.tipo_llamada = 1 THEN ''Inbound'' ELSE ''Outbound'' END AS ''@C02'',
 CASE WHEN rec.tipo_llamada = 1 THEN inb.descripcion ELSE outb.cam_descripcion END AS ''@C03'',
 ISNULL(rec.id_nivel_grito, -1) AS ''@C04'',
-ISNULL(usr.LOGIN, ''N/A'') AS ''@C05'',
+CASE WHEN ISNULL(rec.virtualAgentId, 0) > 0 THEN va.nameAgent ELSE
+ISNULL(usr.LOGIN, ''N/A'') END AS ''@C05'',
 CONVERT(VARCHAR(23), rec.finicio, 126) AS ''@C06'',
 pos.Computer AS ''@C07'',
 CONVERT(NVARCHAR(10), rec.duracion) AS ''@C08'',
@@ -271,6 +229,7 @@ LEFT JOIN cctipocalifsub AS subDisposition ON rec.califSub_id = subDisposition.c
 LEFT JOIN cctipocalifsubout AS subDispositionOut ON rec.califSub_id = subDispositionOut.califSub_id AND rec.tipo_llamada = 2
 LEFT JOIN ccRIAInboundGraph grap ON grap.Inbound_id = inb.Inbound_id AND rec.tipo_llamada = 1
 LEFT JOIN ccRIACampsGraph grapOut ON grapOut.cam_id = outb.cam_id AND rec.tipo_llamada = 2
+LEFT JOIN ccVirtualAgent va ON rec.virtualAgentId = va.idAgent
 
 
 insert into @XMLTable (grab_id,status, dateIn, node)       
@@ -352,74 +311,13 @@ end
 
 END'
     EXEC(@sql)
-
-    SET @process = 'feature/KR179003 Alter SP trsp_InsertRecNode'
-    SET @sql = 'ALTER PROCEDURE [dbo].[trsp_InsertRecNode]
-@grabId INT, 
-@type INT = 0, 
-@rateEvaluationFormatKolob BIT = 0
-AS
-BEGIN
-    declare @grabIds varchar(8000)
-    set @grabIds=convert(varchar(20),@grabId)
-   exec trsp_InsertRecNodeGrabIds @grabIds=@grabIds,@rateEvaluationFormatKolob=@rateEvaluationFormatKolob
-
-END'
-    EXEC(@sql)
-
-
-    SET @process = 'feature/KR179003 Alter fn_RIASplitDelimited'
-    SET @sql = 'ALTER FUNCTION [dbo].[fn_RIASplitDelimited]
-(   
-    @List NVARCHAR(max),
-    @SplitOn NVARCHAR(1)
-)
-RETURNS @RtnValue TABLE (
-    Id INT IDENTITY(1,1),
-    Value NVARCHAR(100)
-)
-AS
-BEGIN
-    DECLARE @Pos INT = 1
-    DECLARE @NextPos INT
-    DECLARE @Fragment NVARCHAR(100)
-
-    IF LEN(@List) = 0  -- Verificar si la lista está vacía y salir
-        RETURN
-
-    WHILE @Pos > 0
-    BEGIN
-        SET @NextPos = CHARINDEX(@SplitOn, @List, @Pos)
-        
-        IF @NextPos > 0
-        BEGIN
-            SET @Fragment = SUBSTRING(@List, @Pos, @NextPos - @Pos)
-            IF LEN(@Fragment) > 0  -- Solo insertar si el fragmento tiene longitud
-            BEGIN
-                INSERT INTO @RtnValue (Value)
-                VALUES (LTRIM(RTRIM(@Fragment)))
-            END
-            SET @Pos = @NextPos + 1
-        END
-        ELSE
-        BEGIN
-            SET @Fragment = SUBSTRING(@List, @Pos, LEN(@List) - @Pos + 1)
-            IF LEN(@Fragment) > 0
-            BEGIN
-                INSERT INTO @RtnValue (Value)
-                VALUES (LTRIM(RTRIM(@Fragment)))
-            END
-            SET @Pos = 0
-        END
-    END
-
-    RETURN
-END
-'
-    EXEC(@sql)
-   
 	
-	------------------------------End Jesus Landus
+	--------------------------------------------------END MACL--------------------------------------------------
+
+	SET @process = ''
+    SET @sql = ''
+    EXEC(@sql)
+
     update trec_parametros set par_valor = @Version where par_id = 30
     set @Version_Actual=@Version_Actual+1
 

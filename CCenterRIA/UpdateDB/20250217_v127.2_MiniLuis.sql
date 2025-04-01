@@ -3370,9 +3370,9 @@ END'
 							CASE
 								WHEN ISNULL(crlp.telefono, '''''''') = '''''''' THEN ''''''''
 								WHEN crlp.internationalRecords = 0 THEN ''''N-'''' + 
-									CASE WHEN crlp.telefono LIKE ''''E_'''' THEN SUBSTRING(crlp.telefono, 3, LEN(crlp.telefono) - 2) ELSE crlp.telefono END
+									CASE WHEN crlp.telefono LIKE ''''E_%'''' THEN SUBSTRING(crlp.telefono, 3, LEN(crlp.telefono) - 2) ELSE crlp.telefono END
 								ELSE ''''I-'''' + 
-									CASE WHEN crlp.telefono LIKE ''''E_'''' THEN SUBSTRING(crlp.telefono, 3, LEN(crlp.telefono) - 2) ELSE crlp.telefono END
+									CASE WHEN crlp.telefono LIKE ''''E_%'''' THEN SUBSTRING(crlp.telefono, 3, LEN(crlp.telefono) - 2) ELSE crlp.telefono END
 							END AS phone,
 							CASE
 								WHEN crlp.tipoMov in (1,4)  THEN @typeDescriptionPhoneBlocked  
@@ -4025,7 +4025,7 @@ SET @process = 'Se agregan nuevas configuraciones al procedimiento de guardado c
     '
     EXEC(@sql)
 
-       SET @process = 'Se modifica ccsp_GalateaAdminCampaignsSurvey, para obtener campañas de IA'
+    SET @process = 'Se modifica ccsp_GalateaAdminCampaignsSurvey, para obtener campañas de IA'
     SET @sql = '
             ALTER PROCEDURE [dbo].[ccsp_GalateaAdminCampaignsSurvey] 
             @Option AS      INT, 

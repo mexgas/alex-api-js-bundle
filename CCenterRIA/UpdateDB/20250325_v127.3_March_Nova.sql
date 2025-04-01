@@ -49,8 +49,7 @@ BEGIN
         if not exists (select 1 from ccWhatsOringCountry where CodeCountry = 1)
         begin
             insert into ccWhatsOringCountry values (1, ''USA'', ''systemTranslated_USA'', 1, ''US'')
-        end'
-        EXEC(@sql)
+        end'        EXEC(@sql)
 
         -------------------------------------------  END Ricardo Nunez LRSV  ----------------------------------------
         ------------------------------------------- Begin Hector Chavez   --------------------------------------
@@ -14268,8 +14267,7 @@ AS
 ---------------------------------------------------------END Jesus Gallardo ---------------------------------------------------------
 
        SET @process = 'Update ccInbound y ccInboundExtend cam_id callback and survey'
-        SET @sql = '
-IF OBJECT_ID(''dbo.ccinbound_Survey'', ''U'') IS NULL begin
+        SET @sql = 'IF not exists(select * from sys.tables where name=''ccinbound_Backup'') begin
     
     CREATE TABLE dbo.ccinbound_Backup (
         inbound_id INT NOT NULL,

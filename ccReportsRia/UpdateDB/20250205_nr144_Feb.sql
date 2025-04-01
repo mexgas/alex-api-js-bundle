@@ -13,7 +13,7 @@ Required version: 128
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
-SET NOCOUNT ON
+SET NOCOUNT ON --
 
 DECLARE @version INT, @versionFix INT
 DECLARE @actualVersion INT, @actualVersionFix INT
@@ -791,158 +791,7 @@ SET @process = 'KR1170000 Create table RepAgentTimeShift'
             END';
     EXEC(@sql);
    -------------------------------------------  END Hector Chavez    -------------------------------------------
-   -------------------------------------------  BEGIN Carlos Chavez    -------------------------------------------
-
-   SET @process = 'Se comenta sp ccSpCreateIndexReport al modificar schema_option en replicacion'
-    SET @sql = 'ALTER PROCEDURE [dbo].[ReportsMasterProcessWIthOnlyGenerate] @from AS DATETIME = NULL
-,@to AS DATETIME = NULL
-,@scheduleTime INT = 10
-,@dateStart DATETIME = NULL
-,@isAllReport tinyint =0 --0 Only table ReportHighUse,1  not in table ReportHighUse, 2 all 
-AS
-SET ANSI_WARNINGS OFF
-SET NOCOUNT ON
-
-DECLARE @i INT,@count INT
-DECLARE @SQL nVARCHAR(4000)
-DECLARE @name SYSNAME
-DECLARE @descError NVARCHAR(max)
-DECLARE @dateSP DATETIME
-
-IF @from IS NULL
-BEGIN
-    SELECT @from = convert(DATETIME, convert(VARCHAR(11), getdate()))
-END
-
-IF @to IS NULL
-BEGIN
-    SET @to = getdate()
-END
-
-IF @dateStart IS NULL
-BEGIN
-    SET @dateStart = getdate()
-END
-
---exec ccSpCreateIndexReport
-
-EXEC ccspTmpTimesInterval @from = @from ,@to = @to  ,@interval = 15 --Tabla TmpTimesInterval Temporal para tener Intervalos de 15 Minutos
-EXEC ccspTmpSessionGeneral @from = @from    ,@to = @to              --Tabla tmpSessionGeneral para tener la sesiones de agentes
-EXEC ccspTmpSessionTimeGroup @from = @from  ,@to = @to              --Tabla tmpSessionTimeGroup para dividir la sesion en intervalos de 15 Minutos
-EXEC ccspTimesccLogAgentesDia @from = @from ,@to = @to              --Tabla tmpccLogAgentesDia tener los movimientos de los agentes
-EXEC ccspTimesOutboundData @from = @from    ,@to = @to              --Tabla tmpTimesOutboundData para los tiempos de las llamadas de salida
-EXEC ccspTimesInboundData @from = @from ,@to = @to                  --Tabla tmpTimesInboundData para los tiempos de las llamadas de entrada
-exec ccspTmpTimesccLogtransfers @from = @from, @to = @to            --Tabla TmpTimesccLogtransfers para los tiempos de las llamadas que son trasferidas
-exec ccsptmpTimesHoldIn @from = @from, @to = @to                    --Tabla tmpTimesHoldIn para los tiempos cuando se pone en hold en llamadas de entrada
-
-CREATE TABLE #tmpProcedureReports (
-    id INT
-    ,name SYSNAME
-    )
-
-declare @tableSpDontProcess table(nameSp varchar(300) primary key not null)
-
-insert into @tableSpDontProcess values(''ccspRepCatalogos'') -- ccspRepCatalogos es para catalogos por eso no se debe correr
-insert into @tableSpDontProcess values(''ccspRepAgentSession'') -- ccspRepAgentSession Genera el reporte de sesiones para alimentar  
-insert into @tableSpDontProcess values(''ccspRepAgentNotReadyDet'') -- ccspRepAgentNotReadyDet sabemos cuando inicia y cuando termina los no disponibles 
-insert into @tableSpDontProcess values(''ccspRepAgentNotReady'') -- ccspRepAgentNotReady Agrupa por hora
-insert into @tableSpDontProcess values(''ccspRepAgentGI'')      -- ccspRepAgentGI Agrupa por hora
-
-
-if @isAllReport =0 begin
-
-    INSERT INTO #tmpProcedureReports
-    SELECT ROW_NUMBER() OVER (
-            ORDER BY [name]
-            ) AS id
-        ,[name]
-    FROM sys.procedures
-    WHERE [name] LIKE ''ccspRep%''  
-        AND [name] NOT IN (select nameSp from @tableSpDontProcess)
-        AND [name] IN (select nameSp from ReportHighUse)        
-end
-else if @isAllReport =1 begin
-    INSERT INTO #tmpProcedureReports
-    SELECT ROW_NUMBER() OVER (
-            ORDER BY [name]
-            ) AS id
-        ,[name]
-    FROM sys.procedures
-    WHERE [name] LIKE ''ccspRep%''
-        AND [name] NOT IN (select nameSp from @tableSpDontProcess)
-        AND [name] Not IN (select nameSp from ReportHighUse)        
-end
-else begin
-    INSERT INTO #tmpProcedureReports
-    SELECT ROW_NUMBER() OVER (
-            ORDER BY [name]
-            ) AS id
-        ,[name]
-    FROM sys.procedures
-    WHERE [name] LIKE ''ccspRep%''
-        AND [name] NOT IN (select nameSp from @tableSpDontProcess)        
-end
-
-
-exec ccspRepAgentSession @action=1,@from=@from,@to=@to --Saca el detalle de las sesiones
-exec ccspRepAgentNotReadyDet @action=1,@from=@from,@to=@to --Saca el detalle de los no disponibles
-exec ccspRepAgentNotReady @action=1,@from=@from,@to=@to --Agrupa a los no disponibles por hora
-exec ccspRepAgentGI @action=1,@from=@from,@to=@to   --Agrupa por 15 minutos
-
-INSERT INTO [logsReportsMaster] (name,STATUS,dateStart,dateEnd,error,maxTime)
-SELECT name,0 [status]  ,''19000101'' as dateStart,''19000101'' dateEnd,'''' error,@scheduleTime
-FROM #tmpProcedureReports
-
-SELECT @i = 1, @count = count(*) FROM #tmpProcedureReports
-
-WHILE @i <= @count  
-BEGIN
-    SELECT @name = name
-    FROM #tmpProcedureReports
-    WHERE id = @i
-
-    SET @sql = ''EXEC '' + @name + '' @action=1, @from=@from, @to=@to''
-    
-    SET @dateSP = getdate()
-
-    BEGIN TRY
-        --print @sql
-        
-        exec sp_executesql @sql, N''@from DATETIME, @to DATETIME'',@from, @to
-
-        UPDATE [logsReportsMaster]
-        SET STATUS = 1
-            ,dateStart = @dateSP
-            ,dateEnd = getdate()
-        WHERE name = @name
-            AND STATUS = 0
-            AND dateStart = ''19000101''
-            AND dateEnd = ''19000101''
-            
-    END TRY
-
-    BEGIN CATCH
-        SELECT @descError = ''Line: '' + cast(error_line() AS NVARCHAR) + '' Number: '' + cast(@@error AS NVARCHAR) + '' Message: '' + error_message()
-
-        SELECT @descError,@name
-
-        UPDATE [logsReportsMaster]
-        SET STATUS = 3
-            ,dateStart = @dateSP
-            ,dateEnd = getdate()
-            ,error = @descError
-        WHERE name = @name
-            AND STATUS = 0
-            AND dateStart = ''19000101''
-            AND dateEnd = ''19000101''
-    END CATCH
-
-    SET @i = @i + 1
-END
-
-DROP TABLE #tmpProcedureReports';
-    EXEC(@sql);
-   -------------------------------------------  END Carlos Chavez    -------------------------------------------
+   
 
    SET @process = 'DROP VIEW [dbo].[ccCampsView] '
    SET @sql = 'IF EXISTS (SELECT * FROM sys.views WHERE object_id = OBJECT_ID(N''ccCampsView''))
@@ -1329,8 +1178,423 @@ FROM clt
 end'
     EXEC(@sql)
     ------------------------------------ End Gaby ---------------------------------------------------------------------
-	
-	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version
+	----------------------------------------- v 127.20250130.0.7 -------------------------------------------------------------
+    --------------------------------------- Begin Gaby --------------------------------------------------------------
+    
+    set @process = 'TT14713 - Se modifica el sp ccspRepCatalogos'
+    set @sql='
+ALTER  PROCEDURE [dbo].[ccspRepCatalogos]
+    @type as tinyint,
+    @action tinyint = 0 -- 0 Filter select; 1 Filters Range
+    ,@userId int =0 ---- se agrega parametro para filtros
+    ,@menuId INT = 0
+
+    AS
+    declare @tablatemp table (id int, description varchar(100) null)
+    declare @tempwork table (idwg int)
+    DECLARE @SQL NVARCHAR(MAX);
+    DECLARE @condition NVARCHAR(300) = '''';
+    DECLARE @columnName NVARCHAR(100) = '''';
+    DECLARE @consult NVARCHAR (2000) = '''';
+
+    if @action = 0
+    BEGIN
+    IF OBJECT_ID(''TEMPDB..#filters'') IS NULL
+    BEGIN
+        CREATE TABLE #filters ([Type] VARCHAR(200))
+    END
+
+        -- CAMPAIGNS
+    IF @type = 1 BEGIN
+
+        INSERT INTO #filters SELECT [Category] FROM ReportsFiltersCategory WHERE FilterName = ''campaigns'' AND ReportId = @menuId
+        IF EXISTS (SELECT * FROM #filters)
+        BEGIN
+            SET @condition = '' WHERE camp.campType IN (SELECT * FROM #filters)''
+            SELECT @columnName = [dbColumn] FROM ReportsFiltersCategory WHERE FilterName = ''campaigns'' AND ReportId = @menuId;
+        END
+        ELSE BEGIN
+            SET @columnName =   ''campaignId'';
+        END
+
+        SET @consult = N'' SELECT cam_id as id, cam_descripcion as description, @columnName as dbColumn FROM ccCamps camp''
+
+        IF @userId <> 0 BEGIN
+
+            SET @SQL = '' declare @tablatemp table (id int, description varchar(100) null)  
+                insert into @tablatemp
+                select distinct caesp.IdCampEsp,'''' '''' as description  from ccUserView us
+                inner join ccRIAWorkGroupUsers wgu on us.User_id = wgu.User_id
+                inner join ccRIACampEspWG caesp on wgu.IDWG = caesp.IDWG and caesp.Tipo=1
+                where us.[User_id] = @userId ''
+                +''if exists(select 1 from @tablatemp) begin''
+                + @consult + '' inner join @tablatemp A on camp.cam_id = A.id'' + @condition
+                +''end
+                else begin
+                    SELECT 0 as id, ''''N/A'''' as description, ''''campaignId'''' as dbColumn
+                end'';
+        END
+        ELSE BEGIN
+            SET @SQL = @consult + @condition;
+        END
+        EXEC sp_executesql @SQL, N''@userId AS int = 0, @columnName AS NVARCHAR(100)'', @userId=@userId, @columnName=@columnName;
+    END
+
+
+        -- DIAL RESULTS
+    if @type = 2 begin
+        Select tiporesdial_id as id, descripcion as description, ''dialResultId'' as dbColumn
+        from ccTipoResultadoDial
+        order by descripcion
+    end
+
+        -- WORKGROUPS
+    if @type = 3 begin
+        if @userId <> 0 begin
+            select v.IDWG as id, c.WGName as description, ''workgroupId'' as dbColumn
+            from ccWgByAcdView v
+            inner join ccriacat_workgroup c on c.IDWG=v.IDWG
+            where USER_ID= @userId
+            return
+        end
+        else  begin
+            select idwg as id, wgname as description, ''workgroupId'' as dbColumn
+            from ccRIACat_WorkGroup
+            group by idwg, wgname   select * from ccRIACat_WorkGroup
+            order by wgname
+        end
+    end
+
+
+    -- AREAS
+    if @type = 4 begin
+    if @userId <> 0 begin
+
+        insert into @tablatemp
+        select distinct isnull(us.IDArea,0) as IDArea, wgu.User_id from ccUserView us
+        inner join ccRIAWorkGroupUsers wgu on us.User_id = wgu.User_id
+        where us.[User_id] = @userId
+
+        select distinct idArea as id, isnull(AreaName,''S/AREA'') as description, ''areaId'' as dbColumn
+        from ccRIACat_Areas area inner join @tablatemp tem on area.IDArea = tem.id
+        return
+    end
+        else begin
+
+            select idArea as id, AreaName as description, ''areaId'' as dbColumn
+            from ccRIACat_Areas
+            group by idArea, AreaName
+            order by AreaName
+        end
+    end
+
+    -- DISPOSITIONS OUT
+    if @type = 5 begin
+        SELECT calif_id as id, [description] as description, ''dispositionId'' as dbColumn
+        FROM ccTipoCalifOut
+        order by [description]
+    end
+
+        -- USER
+    if @type = 6    begin
+        if @userId <> 0 begin
+
+                insert into @tempwork
+                        select IDWG from ccRIAWorkGroupUsers with (index (IX_ccRIAWorkGroupUsers_I)) where User_id = @userId
+
+                select distinct us.User_id as id, us.Login as description,  ''userId'' as dbcolumn from ccUserView us
+                inner join ccRIAWorkGroupUsers wgu on us.User_id = wgu.User_id
+
+                inner join @tempwork awg on wgu.IDWG = awg.idwg
+                where us.TipoUser_id = 1 and [status] = 1
+
+                return
+            end
+
+            else begin
+
+                SELECT [user_id] as id, [login] AS description, ''userId'' as dbColumn
+                FROM ccUserView B WHERE [status] = 1 and TipoUser_id = 1
+                ORDER BY description
+            end
+    end
+
+        -- ACDS**************
+    IF @type = 7 BEGIN
+
+        INSERT INTO #filters SELECT [Category] FROM ReportsFiltersCategory WHERE FilterName = ''acds'' AND ReportId = @menuId
+        IF EXISTS (SELECT * FROM #filters)
+        BEGIN
+            SET @condition = '' WHERE B.chat IN (SELECT * FROM #filters)''
+            SELECT @columnName = [dbColumn] FROM ReportsFiltersCategory WHERE FilterName = ''acds'' AND ReportId = @menuId;
+        END
+        ELSE BEGIN
+            SET @columnName = ''inboundId'';
+        END
+
+        SET @consult = N'' SELECT inbound_id AS id, descripcion AS description, @columnName AS dbColumn
+            FROM ccinbound B''
+
+        IF @userId <> 0 BEGIN
+
+            SET @SQL = '' declare @tablatemp table (id int, description varchar(100) null)
+                insert into @tablatemp
+                select distinct caesp.IdCampEsp,'''''''' as description  from ccUserView us
+                inner join ccRIAWorkGroupUsers wgu on us.User_id = wgu.User_id
+                inner join ccRIACampEspWG caesp on wgu.IDWG = caesp.IDWG and caesp.Tipo=0
+                where us.[User_id] = @userId;''
+                +''if exists(select 1 from @tablatemp) begin''
+                + @consult + '' inner join @tablatemp A on B.inbound_id = A.id'' + @condition + '' return;''
+                +''end
+                else begin
+                    SELECT 0 as id, ''''N/A'''' as description, ''''inboundId'''' as dbColumn
+                end'';   
+        END
+        ELSE BEGIN
+            SET @SQL = @consult + @condition;
+        END
+        EXEC sp_executesql @SQL, N''@userId INT = 0, @columnName AS NVARCHAR(100)'',@userId=@userId, @columnName=@columnName;
+    end
+
+        -- DIDS
+    if @type = 8    begin
+        select 0 as id, ''S/DNIS''  as description, ''dnisId'' as dbColumn
+        union
+        select dni_id as id, CASE WHEN dni_Descripcion = '''' then convert(varchar,dni_numero) else dni_Descripcion end  as description, ''dnisId'' as dbColumn
+        from ccdnis
+    end
+
+        --DISPOSITIONS IN
+    if @type = 9 begin
+        SELECT calif_id as id, [description] as description, ''dispositionId'' as dbColumn
+        FROM ccTipoCalif
+        order by [description]
+    end
+
+        --SUBDISPOSITIONS IN
+    if @type = 10   begin
+        SELECT califSub_id as id, [califSubDesc] as description, ''subDispositionId'' as dbColumn
+        FROM ccTipoCalifSub
+        order by [description]
+    end
+
+        --PROVIDER
+    if @type = 11 begin
+        SELECT provedor_id as id,descrip as description, ''providerId'' as dbColumn
+        FROM cstoProvedor
+        order by [description]
+    end
+
+        -- UNAVAILABLES
+    if @type = 12 begin
+        SELECT tiponotready_id as id, descripcion as description, ''tiponotreadyId'' as dbColumn
+        FROM cctiponotready
+        order by descripcion
+    end
+
+        -- DIALERS
+    if @type = 13 begin
+        SELECT dialer_id as id, descripcion as description, ''dialerId'' as dbColumn
+        FROM ccoDialers
+        order by descripcion
+    end
+
+        -- CallTYpes
+    if @type = 14   begin
+            SELECT statusCall_id as id, descripcion as description, ''callStatusId'' as dbColumn
+            FROM ccStatusLlamada
+        order by descripcion
+    end
+
+        -- SUBDISPOSITIONS OUT
+    if @type = 21   begin
+        SELECT califSub_id as id, [califSubDesc] as description, ''subDispositionId'' as dbColumn
+        FROM cctipocalifsubout
+        order by [description]
+    end
+
+        --AVRS TEMPLATE-SECTION
+    if @type = 15   begin
+        SELECT fc.id as id, (rf.nombre +'' ''+ rc.con_descripcion)+'' ''+convert(varchar(10),fc.id) as description, ''templateSectionId'' as dbColumn
+        FROM RIA_FORMATOCONCEPTO fc
+        INNER JOIN  (SELECT id_formato, nombre, MAX(version) as version
+                                        FROM RIA_FORMATOS
+                                        WHERE activo = 1
+                                        group by id_formato, nombre) as rf
+        ON rf.id_formato = fc.templateId
+        inner join RIA_CONCEPTOS rc ON rc.id_concepto = fc.sectionId
+        order by fc.id
+    END
+
+    --exec dbo.ccspRepCatalogos @type=15,@action=0
+
+        --AVRS TEMPLATES
+    if @type = 16   begin
+        SELECT f.id_formato as id, f.nombre as description, ''templateId'' as dbColumn
+        FROM RIA_FORMATOS f INNER JOIN (SELECT id_formato,MAX(version) as version
+                                        FROM RIA_FORMATOS
+                                        WHERE activo = 1
+                                        group by id_formato) as t
+        ON f.id_formato = t.id_formato AND f.version = t.version
+        order by f.nombre
+    end
+
+        --AVRS TEMPLATES
+    if @type = 31   begin
+        SELECT c.id_concepto as id, c.con_descripcion as description, ''sectionId'' as dbColumn
+        FROM RIA_CONCEPTOS c INNER JOIN (SELECT id_concepto,MAX(version) as version
+                                        FROM RIA_CONCEPTOS
+                                        group by id_concepto) as t
+        ON c.id_concepto = t.id_concepto AND c.version = t.version
+        order by c.con_descripcion
+    END
+
+        --AVRS QUESTIONS
+    if @type = 23   begin
+        SELECT p.id_pregunta as id, p.enunciado_pregunta as description, ''questionId'' as dbColumn
+        FROM RIA_PREGUNTAS p INNER JOIN (SELECT id_pregunta
+                                        FROM RIA_PREGUNTAS
+                                        group by id_pregunta) as t
+        ON p.id_pregunta = t.id_pregunta
+        order by p.enunciado_pregunta
+    END
+
+
+    --AVRS QUESTIONS CHAT
+    if @type = 24   begin
+        SELECT p.id_pregunta as id, p.enunciado_pregunta as description, ''questionId'' as dbColumn
+        FROM RIA_PREGUNTAS p INNER JOIN (SELECT id_pregunta
+                                        FROM RIA_PREGUNTAS
+                                        group by id_pregunta) as t
+        ON p.id_pregunta = t.id_pregunta
+        order by p.enunciado_pregunta
+    END
+
+        -- AVRS SUPERVISOR
+    if @type = 17   begin
+        SELECT [user_id] as id, [login] AS description, ''supervisorId'' as dbColumn
+        FROM ccUserView
+        WHERE [status] = 1
+        and TipoUser_id = 2
+        ORDER BY [login]
+    end
+
+        --Status Call
+    if @type = 25   begin
+        select statusCall_id as id, [descripcion] as description, ''statusCallId'' as dbcolumn
+        from ccstatusllamada
+        order by [descripcion]
+    end
+
+        --Survey
+    if @type = 26   begin
+        select surveyId as id, [description] as description, ''surveyId'' as dbcolumn
+        from Survey
+        order by [description]
+    end
+
+    --dialType
+    if @type = 29 begin
+        select dialId as id, [description] as description, ''dialId'' as dbcolumn
+        from dialType
+        order by [description]
+    end
+
+        --dial
+    if @type = 30   begin
+        select id as id, [description] as description, ''dialId'' as dbcolumn
+        from Dials
+        order by [description]
+    end
+
+    if @type = 33 begin
+        if @userId <> 0 begin
+            insert into @tablatemp
+            select distinct caesp.IdCampEsp,'''' as description  from ccUserView us
+            inner join ccRIAWorkGroupUsers wgu on us.User_id = wgu.User_id
+            inner join ccRIACampEspWG caesp on wgu.IDWG = caesp.IDWG and caesp.Tipo=0
+            inner join ccinbound i on caesp.IdCampEsp = i.Inbound_id and i.chat = 0
+            where us.[User_id] = @userId
+
+            SELECT inbound_id as id, descripcion as description, ''inboundCamp'' as dbColumn
+            from ccinbound B
+            inner join @tablatemp A on B.inbound_id = A.id
+            return
+        end
+        else begin
+            select inbound_id as id, descripcion as description, ''inboundCamp'' as dbColumn
+            from ccinbound where chat = 0
+        end
+    end
+    IF @type = 34   
+    BEGIN
+        SELECT DISTINCT TipoReadyAuxiliar_Id AS id, [Description] AS description, ''auxiliarId'' AS dbcolumn
+        FROM TipoReadyAuxiliar
+        ORDER BY [description]
+    END
+    IF @type = 35   
+    BEGIN
+        select SegmentId as Id,Name as description, ''SegmentId'' as dbColumn from ccSmsSegments
+    END
+    if @type = 36 begin
+        if @userId <> 0 begin
+
+                insert into @tempwork
+                        select IDWG from ccRIAWorkGroupUsers with (index (IX_ccRIAWorkGroupUsers_I)) where User_id = @userId
+
+                select distinct us.User_id as id, us.Login as description,  ''adminId'' as dbcolumn from ccUserView us
+                inner join ccRIAWorkGroupUsers wgu on us.User_id = wgu.User_id
+
+                inner join @tempwork awg on wgu.IDWG = awg.idwg
+                where us.TipoUser_id = 2 and [status] = 1
+
+                return
+            end
+
+            else begin
+
+                SELECT [user_id] as id, [login] AS description, ''adminId'' as dbColumn
+                FROM ccUserView B WHERE [status] = 1 and TipoUser_id = 2
+                ORDER BY description
+            end
+    end
+    end --Action 0
+
+    IF OBJECT_ID(''TEMPDB..#filters'') IS NOT NULL
+    BEGIN
+        DROP TABLE #filters;
+    END
+
+    -----------------------------------------------------------
+    if @action = 1 begin
+        -- TRUNKS
+        if @type = 13
+        begin
+            SELECT MIN(trunk) as [min],MAX(trunk) as [max],''trunk'' as dbColumn  from RepTrunkBusy
+        end
+
+        -- AVRS DISPOSITION
+        if @type = 18
+        begin
+            SELECT 0 as [min], 100 as [max],''Disposition'' as dbColumn
+        end
+
+        -- AVG DISPOSITION
+        if @type = 19
+        begin
+            SELECT 0 as [min], 100 as [max],''avgDisposition'' as dbColumn
+        end
+
+        -- SCORE
+        if @type = 20
+        begin
+            SELECT 0 as [min], 100 as [max],''avgDisposition'' as dbColumn
+        end
+    end'
+    EXEC(@sql)
+    -----------------------------------------End Gaby ------------------------------------------------------------
+
+    	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version
 
 		COMMIT TRAN
 	END TRY

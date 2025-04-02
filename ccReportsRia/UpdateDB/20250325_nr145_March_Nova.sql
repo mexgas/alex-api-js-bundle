@@ -3493,7 +3493,31 @@ END;
 
 
 	------------------------------------------ END Marco García -----------------------------------------------
+    set @process = 'CW-8730 Rename Column RepEmailACD.inboundId'
+    set @sql='IF EXISTS (
+    SELECT 1
+    FROM sys.columns
+    WHERE object_id = OBJECT_ID(''RepEmailACD'')
+      AND name = ''inbounid''
+)
+BEGIN
+    EXEC sp_rename ''RepEmailACD.inbounid'', ''inboundId'', ''COLUMN'';
+END
+'
+    EXEC(@sql)
 
+    set @process = 'CW-8730 Rename Column RepEmailGeneral.inboundId'
+    set @sql='IF EXISTS (
+    SELECT 1
+    FROM sys.columns
+    WHERE object_id = OBJECT_ID(''RepEmailGeneral'')
+      AND name = ''inbounid''
+)
+BEGIN
+    EXEC sp_rename ''RepEmailGeneral.inbounid'', ''inboundId'', ''COLUMN'';
+END
+'
+    EXEC(@sql)
 
 
 

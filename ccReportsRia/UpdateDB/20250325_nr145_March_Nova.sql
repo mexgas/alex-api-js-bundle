@@ -61,7 +61,7 @@ BEGIN
 END'
     EXEC(@sql)
 
-	SET @process = 'Alter RepOutAnswAndXferCalls migración de dialTimeSec de SMALLINT a INT'
+	SET @process = 'Update Data RepOutAnswAndXferCalls migración de dialTimeSec de SMALLINT a INT'
     SET @sql = 'IF EXISTS (
     SELECT 1 
     FROM INFORMATION_SCHEMA.COLUMNS 
@@ -70,6 +70,8 @@ END'
       AND DATA_TYPE = ''smallint''
 )
 BEGIN    
+
+	declare @sql varchar(max)=''
     -- Paso 2: Copia los datos en bloques para evitar bloqueos masivos
     DECLARE @BatchSize INT = 10000;
 
@@ -85,13 +87,13 @@ BEGIN
     -- Paso 3: Elimina columna original
     ALTER TABLE RepOutAnswAndXferCalls DROP COLUMN dialTimeSec;
 
+	EXEC sp_rename 
+        ''''RepOutAnswAndXferCalls.dialTimeSec_int'''', 
+        ''''dialTimeSec'''', 
+        ''''COLUMN'''';
+	''
     -- Paso 4: Renombra nueva columna
-    EXEC sp_rename 
-        ''RepOutAnswAndXferCalls.dialTimeSec_int'', 
-        ''dialTimeSec'', 
-        ''COLUMN'';
-
-    PRINT ''Migración finalizada con éxito.'';
+    
 END
 '
     EXEC(@sql)

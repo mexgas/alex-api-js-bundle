@@ -39,7 +39,7 @@ BEGIN
 	BEGIN TRY
 --------------------------------------------------------BEGIN 127.20250325.0.0 Jesus Gallardo----------------------------------------------------------------------
     
-    SET @process = 'Alter RepOutAnswAndXferCalls migración de dialTimeSec de SMALLINT a INT'
+     SET @process = 'Alter RepOutAnswAndXferCalls migración de dialTimeSec de SMALLINT a INT'
     SET @sql = 'IF EXISTS (
     SELECT 1 
     FROM INFORMATION_SCHEMA.COLUMNS 
@@ -48,14 +48,14 @@ BEGIN
       AND DATA_TYPE = ''smallint''
 )
 BEGIN
-  	-- Paso 1: Agrega columna temporal solo si no existe
-	IF not EXISTS (
-		SELECT 1 
-		FROM INFORMATION_SCHEMA.COLUMNS 
-		WHERE TABLE_NAME = ''RepOutAnswAndXferCalls'' 
-		  AND COLUMN_NAME = ''dialTimeSec_int'' 		 
-	)
-	BEGIN
+    -- Paso 1: Agrega columna temporal solo si no existe
+    IF not EXISTS (
+        SELECT 1 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = ''RepOutAnswAndXferCalls'' 
+          AND COLUMN_NAME = ''dialTimeSec_int''          
+    )
+    BEGIN
         ALTER TABLE RepOutAnswAndXferCalls ADD dialTimeSec_int INT NULL;
     END  
 END'

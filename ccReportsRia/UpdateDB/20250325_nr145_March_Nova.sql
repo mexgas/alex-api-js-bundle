@@ -39,7 +39,7 @@ BEGIN
 	BEGIN TRY
 --------------------------------------------------------BEGIN 127.20250325.0.0 Jesus Gallardo----------------------------------------------------------------------
     
-     SET @process = 'Alter RepOutAnswAndXferCalls migración de dialTimeSec de SMALLINT a INT'
+    SET @process = 'Alter RepOutAnswAndXferCalls migración de dialTimeSec de SMALLINT a INT'
     SET @sql = 'IF EXISTS (
     SELECT 1 
     FROM INFORMATION_SCHEMA.COLUMNS 

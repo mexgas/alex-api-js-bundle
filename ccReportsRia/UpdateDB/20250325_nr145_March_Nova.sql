@@ -48,20 +48,20 @@ BEGIN
       AND DATA_TYPE = ''smallint''
 )
 BEGIN
-  	-- Paso 1: Agrega columna temporal solo si no existe
-	IF not EXISTS (
-		SELECT 1 
-		FROM INFORMATION_SCHEMA.COLUMNS 
-		WHERE TABLE_NAME = ''RepOutAnswAndXferCalls'' 
-		  AND COLUMN_NAME = ''dialTimeSec_int'' 		 
-	)
-	BEGIN
+    -- Paso 1: Agrega columna temporal solo si no existe
+    IF not EXISTS (
+        SELECT 1 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = ''RepOutAnswAndXferCalls'' 
+          AND COLUMN_NAME = ''dialTimeSec_int''          
+    )
+    BEGIN
         ALTER TABLE RepOutAnswAndXferCalls ADD dialTimeSec_int INT NULL;
     END  
 END'
     EXEC(@sql)
 
-	SET @process = 'Alter RepOutAnswAndXferCalls migración de dialTimeSec de SMALLINT a INT'
+	SET @process = 'Update Data RepOutAnswAndXferCalls migración de dialTimeSec de SMALLINT a INT'
     SET @sql = 'IF EXISTS (
     SELECT 1 
     FROM INFORMATION_SCHEMA.COLUMNS 
@@ -70,6 +70,8 @@ END'
       AND DATA_TYPE = ''smallint''
 )
 BEGIN    
+
+	declare @sql varchar(max)=''
     -- Paso 2: Copia los datos en bloques para evitar bloqueos masivos
     DECLARE @BatchSize INT = 10000;
 
@@ -85,13 +87,13 @@ BEGIN
     -- Paso 3: Elimina columna original
     ALTER TABLE RepOutAnswAndXferCalls DROP COLUMN dialTimeSec;
 
+	EXEC sp_rename 
+        ''''RepOutAnswAndXferCalls.dialTimeSec_int'''', 
+        ''''dialTimeSec'''', 
+        ''''COLUMN'''';
+	''
     -- Paso 4: Renombra nueva columna
-    EXEC sp_rename 
-        ''RepOutAnswAndXferCalls.dialTimeSec_int'', 
-        ''dialTimeSec'', 
-        ''COLUMN'';
-
-    PRINT ''Migración finalizada con éxito.'';
+    
 END
 '
     EXEC(@sql)
@@ -2673,26 +2675,216 @@ set nocount off'
 
     -------------------------------------------  BEGIN Ricardo Nunez LRSV  ----------------------------------------
     set @process = 'DELETE FROM ccWhatsOringCountry'
-        set @sql='IF EXISTS (
-            SELECT 1
-            FROM INFORMATION_SCHEMA.COLUMNS
-            WHERE TABLE_NAME = ''ccWhatsOringCountry''
-            AND COLUMN_NAME = ''CountryAbbreviation''
-        )
-        AND EXISTS (
-            SELECT 1 FROM CCReportsRIA.dbo.ccWhatsOringCountry
-        )
+        set @sql='IF EXISTS (SELECT 1 FROM ccWhatsOringCountry)
         BEGIN
-            DELETE FROM CCReportsRIA.dbo.ccWhatsOringCountry;
+            TRUNCATE TABLE ccWhatsOringCountry;
         END'
         EXEC(@sql)
 
 
     set @process = 'INSERT VALUES TO COUNTRYABBREVIATION'
-        set @sql='IF NOT EXISTS ( SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ''ccWhatsOringCountry'' AND COLUMN_NAME = ''CountryAbbreviation'')
+        set @sql='IF NOT EXISTS (SELECT 1 FROM ccWhatsOringCountry)
         BEGIN
-            INSERT INTO CCReportsRIA.dbo.ccWhatsOringCountry
-            SELECT * FROM CCenterRIA.dbo.ccWhatsOringCountry;
+        INSERT INTO ccWhatsOringCountry (CodeCountry, country, TagTranslate, length, CountryAbbreviation)
+        VALUES
+        (''249758'', ''Sudan'', ''systemTranslated_Sudan'', 6, ''SD''),
+        (''256649'', ''Uganda'', ''systemTranslated_Uganda'', 6, ''UG''),
+        (''1242'', ''Bahamas'', ''systemTranslated_Bahamas'', 4, ''BS''),
+        (''1246'', ''Barbados'', ''systemTranslated_Barbados'', 4, ''BB''),
+        (''1264'', ''Anguilla'', ''systemTranslated_Anguilla'', 4, ''AI''),
+        (''1268'', ''Antigua'', ''systemTranslated_Antigua'', 4, ''AG''),
+        (''1284'', ''British Virgin Islands'', ''systemTranslated_BritishVirginIslands'', 4, ''VG''),
+        (''1340'', ''US Virgin Islands'', ''systemTranslated_USVirginIslands'', 4, ''VI''),
+        (''1345'', ''Cayman Islands'', ''systemTranslated_CaymanIslands'', 4, ''KY''),
+        (''1411'', ''Bermuda'', ''systemTranslated_Bermuda'', 4, ''BM''),
+        (''1473'', ''Grenada'', ''systemTranslated_Grenada'', 4, ''GD''),
+        (''1649'', ''Turks & Caicos'', ''systemTranslated_TurksCaicos'', 4, ''TC''),
+        (''1664'', ''Montserrat'', ''systemTranslated_Montserrat'', 4, ''MS''),
+        (''1671'', ''Guam'', ''systemTranslated_Guam'', 4, ''GU''),
+        (''1758'', ''St. Lucia'', ''systemTranslated_St.Lucia'', 4, ''LC''),
+        (''1787'', ''Puerto Rico'', ''systemTranslated_PuertoRico'', 4, ''PR''),
+        (''1809'', ''Dominican Republic'', ''systemTranslated_DominicanRepublic'', 4, ''DO''),
+        (''1829'', ''Dominican Republic'', ''systemTranslated_DominicanRepublic'', 4, ''DO''),
+        (''1849'', ''Dominican Republic'', ''systemTranslated_DominicanRepublic'', 4, ''DO''),
+        (''1868'', ''Trinidad & Tobago'', ''systemTranslated_TrinidadTobago'', 4, ''TT''),
+        (''1869'', ''St. Kitts/Nevis'', ''systemTranslated_StKitts_Nevis'', 4, ''KN''),
+        (''1876'', ''Jamaica'', ''systemTranslated_Jamaica'', 4, ''JM''),
+        (''1939'', ''Puerto Rico'', ''systemTranslated_PuertoRico'', 4, ''PR''),
+        (''5399'', ''Guantanamo Bay'', ''systemTranslated_GuantanamoBay'', 4, ''CU''),
+        (''212'', ''Morocco'', ''systemTranslated_Morocco'', 3, ''MA''),
+        (''213'', ''Algeria'', ''systemTranslated_Algeria'', 3, ''DZ''),
+        (''218'', ''Libya'', ''systemTranslated_Libya'', 3, ''LY''),
+        (''220'', ''Gambia'', ''systemTranslated_Gambia'', 3, ''GM''),
+        (''221'', ''Senegal'', ''systemTranslated_Senegal'', 3, ''SN''),
+        (''222'', ''Mauritania'', ''systemTranslated_Mauritania'', 3, ''MR''),
+        (''224'', ''Guinea'', ''systemTranslated_Guinea'', 3, ''GN''),
+        (''225'', ''Ivory Coast'', ''systemTranslated_IvoryCoast'', 3, ''CI''),
+        (''226'', ''Burkina Faso'', ''systemTranslated_BurkinaFaso'', 3, ''BF''),
+        (''227'', ''Niger'', ''systemTranslated_Niger'', 3, ''NE''),
+        (''229'', ''Benin'', ''systemTranslated_Benin'', 3, ''BJ''),
+        (''231'', ''Liberia'', ''systemTranslated_Liberia'', 3, ''LR''),
+        (''232'', ''Sierra Leone'', ''systemTranslated_SierraLeone'', 3, ''SL''),
+        (''233'', ''Ghana'', ''systemTranslated_Ghana'', 3, ''GH''),
+        (''234'', ''Nigeria'', ''systemTranslated_Nigeria'', 3, ''NG''),
+        (''235'', ''Chad'', ''systemTranslated_Chad'', 3, ''TD''),
+        (''236'', ''Central African Republic'', ''systemTranslated_CentralAfricanRepublic'', 3, ''CF''),
+        (''237'', ''Cameroon'', ''systemTranslated_Cameroon'', 3, ''CM''),
+        (''238'', ''Cape Verde'', ''systemTranslated_CapeVerdeIslands'', 3, ''CV''),
+        (''242'', ''Congo'', ''systemTranslated_Congo'', 3, ''CG''),
+        (''243'', ''Congo, Dem. Rep. of'', ''systemTranslated_CongoDemRepof'', 3, ''CD''),
+        (''244'', ''Angola'', ''systemTranslated_Angola'', 3, ''AO''),
+        (''246'', ''Diego Garcia'', ''systemTranslated_DiegoGarcia'', 3, ''US''),
+        (''247'', ''Ascension'', ''systemTranslated_Ascension'', 3, ''BS''),
+        (''250'', ''Rwandese Republic'', ''systemTranslated_RwandeseRepublic'', 3, ''RW''),
+        (''251'', ''Ethiopia'', ''systemTranslated_Ethiopia'', 3, ''ET''),
+        (''253'', ''Djibouti'', ''systemTranslated_Djibouti'', 3, ''DJ''),
+        (''254'', ''Kenya'', ''systemTranslated_Kenya'', 3, ''KE''),
+        (''255'', ''Tanzania'', ''systemTranslated_Tanzania'', 3, ''TZ''),
+        (''257'', ''Burundi'', ''systemTranslated_Burundi'', 3, ''BI''),
+        (''258'', ''Mozambique'', ''systemTranslated_Mozambique'', 3, ''MZ''),
+        (''260'', ''Zambia'', ''systemTranslated_Zambia'', 3, ''ZM''),
+        (''261'', ''Madagascar'', ''systemTranslated_Madagascar'', 3, ''MG''),
+        (''263'', ''Zimbabwe'', ''systemTranslated_Zimbabwe'', 3, ''ZW''),
+        (''265'', ''Malawi'', ''systemTranslated_Malawi'', 3, ''MW''),
+        (''267'', ''Botswana'', ''systemTranslated_Botswana'', 3, ''BW''),
+        (''268'', ''Swaziland'', ''systemTranslated_Swaziland'', 3, ''SZ''),
+        (''269'', ''Comoros'', ''systemTranslated_Comoros'', 3, ''KM''),
+        (''291'', ''Eritrea'', ''systemTranslated_Eritrea'', 3, ''ER''),
+        (''297'', ''Aruba'', ''systemTranslated_Aruba'', 3, ''AW''),
+        (''299'', ''Greenland'', ''systemTranslated_Greenland'', 3, ''GL''),
+        (''350'', ''Gibraltar'', ''systemTranslated_Gibraltar'', 3, ''GI''),
+        (''351'', ''Portugal'', ''systemTranslated_Portugal'', 3, ''PT''),
+        (''352'', ''Luxembourg'', ''systemTranslated_Luxembourg'', 3, ''LU''),
+        (''353'', ''Ireland'', ''systemTranslated_Ireland'', 3, ''IE''),
+        (''354'', ''Iceland'', ''systemTranslated_Iceland'', 3, ''IS''),
+        (''355'', ''Albania'', ''systemTranslated_Albania'', 3, ''AL''),
+        (''356'', ''Malta'', ''systemTranslated_Malta'', 3, ''MT''),
+        (''357'', ''Cyprus'', ''systemTranslated_Cyprus'', 3, ''CY''),
+        (''358'', ''Finland'', ''systemTranslated_Finland'', 3, ''FI''),
+        (''359'', ''Bulgaria'', ''systemTranslated_Bulgaria'', 3, ''BG''),
+        (''370'', ''Lithuania'', ''systemTranslated_Lithuania'', 3, ''LT''),
+        (''371'', ''Latvia'', ''systemTranslated_Latvia'', 3, ''LV''),
+        (''372'', ''Estonia'', ''systemTranslated_Estonia'', 3, ''EE''),
+        (''373'', ''Moldova'', ''systemTranslated_Moldova'', 3, ''MD''),
+        (''374'', ''Armenia'', ''systemTranslated_Armenia'', 3, ''AM''),
+        (''375'', ''Belarus'', ''systemTranslated_Belarus'', 3, ''BY''),
+        (''377'', ''Monaco'', ''systemTranslated_Monaco'', 3, ''MC''),
+        (''378'', ''San Marino'', ''systemTranslated_SanMarino'', 3, ''SM''),
+        (''379'', ''Vatican City'', ''systemTranslated_VaticanCity'', 3, ''VA''),
+        (''380'', ''Ukraine'', ''systemTranslated_Ukrainea'', 3, ''UA''),
+        (''381'', ''Serbia/Montenegro'', ''systemTranslated_Serbia_Montenegro'', 3, ''RS''),
+        (''385'', ''Croatia'', ''systemTranslated_Croatia'', 3, ''HR''),
+        (''386'', ''Slovenia'', ''systemTranslated_Slovenia'', 3, ''SI''),
+        (''387'', ''Bosnia/Herzegovina'', ''systemTranslated_Bosnia_Herzegovina'', 3, ''BA''),
+        (''389'', ''Macedonia'', ''systemTranslated_Macedonia'', 3, ''MK''),
+        (''420'', ''Czech Republic'', ''systemTranslated_CzechRepublic'', 3, ''CZ''),
+        (''421'', ''Slovak Republic'', ''systemTranslated_SlovakRepublic'', 3, ''SK''),
+        (''423'', ''Liechtenstein'', ''systemTranslated_Liechtenstein'', 3, ''LI''),
+        (''500'', ''Falkland Islands'', ''systemTranslated_FalklandIslands'', 3, ''FK''),
+        (''501'', ''Belize'', ''systemTranslated_Belize'', 3, ''BZ''),
+        (''502'', ''Guatemala'', ''systemTranslated_Guatemala'', 3, ''GT''),
+        (''503'', ''El Salvador'', ''systemTranslated_ElSalvador'', 3, ''SV''),
+        (''504'', ''Honduras'', ''systemTranslated_Honduras'', 3, ''HN''),
+        (''505'', ''Nicaragua'', ''systemTranslated_Nicaragua'', 3, ''NI''),
+        (''506'', ''Costa Rica'', ''systemTranslated_CostaRica'', 3, ''CR''),
+        (''507'', ''Panama'', ''systemTranslated_Panama'', 3, ''PA''),
+        (''509'', ''Haiti'', ''systemTranslated_Haiti'', 3, ''HT''),
+        (''590'', ''Guadeloupe'', ''systemTranslated_Guadeloupe'', 3, ''GP''),
+        (''591'', ''Bolivia'', ''systemTranslated_Bolivia'', 3, ''BO''),
+        (''592'', ''Guyana'', ''systemTranslated_Guyana'', 3, ''GY''),
+        (''593'', ''Ecuador'', ''systemTranslated_Ecuador'', 3, ''EC''),
+        (''594'', ''French Guiana'', ''systemTranslated_FrenchGuiana'', 3, ''GF''),
+        (''595'', ''Paraguay'', ''systemTranslated_Paraguay'', 3, ''PY''),
+        (''596'', ''Martinique'', ''systemTranslated_Martinique'', 3, ''MQ''),
+        (''597'', ''Suriname'', ''systemTranslated_Suriname'', 3, ''SR''),
+        (''598'', ''Uruguay'', ''systemTranslated_Uruguay'', 3, ''UY''),
+        (''599'', ''Netherlands Antilles'', ''systemTranslated_NetherlandsAntilles'', 3, ''NL''),
+        (''670'', ''East Timor'', ''systemTranslated_EastTimor'', 3, ''TL''),
+        (''672'', ''Australian External Territories'', ''systemTranslated_AustralianExternalTerritories'', 3, ''NF''),
+        (''673'', ''Brunei Darussalam'', ''systemTranslated_BruneiDarussalam'', 3, ''BN''),
+        (''674'', ''Nauru'', ''systemTranslated_Nauru'', 3, ''NR''),
+        (''675'', ''Papua New Guinea'', ''systemTranslated_PapuaNewGuinea'', 3, ''PG''),
+        (''677'', ''Solomon Islands'', ''systemTranslated_SolomonIslands'', 3, ''SB''),
+        (''679'', ''Fiji Islands'', ''systemTranslated_FijiIslands'', 3, ''FJ''),
+        (''680'', ''Palau'', ''systemTranslated_Palau'', 3, ''PW''),
+        (''682'', ''Cook Islands'', ''systemTranslated_CookIslands'', 3, ''CK''),
+        (''685'', ''Western Samoa'', ''systemTranslated_WesternSamoa'', 3, ''WS''),
+        (''687'', ''New Caledonia'', ''systemTranslated_NewCaledonia'', 3, ''NC''),
+        (''689'', ''French Polynesia'', ''systemTranslated_FrenchPolynesia'', 3, ''PF''),
+        (''691'', ''Micronesia'', ''systemTranslated_Micronesia'', 3, ''FM''),
+        (''692'', ''Marshall Islands'', ''systemTranslated_MarshallIslands'', 3, ''MH''),
+        (''850'', ''Korea (North)'', ''systemTranslated_KoreaNorth'', 3, ''KP''),
+        (''852'', ''Hong Kong'', ''systemTranslated_HongKong'', 3, ''HK''),
+        (''853'', ''Macao'', ''systemTranslated_Macao'', 3, ''MO''),
+        (''855'', ''Cambodia'', ''systemTranslated_Cambodia'', 3, ''KH''),
+        (''856'', ''Laos'', ''systemTranslated_Laos'', 3, ''LA''),
+        (''880'', ''Bangladesh'', ''systemTranslated_Bangladesh'', 3, ''BD''),
+        (''886'', ''Taiwan'', ''systemTranslated_Taiwan'', 3, ''TW''),
+        (''960'', ''Maldives'', ''systemTranslated_Maldives'', 3, ''MV''),
+        (''961'', ''Lebanon'', ''systemTranslated_Lebanon'', 3, ''LB''),
+        (''962'', ''Jordan'', ''systemTranslated_Jordan'', 3, ''JO''),
+        (''963'', ''Syria'', ''systemTranslated_Syria'', 3, ''SY''),
+        (''964'', ''Iraq'', ''systemTranslated_Iraq'', 3, ''IQ''),
+        (''965'', ''Kuwait'', ''systemTranslated_Kuwait'', 3, ''KW''),
+        (''966'', ''Saudi Arabia'', ''systemTranslated_SaudiArabia'', 3, ''SA''),
+        (''967'', ''Yemen'', ''systemTranslated_Yemen'', 3, ''YE''),
+        (''968'', ''Oman'', ''systemTranslated_Oman'', 3, ''OM''),
+        (''971'', ''United Arab Emirates'', ''systemTranslated_UnitedArabEmirates'', 3, ''AE''),
+        (''972'', ''Israel'', ''systemTranslated_Israel'', 3, ''IL''),
+        (''973'', ''Bahrain'', ''systemTranslated_Bahrain'', 3, ''BH''),
+        (''974'', ''Qatar'', ''systemTranslated_Qatar'', 3, ''QA''),
+        (''975'', ''Bhutan'', ''systemTranslated_Bhutan'', 3, ''BT''),
+        (''976'', ''Mongolia'', ''systemTranslated_Mongolia'', 3, ''MN''),
+        (''977'', ''Nepal'', ''systemTranslated_Nepal'', 3, ''NP''),
+        (''992'', ''Tajikistan'', ''systemTranslated_Tajikistan'', 3, ''TJ''),
+        (''993'', ''Turkmenistan'', ''systemTranslated_Turkmenistan'', 3, ''TM''),
+        (''994'', ''Azerbaijan'', ''systemTranslated_Azerbaijan'', 3, ''AZ''),
+        (''995'', ''Georgia'', ''systemTranslated_Georgia'', 3, ''GE''),
+        (''998'', ''Uzbekistan'', ''systemTranslated_Uzbekistan'', 3, ''UZ''),
+        (''20'', ''Egypt'', ''systemTranslated_Egypt'', 2, ''EG''),
+        (''27'', ''South Africa'', ''systemTranslated_SouthAfrica'', 2, ''ZA''),
+        (''30'', ''Greece'', ''systemTranslated_Greece'', 2, ''GR''),
+        (''31'', ''Netherlands'', ''systemTranslated_Netherlands'', 2, ''NL''),
+        (''32'', ''Belgium'', ''systemTranslated_Belgium'', 2, ''BE''),
+        (''33'', ''France'', ''systemTranslated_France'', 2, ''FR''),
+        (''34'', ''Spain'', ''systemTranslated_Spain'', 2, ''ES''),
+        (''36'', ''Hungary'', ''systemTranslated_Hungary'', 2, ''HU''),
+        (''39'', ''Italy'', ''systemTranslated_Italy'', 2, ''IT''),
+        (''40'', ''Romania'', ''systemTranslated_Romania'', 2, ''RO''),
+        (''41'', ''Switzerland'', ''systemTranslated_Switzerland'', 2, ''CH''),
+        (''43'', ''Austria'', ''systemTranslated_Austria'', 2, ''AT''),
+        (''44'', ''United Kingdom'', ''systemTranslated_UnitedKingdom'', 2, ''GB''),
+        (''45'', ''Denmark'', ''systemTranslated_Denmark'', 2, ''DK''),
+        (''46'', ''Sweden'', ''systemTranslated_Sweden'', 2, ''SE''),
+        (''47'', ''Norway'', ''systemTranslated_Norway'', 2, ''NO''),
+        (''48'', ''Poland'', ''systemTranslated_Poland'', 2, ''PL''),
+        (''49'', ''Germany'', ''systemTranslated_Germany'', 2, ''DE''),
+        (''51'', ''Peru'', ''systemTranslated_Peru'', 2, ''PE''),
+        (''52'', ''Mexico'', ''systemTranslated_Mexico'', 2, ''MX''),
+        (''53'', ''Cuba'', ''systemTranslated_Cuba'', 2, ''CU''),
+        (''54'', ''Argentina'', ''systemTranslated_Argentina'', 2, ''AR''),
+        (''55'', ''Brazil'', ''systemTranslated_Brazil'', 2, ''BR''),
+        (''56'', ''Chile'', ''systemTranslated_Chile'', 2, ''CL''),
+        (''57'', ''Colombia'', ''systemTranslated_Colombia'', 2, ''CO''),
+        (''58'', ''Venezuela'', ''systemTranslated_Venezuela'', 2, ''VE''),
+        (''60'', ''Malaysia'', ''systemTranslated_Malaysia'', 2, ''MY''),
+        (''61'', ''Australia'', ''systemTranslated_Australia'', 2, ''AU''),
+        (''63'', ''Philippines'', ''systemTranslated_Philippines'', 2, ''PH''),
+        (''64'', ''New Zealand'', ''systemTranslated_NewZealand'', 2, ''NZ''),
+        (''65'', ''Singapore'', ''systemTranslated_Singapore'', 2, ''SG''),
+        (''66'', ''Thailand'', ''systemTranslated_Thailand'', 2, ''TH''),
+        (''81'', ''Japan'', ''systemTranslated_Japan'', 2, ''JP''),
+        (''82'', ''Korea (South)'', ''systemTranslated_KoreaSouth'', 2, ''KR''),
+        (''84'', ''Vietnam'', ''systemTranslated_Vietnam'', 2, ''VN''),
+        (''86'', ''China'', ''systemTranslated_China'', 2, ''CN''),
+        (''90'', ''Turkey'', ''systemTranslated_Turkey'', 2, ''TR''),
+        (''91'', ''India'', ''systemTranslated_India'', 2, ''IN''),
+        (''92'', ''Pakistan'', ''systemTranslated_Pakistan'', 2, ''PK''),
+        (''93'', ''Afghanistan'', ''systemTranslated_Afghanistan'', 2, ''AF''),
+        (''94'', ''Sri Lanka'', ''systemTranslated_SriLanka'', 2, ''LK''),
+        (''98'', ''Iran'', ''systemTranslated_Iran'', 2, ''IR''),
+        (''1'', ''USA'', ''systemTranslated_USA'', 1, ''US''),
+        (''7'', ''Russia'', ''systemTranslated_Russia'', 1, ''RU'');
         END'
         EXEC(@sql)
 
@@ -3044,6 +3236,478 @@ END;
     EXEC(@sql)
     
     -------------------------------------------  END Ricardo Nunez LRSV  ----------------------------------------
+
+	------------------------------------------ BEGIN Marco García -----------------------------------------------
+	 SET @process = 'CW-9416 drop procedure ccspRepCatalogos'
+	 SET @sql='
+		IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccspRepCatalogos'')
+		BEGIN
+			DROP PROCEDURE ccspRepCatalogos;
+		END
+		'
+	 EXEC(@sql)
+
+	 SET @process = 'CW-9416 create procedure ccspRepCatalogos
+	 Se realizó cambio de la línea 3100 a la 3121
+	 Se modificó para validar que para ese reporte no se muestren todas las campañas
+	 solo las campañas de salida de voz. IA, PV y voz
+	 '
+	 SET @sql = 'CREATE  PROCEDURE [dbo].[ccspRepCatalogos]
+		@type as tinyint,
+		@action tinyint = 0 -- 0 Filter select; 1 Filters Range
+		,@userId int =0 ---- se agrega parametro para filtros
+		,@menuId INT = 0
+
+		AS
+		declare @tablatemp table (id int, description varchar(100) null)
+		declare @tempwork table (idwg int)
+		DECLARE @SQL NVARCHAR(MAX);
+		DECLARE @condition NVARCHAR(300) = '''';
+		DECLARE @columnName NVARCHAR(100) = '''';
+		DECLARE @consult NVARCHAR (2000) = '''';
+
+		if @action = 0
+		BEGIN
+		IF OBJECT_ID(''TEMPDB..#filters'') IS NULL
+		BEGIN
+			CREATE TABLE #filters ([Type] VARCHAR(200))
+		END
+
+			-- CAMPAIGNS
+		IF @type = 1 BEGIN
+
+	
+			INSERT INTO #filters SELECT [Category] FROM ReportsFiltersCategory WHERE FilterName = ''campaigns'' AND ReportId = @menuId
+			IF EXISTS (SELECT * FROM #filters)
+			BEGIN
+				SET @condition = '' WHERE camp.campType IN (SELECT * FROM #filters)''
+				SELECT @columnName = [dbColumn] FROM ReportsFiltersCategory WHERE FilterName = ''campaigns'' AND ReportId = @menuId;
+			END
+			ELSE BEGIN
+				SET @columnName =   ''campaignId'';
+			END
+
+			SET @consult = N'' SELECT cam_id as id, cam_descripcion as description, @columnName as dbColumn FROM ccCamps camp''
+
+			IF @userId <> 0 BEGIN
+			
+				DECLARE @isJustVoiceFilter BIT = CASE WHEN @menuId IN (4010) THEN 1 ELSE 0 END;
+
+				SET @SQL = '' declare @tablatemp table (id int, description varchar(100) null) 
+					insert into @tablatemp
+					select distinct caesp.IdCampEsp,'''' '''' as description  from ccUserView us
+					inner join ccRIAWorkGroupUsers wgu on us.User_id = wgu.User_id
+					inner join ccRIACampEspWG caesp on wgu.IDWG = caesp.IDWG and caesp.Tipo=1'';
+
+			   IF @isJustVoiceFilter = 1
+			   BEGIN 
+					SET @SQL += '' INNER JOIN dbo.cccamps AS c ON caesp.IdCampEsp = c.cam_id ''
+			   END
+
+			   SET @SQL += '' where us.[User_id] = @userId '';
+
+			   IF @isJustVoiceFilter = 1
+			   BEGIN 
+					SET @SQL += '' AND c.CampType IN (0,6,9) '';
+			   END
+		   
+				
+				SET @sql +=''if exists(select 1 from @tablatemp) begin ''
+					+ @consult + '' inner join @tablatemp A on camp.cam_id = A.id '' + @condition
+					+''end
+					else begin
+						SELECT 0 as id, ''''N/A'''' as description, ''''campaignId'''' as dbColumn
+					end'';
+			END
+			ELSE BEGIN
+				SET @SQL = @consult + @condition;
+			END
+			EXEC sp_executesql @SQL, N''@userId AS int = 0, @columnName AS NVARCHAR(100)'', @userId=@userId, @columnName=@columnName;
+		
+		END
+
+
+			-- DIAL RESULTS
+		if @type = 2 begin
+			Select tiporesdial_id as id, descripcion as description, ''dialResultId'' as dbColumn
+			from ccTipoResultadoDial
+			order by descripcion
+		end
+
+			-- WORKGROUPS
+		if @type = 3 begin
+			if @userId <> 0 begin
+				select v.IDWG as id, c.WGName as description, ''workgroupId'' as dbColumn
+				from ccWgByAcdView v
+				inner join ccriacat_workgroup c on c.IDWG=v.IDWG
+				where USER_ID= @userId
+				return
+			end
+			else  begin
+				select idwg as id, wgname as description, ''workgroupId'' as dbColumn
+				from ccRIACat_WorkGroup
+				group by idwg, wgname   select * from ccRIACat_WorkGroup
+				order by wgname
+			end
+		end
+
+
+		-- AREAS
+		if @type = 4 begin
+		if @userId <> 0 begin
+
+			insert into @tablatemp
+			select distinct isnull(us.IDArea,0) as IDArea, wgu.User_id from ccUserView us
+			inner join ccRIAWorkGroupUsers wgu on us.User_id = wgu.User_id
+			where us.[User_id] = @userId
+
+			select distinct idArea as id, isnull(AreaName,''S/AREA'') as description, ''areaId'' as dbColumn
+			from ccRIACat_Areas area inner join @tablatemp tem on area.IDArea = tem.id
+			return
+		end
+			else begin
+
+				select idArea as id, AreaName as description, ''areaId'' as dbColumn
+				from ccRIACat_Areas
+				group by idArea, AreaName
+				order by AreaName
+			end
+		end
+
+		-- DISPOSITIONS OUT
+		if @type = 5 begin
+			SELECT calif_id as id, [description] as description, ''dispositionId'' as dbColumn
+			FROM ccTipoCalifOut
+			order by [description]
+		end
+
+			-- USER
+		if @type = 6    begin
+			if @userId <> 0 begin
+
+					insert into @tempwork
+							select IDWG from ccRIAWorkGroupUsers with (index (IX_ccRIAWorkGroupUsers_I)) where User_id = @userId
+
+					select distinct us.User_id as id, us.Login as description,  ''userId'' as dbcolumn from ccUserView us
+					inner join ccRIAWorkGroupUsers wgu on us.User_id = wgu.User_id
+
+					inner join @tempwork awg on wgu.IDWG = awg.idwg
+					where us.TipoUser_id = 1 and [status] = 1
+
+					return
+				end
+
+				else begin
+
+					SELECT [user_id] as id, [login] AS description, ''userId'' as dbColumn
+					FROM ccUserView B WHERE [status] = 1 and TipoUser_id = 1
+					ORDER BY description
+				end
+		end
+
+			-- ACDS**************
+		IF @type = 7 BEGIN
+
+			INSERT INTO #filters SELECT [Category] FROM ReportsFiltersCategory WHERE FilterName = ''acds'' AND ReportId = @menuId
+			IF EXISTS (SELECT * FROM #filters)
+			BEGIN
+				SET @condition = '' WHERE B.chat IN (SELECT * FROM #filters)''
+				SELECT @columnName = [dbColumn] FROM ReportsFiltersCategory WHERE FilterName = ''acds'' AND ReportId = @menuId;
+			END
+			ELSE BEGIN
+				SET @columnName = ''inboundId'';
+			END
+
+			SET @consult = N'' SELECT inbound_id AS id, descripcion AS description, @columnName AS dbColumn
+				FROM ccinbound B''
+
+			IF @userId <> 0 BEGIN
+
+				SET @SQL = '' declare @tablatemp table (id int, description varchar(100) null)
+					insert into @tablatemp
+					select distinct caesp.IdCampEsp,'''''''' as description  from ccUserView us
+					inner join ccRIAWorkGroupUsers wgu on us.User_id = wgu.User_id
+					inner join ccRIACampEspWG caesp on wgu.IDWG = caesp.IDWG and caesp.Tipo=0
+					where us.[User_id] = @userId;''
+					+''if exists(select 1 from @tablatemp) begin''
+					+ @consult + '' inner join @tablatemp A on B.inbound_id = A.id'' + @condition + '' return;''
+					+''end
+					else begin
+						SELECT 0 as id, ''''N/A'''' as description, ''''inboundId'''' as dbColumn
+					end'';   
+			END
+			ELSE BEGIN
+				SET @SQL = @consult + @condition;
+			END
+			EXEC sp_executesql @SQL, N''@userId INT = 0, @columnName AS NVARCHAR(100)'',@userId=@userId, @columnName=@columnName;
+		end
+
+			-- DIDS
+		if @type = 8    begin
+			select 0 as id, ''S/DNIS''  as description, ''dnisId'' as dbColumn
+			union
+			select dni_id as id, CASE WHEN dni_Descripcion = '''' then convert(varchar,dni_numero) else dni_Descripcion end  as description, ''dnisId'' as dbColumn
+			from ccdnis
+		end
+
+			--DISPOSITIONS IN
+		if @type = 9 begin
+			SELECT calif_id as id, [description] as description, ''dispositionId'' as dbColumn
+			FROM ccTipoCalif
+			order by [description]
+		end
+
+			--SUBDISPOSITIONS IN
+		if @type = 10   begin
+			SELECT califSub_id as id, [califSubDesc] as description, ''subDispositionId'' as dbColumn
+			FROM ccTipoCalifSub
+			order by [description]
+		end
+
+			--PROVIDER
+		if @type = 11 begin
+			SELECT provedor_id as id,descrip as description, ''providerId'' as dbColumn
+			FROM cstoProvedor
+			order by [description]
+		end
+
+			-- UNAVAILABLES
+		if @type = 12 begin
+			SELECT tiponotready_id as id, descripcion as description, ''tiponotreadyId'' as dbColumn
+			FROM cctiponotready
+			order by descripcion
+		end
+
+			-- DIALERS
+		if @type = 13 begin
+			SELECT dialer_id as id, descripcion as description, ''dialerId'' as dbColumn
+			FROM ccoDialers
+			order by descripcion
+		end
+
+			-- CallTYpes
+		if @type = 14   begin
+				SELECT statusCall_id as id, descripcion as description, ''callStatusId'' as dbColumn
+				FROM ccStatusLlamada
+			order by descripcion
+		end
+
+			-- SUBDISPOSITIONS OUT
+		if @type = 21   begin
+			SELECT califSub_id as id, [califSubDesc] as description, ''subDispositionId'' as dbColumn
+			FROM cctipocalifsubout
+			order by [description]
+		end
+
+			--AVRS TEMPLATE-SECTION
+		if @type = 15   begin
+			SELECT fc.id as id, (rf.nombre +'' ''+ rc.con_descripcion)+'' ''+convert(varchar(10),fc.id) as description, ''templateSectionId'' as dbColumn
+			FROM RIA_FORMATOCONCEPTO fc
+			INNER JOIN  (SELECT id_formato, nombre, MAX(version) as version
+											FROM RIA_FORMATOS
+											WHERE activo = 1
+											group by id_formato, nombre) as rf
+			ON rf.id_formato = fc.templateId
+			inner join RIA_CONCEPTOS rc ON rc.id_concepto = fc.sectionId
+			order by fc.id
+		END
+
+		--exec dbo.ccspRepCatalogos @type=15,@action=0
+
+			--AVRS TEMPLATES
+		if @type = 16   begin
+			SELECT f.id_formato as id, f.nombre as description, ''templateId'' as dbColumn
+			FROM RIA_FORMATOS f INNER JOIN (SELECT id_formato,MAX(version) as version
+											FROM RIA_FORMATOS
+											WHERE activo = 1
+											group by id_formato) as t
+			ON f.id_formato = t.id_formato AND f.version = t.version
+			order by f.nombre
+		end
+
+			--AVRS TEMPLATES
+		if @type = 31   begin
+			SELECT c.id_concepto as id, c.con_descripcion as description, ''sectionId'' as dbColumn
+			FROM RIA_CONCEPTOS c INNER JOIN (SELECT id_concepto,MAX(version) as version
+											FROM RIA_CONCEPTOS
+											group by id_concepto) as t
+			ON c.id_concepto = t.id_concepto AND c.version = t.version
+			order by c.con_descripcion
+		END
+
+			--AVRS QUESTIONS
+		if @type = 23   begin
+			SELECT p.id_pregunta as id, p.enunciado_pregunta as description, ''questionId'' as dbColumn
+			FROM RIA_PREGUNTAS p INNER JOIN (SELECT id_pregunta
+											FROM RIA_PREGUNTAS
+											group by id_pregunta) as t
+			ON p.id_pregunta = t.id_pregunta
+			order by p.enunciado_pregunta
+		END
+
+
+		--AVRS QUESTIONS CHAT
+		if @type = 24   begin
+			SELECT p.id_pregunta as id, p.enunciado_pregunta as description, ''questionId'' as dbColumn
+			FROM RIA_PREGUNTAS p INNER JOIN (SELECT id_pregunta
+											FROM RIA_PREGUNTAS
+											group by id_pregunta) as t
+			ON p.id_pregunta = t.id_pregunta
+			order by p.enunciado_pregunta
+		END
+
+			-- AVRS SUPERVISOR
+		if @type = 17   begin
+			SELECT [user_id] as id, [login] AS description, ''supervisorId'' as dbColumn
+			FROM ccUserView
+			WHERE [status] = 1
+			and TipoUser_id = 2
+			ORDER BY [login]
+		end
+
+			--Status Call
+		if @type = 25   begin
+			select statusCall_id as id, [descripcion] as description, ''statusCallId'' as dbcolumn
+			from ccstatusllamada
+			order by [descripcion]
+		end
+
+			--Survey
+		if @type = 26   begin
+			select surveyId as id, [description] as description, ''surveyId'' as dbcolumn
+			from Survey
+			order by [description]
+		end
+
+		--dialType
+		if @type = 29 begin
+			select dialId as id, [description] as description, ''dialId'' as dbcolumn
+			from dialType
+			order by [description]
+		end
+
+			--dial
+		if @type = 30   begin
+			select id as id, [description] as description, ''dialId'' as dbcolumn
+			from Dials
+			order by [description]
+		end
+
+		if @type = 33 begin
+			if @userId <> 0 begin
+				insert into @tablatemp
+				select distinct caesp.IdCampEsp,'''' as description  from ccUserView us
+				inner join ccRIAWorkGroupUsers wgu on us.User_id = wgu.User_id
+				inner join ccRIACampEspWG caesp on wgu.IDWG = caesp.IDWG and caesp.Tipo=0
+				inner join ccinbound i on caesp.IdCampEsp = i.Inbound_id and i.chat = 0
+				where us.[User_id] = @userId
+
+				SELECT inbound_id as id, descripcion as description, ''inboundCamp'' as dbColumn
+				from ccinbound B
+				inner join @tablatemp A on B.inbound_id = A.id
+				return
+			end
+			else begin
+				select inbound_id as id, descripcion as description, ''inboundCamp'' as dbColumn
+				from ccinbound where chat = 0
+			end
+		end
+		IF @type = 34   
+		BEGIN
+			SELECT DISTINCT TipoReadyAuxiliar_Id AS id, [Description] AS description, ''auxiliarId'' AS dbcolumn
+			FROM TipoReadyAuxiliar
+			ORDER BY [description]
+		END
+		IF @type = 35   
+		BEGIN
+			select SegmentId as Id,Name as description, ''SegmentId'' as dbColumn from ccSmsSegments
+		END
+		if @type = 36 begin
+			if @userId <> 0 begin
+
+					insert into @tempwork
+							select IDWG from ccRIAWorkGroupUsers with (index (IX_ccRIAWorkGroupUsers_I)) where User_id = @userId
+
+					select distinct us.User_id as id, us.Login as description,  ''adminId'' as dbcolumn from ccUserView us
+					inner join ccRIAWorkGroupUsers wgu on us.User_id = wgu.User_id
+
+					inner join @tempwork awg on wgu.IDWG = awg.idwg
+					where us.TipoUser_id = 2 and [status] = 1
+
+					return
+				end
+
+				else begin
+
+					SELECT [user_id] as id, [login] AS description, ''adminId'' as dbColumn
+					FROM ccUserView B WHERE [status] = 1 and TipoUser_id = 2
+					ORDER BY description
+				end
+		end
+		end --Action 0
+
+		IF OBJECT_ID(''TEMPDB..#filters'') IS NOT NULL
+		BEGIN
+			DROP TABLE #filters;
+		END
+
+		-----------------------------------------------------------
+		if @action = 1 begin
+			-- TRUNKS
+			if @type = 13
+			begin
+				SELECT MIN(trunk) as [min],MAX(trunk) as [max],''trunk'' as dbColumn  from RepTrunkBusy
+			end
+
+			-- AVRS DISPOSITION
+			if @type = 18
+			begin
+				SELECT 0 as [min], 100 as [max],''Disposition'' as dbColumn
+			end
+
+			-- AVG DISPOSITION
+			if @type = 19
+			begin
+				SELECT 0 as [min], 100 as [max],''avgDisposition'' as dbColumn
+			end
+
+			-- SCORE
+			if @type = 20
+			begin
+				SELECT 0 as [min], 100 as [max],''avgDisposition'' as dbColumn
+			end
+		end';
+	EXEC(@sql)
+
+
+
+
+	------------------------------------------ END Marco García -----------------------------------------------
+    set @process = 'CW-8730 Rename Column RepEmailACD.inboundId'
+    set @sql='IF EXISTS (
+    SELECT 1
+    FROM sys.columns
+    WHERE object_id = OBJECT_ID(''RepEmailACD'')
+      AND name = ''inbounid''
+)
+BEGIN
+    EXEC sp_rename ''RepEmailACD.inbounid'', ''inboundId'', ''COLUMN'';
+END
+'
+    EXEC(@sql)
+
+    set @process = 'CW-8730 Rename Column RepEmailGeneral.inboundId'
+    set @sql='IF EXISTS (
+    SELECT 1
+    FROM sys.columns
+    WHERE object_id = OBJECT_ID(''RepEmailGeneral'')
+      AND name = ''inbounid''
+)
+BEGIN
+    EXEC sp_rename ''RepEmailGeneral.inbounid'', ''inboundId'', ''COLUMN'';
+END
+'
+    EXEC(@sql)
 
 
 

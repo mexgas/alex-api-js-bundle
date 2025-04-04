@@ -14326,6 +14326,18 @@ end
 '
         EXEC(@sql)
 ---------------------------------------------------------END Jesus Gallardo ---------------------------------------------------------
+---------------------------------------------------------Begin Frida Orta ---------------------------------------------------------
+		SET @process = 'CW-9150 Update setting249'
+        SET @sql = '
+		if exists(select * from ccSettings2 where setting_id=279)
+		begin
+		update ccSettings2 set valor=''C:/Multimedia/Conversations/WhatsApp|E:/CenterWare/WhatsApp|https://cwkolob249.nuxiba.com/whatsappfiles2'', descripcion=''Ruta de almacenamiento local|Ruta de almacenamiento servidor 249|Endpoint'',
+		detalle=''Ruta de almacenamiento local|Ruta de almacenamiento servidor 249|Endpoint'', description=''Local storage path|Server storage path|Endpoint''
+		where setting_id=279
+		end'
+		EXEC(@sql)
+---------------------------------------------------------End Frida Orta ---------------------------------------------------------
+
     
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
     EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

@@ -308,20 +308,25 @@ if @dateStart is null
 
 
 -- Si @from es antes de las 03:00:00 → ajustarlo a 02:59:00 del día anterior
-IF CAST(@from AS TIME) < ''03:59:30''
+IF CAST(@from AS TIME) < ''04:00:00''
 BEGIN
-    SET @from = CAST( DATEADD(DAY, -1, CAST(@from AS DATE)) AS DATETIME);   -- 02:59:30 del día anterior
+    SET @from = CAST( DATEADD(DAY, -1, CAST(@from AS DATE)) AS DATETIME);   -- del día anterior
 END
 else begin
-    SET @from = CAST(@from AS DATE);    -- 02:59:30 del día actual
+    SET @from = CAST(@from AS DATE);    -- día actual
 end
 
-set @from=dateadd(ss,(179*60)+30, @from)  -- 02:59:30
+
+set @from=convert(datetime,CONVERT(VARCHAR(10), @from, 120) + '' '' + ''03:00:00'')
+
+
 
 IF CAST(@to AS TIME) = ''00:00:00''
 BEGIN
-    set @to=dateadd(ss,(179*60)+30, @to) -- 02:59:00 del día siguiente
+    set @to=dateadd(ss,180*60, @to) -- 03:00:00 del día siguiente
 END
+
+
 
 
 insert into logsReportsMaster(name,status,dateStart,dateEnd,error,maxTime)

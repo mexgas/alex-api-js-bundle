@@ -198,7 +198,7 @@ BEGIN
 				@description = N'', 
 				@creation_script = N'', 
 				@pre_creation_cmd = N'drop', 
-				@schema_option = 0x00000000080050DF, 
+				@schema_option = 0x0000000008003019, 
 				@identityrangemanagementoption = N'manual', 
 				@destination_table = @articleName, 
 				@destination_owner = N'dbo', 

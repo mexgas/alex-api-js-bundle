@@ -66,7 +66,7 @@ if @Version_Actual >= @Version
 				--@article = N'all', 
 				@update_mode = N'read only', 
 				@subscriber_type = 0, 
-				@memory_optimized = 1
+				@memory_optimized = 0
 		end
 			update subcripcionTableCCReportsRIA set status=1 where id=@publicationId
 		end		

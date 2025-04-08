@@ -2718,6 +2718,158 @@ END CATCH;
     '
     EXEC(@sql)
 
+    SET @process = 'DEV2-883 alter column name in contactMeanOut'
+    SET @sql = '
+    IF EXISTS (SELECT * FROM sys.columns WHERE name = N''name'' AND Object_ID = Object_ID(N''contactMeanOut''))
+    BEGIN
+        ALTER TABLE contactMeanOut ALTER COLUMN name VARCHAR(40) NOT NULL;
+    END
+    '
+    EXEC(@sql)
+
+    SET @process = 'DEV2-883 drop sp ccsp_UpdateOutWhatsappConfig'
+    SET @sql = '
+    IF EXISTS (SELECT 1 FROM sys.procedures WHERE name = N''ccsp_UpdateOutWhatsappConfig'')
+    BEGIN
+        DROP PROCEDURE ccsp_UpdateOutWhatsappConfig;
+    END
+    '
+    EXEC(@sql)
+
+    SET @process = 'DEV2-883 create sp ccsp_UpdateOutWhatsappConfig'
+    SET @sql = '
+CREATE PROCEDURE ccsp_UpdateOutWhatsappConfig
+@ConexionInfo varchar(400),
+@outbound_id int,
+@descripcion varchar(40), 
+@ConnUser varchar(60),
+@tNotas int,
+@closeConversationTime int,
+@ShowCalifWnd bit,
+@ExitAssisted bit,
+@MUTimeOutClient int,
+@allowFileAttachments bit,
+@userId SMALLINT, 
+@idArea SMALLINT, 
+@isCreating SMALLINT,
+@maxLimitQueueConversations SMALLINT, 
+@maxDaysPerWAConvo SMALLINT
+AS
+set nocount on
+
+	IF NOT EXISTS (SELECT camp_id FROM ContactMeanOut WHERE camp_id = @outbound_id) 
+	BEGIN
+		INSERT INTO contactMeanOut (meanContactTypeId, name, camp_id, isActive, numMessages,conexionInfo,connUser,closeConversationTime,ConnPass,answerTimeoutClient,allowFileAttachments, maxLimitQueueConversations, MaxDaysPerWAConvo)
+		VALUES (5, @descripcion, @outbound_id, (select cam_activo  from ccCamps where cam_id = @outbound_id), 3, NULL, NULL, NULL, ''N/A'', NULL, NULL, NULL,5);
+	END
+
+	IF OBJECT_ID(N''tempdb..#contactMeanOutTable'') IS NOT NULL DROP TABLE #contactMeanOutTable
+
+	Create table #contactMeanOutTable 
+	(
+	    columnInfo VARCHAR(255),
+	    dataInfo VARCHAR(255),
+	    identifierInfo VARCHAR(255)
+	)
+
+	EXEC InsertLogAdminGalatea @action=1, @tableName=''contactMeanOut'', @columnNameId=''camp_id'', @valueId= @outbound_id, @userId= @userid
+
+
+	UPDATE contactMeanOut SET
+	    conexionInfo = @conexionInfo,
+	    connUser = @connUser,
+	    closeConversationTime = @closeConversationTime,
+	    answerTimeoutClient = @MUTimeOutClient,
+	    allowFileAttachments = @allowFileAttachments,
+		maxLimitQueueConversations = @maxLimitQueueConversations,
+		MaxDaysPerWAConvo = @maxDaysPerWAConvo 
+	WHERE camp_id = @outbound_id
+
+	IF(@isCreating > 0) 
+		EXEC InsertLogAdminGalatea @action=2, @tableName = ''contactMeanOut'', @columnNameId = ''camp_id'', @valueId = @outbound_id, @userId = @userid, @tableTemp=''#contactMeanOutTable'';
+
+	DELETE FROM #contactMeanOutTable WHERE dataInfo = '''';
+
+	INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+	SELECT 
+	    (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idarea),
+	    getDate(), 
+	    (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+	    46, 
+	    3, 
+	    CMOT.identifierInfo,
+	    CASE WHEN CMOT.identifierInfo IS NOT NULL AND CMOT.identifierInfo <> '''' THEN
+	        CASE
+	            WHEN CMOT.identifierInfo = ''OUT_WHATS_ATTACH_FILES'' THEN
+	                CASE WHEN CMOT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
+	            
+	            ELSE CMOT.dataInfo END
+	    ELSE '''' END, 
+	    (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @outbound_id)
+	FROM #contactMeanOutTable AS CMOT;
+
+	EXEC InsertLogAdminGalatea @action=3, @tableName = ''contactMeanOut'', @columnNameId = ''camp_id'', @valueId = @outbound_id, @userId = @userid;
+	
+	IF OBJECT_ID(N''tempdb..#contactMeanOutTable'') IS NOT NULL 
+		DROP TABLE #contactMeanOutTable
+
+	UPDATE ccWhatsAppNumbers SET camp_id = @outbound_id WHERE number = @conexionInfo
+
+	IF EXISTS (SELECT cam_id FROM ccCamps WHERE cam_id = @outbound_id) 
+	BEGIN
+
+	    IF OBJECT_ID(N''tempdb..#ccCampsTable'') IS NOT NULL 
+			DROP TABLE #ccCampsTable
+
+	    Create table #ccCampsTable 
+	    (
+	        columnInfo VARCHAR(255),
+	        dataInfo VARCHAR(255),
+	        identifierInfo VARCHAR(255)
+	    )
+
+	    EXEC InsertLogAdminGalatea @action=1, @tableName=''ccCamps'', @columnNameId=''cam_id'', @valueId= @outbound_id, @userId= @userid
+
+	    UPDATE ccCamps SET cam_tnotas = @tNotas, cam_ShowCalifWnd = @ShowCalifWnd, exitAssisted = @ExitAssisted, CampType = 5 where cam_id = @outbound_id;
+
+	    IF(@isCreating > 0) 
+			EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccCamps'', @columnNameId = ''cam_id'', @valueId = @outbound_id, @userId = @userid, @tableTemp=''#ccCampsTable'';
+
+	    DELETE FROM #ccCampsTable WHERE columnInfo IN (''CampType'');
+
+	    INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+	    SELECT 
+	        (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idarea),
+	        getDate(), 
+	        (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+	        46, 
+	        3, 
+	        CASE WHEN CCCT.identifierInfo IS NOT NULL AND CCCT.identifierInfo <> '''' THEN
+	            CASE WHEN CCCT.identifierInfo = ''OUT_EXIT_ASSISTED'' THEN ''OUT_WHATS_EXIT_ASSISTED''
+	            ELSE CCCT.identifierInfo END
+	        ELSE CCCT.identifierInfo END,
+	        CASE WHEN CCCT.identifierInfo IS NOT NULL AND CCCT.identifierInfo <> '''' THEN
+	            CASE
+	                WHEN CCCT.identifierInfo IN (''OUT_MANUAL_DIALING'', ''OUT_EXIT_ASSISTED'', ''OUT_SHOW_DISPOSITIONS'') THEN
+	                    CASE WHEN CCCT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
+	            
+	                ELSE CCCT.dataInfo END
+	        ELSE '''' END, 
+	        (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @outbound_id)
+	    FROM #ccCampsTable AS CCCT;
+
+	    EXEC InsertLogAdminGalatea @action=3, @tableName = ''ccCamps'', @columnNameId = ''cam_id'', @valueId = @outbound_id, @userId = @userid;
+
+	    IF OBJECT_ID(N''tempdb..#ccCampsTable'') IS NOT NULL 
+			DROP TABLE #ccCampsTable
+	END;
+	
+	SELECT @outbound_id;
+
+set nocount off
+    '
+    EXEC(@sql)
+
         -------------------------------------------  END Isaac  ----------------------------------------
 
 ------------------------------------------------Begin Gaby -----------------------------------------------------------

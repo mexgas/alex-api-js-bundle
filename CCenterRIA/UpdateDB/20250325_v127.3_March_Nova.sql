@@ -11360,14 +11360,8 @@ END
         INSERT INTO ccWhatsAppConversationsRelationshipOut (conversationIdBefore, conversationIdAfter)
         VALUES (@conversationId, @conversationIdNew);
         --Save new request by reassign
-        UPDATE ccWAOperatingSummaryOut 
-		SET Assigned = CASE 
-						  WHEN Assigned > 0 THEN Assigned - 1 
-						  ELSE 0 
-					  END,
-			Request = Request + 1,
-			EndedBySystem = EndedBySystem + 1
-		WHERE camId = @camId
+        UPDATE ccWAOperatingSummaryOut SET Request = (Request + 1), Assigned = (Assigned - 1),EndedBySystem=EndedBySystem+1
+        WHERE camId = @camId
 
     EXEC ccsp_ConversationWASaveOut @action = 2, @conversationId = @conversationId, @conversationStatus = @conversationStatus
 
@@ -11521,14 +11515,9 @@ BEGIN --save agent, assigdate and tqueue
     SELECT @conversationId as conversationId
     SELECT @camId = camId,  @onQueue = onQueue FROM ccWhatsAppConversationsOut with(nolock) where conversationId=@conversationId;
 
-	IF @onQueue = 1 BEGIN
-		UPDATE ccWAOperatingSummaryOut 
-		SET OnQueue = CASE 
-						WHEN OnQueue > 0 THEN OnQueue - 1 
-						ELSE 0 
-					  END 
-		WHERE camId = @camId
-	END
+    IF @onQueue = 1 BEGIN
+        UPDATE ccWAOperatingSummaryOut SET OnQueue = (OnQueue - 1) WHERE camId = @camId   
+    END
 END;
 
 Else IF @action = 7

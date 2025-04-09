@@ -12244,25 +12244,28 @@ BEGIN
     ) begin                         
         set @Today =convert(date,getdate(),121)
 
-        ;with waOperationSummary as(
-        select 
-        CamId
-        ,count(case when finishedBy=1 then 1 end) Attended
-        ,COUNT(CASE WHEN conversationStatus = 1 THEN 1 ELSE null END) onQueue
-        ,count(case when finishedBy=0 and agentId>0 then 1 end) Assigned
-        ,count(*) Request
-        ,count(case when finishedBy=2 then 1 end) EndedBySystem
-        from ccWhatsAppConversationsOut with(nolock)
-        where camId = @camId and requestDate>=@Today
-        group by CamId
-        )
-        update A 
-        set A.Attended=B.Attended, A.Assigned=B.Assigned
-                    
-        ,A.Request=B.Request,A.EndedBySystem=B.EndedBySystem
-        from ccWAOperatingSummaryOut A 
-        inner join waOperationSummary B on A.CamId=B.CamId
-    end
+        ;WITH waOperationSummary AS (
+        SELECT 
+            CamId,
+            COUNT(CASE WHEN finishedBy = 1 THEN 1 END) AS Attended,
+            COUNT(CASE WHEN conversationStatus = 1 THEN 1 END) AS OnQueue,
+            COUNT(CASE WHEN finishedBy = 0 AND agentId > 0 THEN 1 END) AS Assigned,
+            COUNT(*) AS Request,
+            COUNT(CASE WHEN finishedBy = 2 THEN 1 END) AS EndedBySystem
+        FROM ccWhatsAppConversationsOut WITH (NOLOCK)
+        WHERE camId = @camId AND requestDate >= @Today
+        GROUP BY CamId
+    )
+    UPDATE A
+    SET 
+        A.Attended = B.Attended,
+        A.Assigned = B.Assigned,
+        A.OnQueue = B.OnQueue,
+        A.Request = B.Request,
+        A.EndedBySystem = B.EndedBySystem
+    FROM ccWAOperatingSummaryOut A
+    INNER JOIN waOperationSummary B ON A.CamId = B.CamId;
+    END
     
     SELECT ISNULL(conv.AverageConversationTime, 0) AS AverageConversationTime,
         ISNULL(AverageDialogTime, 0) AS AverageDialogTime,

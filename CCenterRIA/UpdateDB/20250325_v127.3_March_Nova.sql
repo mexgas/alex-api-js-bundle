@@ -11516,7 +11516,7 @@ BEGIN --save agent, assigdate and tqueue
     SELECT @camId = camId,  @onQueue = onQueue FROM ccWhatsAppConversationsOut with(nolock) where conversationId=@conversationId;
 
     IF @onQueue = 1 BEGIN
-    UPDATE ccWAOperatingSummaryOut SET OnQueue = (OnQueue - 1) WHERE camId = @camId   
+        UPDATE ccWAOperatingSummaryOut SET OnQueue = (OnQueue - 1) WHERE camId = @camId   
     END
 END;
 
@@ -12244,25 +12244,28 @@ BEGIN
     ) begin                         
         set @Today =convert(date,getdate(),121)
 
-        ;with waOperationSummary as(
-        select 
-        CamId
-        ,count(case when finishedBy=1 then 1 end) Attended
-        ,COUNT(CASE WHEN conversationStatus = 1 THEN 1 ELSE null END) onQueue
-        ,count(case when finishedBy=0 and agentId>0 then 1 end) Assigned
-        ,count(*) Request
-        ,count(case when finishedBy=2 then 1 end) EndedBySystem
-        from ccWhatsAppConversationsOut with(nolock)
-        where camId = @camId and requestDate>=@Today
-        group by CamId
-        )
-        update A 
-        set A.Attended=B.Attended, A.Assigned=B.Assigned
-                    
-        ,A.Request=B.Request,A.EndedBySystem=B.EndedBySystem
-        from ccWAOperatingSummaryOut A 
-        inner join waOperationSummary B on A.CamId=B.CamId
-    end
+        ;WITH waOperationSummary AS (
+        SELECT 
+            CamId,
+            COUNT(CASE WHEN finishedBy = 1 THEN 1 END) AS Attended,
+            COUNT(CASE WHEN conversationStatus = 1 THEN 1 END) AS OnQueue,
+            COUNT(CASE WHEN finishedBy = 0 AND agentId > 0 THEN 1 END) AS Assigned,
+            COUNT(*) AS Request,
+            COUNT(CASE WHEN finishedBy = 2 THEN 1 END) AS EndedBySystem
+        FROM ccWhatsAppConversationsOut WITH (NOLOCK)
+        WHERE camId = @camId AND requestDate >= @Today
+        GROUP BY CamId
+    )
+    UPDATE A
+    SET 
+        A.Attended = B.Attended,
+        A.Assigned = B.Assigned,
+        A.OnQueue = B.OnQueue,
+        A.Request = B.Request,
+        A.EndedBySystem = B.EndedBySystem
+    FROM ccWAOperatingSummaryOut A
+    INNER JOIN waOperationSummary B ON A.CamId = B.CamId;
+    END
     
     SELECT ISNULL(conv.AverageConversationTime, 0) AS AverageConversationTime,
         ISNULL(AverageDialogTime, 0) AS AverageDialogTime,
@@ -12449,8 +12452,8 @@ BEGIN
         DECLARE @PhoneClient VARCHAR(15)
         DECLARE @PhoneWa VARCHAR(15)
         DECLARE @MetaId VARCHAR(150)
-        DECLARE @TimeStamp varchar (50)
-        DECLARE @TimeStampUTC varchar (50)
+        DECLARE @TimeStamp DATETIME
+        DECLARE @TimeStampUTC DATETIME
         DECLARE @TemplateCategory varchar(50);
         DECLARE @TemplateContent varchar(1000);
         DECLARE @ConvId int
@@ -12467,7 +12470,7 @@ BEGIN
 
             SELECT  @TemplateCategory = Category, @TemplateContent = waos.MessageContent,
                 @CamId = wld.CamId, @PhoneClient = PhoneClient, @PhoneWa = PhoneWa, @TimeStamp = TimeSpam,
-                @TimeStampUTC = CONVERT(varchar(23), DATEADD(HOUR, -tz.tz_offset, wld.TimeSpam), 121) 
+                @TimeStampUTC = DATEADD(HOUR, -tz.tz_offset, wld.TimeSpam) 
                 FROM ccoWhatsLogDials wld
                 JOIN ccWhatsAppOutSource waos ON wld.WaOutId = waos.WAOut_Id
                 JOIN ccMetaWAOutboundTemplates mwat ON waos.TemplateId = mwat.Id 
@@ -12955,6 +12958,94 @@ IF @TipoMov = 9 BEGIN--RING CallNoAnswered
  END
  SET NOCOUNT OFF'
     EXEC(@sql)
+
+	SET @process = 'CW-9428 alter ccsp_Multimedia2 para obtener ambos tipos de campañas de whatsapp'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_Multimedia2] @action INT, @inboundId INT = NULL, @userId INT = NULL
+	, @senderId INT = NULL,@camType smallint=0
+	,@multimediaType int =null
+	AS
+	BEGIN
+		SET NOCOUNT ON;
+
+		IF @action = 1
+		BEGIN --Lista Cam Or  ACD
+			if @camType=0 begin		
+				SELECT DISTINCT A.inbound_id AS Id, A.chat AS Mode, C.maxMails MaxMails, cast(isnull(C.maxTweets, 3) AS TINYINT) AS MaxTweets, 
+				cast(isnull(C.maxWhats, 3) AS TINYINT) AS MaxWhats, A.IDArea AS AreaId, ISNULL(A.AssignConversationSameAgent, 0) AS AssignSameAgent
+				FROM ccInbound A
+				INNER JOIN ccRIACat_Areas C ON A.IDArea = C.IDArea
+				WHERE (@inboundId IS NULL OR @inboundId = A.Inbound_id)
+				and (@multimediaType is null or @multimediaType =-1 or A.chat=@multimediaType)
+			end
+			else begin
+				SELECT DISTINCT A.cam_id AS Id,convert(tinyint, case when A.CampType =5  then A.CampType else 1 end) AS Mode, C.maxMails MaxMails, cast(isnull(C.maxTweets, 3) AS TINYINT) AS MaxTweets,
+				cast(isnull(C.maxWhatsOut, 3) AS TINYINT) AS MaxWhats, A.IDArea AS AreaId, ISNULL(CE.AssignConversationSameAgent, 0) AS AssignSameAgent
+				FROM ccCamps A
+				INNER JOIN ccRIACat_Areas C ON A.IDArea = C.IDArea
+				LEFT JOIN ccCampsExtend CE ON CE.cam_id = A.cam_id
+				WHERE (@inboundId IS NULL OR @inboundId = A.cam_id) 
+				and (@multimediaType is null or @multimediaType =-1 or A.CampType=@multimediaType)
+			end
+		END
+		ELSE IF @action = 2
+		BEGIN --Lista Agentes
+			DECLARE @TempAgent TABLE (Id smallint, AcdId smallint, Skill smallint, IsAcd bit)
+
+			if (@camType=0 or @camType=2 )
+			begin
+				print(''getting acd'')
+				INSERT INTO @TempAgent
+				SELECT DISTINCT A.User_id AS [Id], C.idCampEsp AcdId, isnull(skill, 8) Skill, CAST(1 AS bit)
+				FROM ccRIAWorkGroupUsers A
+				INNER JOIN ccusers B ON A.User_id = B.User_id
+				INNER JOIN ccRIACampEspWG C ON C.IDWG = A.IDWG -- AND C.Tipo = 0
+				INNER JOIN ccInbound D ON C.idCampEsp = D.inbound_id  and D.IDArea is not null
+				LEFT JOIN ccskills S ON S.inbound_id = D.inbound_id AND S.user_id = B.user_id
+				WHERE B.TipoUser_id = 1 AND (@userId IS NULL OR @userId = A.User_id)
+				and (@multimediaType is null or @multimediaType =-1 or D.chat=@multimediaType)
+				ORDER BY A.User_id
+			end
+
+			if  (@camType=1 or @camType=2) begin
+				print(''getting cam'')
+				INSERT INTO @TempAgent
+				SELECT DISTINCT A.User_id AS [Id], C.idCampEsp AcdId, isnull(skill, 8) Skill, CAST(0 AS bit)
+				FROM ccRIAWorkGroupUsers A
+				INNER JOIN ccusers B ON A.User_id = B.User_id
+				INNER JOIN ccRIACampEspWG C ON C.IDWG = A.IDWG -- AND C.Tipo = 0
+				INNER JOIN ccCamps D ON C.idCampEsp = D.cam_id  and D.IDArea is not null
+				LEFT JOIN ccskills S ON S.inbound_id = D.cam_id AND S.user_id = B.user_id
+				WHERE B.TipoUser_id = 1 AND (@userId IS NULL OR @userId = A.User_id)
+				and (@multimediaType is null or @multimediaType =-1 or D.CampType=@multimediaType)
+				ORDER BY A.User_id
+			end
+
+			SELECT * FROM @TempAgent
+
+		END
+		ELSE IF @action = 3
+		BEGIN --List Sender Mail
+			SELECT A.contactMeanOutId AS Id, ISNULL(R.inboundId, 0) AS AcdId, A.isActive AS IsActive
+			FROM contactMeanOut A
+			LEFT JOIN relationContactMeanOutInbound R ON A.contactMeanOutId = R.contactMeanOutId
+			WHERE (@senderId IS NULL OR @senderId = A.contactMeanOutId) and A.meanContactTypeId = 1
+		END
+		ELSE IF @action = 4
+		BEGIN --List ACD Whatsapp
+			if @camType=0 begin
+				SELECT cast(Inbound_id as int) AS Id
+				FROM ccInbound
+				WHERE chat=5
+			end
+			else begin
+				SELECT cast(cam_id as int) AS Id
+				FROM ccCamps
+				WHERE CampType = 5
+			end
+		END
+	END'
+	EXEC(@sql)
+
 --------------------------------------------------------END MACL----------------------------------------------------------------------
 -------------------------------------------------------BEGIN DMM----------------------------------------------------------------------
 SET @process = 'Creación de tabla ccoCallsOutDispositionIA para guardar resultados de llamada IA '

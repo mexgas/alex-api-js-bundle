@@ -14795,9 +14795,9 @@ end
         END'
     EXEC(@sql);
 
-    SET @process = 'Se agrega validacion de identificador RotativeAlgo para listas ANI en historial de actividad'
     SET @sql = '
-    ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig] @cam_id smallint,
+    CREATE PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig] 
+        @cam_id smallint,
         @cam_descripcion varchar(40) = null,
         @cam_tnotas smallint = null,
         @cam_ocupado tinyint = null,

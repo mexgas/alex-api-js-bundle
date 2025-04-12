@@ -56,6 +56,9 @@ namespace DatabaseUpdateValidator.Nuxiba.Repository.Impl
             int currentVersioFinal = (currentVersion * 1000) + versionFix;
             var sortFile = filePaths.Where(f => f.Key >= currentVersioFinal).OrderBy(o => o.Key).ToList();
 
+
+            var fileNameFinal = sortFile.Last();
+
             foreach (var filePath in sortFile)
             {
                 if (File.Exists(filePath.Value))
@@ -65,7 +68,10 @@ namespace DatabaseUpdateValidator.Nuxiba.Repository.Impl
                         // Read the content of the SQL file
                         string sqlScript = File.ReadAllText(filePath.Value);
 
-                        ValidateDuplicateObjectsDirect(sqlScript);
+                        if (fileNameFinal.Value == filePath.Value)
+                        {
+                            ValidateDuplicateObjectsDirect(sqlScript);
+                        }
 
                         // Execute the script in the database
                         _sqlExecutor.ExecuteSqlScript(connectionString, sqlScript, filePath.Value);

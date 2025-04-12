@@ -111,7 +111,7 @@ namespace DatabaseUpdateValidator.Nuxiba.Repository.Impl
                         {
                             objetos.Add((
                                 Tipo: createMatch.Groups[1].Value.ToUpper(),  // PROCEDURE, FUNCTION, etc.
-                                Nombre: createMatch.Groups[2].Value           // [dbo].[GetReportMenus]
+                                Nombre: createMatch.Groups[2].Value
                             ));
                         }
                     }

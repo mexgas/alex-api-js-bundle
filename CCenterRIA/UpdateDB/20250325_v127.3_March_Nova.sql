@@ -14034,8 +14034,7 @@ end
         
                 update ccWhatsAppNumbers set camp_id = 0 where camp_id in (select DeleteCamId from #CampsDelete)
 
-                update ccMetaWhatsAppNumbers set isnull(Cam_Id,0) = 0 where Cam_Id in (select DeleteCamId from #CampsDelete)
-        
+                update ccMetaWhatsAppNumbers set Cam_Id = 0 where Cam_Id in (select DeleteCamId from #CampsDelete)        
 
             END
             IF datalength(@DeleteACDGroupId) > 0

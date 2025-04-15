@@ -14600,6 +14600,89 @@ IF OBJECT_ID(''tempdb..#CampLog'') IS NOT NULL DROP TABLE #CampLog
     '
     EXEC(@sql);
 -------------------------------------------------------- END Luis Zamora ------------------------------------------------------
+------------------------------------------- Begin Munoz   --------------------------------------
+
+    SET @process = 'Munoz DROP INDEX [IX_ccoCallsOutSource_19] ON [ccoCallsOutSource];'
+	SET @sql = 'IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_ccoCallsOutSource_19'' AND object_id = OBJECT_ID(''ccoCallsOutSource'')) 
+		DROP INDEX [IX_ccoCallsOutSource_19] ON [ccoCallsOutSource];'
+	EXEC(@sql);
+
+	SET @process = 'Munoz DROP INDEX [IX_ccoCallsOutSource_5] ON [ccoCallsOutSource];'
+	SET @sql = 'IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_ccoCallsOutSource_5'' AND object_id = OBJECT_ID(''ccoCallsOutSource'')) 
+		DROP INDEX [IX_ccoCallsOutSource_5] ON [ccoCallsOutSource];'
+	EXEC(@sql);
+
+	SET @process = 'Munoz DROP INDEX [IX_ccoCallsOutSource_8] ON [ccoCallsOutSource];'
+	SET @sql = 'IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_ccoCallsOutSource_8'' AND object_id = OBJECT_ID(''ccoCallsOutSource'')) 
+		DROP INDEX [IX_ccoCallsOutSource_8] ON [ccoCallsOutSource];'
+	EXEC(@sql);
+
+	SET @process = 'Munoz DROP INDEX [IX_ccoCallsOutSource_7] ON [ccoCallsOutSource];'
+	SET @sql = 'IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_ccoCallsOutSource_7'' AND object_id = OBJECT_ID(''ccoCallsOutSource'')) 
+		DROP INDEX [IX_ccoCallsOutSource_7] ON [ccoCallsOutSource];'
+	EXEC(@sql);
+
+	SET @process = 'Munoz DROP INDEX [IX_ccoCallsOutSource_6] ON [ccoCallsOutSource];'
+	SET @sql = 'IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_ccoCallsOutSource_6'' AND object_id = OBJECT_ID(''ccoCallsOutSource'')) 
+		DROP INDEX [IX_ccoCallsOutSource_6] ON [ccoCallsOutSource];'
+	EXEC(@sql);
+
+	SET @process = 'Munoz DROP INDEX [IX_ccoCallsOutSource_9] ON [ccoCallsOutSource];'
+	SET @sql = 'IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_ccoCallsOutSource_9'' AND object_id = OBJECT_ID(''ccoCallsOutSource'')) 
+		DROP INDEX [IX_ccoCallsOutSource_9] ON [ccoCallsOutSource];'
+	EXEC(@sql);
+
+	SET @process = 'Munoz DROP INDEX [IX_ccoWorkingTable_4] ON [ccoWorkingTable];'
+	SET @sql = 'IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_ccoWorkingTable_4'' AND object_id = OBJECT_ID(''ccoWorkingTable'')) 
+		DROP INDEX [IX_ccoWorkingTable_4] ON [ccoWorkingTable];'
+	EXEC(@sql);
+
+	SET @process = 'Munoz DROP INDEX [IX_ccoWorkingTable_1] ON [ccoWorkingTable];'
+	SET @sql = 'IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_ccoWorkingTable_1'' AND object_id = OBJECT_ID(''ccoWorkingTable'')) 
+		DROP INDEX [IX_ccoWorkingTable_1] ON [ccoWorkingTable];'
+	EXEC(@sql);
+
+	SET @process = 'Munoz DROP INDEX [IX_ccoWorkingTable_3] ON [ccoWorkingTable];'
+	SET @sql = 'IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_ccoWorkingTable_3'' AND object_id = OBJECT_ID(''ccoWorkingTable'')) 
+		DROP INDEX [IX_ccoWorkingTable_3] ON [ccoWorkingTable];'
+	EXEC(@sql);
+
+	SET @process = 'Munoz DROP INDEX [IX_ccoWorkingTable_11] ON [ccoWorkingTable];'
+	SET @sql = 'IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_ccoWorkingTable_11'' AND object_id = OBJECT_ID(''ccoWorkingTable'')) 
+		DROP INDEX [IX_ccoWorkingTable_11] ON [ccoWorkingTable];'
+	EXEC(@sql);
+
+	SET @process = 'Munoz DROP INDEX [IX_ccoCallsOut_4] ON [ccoCallsOut];'
+	SET @sql = 'IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_ccoCallsOut_4'' AND object_id = OBJECT_ID(''ccoCallsOut'')) 
+		DROP INDEX [IX_ccoCallsOut_4] ON [ccoCallsOut];'
+	EXEC(@sql);
+
+	SET @process = 'Munoz DROP INDEX [IX_WGlogDial_id] ON [ccRIAWorkGroup_logDial_id];'
+	SET @sql = 'IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_WGlogDial_id'' AND object_id = OBJECT_ID(''ccRIAWorkGroup_logDial_id'')) 
+		DROP INDEX [IX_WGlogDial_id] ON [ccRIAWorkGroup_logDial_id];'
+	EXEC(@sql);
+
+	SET @process = 'Munoz DROP INDEX [IX_WGCal_id] ON [ccRIAWorkGroup_Calid];'
+	SET @sql = 'IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_WGCal_id'' AND object_id = OBJECT_ID(''ccRIAWorkGroup_Calid'')) 
+		DROP INDEX [IX_WGCal_id] ON [ccRIAWorkGroup_Calid];'
+	EXEC(@sql);
+
+	SET @process = 'Munoz DROP INDEX [IX_ccoCallBacks4] ON [ccoCallBacks];'
+	SET @sql = 'IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_ccoCallBacks4'' AND object_id = OBJECT_ID(''ccoCallBacks'')) 
+		DROP INDEX [IX_ccoCallBacks4] ON [ccoCallBacks];'
+	EXEC(@sql);
+
+	SET @process = 'Munoz DROP INDEX [IX_ccoCallBacks2] ON [ccoCallBacks];'
+	SET @sql = 'IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_ccoCallBacks2'' AND object_id = OBJECT_ID(''ccoCallBacks'')) 
+		DROP INDEX [IX_ccoCallBacks2] ON [ccoCallBacks];'
+	EXEC(@sql);
+
+	SET @process = 'Munoz DROP INDEX [IX_ccoCallBacks3] ON [ccoCallBacks];'
+	SET @sql = 'IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_ccoCallBacks3'' AND object_id = OBJECT_ID(''ccoCallBacks'')) 
+		DROP INDEX [IX_ccoCallBacks3] ON [ccoCallBacks];'
+	EXEC(@sql);
+
+        ------------------------------------------- End --------------------------------------
 
     
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */

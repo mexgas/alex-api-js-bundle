@@ -158,11 +158,29 @@ set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altert
 EXEC(@sql)
  
 SET @process = 'Facturacion - Columna TemplateId en ccoWhatsLogDials.TemplateId'
-        SET @sql = 'IF NOT EXISTS ( SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ''ccoWhatsLogDials'' AND COLUMN_NAME = ''TemplateId'')
-					BEGIN
-						ALTER TABLE ccoWhatsLogDials 
-						ADD TemplateId bigint NULL; 
-					END
+        SET @sql = 'IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = ''ccoWhatsLogDials'' )
+                 BEGIN
+    CREATE TABLE [dbo].[ccoWhatsLogDials](
+	[MetaId] [varchar](1000) NOT NULL,
+	[WaOutId] [bigint] NOT NULL,
+	[CamId] [smallint] NOT NULL,
+	[RegistryClient] [varchar](40) NOT NULL,
+	[PhoneClient] [varchar](50) NOT NULL,
+	[PhoneWa] [varchar](50) NOT NULL,
+	[Type] [varchar](20) NULL,
+	[Contented] [varchar](1000) NULL,
+	[Bill] [decimal](10, 4) NOT NULL,
+	[TimeSpam] [datetime] NOT NULL,
+	[ConversationId] [bigint] NULL,
+	[ErrorCode] [int] NULL,
+	[ErrorMessage] [varchar](1000) NULL,
+	[Status] [varchar](100) NOT NULL,
+	[answered] [bit] NOT NULL,
+	[ASSIGNED] [bit] NULL,
+	[TemplateId] [bigint] NULL,
+	[IsManual] [bit] NOT NULL
+	)
+    END
 '
         EXEC(@sql)
  

@@ -150,6 +150,29 @@ END
         END;'
     EXEC(@sql)
 
+    set @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
+set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+    begin
+    DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+    end'
+EXEC(@sql)
+ 
+SET @process = 'Facturacion - Columna TemplateId en ccoWhatsLogDials.TemplateId'
+        SET @sql = 'IF NOT EXISTS ( SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ''ccoWhatsLogDials'' AND COLUMN_NAME = ''TemplateId'')
+					BEGIN
+						ALTER TABLE ccoWhatsLogDials 
+						ADD TemplateId bigint NULL; 
+					END
+'
+        EXEC(@sql)
+ 
+set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+        begin
+        ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+        end'
+EXEC(@sql)
+
     set @process = 'Facturación - Validación sp ccsp_GalateaWhastappBilling'
     set @sql='
     if exists (select * from sys.procedures where name = N''ccsp_GalateaWhastappBilling'')

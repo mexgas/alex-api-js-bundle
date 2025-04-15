@@ -3688,6 +3688,300 @@ END;
 
 
 	------------------------------------------ END Marco García -----------------------------------------------
+
+    ------------------------------------------ BEGIN Ricardo Nuñez ChatsReports -----------------------------------------------
+    set @process = 'CW-8808 add columns to table RepChatsEffectiveness'
+    set @sql = 'if not exists (select * from sys.columns where name = N''nrequestChat'' and Object_ID = Object_ID(N''RepChatsEffectiveness''))
+	begin
+				alter table RepChatsEffectiveness add nrequestChat int  null 
+	end
+	if not exists (select * from sys.columns where name = N''ninactiveDomainChat'' and Object_ID = Object_ID(N''RepChatsEffectiveness''))
+	begin
+				alter table RepChatsEffectiveness add ninactiveDomainChat int  null 
+	end
+	if not exists (select * from sys.columns where name = N''nunavailableAgentsChat'' and Object_ID = Object_ID(N''RepChatsEffectiveness''))
+	begin
+				alter table RepChatsEffectiveness add nunavailableAgentsChat int  null 
+	end
+	if not exists (select * from sys.columns where name = N''nassignedChat'' and Object_ID = Object_ID(N''RepChatsEffectiveness''))
+	begin
+				alter table RepChatsEffectiveness add nassignedChat int  null 
+	end
+	if not exists (select * from sys.columns where name = N''noutOfServiceChat'' and Object_ID = Object_ID(N''RepChatsEffectiveness''))
+	begin
+				alter table RepChatsEffectiveness add noutOfServiceChat int  null 
+	end
+	if not exists (select * from sys.columns where name = N''noutOfScheduleChat'' and Object_ID = Object_ID(N''RepChatsEffectiveness''))
+	begin
+				alter table RepChatsEffectiveness add noutOfScheduleChat int  null 
+	end
+	if not exists (select * from sys.columns where name = N''nnoSignedAgents'' and Object_ID = Object_ID(N''RepChatsEffectiveness''))
+	begin
+				alter table RepChatsEffectiveness add nnoSignedAgents int  null 
+	end
+	if not exists (select * from sys.columns where name = N''nqueuedChat'' and Object_ID = Object_ID(N''RepChatsEffectiveness''))
+	begin
+				alter table RepChatsEffectiveness add nqueuedChat int  null 
+	end
+	if not exists (select * from sys.columns where name = N''nqueueOverflow'' and Object_ID = Object_ID(N''RepChatsEffectiveness''))
+	begin
+				alter table RepChatsEffectiveness add nqueueOverflow int  null 
+	end
+	if not exists (select * from sys.columns where name = N''ntimeOverflow'' and Object_ID = Object_ID(N''RepChatsEffectiveness''))
+	begin
+				alter table RepChatsEffectiveness add ntimeOverflow int  null 
+	end
+'
+    EXEC(@sql)
+
+    set @process = 'CW-8808 update 3135 of ReportsTotals'
+    set @sql = 'IF EXISTS (SELECT 1 FROM ReportsTotals WHERE id = 3135)
+        BEGIN
+            UPDATE ReportsTotals
+            SET totalColumns = ''sum:ntotalChat|sum:nanswerChat|sum:nabndChat|avg:avgAnswerTime|avg:avgQueueTime|avg:avgAbandonTimeChat|sum:nrequestChat|sum:ninactiveDomainChat|sum:nunavailableAgentsChat|sum:nassignedChat|sum:noutOfServiceChat|sum:noutOfScheduleChat|sum:nnoSignedAgents|sum:nqueuedChat|sum:nqueueOverflow|sum:ntimeOverflow''
+            WHERE id = 3135;
+        END'
+    EXEC(@sql)
+
+    SET @process = 'CW-8808 drop procedure ccspRepChatsEffectiveness'
+	SET @sql='
+		IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccspRepChatsEffectiveness'')
+		BEGIN
+			DROP PROCEDURE ccspRepChatsEffectiveness;
+		END
+		'
+	EXEC(@sql)
+
+    SET @process = 'CW-8808 create procedure ccspRepChatsEffectiveness'
+	SET @sql='
+        CREATE PROCEDURE [dbo].[ccspRepChatsEffectiveness]
+        @action AS TINYINT,
+        @from AS DATETIME = null,
+        @to AS DATETIME = null
+
+        AS
+
+        IF @from is null
+            SELECT @from = CONVERT(datetime,CONVERT(varchar(11),getdate()))
+        SELECT @to = getdate()
+
+        IF @action = 1
+        BEGIN
+            DELETE FROM RepChatsEffectiveness with(rowlock)
+            WHERE date >= @from AND date < @to
+            INSERT INTO RepChatsEffectiveness
+            SELECT 
+            CONVERT(smalldatetime,CONVERT(varchar(13),requestDate,121)+ '':00'',121) AS date,
+            inboundId,
+            descripcion AS [inbound],
+            count(*) AS ntotalChat,
+            SUM( CASE chatStatus WHEN 4 THEN 1 ELSE 0 END ) AS nanswerChat,
+            SUM( CASE chatStatus WHEN 9 THEN 1 ELSE 0 END ) AS nabnd,
+            CONVERT(decimal(10,2),isnull(CONVERT(decimal(10,0),SUM(CASE WHEN firstMessageTime is null THEN CONVERT(int,isnull(firstMessageTime,0)) ELSE datediff(ss,chatdate,firstMessageTime) END ))/CONVERT(decimal(10,0),SUM( CASE chatStatus WHEN 4 THEN 1 END )),0)) AS avgAnswerTime,
+            CONVERT(decimal(10,2),isnull(CONVERT(decimal(10,0),SUM( CASE chatStatus WHEN 4 THEN tQueue ELSE 0 END ))/CONVERT(decimal(10,0),SUM( CASE chatStatus WHEN 4 THEN 1 END )),0)) AS avgQueueTime,
+            CONVERT(decimal(10,2),isnull(CONVERT(decimal(10,0),SUM( CASE chatStatus WHEN 9 THEN tQueue ELSE 0 END ))/CONVERT(decimal(10,0),SUM( CASE chatStatus WHEN 9 THEN 1 END )),0)) AS [avgAbandonTime],
+            datepart(yyyy,CONVERT(smalldatetime,CONVERT(varchar(13),requestDate,121)+ '':00'',121)) AS year,
+            datepart(mm,CONVERT(smalldatetime,CONVERT(varchar(13),requestDate,121)+ '':00'',121)) AS mount,
+            datepart(dd,CONVERT(smalldatetime,CONVERT(varchar(13),requestDate,121)+ '':00'',121)) AS day,
+            datepart(hh,CONVERT(smalldatetime,CONVERT(varchar(13),requestDate,121)+ '':00'',121)) AS hh,
+            datepart(mi,CONVERT(smalldatetime,CONVERT(varchar(13),requestDate,121)+ '':00'',121)) AS minutes,
+            SUM( CASE chatStatus WHEN 0 THEN 1 ELSE 0 END ) AS nrequestChat,
+            SUM( CASE chatStatus WHEN 1 THEN 1 ELSE 0 END ) AS ninactiveDomainChat,
+            SUM( CASE chatStatus WHEN 2 THEN 1 ELSE 0 END ) AS nunavailableAgentsChat,
+            SUM( CASE chatStatus WHEN 3 THEN 1 ELSE 0 END ) AS nassignedChat,
+            SUM( CASE chatStatus WHEN 5 THEN 1 ELSE 0 END ) AS noutOfServiceChat,
+            SUM( CASE chatStatus WHEN 6 THEN 1 ELSE 0 END ) AS noutOfScheduleChat,
+            SUM( CASE chatStatus WHEN 7 THEN 1 ELSE 0 END ) AS nnoSignedAgents,
+            SUM( CASE chatStatus WHEN 8 THEN 1 ELSE 0 END ) AS nqueuedChat,
+            SUM( CASE chatStatus WHEN 10 THEN 1 ELSE 0 END ) AS nqueueOverflow,
+            SUM( CASE chatStatus WHEN 11 THEN 1 ELSE 0 END ) AS ntimeOverflow
+            FROM ccRIaChats c
+            INNER JOIN ccinbound i ON c.inboundId = i.inbound_id
+            WHERE requestDate >= @from AND requestDate < @to
+            GROUP BY 
+            CONVERT(smalldatetime,CONVERT(varchar(13),requestDate,121)+ '':00'',121),
+            inboundId,
+            descripcion
+        END
+		'
+	EXEC(@sql)
+
+
+
+    set @process = 'CW-8808 add columns to table RepACDChats'
+    set @sql = 'if not exists (select * from sys.columns where name = N''others'' and Object_ID = Object_ID(N''RepACDChats''))
+	begin
+				alter table RepACDChats add others int  null 
+	end
+	if not exists (select * from sys.columns where name = N''tqueueOverflow'' and Object_ID = Object_ID(N''RepACDChats''))
+	begin
+				alter table RepACDChats add tqueueOverflow int  null 
+	end
+	if not exists (select * from sys.columns where name = N''totalConnected'' and Object_ID = Object_ID(N''RepACDChats''))
+	begin
+				alter table RepACDChats add totalConnected int  null 
+	end
+'
+    EXEC(@sql)
+
+    set @process = 'CW-8808 update 3131 of ReportsTotals'
+    set @sql = 'IF EXISTS (SELECT 1 FROM ReportsTotals WHERE id = 3131)
+        BEGIN
+            UPDATE ReportsTotals
+            SET totalColumns = ''sum:totalChats|sum:totalConnected|sum:tqueueOverflow|sum:contacted|sum:uncontacted|sum:others|avg:SL|sum:finishedByCostumer|sum:finishedByAgent|sum:finishedBySystem|sum:finishedByAdmin''
+            WHERE id = 3131;
+        END'
+    EXEC(@sql)
+
+    SET @process = 'CW-8808 drop procedure ccspRepACDChats'
+	SET @sql='
+		IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccspRepACDChats'')
+		BEGIN
+			DROP PROCEDURE ccspRepACDChats;
+		END
+		'
+	EXEC(@sql)
+
+    SET @process = 'CW-8808 create procedure ccspRepACDChats'
+	SET @sql='CREATE PROCEDURE [dbo].[ccspRepACDChats]
+        @action as tinyint,
+        @from as datetime = null,
+        @to as datetime = null
+        AS
+
+        if @from is null
+        Begin
+        select @from = convert(datetime,convert(varchar(11),getdate()))
+        End
+        if @to is null 
+        begin
+        select @to = convert(datetime,convert(varchar(11),getdate()))
+        end
+
+        DECLARE @tresDialog AS smallint
+        EXEC @tresDialog =  ccspConfigTresDialog
+
+        declare @DTChat as int
+        select @DTChat = valor from ccsettings where setting_id = 33
+
+        declare @DTQueue as int
+
+        Set @DTQueue=30
+
+        if @action = 1 
+        begin
+
+            delete from RepACDChats with(rowlock)
+            where date >= @from AND date < @to
+            
+            insert into RepACDChats
+                select fecha,
+                inboundId, b.descripcion, ChatDetail.domain, b.IDArea, c.AreaName,
+                max([totalChats]) TotalChats,
+                sum([waitingAbandoned])waitingAbandoned,
+                sum([waitingConnected])waitingConnected,
+                max(maxTQueue)maxTQueue,
+                max(avgTQueue)avgTQueue,
+                sum([onQueue])onQueue,
+                sum([Connected]-[onQueue>TQ])Connected,
+                --sum([UnavailableAgents] + [OutOfService] + [OutOfSchedule] + [NoSignedAgents] + [Abandon] + [QueueOverflow] + [TimeOverflow] + [Assigned] + [Connected<DT])NoConnected,
+                sum([UnavailableAgents] + [NoSignedAgents] + [Abandon] + [Connected<DT])NoConnected,
+
+                0.00 as levelService,
+                sum([byCostumer]) as finishedByCostumer,
+                sum([byAgent]) as finishedByAgent,
+                sum([bySystem]) as finishedBySystem,
+                sum([byAdmin]) as finishedByAdmin,
+                datepart(yyyy,CONVERT(varchar(20), fecha, 120)) as [year],
+                datepart(mm,CONVERT(varchar(20), fecha, 120)) as [month],
+                datepart(dd,CONVERT(varchar(20), fecha, 120)) as [day],
+                datepart(hh,CONVERT(varchar(20), fecha, 120)) as [hour],
+                datepart(mi,CONVERT(varchar(20), fecha, 120)) as [minutes],
+                sum([Others]) as others,
+                sum([onQueue>TQ]) as tqueueOverflow,
+                sum([Connected]) as totalConnected
+                from(
+
+                    select inboundId, CONVERT(smalldatetime,CONVERT(varchar(13),requestDate,121)+ '':00'',121) as fecha,
+                    count(*) as [totalChats],
+                    domain,
+                    ISNULL(count(CASE WHEN (chatstatus = 9 and tQueue>=@tresDialog) THEN 1 ELSE NULL END),0)AS [waitingAbandoned],
+                    ISNULL(count(CASE WHEN (chatstatus = 4 and onQueue = 1) THEN 1 ELSE NULL END),0)AS [waitingConnected],
+                    ISNULL(count(CASE WHEN (chatstatus = 4 and tChatting >= @DTChat) THEN 1 ELSE NULL END),0)AS [Connected],
+                    ISNULL(count(CASE WHEN (chatstatus = 4 and tChatting < @DTChat) THEN 1 ELSE NULL END),0)AS [Connected<DT],
+                    ISNULL(count(CASE WHEN onQueue = 1 THEN 1 ELSE NULL END),0)AS [onQueue],
+                    ISNULL(count(CASE WHEN onQueue = 1 and tQueue>@DTQueue and tChatting >= @DTChat THEN 1 ELSE NULL END),0)AS [onQueue>TQ],
+                    ISNULL(count(CASE WHEN(chatstatus = 2)THEN 1 ELSE NULL END),0)AS [UnavailableAgents],
+                    ISNULL(count(CASE WHEN (chatstatus = 3)THEN 1 ELSE NULL END),0)AS [Assigned],
+                    ISNULL(count(CASE WHEN(chatstatus = 5)THEN 1 ELSE NULL END),0)AS [OutOfService],
+                    ISNULL(count(CASE WHEN(chatstatus = 6)THEN 1 ELSE NULL END),0)AS [OutOfSchedule],
+                    ISNULL(count(CASE WHEN(chatstatus = 7)THEN 1 ELSE NULL END),0)AS [NoSignedAgents],
+                    ISNULL(count(CASE WHEN(chatstatus = 9)THEN 1 ELSE NULL END),0)AS [Abandon],
+                    ISNULL(count(CASE WHEN(chatstatus = 10)THEN 1 ELSE NULL END),0)AS [QueueOverflow],
+                    ISNULL(count(CASE WHEN(chatstatus = 11)THEN 1 ELSE NULL END),0)AS [TimeOverflow],
+                    ISNULL(count(CASE WHEN(finishedBy = 0)THEN 1 ELSE NULL END),0) AS [byCostumer],
+                    ISNULL(count(CASE WHEN(finishedBy = 1)THEN 1 ELSE NULL END),0) AS [byAgent],
+                    ISNULL(count(CASE WHEN(finishedBy = 2)THEN 1 ELSE NULL END),0) AS [bySystem],
+                    ISNULL(count(CASE WHEN(finishedBy = 3)THEN 1 ELSE NULL END),0) AS [byAdmin],
+                    ISNULL(count(CASE WHEN(finishedBy = 3)THEN 1 ELSE NULL END),0) AS [Others],
+                    max(tqueue) as maxTQueue,
+                    avg(tqueue) as avgTQueue
+                    from ccRIAChats a
+                    where
+                    chatStatus in (2,3,4,5,6,7,9,10,11)
+                    group by inboundId, CONVERT(smalldatetime,CONVERT(varchar(13),requestDate,121)+ '':00'',121), domain
+                    
+                ) as ChatDetail
+                left join ccInbound b on (b.inbound_id = ChatDetail.inboundId)
+                left join ccRIACat_Areas c on (c.IDArea = b.IDArea)
+                where fecha >= @from and fecha < @to
+                group by inboundId, fecha, b.descripcion, ChatDetail.domain, b.IDArea, c.AreaName
+                
+                
+                select inboundId, descripcion, date,
+                --isnull(convert(decimal(10,2),convert(float,([Connected]+[AbandonnedValid])/NULLIF(convert(float, Total),0))* 100.00),0) as NS
+                isnull(convert(decimal(10,2),convert(float,([Connected]+[AbandonnedValid]-[Connected_Queue>TQ])/NULLIF(convert(float, Total),0))* 100.00),0) as NS,
+                isnull([Others],0) as Others
+
+                into #tmpns
+                from (
+                select inboundId, descripcion, Date,
+                sum([Connected>DT]) as [Connected],
+                sum([Connected_Queue>TQ]) as [Connected_Queue>TQ],
+                sum([CCAb]) as [AbandonnedValid],
+                sum([Connected<DT] + [Abandon] + [NoSignedAgents] + [UnavailableAgents] ) as NotConnected,
+                --sum([Connected<DT] + [Assigned] + [NoSignedAgents] + [Abandon] + [QueueOverflow] + [TimeOverflow] + [UnavailableAgents] + [OutOfService] + [OutOfSchedule]) as NotConnected,
+                sum([Assigned] + [QueueOverflow] + [TimeOverflow] + [OutOfService] + [OutOfSchedule]) as Others,
+                sum([Connected>DT] + [Connected<DT] + [Assigned] + [NoSignedAgents] + [Abandon] + [QueueOverflow] + [TimeOverflow] + [UnavailableAgents] + [OutOfService] + [OutOfSchedule]) as Total
+                from (
+                select inboundId, descripcion, CONVERT(smalldatetime,CONVERT(varchar(13),requestDate,121)+ '':00'',121) as Date ,
+                ISNULL(count(case when (chatStatus = 9 and tQueue<@tresDialog) then 1 else null end),0) As [CCAb],
+                ISNULL(count(CASE WHEN (chatstatus = 4 and tChatting >= @DTChat) THEN 1 ELSE NULL END),0)AS [Connected>DT],
+                ISNULL(count(CASE WHEN (chatstatus = 4 and tChatting < @DTChat) THEN 1 ELSE NULL END),0)AS [Connected<DT],
+                ISNULL(count(CASE WHEN (chatstatus = 4 and tChatting >= @DTChat and tQueue>= @DTQueue) THEN 1 ELSE NULL END),0)AS [Connected_Queue>TQ],
+                ISNULL(count(CASE WHEN (chatstatus = 3)THEN 1 ELSE NULL END),0)AS [Assigned],
+                ISNULL(count(CASE WHEN(chatstatus = 2)THEN 1 ELSE NULL END),0)AS [UnavailableAgents],
+                ISNULL(count(CASE WHEN(chatstatus = 5)THEN 1 ELSE NULL END),0)AS [OutOfService],
+                ISNULL(count(CASE WHEN(chatstatus = 6)THEN 1 ELSE NULL END),0)AS [OutOfSchedule],
+                ISNULL(count(CASE WHEN (chatstatus = 7)THEN 1 ELSE NULL END),0)AS [NoSignedAgents],
+                ISNULL(count(CASE WHEN (chatstatus = 9)THEN 1 ELSE NULL END),0)AS [Abandon],
+                ISNULL(count(CASE WHEN (chatstatus = 10)THEN 1 ELSE NULL END),0)AS [QueueOverflow],
+                ISNULL(count(CASE WHEN (chatstatus = 11)THEN 1 ELSE NULL END),0)AS [TimeOverflow]
+                from ccRIAChats a
+                left outer join ccInbound c on (inboundId = inbound_id)
+                where chatStatus in (2,3,4,5,6,7,9,10,11)
+                and requestDate  >= @from and requestDate < @to
+                group by inboundId, descripcion, CONVERT(smalldatetime,CONVERT(varchar(13),requestDate,121)+ '':00'',121)) as ChatDetail
+                group by inboundId, descripcion, Date) as ChatSummary order by date, inboundid
+
+                update RepACDChats set SL = b.NS, others=b.Others
+                from RepACDChats a, #tmpns b where a.date = b.date and a.inboundId = b.inboundId and b.date >= @from and b.date < @to
+                drop table #tmpns
+        end
+		'
+	EXEC(@sql)
+    -------------------------------------------- END Ricardo Nuñez ChatsReports -----------------------------------------------
+
     set @process = 'CW-8730 Rename Column RepEmailACD.inboundId'
     set @sql='IF EXISTS (
     SELECT 1

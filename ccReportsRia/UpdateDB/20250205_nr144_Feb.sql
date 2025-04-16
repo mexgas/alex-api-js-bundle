@@ -150,6 +150,47 @@ END
         END;'
     EXEC(@sql)
 
+    set @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
+set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+    begin
+    DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+    end'
+EXEC(@sql)
+ 
+SET @process = 'Facturacion - Columna TemplateId en ccoWhatsLogDials.TemplateId'
+        SET @sql = 'IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = ''ccoWhatsLogDials'' )
+                 BEGIN
+    CREATE TABLE [dbo].[ccoWhatsLogDials](
+	[MetaId] [varchar](1000) NOT NULL,
+	[WaOutId] [bigint] NOT NULL,
+	[CamId] [smallint] NOT NULL,
+	[RegistryClient] [varchar](40) NOT NULL,
+	[PhoneClient] [varchar](50) NOT NULL,
+	[PhoneWa] [varchar](50) NOT NULL,
+	[Type] [varchar](20) NULL,
+	[Contented] [varchar](1000) NULL,
+	[Bill] [decimal](10, 4) NOT NULL,
+	[TimeSpam] [datetime] NOT NULL,
+	[ConversationId] [bigint] NULL,
+	[ErrorCode] [int] NULL,
+	[ErrorMessage] [varchar](1000) NULL,
+	[Status] [varchar](100) NOT NULL,
+	[answered] [bit] NOT NULL,
+	[ASSIGNED] [bit] NULL,
+	[TemplateId] [bigint] NULL,
+	[IsManual] [bit] NOT NULL
+	)
+    END
+'
+        EXEC(@sql)
+ 
+set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+        begin
+        ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+        end'
+EXEC(@sql)
+
     set @process = 'Facturación - Validación sp ccsp_GalateaWhastappBilling'
     set @sql='
     if exists (select * from sys.procedures where name = N''ccsp_GalateaWhastappBilling'')

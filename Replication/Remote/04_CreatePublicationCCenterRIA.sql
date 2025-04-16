@@ -170,7 +170,7 @@ BEGIN
                     @description = N'', 
                     @creation_script = NULL, 
                     @pre_creation_cmd = N'drop', 
-                    @schema_option = 0x000000000800F351,
+                    @schema_option = 0x000000000800B311,
                     @identityrangemanagementoption = N'manual', 
                     @destination_owner = N'dbo', 
                     @force_reinit_subscription = 1, 

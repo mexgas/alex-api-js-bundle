@@ -14999,6 +14999,72 @@ IF OBJECT_ID(''tempdb..#CampLog'') IS NOT NULL DROP TABLE #CampLog
 
         ------------------------------------------- End --------------------------------------
 
+
+-------------------------------------------------------- Begin Jesus Gallardo ------------------------------------------------------
+
+       SET @process = ' CREATE NONCLUSTERED INDEX [IX_Series_1] ON [dbo].[Series]'
+       SET @sql = 'IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes
+    WHERE name = ''IX_Series_1'' AND object_id = OBJECT_ID(''Series'')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX [IX_Series_1] ON [dbo].[Series]
+    (
+        [CLD] ASC,
+        [SERIE] ASC,
+        [NUMERACION INICIAL] ASC,
+        [NUMERACION FINAL] ASC
+    )
+END'
+       EXEC(@sql)
+
+       SET @process = 'CREATE NONCLUSTERED INDEX [IX_Series] ON [dbo].[Series]'
+       SET @sql = 'IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes
+    WHERE name = ''IX_Series'' AND object_id = OBJECT_ID(''Series'')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX [IX_Series] ON [dbo].[Series]
+    (
+        [CLD] ASC,
+        [SERIE] ASC
+    )
+    
+END'
+       EXEC(@sql)
+
+       SET @process = 'CREATE NONCLUSTERED INDEX [IX_CLD] ON [dbo].[Series]'
+       SET @sql = 'IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes
+    WHERE name = ''IX_CLD'' AND object_id = OBJECT_ID(''Series'')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX [IX_CLD] ON [dbo].[Series]
+    (
+        [CLD] ASC
+    )
+   
+END'
+       EXEC(@sql)
+
+       SET @process = ''
+       SET @sql = ''
+       EXEC(@sql)
+
+       SET @process = ''
+       SET @sql = ''
+       EXEC(@sql)
+
+       SET @process = ''
+       SET @sql = ''
+       EXEC(@sql)
+
+-------------------------------------------------------- END Jesus Gallardo  ------------------------------------------------------
+
+
     
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
     EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

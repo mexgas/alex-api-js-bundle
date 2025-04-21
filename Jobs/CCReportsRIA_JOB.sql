@@ -286,8 +286,8 @@ EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N''ReportMasterProcessGenerate
         @notify_level_page=0, 
         @delete_level=0, 
         @description=N''No description available.'', 
-        @category_name=N''[Uncategorized (Local)]'', 
-        @owner_login_name=N''sa'', @job_id = @jobId OUTPUT
+        @category_name=N''Nuxiba'', 
+        @owner_login_name=N''replication'', @job_id = @jobId OUTPUT
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 /****** Object:  Step [Execute_LowLoad_Replication]    Script Date: 21/11/2023 02:24:39 p. m. ******/
 EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N''Execute_LowLoad_Replication'', 

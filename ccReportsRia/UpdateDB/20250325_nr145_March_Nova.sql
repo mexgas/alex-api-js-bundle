@@ -39,66 +39,63 @@ BEGIN
 	BEGIN TRY
 --------------------------------------------------------BEGIN 127.20250325.0.0 Jesus Gallardo----------------------------------------------------------------------
     
-    SET @process = 'Alter RepOutAnswAndXferCalls migración de dialTimeSec de SMALLINT a INT'
-    SET @sql = 'IF EXISTS (
+	SET @process = 'Alter RepOutAnswAndXferCalls migracion de dialTimeSec de SMALLINT a INT';
+	SET @sql = '
+IF EXISTS (
     SELECT 1 
     FROM INFORMATION_SCHEMA.COLUMNS 
     WHERE TABLE_NAME = ''RepOutAnswAndXferCalls'' 
       AND COLUMN_NAME = ''dialTimeSec'' 
       AND DATA_TYPE = ''smallint''
+)
+AND NOT EXISTS (
+    SELECT 1 
+    FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE TABLE_NAME = ''RepOutAnswAndXferCalls'' 
+      AND COLUMN_NAME = ''dialTimeSec_int''
 )
 BEGIN
-    -- Paso 1: Agrega columna temporal solo si no existe
-    IF not EXISTS (
-        SELECT 1 
-        FROM INFORMATION_SCHEMA.COLUMNS 
-        WHERE TABLE_NAME = ''RepOutAnswAndXferCalls'' 
-          AND COLUMN_NAME = ''dialTimeSec_int''          
-    )
-    BEGIN
-        ALTER TABLE RepOutAnswAndXferCalls ADD dialTimeSec_int INT NULL;
-    END  
-END'
-    EXEC(@sql)
+    ALTER TABLE RepOutAnswAndXferCalls ADD dialTimeSec_int INT NULL;
+END';
+	EXEC(@sql);
 
-	SET @process = 'Update Data RepOutAnswAndXferCalls migración de dialTimeSec de SMALLINT a INT'
-    SET @sql = 'IF EXISTS (
+	SET @process = 'Update Data RepOutAnswAndXferCalls migracion de dialTimeSec de SMALLINT a INT';
+	SET @sql = '
+IF EXISTS (
     SELECT 1 
     FROM INFORMATION_SCHEMA.COLUMNS 
     WHERE TABLE_NAME = ''RepOutAnswAndXferCalls'' 
-      AND COLUMN_NAME = ''dialTimeSec'' 
-      AND DATA_TYPE = ''smallint''
+      AND COLUMN_NAME = ''dialTimeSec_int''
 )
-BEGIN    
-
-	declare @sql varchar(max)=''
-    -- Paso 2: Copia los datos en bloques para evitar bloqueos masivos
+AND EXISTS (
+    SELECT 1 
+    FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE TABLE_NAME = ''RepOutAnswAndXferCalls'' 
+      AND COLUMN_NAME = ''dialTimeSec''
+)
+BEGIN
     DECLARE @BatchSize INT = 10000;
 
-    WHILE 1=1
+    WHILE 1 = 1
     BEGIN
         UPDATE TOP (@BatchSize) RepOutAnswAndXferCalls
         SET dialTimeSec_int = CAST(dialTimeSec AS INT)
-        WHERE dialTimeSec_int IS NULL;
+        WHERE dialTimeSec_int IS NULL AND dialTimeSec IS NOT NULL;
 
         IF @@ROWCOUNT = 0 BREAK;
-    END
+    END;
 
-    -- Paso 3: Elimina columna original
     ALTER TABLE RepOutAnswAndXferCalls DROP COLUMN dialTimeSec;
 
-	EXEC sp_rename 
-        ''''RepOutAnswAndXferCalls.dialTimeSec_int'''', 
-        ''''dialTimeSec'''', 
-        ''''COLUMN'''';
-	''
-    -- Paso 4: Renombra nueva columna
-    
+    EXEC sp_rename 
+        ''RepOutAnswAndXferCalls.dialTimeSec_int'', 
+        ''dialTimeSec'', 
+        ''COLUMN'';
 END
-'
-    EXEC(@sql)
+';
+	EXEC(@sql);
 
-     SET @process = 'ALTER PROCEDURE [dbo].[ccspGenSession] @from y @to Datetime'
+    SET @process = 'ALTER PROCEDURE [dbo].[ccspGenSession] @from y @to Datetime'
     SET @sql = 'ALTER PROCEDURE [dbo].[ccspGenSession]
 @from AS DATETIME,
 @to AS DATETIME

@@ -39,7 +39,7 @@ BEGIN
 	BEGIN TRY
 --------------------------------------------------------BEGIN 127.20250325.0.0 Jesus Gallardo----------------------------------------------------------------------
     
-	SET @process = 'Alter RepOutAnswAndXferCalls migracion de dialTimeSec de SMALLINT a INT';
+	SET @process = 'Alter RepOutAnswAndXferCalls columna dialTimeSec de SMALLINT a INT';
 	SET @sql = '
 IF EXISTS (
     SELECT 1 
@@ -48,51 +48,10 @@ IF EXISTS (
       AND COLUMN_NAME = ''dialTimeSec'' 
       AND DATA_TYPE = ''smallint''
 )
-AND NOT EXISTS (
-    SELECT 1 
-    FROM INFORMATION_SCHEMA.COLUMNS 
-    WHERE TABLE_NAME = ''RepOutAnswAndXferCalls'' 
-      AND COLUMN_NAME = ''dialTimeSec_int''
-)
 BEGIN
-    ALTER TABLE RepOutAnswAndXferCalls ADD dialTimeSec_int INT NULL;
+    ALTER TABLE RepOutAnswAndXferCalls
+    ALTER COLUMN dialTimeSec INT NULL;
 END';
-	EXEC(@sql);
-
-	SET @process = 'Update Data RepOutAnswAndXferCalls migracion de dialTimeSec de SMALLINT a INT';
-	SET @sql = '
-IF EXISTS (
-    SELECT 1 
-    FROM INFORMATION_SCHEMA.COLUMNS 
-    WHERE TABLE_NAME = ''RepOutAnswAndXferCalls'' 
-      AND COLUMN_NAME = ''dialTimeSec_int''
-)
-AND EXISTS (
-    SELECT 1 
-    FROM INFORMATION_SCHEMA.COLUMNS 
-    WHERE TABLE_NAME = ''RepOutAnswAndXferCalls'' 
-      AND COLUMN_NAME = ''dialTimeSec''
-)
-BEGIN
-    DECLARE @BatchSize INT = 10000;
-
-    WHILE 1 = 1
-    BEGIN
-        UPDATE TOP (@BatchSize) RepOutAnswAndXferCalls
-        SET dialTimeSec_int = CAST(dialTimeSec AS INT)
-        WHERE dialTimeSec_int IS NULL AND dialTimeSec IS NOT NULL;
-
-        IF @@ROWCOUNT = 0 BREAK;
-    END;
-
-    ALTER TABLE RepOutAnswAndXferCalls DROP COLUMN dialTimeSec;
-
-    EXEC sp_rename 
-        ''RepOutAnswAndXferCalls.dialTimeSec_int'', 
-        ''dialTimeSec'', 
-        ''COLUMN'';
-END
-';
 	EXEC(@sql);
 
     SET @process = 'ALTER PROCEDURE [dbo].[ccspGenSession] @from y @to Datetime'

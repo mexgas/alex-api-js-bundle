@@ -15885,7 +15885,7 @@ if not exists(SELECT load_id FROM ccRIALoading)
     return(0)
     END
 
-   SELECT state,case when state in(3,4) and pctg<100 then 100 else pctg end pctg
+    SELECT state,case when state in(3,4) and pctg<100 then convert(smallint, 100) else pctg end pctg
   FROM ccRIALoading
   WHERE load_id  = @loadID
 

@@ -1956,7 +1956,7 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
                 (CASE 
                     WHEN (cwc.conversationStatus = 8 AND ISNULL(cwc.onQueue, 1) = 1) 
                         OR cwc.conversationStatus IN (10, 17) 
-                        OR cu.User_id IS NULL THEN ''
+                        OR cu.User_id IS NULL THEN ''''
                     ELSE cu.Login
                 END) AS AgentLogin,
                 ISNULL(CAST(mwn.Cam_Id AS SMALLINT), 0) AS ReopenWithTemplateOutboundCamId,
@@ -2002,7 +2002,7 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
                 (CASE 
                     WHEN (cwo.conversationStatus = 8 AND ISNULL(cwo.onQueue, 1) = 1) 
                         OR cwo.conversationStatus IN (10, 17) 
-                        OR cu.User_id IS NULL THEN ''
+                        OR cu.User_id IS NULL THEN ''''
                     ELSE cu.Login
                 END) AS AgentLogin,
                 ISNULL(CAST(ccc.Cam_Id AS SMALLINT), 0) AS ReopenWithTemplateOutboundCamId,

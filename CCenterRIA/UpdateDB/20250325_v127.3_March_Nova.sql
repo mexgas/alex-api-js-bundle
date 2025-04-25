@@ -1645,7 +1645,7 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
                     AND (ISNULL(@ClientNumbersLst, '''') = '''' OR c.clientId IN (SELECT ClientNumber FROM #ClientNumberTable))
                     AND (ISNULL(@AgentsIdsLst, '''') = '''' OR c.AgentId IN (SELECT AgentId FROM #AgentIdTable))
                     AND ((ISNULL(@StatusLst, '''') = '''' OR c.conversationStatus IN (SELECT StatusId FROM #StatusIdTable)) 
-                    OR (@IncludeQueued = 1 AND c.onQueue = 1))
+                    OR (@IncludeQueued = 1 AND c.onQueue = 1 AND c.conversationStatus NOT IN (4, 7, 10, 11, 12, 13, 14, 16, 17, 18, 19)))
             ),
             LinkedConversations AS (
                 -- Include conversations linked to ones with messages
@@ -1666,7 +1666,7 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
             AND (ISNULL(@ClientNumbersLst, '''') = '''' OR c.clientId IN (SELECT ClientNumber FROM #ClientNumberTable))
             AND (ISNULL(@AgentsIdsLst, '''') = '''' OR c.AgentId IN (SELECT AgentId FROM #AgentIdTable))
             AND ((ISNULL(@StatusLst, '''') = '''' OR c.conversationStatus IN (SELECT StatusId FROM #StatusIdTable)) 
-            OR (@IncludeQueued = 1 AND c.onQueue = 1));
+            OR (@IncludeQueued = 1 AND c.onQueue = 1 AND c.conversationStatus NOT IN (4, 7, 10, 11, 12, 13, 14, 16, 17, 18, 19)));
         END
 
         -- Case 2: Outbound Conversations
@@ -1680,7 +1680,7 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
                 AND (ISNULL(@ClientNumbersLst, '''') = '''' OR c.clientId IN (SELECT ClientNumber FROM #ClientNumberTable))
                 AND (ISNULL(@AgentsIdsLst, '''') = '''' OR c.AgentId IN (SELECT AgentId FROM #AgentIdTable))
                 AND ((ISNULL(@StatusLst, '''') = '''' OR c.conversationStatus IN (SELECT StatusId FROM #StatusIdTable)) 
-                OR (@IncludeQueued = 1 AND c.onQueue = 1))
+                OR (@IncludeQueued = 1 AND c.onQueue = 1 AND c.conversationStatus NOT IN (4, 7, 10, 11, 12, 13, 14, 16, 17, 18, 19)))
         END
 
         -- Case 3: ClientNumbers only (when both Inbound and Outbound IDs are NULL)
@@ -1697,7 +1697,7 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
             WHERE whatsIn.clientId IN (SELECT ClientNumber FROM #ClientNumberTable)
                 AND (ISNULL(@AgentsIdsLst, '''') = '''' OR whatsIn.AgentId IN (SELECT AgentId FROM #AgentIdTable))
                 AND ((ISNULL(@StatusLst, '''') = '''' OR whatsIn.conversationStatus IN (SELECT StatusId FROM #StatusIdTable)) 
-                OR (@IncludeQueued = 1 AND whatsIn.onQueue = 1));
+                OR (@IncludeQueued = 1 AND whatsIn.onQueue = 1 AND c.conversationStatus NOT IN (4, 7, 10, 11, 12, 13, 14, 16, 17, 18, 19)));
 
             -- Count outbound conversations
             SELECT  
@@ -1707,7 +1707,7 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
             WHERE whatOut.clientId IN (SELECT ClientNumber FROM #ClientNumberTable)
                 AND (ISNULL(@AgentsIdsLst, '''') = '''' OR whatOut.AgentId IN (SELECT AgentId FROM #AgentIdTable))
                 AND ((ISNULL(@StatusLst, '''') = '''' OR whatOut.conversationStatus IN (SELECT StatusId FROM #StatusIdTable)) 
-                OR (@IncludeQueued = 1 AND whatOut.onQueue = 1));
+                OR (@IncludeQueued = 1 AND whatOut.onQueue = 1 AND c.conversationStatus NOT IN (4, 7, 10, 11, 12, 13, 14, 16, 17, 18, 19)));
 
             -- Sum the inbound and outbound counts
             SET @TotalConversations = @InboundConversations + @OutboundConversations;
@@ -1757,7 +1757,7 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
                 AND (ISNULL(@ClientNumbersLst, '''') = '''' OR c.clientId IN (SELECT ClientNumber FROM #ClientNumberTable))
                 AND (ISNULL(@AgentsIdsLst, '''') = '''' OR c.AgentId IN (SELECT AgentId FROM #AgentIdTable))
                 AND ((ISNULL(@StatusLst, '''') = '''' OR c.conversationStatus IN (SELECT StatusId FROM #StatusIdTable)) 
-                OR (@IncludeQueued = 1 AND c.onQueue = 1))
+                OR (@IncludeQueued = 1 AND c.onQueue = 1 AND c.conversationStatus NOT IN (4, 7, 10, 11, 12, 13, 14, 16, 17, 18, 19)))
         ),
     
         LatestOutboundMessages AS (
@@ -1787,7 +1787,7 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
                 AND (ISNULL(@ClientNumbersLst, '''') = '''' OR c.clientId IN (SELECT ClientNumber FROM #ClientNumberTable))
                 AND (ISNULL(@AgentsIdsLst, '''') = '''' OR c.AgentId IN (SELECT AgentId FROM #AgentIdTable))
                 AND ((ISNULL(@StatusLst, '''') = '''' OR c.conversationStatus IN (SELECT StatusId FROM #StatusIdTable)) 
-                OR (@IncludeQueued = 1 AND c.onQueue = 1))
+                OR (@IncludeQueued = 1 AND c.onQueue = 1 AND c.conversationStatus NOT IN (4, 7, 10, 11, 12, 13, 14, 16, 17, 18, 19)))
         ),
     
         ClientOnlyMessages AS (
@@ -1817,7 +1817,7 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
                 whatsIn.clientId IN (SELECT ClientNumber FROM #ClientNumberTable)
                 AND (ISNULL(@AgentsIdsLst, '''') = '''' OR whatsIn.AgentId IN (SELECT AgentId FROM #AgentIdTable))
                 AND ((ISNULL(@StatusLst, '''') = '''' OR whatsIn.conversationStatus IN (SELECT StatusId FROM #StatusIdTable)) 
-                OR (@IncludeQueued = 1 AND whatsIn.onQueue = 1))
+                OR (@IncludeQueued = 1 AND whatsIn.onQueue = 1 AND c.conversationStatus NOT IN (4, 7, 10, 11, 12, 13, 14, 16, 17, 18, 19)))
                 AND whatsIn.ConversationId NOT IN (SELECT ConversationId FROM ExistingConversations)
 
             UNION ALL
@@ -1847,7 +1847,7 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
                 whatOut.clientId IN (SELECT ClientNumber FROM #ClientNumberTable)
                 AND (ISNULL(@AgentsIdsLst, '''') = '''' OR whatOut.AgentId IN (SELECT AgentId FROM #AgentIdTable))
                 AND ((ISNULL(@StatusLst, '''') = '''' OR whatOut.conversationStatus IN (SELECT StatusId FROM #StatusIdTable)) 
-                OR (@IncludeQueued = 1 AND whatOut.onQueue = 1))
+                OR (@IncludeQueued = 1 AND whatOut.onQueue = 1 AND c.conversationStatus NOT IN (4, 7, 10, 11, 12, 13, 14, 16, 17, 18, 19)))
                 AND whatOut.ConversationId NOT IN (SELECT ConversationId FROM ExistingConversations)
         )
 

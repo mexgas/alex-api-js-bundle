@@ -1675,7 +1675,7 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
             SELECT  
                 @TotalConversations = COUNT(DISTINCT c.ConversationId)
             FROM ccWhatsAppConversationsOut c
-            INNER JOIN ccWAMessagesConversationsOut m ON m.conversationId = c.ConversationId
+            LEFT JOIN ccWAMessagesConversationsOut m ON m.conversationId = c.ConversationId
             WHERE c.camId IN (SELECT OutboundId FROM #OutboundIdTable)
                 AND (ISNULL(@ClientNumbersLst, '''') = '''' OR c.clientId IN (SELECT ClientNumber FROM #ClientNumberTable))
                 AND (ISNULL(@AgentsIdsLst, '''') = '''' OR c.AgentId IN (SELECT AgentId FROM #AgentIdTable))
@@ -1697,7 +1697,7 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
             WHERE whatsIn.clientId IN (SELECT ClientNumber FROM #ClientNumberTable)
                 AND (ISNULL(@AgentsIdsLst, '''') = '''' OR whatsIn.AgentId IN (SELECT AgentId FROM #AgentIdTable))
                 AND ((ISNULL(@StatusLst, '''') = '''' OR whatsIn.conversationStatus IN (SELECT StatusId FROM #StatusIdTable)) 
-                OR (@IncludeQueued = 1 AND whatsIn.onQueue = 1 AND c.conversationStatus NOT IN (4, 7, 10, 11, 12, 13, 14, 16, 17, 18, 19)));
+                OR (@IncludeQueued = 1 AND whatsIn.onQueue = 1 AND whatsIn.conversationStatus NOT IN (4, 7, 10, 11, 12, 13, 14, 16, 17, 18, 19)));
 
             -- Count outbound conversations
             SELECT  
@@ -1707,7 +1707,7 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
             WHERE whatOut.clientId IN (SELECT ClientNumber FROM #ClientNumberTable)
                 AND (ISNULL(@AgentsIdsLst, '''') = '''' OR whatOut.AgentId IN (SELECT AgentId FROM #AgentIdTable))
                 AND ((ISNULL(@StatusLst, '''') = '''' OR whatOut.conversationStatus IN (SELECT StatusId FROM #StatusIdTable)) 
-                OR (@IncludeQueued = 1 AND whatOut.onQueue = 1 AND c.conversationStatus NOT IN (4, 7, 10, 11, 12, 13, 14, 16, 17, 18, 19)));
+                OR (@IncludeQueued = 1 AND whatOut.onQueue = 1 AND whatOut.conversationStatus NOT IN (4, 7, 10, 11, 12, 13, 14, 16, 17, 18, 19)));
 
             -- Sum the inbound and outbound counts
             SET @TotalConversations = @InboundConversations + @OutboundConversations;
@@ -1779,7 +1779,7 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
                 ''Outbound'' AS CampType,
                 ROW_NUMBER() OVER (PARTITION BY c.ConversationId ORDER BY m.TimeStampMessage DESC) AS rn
             FROM ccWhatsAppConversationsOut c
-            INNER JOIN ccWAMessagesConversationsOut m ON m.conversationId = c.ConversationId
+            LEFT JOIN ccWAMessagesConversationsOut m ON m.conversationId = c.ConversationId
             LEFT JOIN ccRIACampsGraph g ON g.cam_id = c.camId
             LEFT JOIN ccUsers u ON u.User_id = c.AgentId
             WHERE 
@@ -1817,7 +1817,7 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
                 whatsIn.clientId IN (SELECT ClientNumber FROM #ClientNumberTable)
                 AND (ISNULL(@AgentsIdsLst, '''') = '''' OR whatsIn.AgentId IN (SELECT AgentId FROM #AgentIdTable))
                 AND ((ISNULL(@StatusLst, '''') = '''' OR whatsIn.conversationStatus IN (SELECT StatusId FROM #StatusIdTable)) 
-                OR (@IncludeQueued = 1 AND whatsIn.onQueue = 1 AND c.conversationStatus NOT IN (4, 7, 10, 11, 12, 13, 14, 16, 17, 18, 19)))
+                OR (@IncludeQueued = 1 AND whatsIn.onQueue = 1 AND whatsIn.conversationStatus NOT IN (4, 7, 10, 11, 12, 13, 14, 16, 17, 18, 19)))
                 AND whatsIn.ConversationId NOT IN (SELECT ConversationId FROM ExistingConversations)
 
             UNION ALL
@@ -1847,7 +1847,7 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
                 whatOut.clientId IN (SELECT ClientNumber FROM #ClientNumberTable)
                 AND (ISNULL(@AgentsIdsLst, '''') = '''' OR whatOut.AgentId IN (SELECT AgentId FROM #AgentIdTable))
                 AND ((ISNULL(@StatusLst, '''') = '''' OR whatOut.conversationStatus IN (SELECT StatusId FROM #StatusIdTable)) 
-                OR (@IncludeQueued = 1 AND whatOut.onQueue = 1 AND c.conversationStatus NOT IN (4, 7, 10, 11, 12, 13, 14, 16, 17, 18, 19)))
+                OR (@IncludeQueued = 1 AND whatOut.onQueue = 1 AND whatOut.conversationStatus NOT IN (4, 7, 10, 11, 12, 13, 14, 16, 17, 18, 19)))
                 AND whatOut.ConversationId NOT IN (SELECT ConversationId FROM ExistingConversations)
         )
 

@@ -11999,7 +11999,7 @@ BEGIN --save conversation Times
     UPDATE ccWhatsAppConversationsOut
     SET
     conversationStatus = @conversationStatus
-    , finishedBy = case when @conversationStatus in(4,10,17,18) then 2
+    , finishedBy = case when @conversationStatus in(4,10,17,18,19) then 2
     when @conversationStatus in(11) then 1
         else 0 end
     , tConversation =  case when @conversationStatus = 10 OR conversationDate is null then 0 else DATEDIFF(ss, conversationDate, GETDATE()) end

@@ -1553,7 +1553,7 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
     BEGIN
         -- Drop and recreate temporary tables
         IF OBJECT_ID(''tempdb..#ClientNumberTable'') IS NOT NULL DROP TABLE #ClientNumberTable;
-        CREATE TABLE #ClientNumberTable (ClientNumber BIGINT);
+        CREATE TABLE #ClientNumberTable (ClientNumber VARCHAR(50));
 
         IF OBJECT_ID(''tempdb..#InboundIdTable'') IS NOT NULL DROP TABLE #InboundIdTable;
         CREATE TABLE #InboundIdTable (InboundId INT);
@@ -1576,7 +1576,7 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
         IF ISNULL(@ClientNumbersLst, '''') <> ''''
         BEGIN
             INSERT INTO #ClientNumberTable (ClientNumber)
-            SELECT CAST(value AS BIGINT)
+            SELECT value 
             FROM fn_RIASplitDelimited(@ClientNumbersLst, '','');
         END
 
@@ -11999,7 +11999,7 @@ BEGIN --save conversation Times
     UPDATE ccWhatsAppConversationsOut
     SET
     conversationStatus = @conversationStatus
-    , finishedBy = case when @conversationStatus in(4,10,17,18) then 2
+    , finishedBy = case when @conversationStatus in(4,10,17,18,19) then 2
     when @conversationStatus in(11) then 1
         else 0 end
     , tConversation =  case when @conversationStatus = 10 OR conversationDate is null then 0 else DATEDIFF(ss, conversationDate, GETDATE()) end

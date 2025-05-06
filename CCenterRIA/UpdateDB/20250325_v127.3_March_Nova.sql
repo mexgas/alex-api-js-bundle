@@ -16393,6 +16393,19 @@ end
 
 --------------------------------- END Jesus Gallardo ----------------------------------
 
+-------------------------------------------------------- Begin LRSV ----------------------------------------------------
+
+	SET @process = 'Se agrega fix CW-9706'
+    SET @sql = '
+	IF NOT EXISTS ( SELECT 1 FROM relationTableColumnIdentifiers WHERE tableName = ''ccCamps'' AND colunName = ''cam_inter_graba'' AND Identifiers = ''OUT_INTERVAL_AM_VOICEMAIL'')
+	BEGIN
+		insert into relationTableColumnIdentifiers values (''OUT_INTERVAL_AM_VOICEMAIL'', ''ccCamps'', ''cam_inter_graba'')
+	END
+	'
+    EXEC(@sql)
+
+-------------------------------------------------------- End LRSV ------------------------------------------------------
+
 
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
     EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

@@ -1870,6 +1870,8 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
             SELECT * FROM LatestOutboundMessages WHERE rn = 1
             UNION ALL
             SELECT * FROM ClientOnlyMessages WHERE rn = 1
+				AND NOT EXISTS (SELECT 1 FROM #InboundIdTable)
+				AND NOT EXISTS (SELECT 1 FROM #OutboundIdTable)
         ) AS CombinedMessages
         ORDER BY ConversationId DESC
         OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;

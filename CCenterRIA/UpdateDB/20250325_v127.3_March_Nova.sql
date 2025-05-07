@@ -1870,6 +1870,8 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
             SELECT * FROM LatestOutboundMessages WHERE rn = 1
             UNION ALL
             SELECT * FROM ClientOnlyMessages WHERE rn = 1
+				AND NOT EXISTS (SELECT 1 FROM #InboundIdTable)
+				AND NOT EXISTS (SELECT 1 FROM #OutboundIdTable)
         ) AS CombinedMessages
         ORDER BY ConversationId DESC
         OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;
@@ -16392,6 +16394,19 @@ end
     EXEC(@sql)
 
 --------------------------------- END Jesus Gallardo ----------------------------------
+
+-------------------------------------------------------- Begin LRSV ----------------------------------------------------
+
+	SET @process = 'Se agrega fix CW-9706'
+    SET @sql = '
+	IF NOT EXISTS ( SELECT 1 FROM relationTableColumnIdentifiers WHERE tableName = ''ccCamps'' AND colunName = ''cam_inter_graba'' AND Identifiers = ''OUT_INTERVAL_AM_VOICEMAIL'')
+	BEGIN
+		insert into relationTableColumnIdentifiers values (''OUT_INTERVAL_AM_VOICEMAIL'', ''ccCamps'', ''cam_inter_graba'')
+	END
+	'
+    EXEC(@sql)
+
+-------------------------------------------------------- End LRSV ------------------------------------------------------
 
 
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */

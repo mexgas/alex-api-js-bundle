@@ -14293,7 +14293,7 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminInbound] @Option AS SMALLINT,
        -- Nova 13 08 de mayo del 2025 -JM
        -- Se agrega option 18 para validar si la campaña fue eliminada del area
 
-SET @process = 'CW-9315 Validar SP  - Drop procedure ccsp_GalateaAdminCampaigns'
+SET @process = 'CW-9315 Validar SP  - Drop procedure ccsp_GalateaAdminCampaigns' --test
     SET @sql = 'IF EXISTS (SELECT * FROM sysobjects WHERE name=''ccsp_GalateaAdminCampaigns'')
         BEGIN
             DROP PROCEDURE dbo.ccsp_GalateaAdminCampaigns

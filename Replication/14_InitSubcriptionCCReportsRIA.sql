@@ -213,7 +213,7 @@ if not exists(select * from migration where status in(0,1)) begin
 	exec msdb..sp_update_job @job_name = ''''ReportMasterProcessGenerateLow'''', @enabled = 1 --Enable
 	exec msdb..sp_update_job @job_name = ''''CW_Merge_Replication_CCreportsRIA'''', @enabled = 0 --Disable
 
-	--exec ccSpCreateIndexReport
+	exec ccSpCreateIndexReport
 end
 '', 
 		@database_name=N''CCReportsRIA'', 

@@ -12170,7 +12170,9 @@ END;
 
 Else IF @action = 11
 BEGIN --register desconnection agent by conversationID
-    exec ccsp_ConversationWASaveOut @action = 9, @conversationId=@conversationId
+    UPDATE ccLastMessageAgentByConversationOut
+	SET desconnectionAgent = getDate()
+	WHERE conversationId = @conversationId;
 END;
 
 else IF @action = 12  BEGIN --Obtain conversationsWA post MCS reset

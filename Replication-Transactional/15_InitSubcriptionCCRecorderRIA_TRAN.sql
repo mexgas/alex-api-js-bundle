@@ -456,13 +456,6 @@ if not exists(select * from migration where status in (0,1)) begin
 	exec msdb..sp_update_job @job_name = ''''ReportsMasterProcessAVRSPublicationHighLoad'''', @enabled = 1 --Enable
 	exec msdb..sp_update_job @job_name = ''''ReportsMasterProcessAVRSPublicationLowLoad'''', @enabled = 1 --Enable
 	exec msdb..sp_update_job @job_name = ''''CW_Tran_Replication_CCRecorderRIA'''', @enabled = 0 --Disable
-
-
-	--IF  EXISTS ( SELECT TOP (1) * FROM sysservers WHERE srvname = ''''SvrPublisher_transactional'''' )
-	--begin
-		--USE [master]
-		--EXEC master.dbo.sp_dropserver @server=''''SvrPublisher_transactional''''
-	--end
 end
 '', 
 		@database_name=N''CCRecorderRIA'', 
@@ -514,11 +507,5 @@ else
 	SELECT 'Incorrect database version, actual version: ' + cast(@actualVersion AS VARCHAR(5)) + ', version to release: ' + cast(@version AS VARCHAR(5))
  end
 
-/*
-if(@serverName!=@@servername)
-begin
-USE [master]
-EXEC master.dbo.sp_dropserver @server=@serverName
-end
-*/
+
 set nocount off

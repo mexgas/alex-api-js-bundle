@@ -314,9 +314,426 @@ END'
 	
 	--------------------------------------------------END MACL--------------------------------------------------
 
+	------------------------------------------ Transactional Replication ----------------------------------------
+	
+	SET @process = 'DROP PROCEDURE ReportsMasterProcessAVRS'
+    SET @Sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ReportsMasterProcessAVRS'')
+		BEGIN
+			DROP PROCEDURE ReportsMasterProcessAVRS;
+		END'
+    EXEC(@Sql)
+	
+	SET @process = 'CREATE procedure ReportsMasterProcessAVRS'
+    SET @Sql = 'CREATE procedure [dbo].[ReportsMasterProcessAVRS] as
+set nocount on
+declare @replicationName varchar(max)
+declare @dateStart datetime
+declare @schedule_id int,@scheduleTime int
+
+declare @sessionKIll table(id int, sessionId int)
+declare @i int,@count int
+declare @sessionId int
+declare @SQL varchar(max)
+
+
+set @dateStart = getdate()
+set @scheduleTime = 5
+
+
+print ''---Get schedule_id and @scheduleTime ----''
+select @schedule_id=C.schedule_id, @scheduleTime=C.freq_subday_interval
+	FROM msdb.dbo.sysjobs A
+	LEFT OUTER JOIN msdb.dbo.sysjobschedules B  ON A.job_id = B.job_id
+	INNER JOIN msdb.dbo.sysschedules C ON C.schedule_id = B.schedule_id
+	where A.name=''ReportsMasterProcessAVRS''
+
+
+
+print ''---Kill Process Replication Merge Agent----''
+while exists(SELECT	s.session_id AS SessionID		
+	from [master].sys.dm_exec_sessions  as s 
+	LEFT OUTER JOIN [master].sys.sysprocesses p	ON s.session_id = p.spid
+	where s.session_id in(
+	select distinct r.blocking_session_id
+	FROM [master].sys.dm_exec_sessions AS s
+	INNER JOIN [master].sys.dm_exec_requests AS r ON r.session_id = s.session_id
+	WHERE    r.session_id != @@SPID and  r.blocking_session_id   <>0
+	)
+	and s.[program_name] like ''%Replication Merge Agent%''	
+	and DB_NAME(p.dbid)=''CCRecorderRIA''	
+) begin
+	insert into @sessionKIll(id,sessionId)
+	
+	SELECT	ROW_NUMBER() OVER(ORDER BY s.session_id) AS Row#, s.session_id AS SessionID		
+	from [master].sys.dm_exec_sessions  as s 
+	LEFT OUTER JOIN [master].sys.sysprocesses p	ON s.session_id = p.spid
+	where s.session_id in(
+	select distinct r.blocking_session_id
+	FROM [master].sys.dm_exec_sessions AS s
+	INNER JOIN [master].sys.dm_exec_requests AS r ON r.session_id = s.session_id
+	WHERE    r.session_id != @@SPID and  r.blocking_session_id   <>0
+	)
+	and s.[program_name] like ''%Replication Merge Agent%''
+	and DB_NAME(p.dbid)=''CCRecorderRIA''
+
+	select * from @sessionKIll
+
+	select @i=1,@count =COUNT(*) from @sessionKIll
+	while @i<=@count begin
+		select @sessionId=sessionId from @sessionKIll where id=@i
+		SET @SQL = ''KILL '' + CAST(@sessionId as varchar(max))
+		begin try
+			EXEC (@SQL)
+		end try
+		begin catch
+			print @SQL+ '' is proccess end''
+		end catch
+		set @i=@i+1
+	end
+	delete from @sessionKIll
+end
+
+
+
+PRINT ''---Get Jobs Replication ----'';
+CREATE TABLE #replications ([name] NVARCHAR(500), flag BIT);
+
+INSERT INTO #replications
+SELECT DISTINCT A.[name], 0
+FROM msdb.dbo.sysjobs A
+LEFT JOIN PublicationLowLoad B ON A.[name] LIKE ''%'' + B.namePublication + ''%''
+LEFT JOIN PublicationHighLoad C ON A.[name] LIKE ''%'' + C.namePublication + ''%''
+WHERE A.[name] LIKE ''%CCRecorderRIA%'' AND A.[name] LIKE ''%CCenterRIA%''
+AND B.namePublication IS NULL AND C.namePublication IS NULL;
+
+SELECT @count = COUNT(*) FROM #replications;
+
+WHILE (SELECT COUNT(*) FROM #replications WITH (NOLOCK) WHERE flag = 0) > 0
+  AND DATEDIFF(SECOND, @dateStart, GETDATE()) < (@scheduleTime * 60)
+BEGIN
+    SET ROWCOUNT 1;
+    SELECT @replicationName = [name]
+    FROM #replications WITH (NOLOCK)
+    WHERE flag = 0;
+    SET ROWCOUNT 0;
+
+    DECLARE @isRunning INT;
+
+    SELECT @isRunning = COUNT(*)
+    FROM msdb.dbo.sysjobs_view job
+    INNER JOIN msdb.dbo.sysjobactivity activity ON job.job_id = activity.job_id
+    INNER JOIN msdb.dbo.syssessions sess ON sess.session_id = activity.session_id
+    INNER JOIN (
+        SELECT MAX(agent_start_date) AS max_agent_start_date
+        FROM msdb.dbo.syssessions
+    ) sess_max ON sess.agent_start_date = sess_max.max_agent_start_date
+    WHERE activity.run_requested_date IS NOT NULL 
+        AND activity.stop_execution_date IS NULL
+        AND job.name = @replicationName;
+
+    IF @isRunning = 0
+    BEGIN
+        EXEC msdb.dbo.sp_start_job @job_name = @replicationName;
+        PRINT ''sp_start_job '' + @replicationName;
+    END
+    ELSE
+    BEGIN
+        PRINT ''Job is already running: '' + @replicationName;
+    END
+
+    UPDATE #replications WITH (ROWLOCK)
+    SET flag = 1
+    WHERE [name] = @replicationName;
+
+    WAITFOR DELAY ''00:00:03'';
+
+    DECLARE @jobStart DATETIME = GETDATE();
+
+    WHILE EXISTS (
+        SELECT 1
+        FROM msdb.dbo.sysjobs_view job
+        INNER JOIN msdb.dbo.sysjobactivity activity ON job.job_id = activity.job_id
+        INNER JOIN msdb.dbo.syssessions sess ON sess.session_id = activity.session_id
+        INNER JOIN (
+            SELECT MAX(agent_start_date) AS max_agent_start_date
+            FROM msdb.dbo.syssessions
+        ) sess_max ON sess.agent_start_date = sess_max.max_agent_start_date
+        WHERE activity.run_requested_date IS NOT NULL 
+            AND activity.stop_execution_date IS NULL
+            AND job.name = @replicationName
+    )
+    BEGIN
+        WAITFOR DELAY ''00:00:01'';
+        PRINT ''In Progress Job in ReplicationName: '' + @replicationName;
+
+        IF DATEDIFF(SECOND, @jobStart, GETDATE()) > ((@scheduleTime * 60) / @count)
+        BEGIN
+            PRINT ''Timeout reached. Stop waiting for: '' + @replicationName;
+            BREAK;
+        END
+    END
+
+    PRINT ''Progress End Job in ReplicationName: '' + @replicationName;
+END
+
+DROP TABLE #replications;
+
+
+
+
+
+if not exists (select * from sys.indexes where name = N''IX_ccRIAWorkGroupUsersConsulta2'' and object_id = OBJECT_ID(N''ccRIAWorkGroupUsersConsulta''))
+begin
+	CREATE NONCLUSTERED INDEX [IX_ccRIAWorkGroupUsersConsulta2] ON [dbo].[ccRIAWorkGroupUsersConsulta]
+		(
+			[IDWG] ASC,
+			[User_id] ASC
+		)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 80) ON [PRIMARY]
+end
+
+print ''-------------------------Add Trigger IX_ccRIAWorkGroupUsersConsulta2-------------------------''
+
+
+
+if DATEDIFF(mi,@dateStart,getdate())>@scheduleTime begin
+	set @scheduleTime=@scheduleTime+1
+	if  @scheduleTime< 59 begin
+		EXEC msdb.dbo.sp_update_schedule @schedule_id=@schedule_id,@freq_subday_interval = @scheduleTime
+	end
+	
+end'
+    EXEC(@Sql)
+	
+	SET @process = 'DROP PROCEDURE ReportsMasterProcessAVRSPublicationHighLoad'
+    SET @Sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ReportsMasterProcessAVRSPublicationHighLoad'')
+		BEGIN
+			DROP PROCEDURE ReportsMasterProcessAVRSPublicationHighLoad;
+		END'
+    EXEC(@Sql)
+	
+	SET @process = 'CREATE PROCEDURE ReportsMasterProcessAVRSPublicationHighLoad'
+    SET @Sql = 'CREATE PROCEDURE [dbo].[ReportsMasterProcessAVRSPublicationHighLoad]
+AS
+SET NOCOUNT ON;
+
+DECLARE @replicationName VARCHAR(MAX);
+DECLARE @dateStart DATETIME = GETDATE();
+DECLARE @schedule_id INT, @scheduleTime INT;
+DECLARE @count INT;
+
+SET @scheduleTime = 5;
+
+PRINT ''---Get schedule_id and @scheduleTime ----'';
+SELECT 
+    @schedule_id = C.schedule_id,
+    @scheduleTime = C.freq_subday_interval
+FROM msdb.dbo.sysjobs A
+LEFT JOIN msdb.dbo.sysjobschedules B ON A.job_id = B.job_id
+INNER JOIN msdb.dbo.sysschedules C ON C.schedule_id = B.schedule_id
+WHERE A.name = ''ReportsMasterProcessAVRSPublicationHighLoad'';
+
+PRINT ''---Get Jobs Replication ----'';
+CREATE TABLE #replications ([name] NVARCHAR(500), flag BIT);
+
+INSERT INTO #replications
+SELECT DISTINCT A.[name], 0
+FROM msdb.dbo.sysjobs A
+INNER JOIN PublicationHighLoad C ON A.[name] LIKE ''%'' + C.namePublication + ''%''
+WHERE A.[name] LIKE ''%CCRecorderRIA%'' AND A.[name] LIKE ''%CCenterRIA%'';
+
+SELECT @count = COUNT(*) FROM #replications;
+
+WHILE (
+    SELECT COUNT(*) FROM #replications WITH (NOLOCK) WHERE flag = 0
+) > 0 AND DATEDIFF(SECOND, @dateStart, GETDATE()) < (@scheduleTime * 60)
+BEGIN
+    SET ROWCOUNT 1;
+    SELECT @replicationName = [name]
+    FROM #replications WITH (NOLOCK)
+    WHERE flag = 0;
+    SET ROWCOUNT 0;
+
+    DECLARE @isRunning INT;
+
+    SELECT @isRunning = COUNT(*)
+    FROM msdb.dbo.sysjobs_view job
+    INNER JOIN msdb.dbo.sysjobactivity activity ON job.job_id = activity.job_id
+    INNER JOIN msdb.dbo.syssessions sess ON sess.session_id = activity.session_id
+    INNER JOIN (
+        SELECT MAX(agent_start_date) AS max_agent_start_date
+        FROM msdb.dbo.syssessions
+    ) sess_max ON sess.agent_start_date = sess_max.max_agent_start_date
+    WHERE activity.run_requested_date IS NOT NULL
+      AND activity.stop_execution_date IS NULL
+      AND job.name = @replicationName;
+
+    IF @isRunning = 0
+    BEGIN
+        EXEC msdb.dbo.sp_start_job @job_name = @replicationName;
+        PRINT ''sp_start_job '' + @replicationName;
+    END
+    ELSE
+    BEGIN
+        PRINT ''Job is already running: '' + @replicationName;
+    END
+
+    UPDATE #replications WITH (ROWLOCK)
+    SET flag = 1
+    WHERE [name] = @replicationName;
+
+    WAITFOR DELAY ''00:00:03'';
+
+    DECLARE @jobStart DATETIME = GETDATE();
+
+    WHILE EXISTS (
+        SELECT 1
+        FROM msdb.dbo.sysjobs_view job
+        INNER JOIN msdb.dbo.sysjobactivity activity ON job.job_id = activity.job_id
+        INNER JOIN msdb.dbo.syssessions sess ON sess.session_id = activity.session_id
+        INNER JOIN (
+            SELECT MAX(agent_start_date) AS max_agent_start_date
+            FROM msdb.dbo.syssessions
+        ) sess_max ON sess.agent_start_date = sess_max.max_agent_start_date
+        WHERE activity.run_requested_date IS NOT NULL
+          AND activity.stop_execution_date IS NULL
+          AND job.name = @replicationName
+    )
+    BEGIN
+        WAITFOR DELAY ''00:00:01'';
+        PRINT ''In Progress Job in ReplicationName: '' + @replicationName;
+
+        IF DATEDIFF(SECOND, @jobStart, GETDATE()) > ((@scheduleTime * 60) / @count)
+        BEGIN
+            PRINT ''Stop Job in ReplicationName (timeout): '' + @replicationName;
+            BREAK;
+        END
+    END
+
+    PRINT ''Progress End Job in ReplicationName: '' + @replicationName;
+END
+
+DROP TABLE #replications;'
+    EXEC(@Sql)
+	
+	SET @process = 'DROP PROCEDURE ReportsMasterProcessAVRSPublicationLowLoad'
+    SET @Sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ReportsMasterProcessAVRSPublicationLowLoad'')
+		BEGIN
+			DROP PROCEDURE ReportsMasterProcessAVRSPublicationLowLoad;
+		END'
+    EXEC(@Sql)
+
+	SET @process = 'CREATE PROCEDURE ReportsMasterProcessAVRSPublicationLowLoad'
+    SET @Sql = 'CREATE PROCEDURE [dbo].[ReportsMasterProcessAVRSPublicationLowLoad]
+AS
+SET NOCOUNT ON;
+
+DECLARE @replicationName VARCHAR(MAX);
+DECLARE @dateStart DATETIME = GETDATE();
+DECLARE @schedule_id INT, @scheduleTime INT;
+DECLARE @count INT;
+
+SET @scheduleTime = 15;
+
+PRINT ''---Get schedule_id and @scheduleTime ----'';
+SELECT 
+    @schedule_id = C.schedule_id,
+    @scheduleTime = C.freq_subday_interval
+FROM msdb.dbo.sysjobs A
+LEFT JOIN msdb.dbo.sysjobschedules B ON A.job_id = B.job_id
+INNER JOIN msdb.dbo.sysschedules C ON C.schedule_id = B.schedule_id
+WHERE A.name = ''ReportsMasterProcessAVRSPublicationLowLoad'';
+
+PRINT ''---Get Jobs Replication ----'';
+CREATE TABLE #replications ([name] NVARCHAR(500), flag BIT);
+
+INSERT INTO #replications
+SELECT DISTINCT A.[name], 0
+FROM msdb.dbo.sysjobs A
+INNER JOIN PublicationLowLoad C ON A.[name] LIKE ''%'' + C.namePublication + ''%''
+WHERE A.[name] LIKE ''%CCRecorderRIA%'' AND A.[name] LIKE ''%CCenterRIA%'';
+
+SELECT @count = COUNT(*) FROM #replications;
+
+WHILE (
+    SELECT COUNT(*) FROM #replications WITH (NOLOCK) WHERE flag = 0
+) > 0 AND DATEDIFF(SECOND, @dateStart, GETDATE()) < (@scheduleTime * 60)
+BEGIN
+    SET ROWCOUNT 1;
+    SELECT @replicationName = [name]
+    FROM #replications WITH (NOLOCK)
+    WHERE flag = 0;
+    SET ROWCOUNT 0;
+
+    DECLARE @isRunning INT;
+
+    SELECT @isRunning = COUNT(*)
+    FROM msdb.dbo.sysjobs_view job
+    INNER JOIN msdb.dbo.sysjobactivity activity ON job.job_id = activity.job_id
+    INNER JOIN msdb.dbo.syssessions sess ON sess.session_id = activity.session_id
+    INNER JOIN (
+        SELECT MAX(agent_start_date) AS max_agent_start_date
+        FROM msdb.dbo.syssessions
+    ) sess_max ON sess.agent_start_date = sess_max.max_agent_start_date
+    WHERE activity.run_requested_date IS NOT NULL
+      AND activity.stop_execution_date IS NULL
+      AND job.name = @replicationName;
+
+    IF @isRunning = 0
+    BEGIN
+        EXEC msdb.dbo.sp_start_job @job_name = @replicationName;
+        PRINT ''sp_start_job '' + @replicationName;
+    END
+    ELSE
+    BEGIN
+        PRINT ''Job is already running: '' + @replicationName;
+    END
+
+    UPDATE #replications WITH (ROWLOCK)
+    SET flag = 1
+    WHERE [name] = @replicationName;
+
+    WAITFOR DELAY ''00:00:03'';
+
+    DECLARE @jobStart DATETIME = GETDATE();
+
+    WHILE EXISTS (
+        SELECT 1
+        FROM msdb.dbo.sysjobs_view job
+        INNER JOIN msdb.dbo.sysjobactivity activity ON job.job_id = activity.job_id
+        INNER JOIN msdb.dbo.syssessions sess ON sess.session_id = activity.session_id
+        INNER JOIN (
+            SELECT MAX(agent_start_date) AS max_agent_start_date
+            FROM msdb.dbo.syssessions
+        ) sess_max ON sess.agent_start_date = sess_max.max_agent_start_date
+        WHERE activity.run_requested_date IS NOT NULL
+          AND activity.stop_execution_date IS NULL
+          AND job.name = @replicationName
+    )
+    BEGIN
+        WAITFOR DELAY ''00:00:01'';
+        PRINT ''In Progress Job in ReplicationName: '' + @replicationName;
+
+        IF DATEDIFF(SECOND, @jobStart, GETDATE()) > ((@scheduleTime * 60) / @count)
+        BEGIN
+            PRINT ''Stop Job in ReplicationName (timeout): '' + @replicationName;
+            BREAK;
+        END
+    END
+
+    PRINT ''Progress End Job in ReplicationName: '' + @replicationName;
+END
+
+DROP TABLE #replications;'
+    EXEC(@Sql)	
+	
+	-------------------------------------------------------------------------------------------------------------
+
+
 	SET @process = ''
     SET @sql = ''
     EXEC(@sql)
+	
+	
 
     update trec_parametros set par_valor = @Version where par_id = 30
     set @Version_Actual=@Version_Actual+1

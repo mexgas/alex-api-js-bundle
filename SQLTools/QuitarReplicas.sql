@@ -1,138 +1,199 @@
-/*
-Disable Publishing and Distributor
-Drop table migration in CCenterRia
-Drop table migrationAVRS in CCenterRia
-Drop table migrationAVRSReports in CCRecorderRia
-Drop job CW Merge Replication
-Drop job AVRS Merge Replication
-Drop job AVRS Reports Merge Replication
-*/
--- Remove replication objects from the subscription database on MYSUB.
-use master
-declare @sql nvarchar(max)
-DECLARE @subscriptionReportsRiaDB AS sysname,@subscriptionAVRSDB AS sysname
-DECLARE @publicationCWDB as sysname,@publicationAVRSDB as sysname
-SET @subscriptionReportsRiaDB = N'ccReportsRia'
-SET @subscriptionAVRSDB = N'CCRecorderRIA'
-SET @publicationCWDB =N'CCenterRia'
-SET @publicationAVRSDB =N'CCRecorderRIA'
+-- =============================================
+-- Remove Merge or Transactional Replication
+-- =============================================
+
+USE master;
+GO
+
+DECLARE @sql NVARCHAR(MAX);
+DECLARE @subscriptionReportsRiaDB SYSNAME = N'ccReportsRia';
+DECLARE @subscriptionAVRSDB SYSNAME = N'CCRecorderRIA';
+DECLARE @publicationCWDB SYSNAME = N'CCenterRia';
+DECLARE @publicationAVRSDB SYSNAME = N'CCRecorderRIA';
+
+-- =============================================
+-- Drop migration-related tables
+-- =============================================
+IF EXISTS (SELECT * FROM sys.databases WHERE name = 'CCenterRia')
+BEGIN
+    SET @sql = '
+    USE [CCenterRia];
+    IF EXISTS (SELECT * FROM sysobjects WHERE name = ''migration'') DROP TABLE migration;
+    IF EXISTS (SELECT * FROM sysobjects WHERE name = ''migrationAVRS'') DROP TABLE migrationAVRS;
+    ';
+    EXEC sp_executesql @sql;
+END;
+
+IF EXISTS (SELECT * FROM sys.databases WHERE name = 'CCRecorderRia')
+BEGIN
+    SET @sql = '
+    USE [CCRecorderRia];
+    IF EXISTS (SELECT * FROM sysobjects WHERE name = ''migrationAVRSReports'') DROP TABLE migrationAVRSReports;
+    ';
+    EXEC sp_executesql @sql;
+END;
+
+-- =============================================
+-- Remove merge-related indexes (ccReportsRia)
+-- =============================================
+IF EXISTS (SELECT * FROM sys.databases WHERE name = 'ccReportsRia')
+BEGIN
+    SET @sql = '
+    USE [ccReportsRia];
+
+    DECLARE @num INT, @count INT;
+    DECLARE @name NVARCHAR(MAX), @tableName NVARCHAR(MAX), @sql NVARCHAR(MAX);
+
+    DECLARE @tempIndex TABLE(
+        row INT NOT NULL,
+        name_index VARCHAR(500) NOT NULL,
+        table_name VARCHAR(500) NOT NULL
+    );
+
+    INSERT INTO @tempIndex
+    SELECT 
+        ROW_NUMBER() OVER(ORDER BY A.name DESC) AS row,
+        A.name AS name_index,
+        OBJECT_NAME(A.id) AS table_name
+    FROM sysindexes A
+    WHERE name LIKE ''%merge%'' AND OBJECT_NAME(A.id) NOT LIKE ''%merge%'';
+
+    SELECT @count = COUNT(*) FROM @tempIndex;
+    SET @num = 1;
+
+    WHILE @num <= @count
+    BEGIN
+        SELECT @tableName = table_name, @name = name_index FROM @tempIndex WHERE row = @num;
+        SET @sql = ''DROP INDEX '' + @name + '' ON '' + @tableName;
+		--print (@sql)
+        EXEC(@sql);
+        SET @num = @num + 1;
+    END;
+
+    IF @count > 0
+        PRINT ''Merge-related indexes removed from ccReportsRia'';
+    ELSE
+        PRINT ''No merge-related indexes found in ccReportsRia'';
+    ';
+    EXEC sp_executesql @sql;
+END;
 
 
+-- =============================================
+-- Remove local subscriptions and publications
+-- =============================================
+IF EXISTS (SELECT * FROM sys.databases WHERE name = 'ccReportsRia')
+BEGIN
+    BEGIN TRY
+        SET @sql = '
+        USE [ccReportsRia];
+        EXEC sp_removedbreplication @subscriptionReportsRiaDB;
+        ';
+        EXEC sp_executesql @sql, N'@subscriptionReportsRiaDB sysname', @subscriptionReportsRiaDB = @subscriptionReportsRiaDB;
+        PRINT 'Local subscriptions removed from ccReportsRia';
+    END TRY
+    BEGIN CATCH
+        PRINT 'No local subscriptions in ccReportsRia';
+    END CATCH
+END;
 
-if exists(SELECT * FROM master.DBO.SYSDATABASES WHERE NAME ='CCenterRia') begin
-	set @sql ='use [CCenterRia]
-	IF EXISTS (SELECT * FROM sysobjects WHERE name=''migration'') BEGIN
-		drop table migration
-	END
-	IF EXISTS (SELECT * FROM sysobjects WHERE name=''migrationAVRS'') BEGIN
-		drop table migrationAVRS
-	END'
-	
-	EXECUTE sp_executesql @sql
-end
+IF EXISTS (SELECT * FROM sys.databases WHERE name = 'CCRecorderRIA')
+BEGIN
+    BEGIN TRY
+        SET @sql = '
+        USE [CCRecorderRIA];
+        EXEC sp_removedbreplication @subscriptionAVRSDB;
+        EXEC sp_msforeachtable @command1 = ''DECLARE @int INT; SET @int = OBJECT_ID("?"); EXEC sys.sp_identitycolumnforreplication @int, 0'';
+        ';
+        EXEC sp_executesql @sql, N'@subscriptionAVRSDB sysname', @subscriptionAVRSDB = @subscriptionAVRSDB;
+        PRINT 'Local subscriptions removed from CCRecorderRIA';
+    END TRY
+    BEGIN CATCH
+        PRINT 'No local subscriptions in CCRecorderRIA';
+    END CATCH
+END;
 
+IF EXISTS (SELECT * FROM sys.databases WHERE name = 'CCenterRia')
+BEGIN
+    BEGIN TRY
+        SET @sql = '
+        USE [CCenterRia];
+        EXEC sp_removedbreplication @publicationCWDB;
+        EXEC sp_msforeachtable @command1 = ''DECLARE @int INT; SET @int = OBJECT_ID("?"); EXEC sys.sp_identitycolumnforreplication @int, 0'';
+        ';
+        EXEC sp_executesql @sql, N'@publicationCWDB sysname', @publicationCWDB = @publicationCWDB;
+        PRINT 'Local publications removed from CCenterRia';
+    END TRY
+    BEGIN CATCH
+        PRINT 'No local publications in CCenterRia';
+    END CATCH
+END;
 
-if exists(SELECT * FROM master.DBO.SYSDATABASES WHERE NAME ='CCRecorderRia') begin
-	set @sql ='use [CCRecorderRia]
-	IF EXISTS (SELECT * FROM sysobjects WHERE name=''migrationAVRSReports'') BEGIN
-		drop table migrationAVRSReports
-	END'
-	EXECUTE sp_executesql @sql
-end	
+IF EXISTS (SELECT * FROM sys.databases WHERE name = 'CCRecorderRIA')
+BEGIN
+    BEGIN TRY
+        SET @sql = '
+        USE [CCRecorderRIA];
+        EXEC sp_removedbreplication @publicationAVRSDB;
+        EXEC sp_msforeachtable @command1 = ''DECLARE @int INT; SET @int = OBJECT_ID("?"); EXEC sys.sp_identitycolumnforreplication @int, 0'';
+        ';
+        EXEC sp_executesql @sql, N'@publicationAVRSDB sysname', @publicationAVRSDB = @publicationAVRSDB;
+        PRINT 'Local publications removed from CCRecorderRIA';
+    END TRY
+    BEGIN CATCH
+        PRINT 'No local publications in CCRecorderRIA';
+    END CATCH
+END;
 
+-- =============================================
+-- Remove distributor
+-- =============================================
+BEGIN TRY
+    EXEC sp_dropdistributor @no_checks = 1;
+    PRINT 'Replication distributor removed';
+END TRY
+BEGIN CATCH
+    PRINT 'No replication distributor installed';
+END CATCH;
 
--- Quita las Replicas de la carpeta Replication--> Local Subscriptions
-if exists(SELECT * FROM master.DBO.SYSDATABASES WHERE NAME ='ccReportsRia') begin
-	begin try
-		set @sql ='use [ccReportsRia]
-		/***********************************************Elimina los INDEX***********************************************/
+-- =============================================
+-- Clean Up Linked Servers and Jobs Related to Transactional Replication
+-- =============================================
+IF EXISTS (SELECT * FROM sys.servers WHERE name = 'SvrPublisher_transactional')
+BEGIN
+    EXEC master.dbo.sp_dropserver @server = 'SvrPublisher_transactional', @droplogins = NULL;
+    PRINT 'Dropped linked server: SvrPublisher_transactional';
+END;
 
-declare @num int,@count int
-declare @name nvarchar(max),@tableName nvarchar(max),@sql nvarchar(max),@columnName nvarchar(max)
+DECLARE @jobList TABLE (rownum INT IDENTITY(1,1), jobName NVARCHAR(255));
+INSERT INTO @jobList (jobName)
+SELECT name
+FROM msdb.dbo.sysjobs
+WHERE name IN (
+    'CW_Tran_Replication_CCReportsRIA',
+    'CW_Tran_Replication_CCRecorderRIA',
+    'AVRSReports Tran Replication',
+    'CW Tran Replication',
+	-- Merge replication-related jobs start here
+    'AVRSReports Merge Replication',
+	'CW Merge Replication',
+	'CW_Merge_Replication_CCRecorderRIA',
+	'CW_Merge_Replication_CCReportsRIA'
+);
 
-declare @tempIndex table(
-row int not null,
-name_index varchar(500) not null,
-table_name varchar(500) not null
-)
-insert into @tempIndex
-SELECT 
-	ROW_NUMBER() OVER(ORDER BY A.name  DESC) AS row,
-	A.name as name_index,object_name(A.id) as table_name	
-	FROM sysindexes A where name like ''%merge%'' and object_name(A.id) not like ''%merge%''
+DECLARE @row INT = 1, @total INT;
+SELECT @total = COUNT(*) FROM @jobList;
 
-select @count= COUNT(*),@num=1 from @tempIndex
+WHILE @row <= @total
+BEGIN
+    DECLARE @jobName NVARCHAR(255);
+    SELECT @jobName = jobName FROM @jobList WHERE rownum = @row;
 
-while  @num<=@count begin
-	select @tableName = table_name,@name = name_index from @tempIndex where row = @num;
-	set @sql=''DROP INDEX ''+@name+'' ON ''+@tableName	
-	--print (@sql)
-	exec(@sql)
-	set @num= @num+1
-end
-/***********************************************Elimina los INDEX***********************************************/
+    IF EXISTS (SELECT 1 FROM msdb.dbo.sysjobs WHERE name = @jobName)
+    BEGIN
+        EXEC msdb.dbo.sp_delete_job @job_name = @jobName, @delete_unused_schedule = 1;
+        PRINT 'Deleted job: ' + @jobName;
+    END
 
-EXEC sp_removedbreplication @subscriptionReportsRiaDB'
-		EXECUTE sp_executesql @sql, N'@subscriptionReportsRiaDB sysname', @subscriptionReportsRiaDB = @subscriptionReportsRiaDB
-	
-		select 'Se quito Subcriptions Local ccReportsRia'
-	end try
-	begin catch
-		select 'No tiene Subcriptions Local ccReportsRia'
-	end catch
-end
-
-
-if exists(SELECT * FROM master.DBO.SYSDATABASES WHERE NAME ='CCRecorderRIA') begin
-	set @sql ='use [CCRecorderRIA]
-	EXEC sp_removedbreplication @subscriptionAVRSDB
-	EXEC sp_msforeachtable @command1 = ''declare @int int set @int =object_id("?") EXEC sys.sp_identitycolumnforreplication @int, 0''
-	'
-	
-	begin try
-		EXECUTE sp_executesql @sql, N'@subscriptionAVRSDB sysname', @subscriptionAVRSDB = @subscriptionAVRSDB
-		select 'Se quito Subcriptions Local CCRecorderRIA'
-	end try
-	begin catch
-		select 'No tiene Subcriptions Local CCRecorderRIA'
-	end catch
-end
-
-if exists(SELECT * FROM master.DBO.SYSDATABASES WHERE NAME ='CCenterRia') begin
-	set @sql ='use [CCenterRia]
-	EXEC sp_removedbreplication @publicationCWDB
-
-	EXEC sp_msforeachtable @command1 = ''declare @int int set @int =object_id("?") EXEC sys.sp_identitycolumnforreplication @int, 0''
-'
-	
-	begin try
-		EXECUTE sp_executesql @sql, N'@publicationCWDB sysname', @publicationCWDB = @publicationCWDB
-		select 'Se quita Publicaciones Local CCenterRia'
-	end try
-	begin catch
-		select 'No tiene Publicaciones Local CCenterRia'
-	end catch
-end
-
-if exists(SELECT * FROM master.DBO.SYSDATABASES WHERE NAME ='CCRecorderRIA') begin
-	set @sql ='use [CCRecorderRIA]
-	EXEC sp_removedbreplication @publicationAVRSDB
-	EXEC sp_msforeachtable @command1 = ''declare @int int set @int =object_id("?") EXEC sys.sp_identitycolumnforreplication @int, 0''
-	'
-	
-	begin try
-		EXECUTE sp_executesql @sql, N'@publicationAVRSDB sysname', @publicationAVRSDB = @publicationAVRSDB
-		select 'Se quita Publicaciones Local CCRecorderRIA'
-	end try
-	begin catch
-		select 'No tiene Publicaciones Local CCRecorderRIA'
-	end catch
-end
-
-begin try
-	exec sp_dropdistributor @no_checks = 1
-	select 'Se quito las replicas'
-end try
-begin catch
-	select 'No esta instalada las replicas'
-end catch
+    SET @row = @row + 1;
+END;

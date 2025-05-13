@@ -38,7 +38,7 @@ insert into articleTableCCRecorderRIA(articleName,publicationId,status) values(N
 set @idInt=@idInt+1
 insert into publicationTableCCRecorderRIA(publicationName,status) values(N'AVRSRecordings',0)	
 insert into articleTableCCRecorderRIA(articleName,publicationId,status) values(N'RIA_GRABACION',@idInt,0)
-insert into articleTableCCRecorderRIA(articleName,publicationId,status) values(N'RIA_GRABACIONCONSULTA',@idInt,0)
+-- insert into articleTableCCRecorderRIA(articleName,publicationId,status) values(N'RIA_GRABACIONCONSULTA',@idInt,0)
 
 set @idInt=@idInt+1
 insert into publicationTableCCRecorderRIA(publicationName,status) values(N'RecordEvaluation',0)

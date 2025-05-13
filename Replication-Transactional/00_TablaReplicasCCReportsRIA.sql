@@ -28,16 +28,14 @@ insert into publicationTableCCenterRIA(publicationName,status) values(N'LogAgtsD
 insert into publicationTableCCenterRIA(publicationName,status) values(N'Callbacks',0)
 insert into publicationTableCCenterRIA(publicationName,status) values(N'Chats',0)
 insert into publicationTableCCenterRIA(publicationName,status) values(N'SpecialAVRS',0)
-insert into publicationTableCCenterRIA(publicationName,status) values(N'WorkGroup_Calid',0)
-insert into publicationTableCCenterRIA(publicationName,status) values(N'MenuReportsRia',0)
 insert into publicationTableCCenterRIA(publicationName,status) values(N'AVRSCampEsp',0)
 insert into publicationTableCCenterRIA(publicationName,status) values(N'ConversationMail',0)
 insert into publicationTableCCenterRIA(publicationName,status) values(N'AVRSGraphs',0)
 insert into publicationTableCCenterRIA(publicationName,status) values(N'ConvrWhatsApp',0)
 insert into publicationTableCCenterRIA(publicationName,status) values(N'ConvrWhatsAppOut',0)
 insert into publicationTableCCenterRIA(publicationName,status) values(N'SMS',0)
-	-- insert into publicationTableCCenterRIA(publicationName,status) values(N'Conversationtweet',0)
-
+insert into publicationTableCCenterRIA(publicationName,status) values(N'AuxiliarReady',0)
+insert into publicationTableCCenterRIA(publicationName,status) values(N'SpecialDownload',0)
 
 print('---------------------------publicationTableCCRecorderRIA---------------------------')
 

@@ -241,6 +241,7 @@ END'
     SET @process = 'Alter Sp ReportsMasterProcessWIthOnlyGenerate Correcion para indices y filtro para tomar 02:59:30'
     SET @sql = 'ALTER procedure [dbo].[ReportsMasterProcessWIthOnlyGenerate] 
 @from as datetime = null,@to as datetime=null,@scheduleTime int=10,@dateStart datetime =null
+,@isAllReport tinyint =0 --0 Only table ReportHighUse,1  not in table ReportHighUse, 2 all 
 as
 
 SET ANSI_WARNINGS off
@@ -334,8 +335,47 @@ end
 
 create table #tmpProcedureReports( id int, name sysname)
 
-insert into #tmpProcedureReports
-select ROW_NUMBER() OVER(ORDER BY [name] ) AS id,[name] from  sys.procedures where [name] like ''ccspRep%'' and [name] not in(''ccspRepCatalogos'',''ccsprepLogAgentriaseparate'')
+insert into #tmpProcedureReports values(1,''ccspRepAgentSession'')
+insert into #tmpProcedureReports values(2,''ccspRepAgentNotReadyDet'')
+insert into #tmpProcedureReports values(3,''ccspRepAgentNotReady'')
+insert into #tmpProcedureReports values(4,''ccspRepAgentGI'')
+
+declare @numReportId int = 4
+
+if @isAllReport =0 begin
+
+    INSERT INTO #tmpProcedureReports
+    SELECT ROW_NUMBER() OVER (
+            ORDER BY [name]
+            ) + @numReportId  AS id
+        ,[name]
+    FROM sys.procedures
+    WHERE [name] LIKE ''ccspRep%''  
+        AND [name] NOT IN (select name from #tmpProcedureReports)
+        AND [name] IN (select nameSp from ReportHighUse)        
+end
+else if @isAllReport =1 begin
+    INSERT INTO #tmpProcedureReports
+    SELECT ROW_NUMBER() OVER (
+            ORDER BY [name]
+            ) + @numReportId AS id
+        ,[name]
+    FROM sys.procedures
+    WHERE [name] LIKE ''ccspRep%''
+        AND [name] NOT IN (select name from #tmpProcedureReports)
+        AND [name] Not IN (select nameSp from ReportHighUse)        
+end
+else begin
+    INSERT INTO #tmpProcedureReports
+    SELECT ROW_NUMBER() OVER (
+            ORDER BY [name]
+            ) + @numReportId AS id
+        ,[name]
+    FROM sys.procedures
+    WHERE [name] LIKE ''ccspRep%''
+        AND [name] NOT IN (select name from #tmpProcedureReports)        
+end
+
 
 insert into [logsReportsMaster] (name,status,dateStart,dateEnd,error,maxTime)
 select name,0,''19000101'',''19000101'','''',@scheduleTime from #tmpProcedureReports
@@ -4451,7 +4491,19 @@ DROP TABLE #replications;';
 	EXEC(@sql);
 
 	-------------------------------------------------------------------------------------------------------------
-
+SET @process = 'Alter RepOutAnswAndXferCalls columna dialTimeSec de SMALLINT a INT';
+	SET @sql = '
+IF EXISTS (
+    SELECT 1 
+    FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE TABLE_NAME = ''RepOutAnswAndXferCalls'' 
+      AND COLUMN_NAME = ''dialTimeSec_int'' 
+      AND DATA_TYPE = ''int''
+)
+BEGIN
+    ALTER TABLE dbo.RepOutAnswAndXferCalls DROP COLUMN dialTimeSec_int
+END';
+	EXEC(@sql);
 
 
     	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version

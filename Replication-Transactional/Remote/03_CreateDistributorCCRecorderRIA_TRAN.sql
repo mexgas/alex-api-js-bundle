@@ -1,17 +1,16 @@
 set nocount on
-use [CCenterRIA]
 
 declare @Version int, @Version_Actual int
 ---------------- VERSION ----------------
-Set @Version = '123'
+Set @Version = '9'
+use [CCRecorderRIA]
 
-exec @Version_Actual = dbo.ccsp_getVersion 'BD'
-
+select @Version_Actual = par_valor from TREC_PARAMETROS where par_id = 30
 
 if @Version_Actual >= @Version
  begin
 	declare @dataBaseName varchar(100)
-	set @dataBaseName=N'CCenterRIA';
+	set @dataBaseName=N'CCRecorderRIA';
 
 	declare @Sql nvarchar(max)
 	declare @publicationServer nvarchar(max)
@@ -36,7 +35,7 @@ if @Version_Actual >= @Version
 	declare @settingBD nvarchar(100)
 
 	declare @temp table	(id int, value nvarchar(100));
-	select @settingBD = valor from ccSettings where setting_id = 176
+	select @settingBD = par_valor from TREC_PARAMETROS where par_id = 73
 	insert into @temp select id,Value from fn_RIASplitDelimited(@settingBD,'|')
 	
 	select @userNameSQL = value  from @temp where id = 3
@@ -49,8 +48,7 @@ if @Version_Actual >= @Version
 	set @publisherPassword =  isnull(@passwordSQL,'replication')
 
 	-----Folder compartido para las replicas-----
-	select @snapshotFolder=valor from ccSettings where setting_id=237
-	set @snapshotFolder =ISNULL(@snapshotFolder,'C:\Centerware\ReplData')	
+	set @snapshotFolder =  '\\' + @hostName + '\ReplData\'+@publicationServer	
 
 	/***********************************************/
 	/*** Revisa la BD distribution para replicas ***/
@@ -150,14 +148,14 @@ if @Version_Actual >= @Version
 	/*** Change default Snapshot Folder ***/
 	/**************************************/
 
-	USE [CCenterRia]	
+	USE [CCRecorderRIA]	
 	exec sp_changedistpublisher @publisher = @publicationServer, @property = 'working_directory', @value = @snapshotFolder
 
 	/***********************************/
 	/*** Enable replication database ***/
 	/***********************************/
 	use [master]
-	exec sp_replicationdboption @dbname = @dataBaseName, @optname = N'merge publish', @value = N'true'
+	exec sp_replicationdboption @dbname = @dataBaseName, @optname = N'publish', @value = N'true'
 
 
 	/***********************************/
@@ -169,12 +167,16 @@ if @Version_Actual >= @Version
 		exec sp_add_agent_profile @profile_name = 'Nuxiba', @profile_type = 1, @agent_type = 3, @default = 1
 
 
-	if not exists(SELECT * FROM msdb..MSagent_profiles  WHERE profile_name = 'Nuxiba' collate database_default AND agent_type = 4)
-		exec sp_add_agent_profile @profile_name = 'Nuxiba', @profile_type = 1, @agent_type = 4, @default = 1
+	if not exists(SELECT * FROM msdb..MSagent_profiles  WHERE profile_name = 'Nuxiba' collate database_default AND agent_type = 1)
+		exec sp_add_agent_profile @profile_name = 'Nuxiba', @profile_type = 1, @agent_type = 1, @default = 1
+		
+	if not exists(SELECT * FROM msdb..MSagent_profiles  WHERE profile_name = 'Nuxiba' collate database_default AND agent_type = 2)
+		exec sp_add_agent_profile @profile_name = 'Nuxiba', @profile_type = 1, @agent_type = 2, @default = 1	
 
 
 	DECLARE @profileidDA AS int
-	DECLARE @profileidMA AS int
+	DECLARE @profileidLRA AS int
+	DECLARE @profileidSA AS int
 
 	CREATE TABLE #profiles (
 		profile_id int,
@@ -189,25 +191,27 @@ if @Version_Actual >= @Version
 		EXEC sp_help_agent_profile
 
 	SET @profileidDA = (SELECT profile_id FROM #profiles where agent_type = 3 and profile_name = 'Nuxiba' )
-	SET @profileidMA = (SELECT profile_id FROM #profiles where agent_type = 4 and profile_name = 'Nuxiba' )
+	SET @profileidLRA = (SELECT profile_id FROM #profiles where agent_type = 2 and profile_name = 'Nuxiba' )
+	SET @profileidSA = (SELECT profile_id FROM #profiles where agent_type = 1 and profile_name = 'Nuxiba' )
 
 	DROP TABLE #profiles
 
 	EXEC sp_change_agent_parameter @profile_id = @profileidDA, @parameter_name = N'-QueryTimeout', @parameter_value = 3600
-	EXEC sp_change_agent_parameter @profile_id = @profileidMA, @parameter_name = N'-QueryTimeout', @parameter_value = 3600
+	EXEC sp_change_agent_parameter @profile_id = @profileidLRA, @parameter_name = N'-QueryTimeout', @parameter_value = 3600
+	EXEC sp_change_agent_parameter @profile_id = @profileidSA, @parameter_name = N'-QueryTimeout', @parameter_value = 3600
 
 	/******************************/
 	/*** Change user dboowner *****/
 	/******************************/
 
-	if exists (select * from sys.databases where name=@dataBaseName) and not exists (select * from sys.databases where suser_sname(owner_sid)<>'sa' and name=@dataBaseName) begin
-		ALTER AUTHORIZATION ON DATABASE::CCenterRia TO sa
+	if exists (select * from sys.databases where name=@dataBaseName) and
+		not exists (select * from sys.databases where suser_sname(owner_sid)<>'sa' and name=@dataBaseName) begin
+			ALTER AUTHORIZATION ON DATABASE::CCRecorderRIA TO sa
 	end
-
 
 	------------------ FIN SCRIPT ------------------
 
-	select 'Create Distributor Finished'
+	SELECT 'Distributor Creation Completed' AS Message;
  end
 
 else

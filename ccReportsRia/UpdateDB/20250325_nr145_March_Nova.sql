@@ -3060,12 +3060,16 @@ BEGIN
             '''', '''', '''', '''',
 			'''', '''', '''', '''', '''', ''''
 		FROM ccWhatsAppGlobalIds wa
-		OUTER APPLY (
-			SELECT TOP 1 * 
-			FROM ccoWhatsLogDials a 
-			WHERE a.ConversationId = wa.FirstMessageConversationIdFromAgent
-			ORDER BY a.TimeSpam -- or whatever column defines "most relevant"
-			) a
+OUTER APPLY (
+    SELECT TOP 1 * 
+    FROM ccoWhatsLogDials a 
+    WHERE a.ConversationId = wa.FirstMessageConversationIdFromAgent
+      AND a.Type = CASE 
+                     WHEN wa.FirstMessageConversationTypeFromAgent = 1 THEN ''template'' 
+                     ELSE ''text'' 
+                   END
+    ORDER BY a.TimeSpam
+) a
 		LEFT JOIN ccMetaWAOutboundTemplates mt 
 		ON mt.Id = a.TemplateId
 		LEFT JOIN ccWhatsAppConversationsOut co ON co.conversationId = a.ConversationId

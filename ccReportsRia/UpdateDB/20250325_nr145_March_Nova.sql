@@ -2885,8 +2885,15 @@ set nocount off'
     EXEC(@sql)
 
     SET @process = 'Facturación - Creación sp ccsp_GalateaWhastappBilling'
-    SET @sql = '
-CREATE PROCEDURE [dbo].[ccsp_GalateaWhastappBilling] 
+    SET @sql = 'USE [CCReportsRIA]
+GO
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+ALTER PROCEDURE [dbo].[ccsp_GalateaWhastappBilling] 
     @action SMALLINT,
     @DateFrom DATETIME = NULL,
     @DateTo DATETIME = NULL,
@@ -3072,8 +3079,13 @@ OUTER APPLY (
 ) a
 		LEFT JOIN ccMetaWAOutboundTemplates mt 
 		ON mt.Id = a.TemplateId
-		LEFT JOIN ccWhatsAppConversationsOut co ON co.conversationId = a.ConversationId
-		LEFT JOIN ccWhatsAppConversations ci ON ci.conversationId = a.ConversationId
+LEFT JOIN ccWhatsAppConversationsOut co 
+    ON co.conversationId = a.ConversationId
+   AND wa.FirstMessageConversationTypeFromAgent = 1 -- Solo Outbound
+ 
+LEFT JOIN ccWhatsAppConversations ci 
+    ON ci.conversationId = a.ConversationId
+   AND wa.FirstMessageConversationTypeFromAgent = 0 -- Solo Inbound
 		WHERE FirstMessageDateFromAgent BETWEEN @DateFrom AND @DateTo;
 
     END

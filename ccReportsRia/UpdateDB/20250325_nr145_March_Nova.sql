@@ -4143,11 +4143,7 @@ CREATE TABLE #replications (
     SELECT DISTINCT A.[name]
     FROM msdb.dbo.sysjobs A
     INNER JOIN PublicationLowLoad B ON A.[name] LIKE ''%'' + B.namePublication + ''%''
-    WHERE A.[name] LIKE ''%CCReportsRIA%'' AND A.[name] LIKE ''%CCenterRIA%''
-    --union all
-    --SELECT DISTINCT A.[name] FROM msdb.dbo.sysjobs A
-    --INNER JOIN PublicationHighLoad B ON A.[name] LIKE ''%'' + B.namePublication + ''%''
-    --WHERE A.[name] LIKE ''%CCReportsRIA%'' AND A.[name] LIKE ''%CCenterRIA%''
+    WHERE A.[name] LIKE ''%CCReportsRIA%'' AND A.[name] LIKE ''%CCenterRIA%''    
 )
 
 INSERT INTO #replications

@@ -3017,7 +3017,7 @@ BEGIN
             SMSReserved01, SMSReserved02, SMSReserved03, SMSReserved04, SMSReserved05, SMSReserved06,
             ModelIDVirtualAgent, ConversationIDVirtualAgent, Channel, ConversationDuration, ConversationDurationSeconds, ConversationDurationMinutes,
             VAReserved01, VAReserved02, VAReserved03, VAReserved04,
-            VMR, CallIDVMR, CampaignType, Detection, BilledVMR,
+            VMR, CallIDVMR, CampaignType, Detection, BilledVMR, 
 			DetectionTimeSeconds, DetectionTimeMinutes, VMReserved01, VMReserved02, VMReserved03,
 			CallIDCenterWare, InboundTrunk, OutboundTrunk, OriginIPAddress, DestinationIPAddress,
 			OriginLocality, OriginRegion, TargetLocality, TargetRegion, Modality,
@@ -3072,121 +3072,6 @@ BEGIN
 		LEFT JOIN ccWhatsAppConversations ci ON ci.conversationId = a.ConversationId
 		WHERE FirstMessageDateFromAgent BETWEEN @DateFrom AND @DateTo;
 
-    END
-
-    ----------------------------------------
-    -- SMS
-    ----------------------------------------
-    IF @action IN (0, 2)
-    BEGIN
-        INSERT INTO #Temp_Facturacion (
-            Account, IPAddress, Service, Billed, Type,
-            OriginCountry, OriginCountryCode, OriginNumber,
-            TargetCountry, TargetCountryCode, TargetNumber,
-            ConversationStartDate, ConversationStartTime, ConversationEndDate, ConversationEndTime,
-            CReserved01, CReserved02, CReserved03, CReserved04, CReserved05,
-            ConversationIDWhatsApp, TemplateCategory, TemplateName, TypeWhatsApp,
-            WAReserved01, WAReserved02, WAReserved03, WAReserved04, WAReserved05, WAReserved06,
-            ConversationIDSMS, NumberType, MessageCharacters, TargetCarrier,
-            SMSReserved01, SMSReserved02, SMSReserved03, SMSReserved04, SMSReserved05, SMSReserved06,
-            ModelIDVirtualAgent, ConversationIDVirtualAgent, Channel, ConversationDuration, ConversationDurationSeconds, ConversationDurationMinutes,
-            VAReserved01, VAReserved02, VAReserved03, VAReserved04,
-            VMR, CallIDVMR, CampaignType, Detection, BilledVMR,
-			DetectionTimeSeconds, DetectionTimeMinutes, VMReserved01, VMReserved02, VMReserved03,
-			CallIDCenterWare, InboundTrunk, OutboundTrunk, OriginIPAddress, DestinationIPAddress,
-			OriginLocality, OriginRegion, TargetLocality, TargetRegion, Modality,
-			NetworkType, CallDurationSeconds, CallDurationMinutes, SIPCode, SIPCodeDescription,
-			FreeswitchIPAddress, FSReserved01, FSReserved02, FSReserved03, FSReserved04
-        )
-        SELECT 
-            @CompanyName, ISNULL(@ip, ''''), ''SMS'',
-            ISNULL(CAST(IsBilled AS VARCHAR), ''0''),
-            CASE WHEN FirstMessageConversationTypeFromAgent = 0 THEN ''inbound'' ELSE ''outbound'' END,
-            ISNULL(dbo.GetCountryDetailWhatsApp(AssociatedNumber, 1), ''''),
-            ISNULL(dbo.GetCountryDetailWhatsApp(AssociatedNumber, 0), ''''),
-            ISNULL(AssociatedNumber, ''''),
-            ISNULL(dbo.GetCountryDetailWhatsApp(ClientNumber, 1), ''''),
-            ISNULL(dbo.GetCountryDetailWhatsApp(ClientNumber, 0), ''''),
-            ISNULL(ClientNumber, ''''),
-            CAST(CAST(FirstMessageDateFromAgent AS DATE) AS VARCHAR(MAX)),
-            FORMAT(FirstMessageDateFromAgent, ''HH:mm:ss''),
-            '''', '''', '''', '''', '''', '''', '''',
-            '''', '''', '''', '''',
-            '''', '''', '''', '''', '''', '''',
-			'''', '''', '''', '''',
-            '''', '''', '''', '''', '''', '''',
-            '''', '''', '''', '''',
-			'''', '''', '''', '''', '''', '''',
-            '''', '''', '''', '''',
-            '''', '''', '''', '''', '''', '''',
-			'''', '''', '''', '''',
-            '''', '''', '''', '''', '''', '''',
-            '''', '''', '''', '''',
-			'''', '''', '''', '''', '''', ''''
-        FROM ccWhatsAppGlobalIds wa
-        WHERE FirstMessageDateFromAgent BETWEEN @DateFrom AND @DateTo;
-    END
-
-    ----------------------------------------
-    -- Virtual Agent
-    ----------------------------------------
-    IF @action IN (0, 3)
-    BEGIN
-        INSERT INTO #Temp_Facturacion
-        SELECT 
-            @CompanyName, ISNULL(@ip, ''''), ''Virtual Agent'',
-            ISNULL(CAST(IsBilled AS VARCHAR), ''0''),
-            CASE WHEN FirstMessageConversationTypeFromAgent = 0 THEN ''inbound'' ELSE ''outbound'' END,
-            ISNULL(dbo.GetCountryDetailWhatsApp(AssociatedNumber, 1), ''''),
-            ISNULL(dbo.GetCountryDetailWhatsApp(AssociatedNumber, 0), ''''),
-            ISNULL(AssociatedNumber, ''''),
-            ISNULL(dbo.GetCountryDetailWhatsApp(ClientNumber, 1), ''''),
-            ISNULL(dbo.GetCountryDetailWhatsApp(ClientNumber, 0), ''''),
-            ISNULL(ClientNumber, ''''),
-            CAST(CAST(FirstMessageDateFromAgent AS DATE) AS VARCHAR(MAX)),
-            FORMAT(FirstMessageDateFromAgent, ''HH:mm:ss''),
-			'''', '''', '''', '''', '''', '''', '''',
-            '''', '''', '''', '''',
-            '''', '''', '''', '''', '''', '''',
-			'''', '''', '''', '''',
-            '''', '''', '''', '''', '''', '''',
-            '''', '''', '''', '''',
-			'''', '''', '''', '''', '''', '''',
-            '''', '''', '''', '''',
-            '''', '''', '''', '''', '''', ''''
-        FROM ccWhatsAppGlobalIds wa
-        WHERE FirstMessageDateFromAgent BETWEEN @DateFrom AND @DateTo;
-    END
-
-    ----------------------------------------
-    -- VMR
-    ----------------------------------------
-    IF @action IN (0, 4)
-    BEGIN
-        INSERT INTO #Temp_Facturacion
-        SELECT 
-            @CompanyName, ISNULL(@ip, ''''), ''VMR'',
-            ISNULL(CAST(IsBilled AS VARCHAR), ''0''),
-            CASE WHEN FirstMessageConversationTypeFromAgent = 0 THEN ''inbound'' ELSE ''outbound'' END,
-            ISNULL(dbo.GetCountryDetailWhatsApp(AssociatedNumber, 1), ''''),
-            ISNULL(dbo.GetCountryDetailWhatsApp(AssociatedNumber, 0), ''''),
-            ISNULL(AssociatedNumber, ''''),
-            ISNULL(dbo.GetCountryDetailWhatsApp(ClientNumber, 1), ''''),
-            ISNULL(dbo.GetCountryDetailWhatsApp(ClientNumber, 0), ''''),
-            ISNULL(ClientNumber, ''''),
-            CAST(CAST(FirstMessageDateFromAgent AS DATE) AS VARCHAR(MAX)),
-            FORMAT(FirstMessageDateFromAgent, ''HH:mm:ss''),
-            '''', '''', '''', '''', '''', '''', '''',
-            '''', '''', '''', '''',
-            '''', '''', '''', '''', '''', '''',
-			'''', '''', '''', '''',
-            '''', '''', '''', '''', '''', '''',
-            '''', '''', '''', '''',
-			'''', '''', '''', '''', '''', '''',
-            '''', '''', '''', '''',
-            '''', '''', '''', '''', '''', ''''
-        FROM ccWhatsAppGlobalIds wa
-        WHERE FirstMessageDateFromAgent BETWEEN @DateFrom AND @DateTo;
     END
 
     -- Final output

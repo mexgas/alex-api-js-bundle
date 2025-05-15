@@ -2885,15 +2885,8 @@ set nocount off'
     EXEC(@sql)
 
     SET @process = 'Facturación - Creación sp ccsp_GalateaWhastappBilling'
-    SET @sql = 'USE [CCReportsRIA]
-GO
-
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
-ALTER PROCEDURE [dbo].[ccsp_GalateaWhastappBilling] 
+    SET @sql = '
+CREATE PROCEDURE [dbo].[ccsp_GalateaWhastappBilling] 
     @action SMALLINT,
     @DateFrom DATETIME = NULL,
     @DateTo DATETIME = NULL,

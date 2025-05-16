@@ -1020,10 +1020,35 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
         END
     END'
         EXEC(@sql)
-    -----------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------
 
-    ---------------------------------------------  BEGIN David  ---------------------------------------------------
 ---------------------------------------------  BEGIN David  ---------------------------------------------------
+    SET @process = 'Delete Index IX_TimeSpam_PhoneClient_PhoneWa'
+    SET @sql = 'IF EXISTS (
+					SELECT 1
+					FROM sys.indexes
+					WHERE name = ''IX_TimeSpam_PhoneClient_PhoneWa''
+					  AND object_id = OBJECT_ID(''dbo.ccoWhatsLogDials'')
+				)
+				BEGIN
+					DROP INDEX IX_TimeSpam_PhoneClient_PhoneWa ON dbo.ccoWhatsLogDials;
+				END'
+    EXEC(@sql)
+
+	SET @process = 'Creating Index IX_ccoWhatsLogDials_PhoneWa_PhoneClient_TimeSpam'
+    SET @sql = 'IF NOT EXISTS (
+					SELECT 1
+					FROM sys.indexes
+					WHERE name = ''IX_ccoWhatsLogDials_PhoneWa_PhoneClient_TimeSpam''
+					  AND object_id = OBJECT_ID(''dbo.ccoWhatsLogDials'')
+				)
+				BEGIN
+					CREATE NONCLUSTERED INDEX IX_ccoWhatsLogDials_PhoneWa_PhoneClient_TimeSpam
+					ON dbo.ccoWhatsLogDials (PhoneWa, PhoneClient, TimeSpam)
+					INCLUDE (answered, isManual);
+				END'
+    EXEC(@sql)
+
     SET @process = 'CW-9166 DROP PROCEDURE ccsp_WhatsAppConversationHistory'
     SET @sql = '
     if exists (select * from sys.procedures where name = N''ccsp_WhatsAppConversationHistory'')
@@ -2099,7 +2124,7 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
         SET @TimeThreshold = DATEADD(hour, -23, GETDATE());
 
 
-        IF EXISTS (SELECT 1 FROM ccWhatsAppGlobalIds WHERE AssociatedNumber = @CamNumber AND ClientNumber = @ClientNumber AND @ActualTime <= DATEADD(HOUR, 24, FirstMessageDateFromAgent))
+        IF EXISTS (SELECT TOP 1 1 FROM ccWhatsAppGlobalIds WHERE AssociatedNumber = @CamNumber AND ClientNumber = @ClientNumber AND @ActualTime <= DATEADD(HOUR, 24, FirstMessageDateFromAgent))
         BEGIN  
             SET @ReopenConversationButtonResponse = ''REOPEN_CONVERSATION'';
         END
@@ -2110,9 +2135,9 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
 
         IF @CamType = 0
         BEGIN
-            IF EXISTS (SELECT 1 FROM ccWhatsAppConversations WHERE InboundId = @CamId AND phoneACD = @CamNumber AND clientId = @ClientNumber AND conversationStatus = 2 AND (agentId = @agentId OR agentId <> @agentId))
+            IF EXISTS (SELECT TOP 1 1 FROM ccWhatsAppConversations WHERE InboundId = @CamId AND phoneACD = @CamNumber AND clientId = @ClientNumber AND conversationStatus = 2)
             BEGIN
-                SELECT TOP 1 @ConvId = ConversationId FROM ccWhatsAppConversations WHERE InboundId = @CamId  AND phoneACD = @CamNumber  AND clientId = @ClientNumber  AND conversationStatus = 2  AND (agentId = @agentId OR agentId <> @agentId);
+                SELECT TOP 1 @ConvId = ConversationId FROM ccWhatsAppConversations WHERE InboundId = @CamId  AND phoneACD = @CamNumber  AND clientId = @ClientNumber  AND conversationStatus = 2;
                 SELECT @AgentName = u.Nombres FROM ccWhatsAppConversations c
                                                 INNER JOIN ccusers u ON c.agentId = u.User_id 
                                                 WHERE c.ConversationId = @ConvId;
@@ -2132,7 +2157,7 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
 
             IF @ReopenConversationButtonResponse = ''REOPEN_CONVERSATION_WITH_TEMPLATE''
             BEGIN
-                IF EXISTS (SELECT 1 FROM ccoWhatsLogDials WITH (NOLOCK, INDEX(IX_TimeSpam_PhoneClient_PhoneWa)) WHERE TimeSpam >= @TimeThreshold AND PhoneWa = @CamNumber AND PhoneClient = @ClientNumber AND answered = 0)
+                IF EXISTS (SELECT 1 FROM ccoWhatsLogDials WITH (NOLOCK, INDEX(IX_ccoWhatsLogDials_PhoneWa_PhoneClient_TimeSpam)) WHERE TimeSpam >= @TimeThreshold AND PhoneWa = @CamNumber AND PhoneClient = @ClientNumber AND answered = 0 AND isManual = 0)
                 BEGIN
                     SELECT ''CONVERSATION_SENT_IN_BULK_IN_COURSE'' AS ReopenConversationButtonResponse,
                                        ''N/A'' AS AgentName;
@@ -2146,9 +2171,9 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
 
         IF @CamType = 1
         BEGIN
-            IF EXISTS (SELECT 1 FROM ccWhatsAppConversationsOut WHERE camId = @CamId AND phoneCamp = @CamNumber AND clientId = @ClientNumber AND conversationStatus = 2 AND (agentId = @agentId OR agentId <> @agentId))
+            IF EXISTS (SELECT TOP 1 1 FROM ccWhatsAppConversationsOut WHERE camId = @CamId AND phoneCamp = @CamNumber AND clientId = @ClientNumber AND conversationStatus = 2)
             BEGIN
-                SELECT TOP 1 @ConvId = ConversationId FROM ccWhatsAppConversationsOut WHERE camId = @CamId  AND phoneCamp = @CamNumber  AND clientId = @ClientNumber  AND conversationStatus = 2  AND (agentId = @agentId OR agentId <> @agentId);
+                SELECT TOP 1 @ConvId = ConversationId FROM ccWhatsAppConversationsOut WHERE camId = @CamId  AND phoneCamp = @CamNumber  AND clientId = @ClientNumber  AND conversationStatus = 2;
                 SELECT @AgentName = u.Nombres FROM ccWhatsAppConversationsOut c
                                               INNER JOIN ccusers u ON c.agentId = u.User_id 
                                               WHERE c.ConversationId = @ConvId;
@@ -2157,7 +2182,7 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
                 RETURN(0);
             END
 
-            IF EXISTS (SELECT 1 FROM ccoWhatsLogDials WITH (NOLOCK, INDEX(IX_TimeSpam_PhoneClient_PhoneWa)) WHERE TimeSpam >= @TimeThreshold AND PhoneWa = @CamNumber AND PhoneClient = @ClientNumber AND answered = 0)
+            IF EXISTS (SELECT TOP 1 1 FROM ccoWhatsLogDials WITH (NOLOCK, INDEX(IX_ccoWhatsLogDials_PhoneWa_PhoneClient_TimeSpam)) WHERE TimeSpam >= @TimeThreshold AND PhoneWa = @CamNumber AND PhoneClient = @ClientNumber AND answered = 0 AND isManual = 0)
             BEGIN
                 SELECT ''CONVERSATION_SENT_IN_BULK_IN_COURSE'' AS ReopenConversationButtonResponse,
                 ''N/A'' AS AgentName;

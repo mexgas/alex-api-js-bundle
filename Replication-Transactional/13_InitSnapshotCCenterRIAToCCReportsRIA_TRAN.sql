@@ -1,10 +1,16 @@
 set nocount on
-use [CCRecorderRIA]
+
+use [CCenterRia]
+
 declare @Version int, @Version_Actual int
 ---------------- VERSION ----------------
-Set @Version = '9'
+Set @Version = '119'
 
-select @Version_Actual = par_valor from TREC_PARAMETROS where par_id = 30 
+--create table #temp([version] int)
+--insert into #temp
+exec @Version_Actual = dbo.ccsp_getVersion 'BD'
+
+--drop table #temp
 
 if @Version_Actual >= @Version
  begin
@@ -12,9 +18,11 @@ if @Version_Actual >= @Version
 
 	---------------- INICIO SCRIPT ----------------
 
-	set @Sql = 'IF NOT EXISTS (SELECT * FROM dbo.sysobjects WHERE [name] = ''MigrationAVRSReports'')
+	set @Sql = 'use [CCenterRia]
+
+	IF NOT EXISTS (SELECT * FROM dbo.sysobjects WHERE [name] = ''migration'')
 	BEGIN
-		CREATE TABLE [dbo].[MigrationAVRSReports](
+		CREATE TABLE [dbo].[migration](
 		[id] [int] NOT NULL,
 		[description] [varchar](255) NOT NULL,
 		[status] [int] NOT NULL,
@@ -22,28 +30,30 @@ if @Version_Actual >= @Version
 		[dateStart] datetime NOT NULL,
 		[dateEnd] datetime NOT NULL
 		) ON [PRIMARY]		
-	END
-	truncate table MigrationAVRSReports;
 
-	insert into MigrationAVRSReports
-SELECT ROW_NUMBER() OVER(ORDER BY name desc)+99 AS id, P.name as [description],0 as status,'''' as error,''1901-01-01'' as dateStart,''1901-01-01'' as dateEnd FROM dbo.sysmergepublications P
-where  P.publisher_db=''CCRecorderRIA'' 
+	END	
+
+	--Para asegurar el orden correcto en que toma los publicadores y evitar el error humano en los id que hacen tronar las replicas de Twitter.
+	truncate table migration;
+
+	insert into migration 
+	select 99+ ROW_NUMBER() OVER(ORDER BY description ASC) AS Id,name as [description],0 status, '''',''1900-01-01 00:00:00.000'' dateStart,''1900-01-01 00:00:00.000'' dateEnd 
+	from dbo.syspublications where db_name()=''CCenterRia''
+
 	'
+	EXEC(@Sql)
+	
+	set @Sql='USE [msdb]
 
-		EXEC(@Sql)		
+/****** Object:  Job [CW Tran Replication]    Script Date: 23/06/2018 11:12:45 a.m. ******/
+if exists( select * from msdb.dbo.sysjobs where name=''CW Tran Replication'')
+EXEC msdb.dbo.sp_delete_job @job_name=N''CW Tran Replication'', @delete_unused_schedule=1
 
-			set @Sql='USE [msdb]
-
-
-/****** Object:  Job [AVRSReports Merge Replication]    Script Date: 23/06/2018 11:08:46 a.m. ******/
-if exists( select * from msdb.dbo.sysjobs where name=''AVRSReports Merge Replication'')
-EXEC msdb.dbo.sp_delete_job @job_name=N''AVRSReports Merge Replication'', @delete_unused_schedule=1
-
-/****** Object:  Job [AVRSReports Merge Replication]    Script Date: 23/06/2018 11:08:46 a.m. ******/
+/****** Object:  Job [CW Tran Replication]    Script Date: 23/06/2018 11:12:45 a.m. ******/
 BEGIN TRANSACTION
 DECLARE @ReturnCode INT
 SELECT @ReturnCode = 0
-/****** Object:  JobCategory [[Uncategorized (Local)]]    Script Date: 23/06/2018 11:08:46 a.m. ******/
+/****** Object:  JobCategory [[Uncategorized (Local)]]    Script Date: 23/06/2018 11:12:45 a.m. ******/
 IF NOT EXISTS (SELECT name FROM msdb.dbo.syscategories WHERE name=N''[Uncategorized (Local)]'' AND category_class=1)
 BEGIN
 EXEC @ReturnCode = msdb.dbo.sp_add_category @class=N''JOB'', @type=N''LOCAL'', @name=N''[Uncategorized (Local)]''
@@ -52,7 +62,7 @@ IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 END
 
 DECLARE @jobId BINARY(16)
-EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N''AVRSReports Merge Replication'', 
+EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N''CW Tran Replication'', 
 		@enabled=1, 
 		@notify_level_eventlog=0, 
 		@notify_level_email=0, 
@@ -63,8 +73,8 @@ EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N''AVRSReports Merge Replicati
 		@category_name=N''[Uncategorized (Local)]'', 
 		@owner_login_name=N''sa'', @job_id = @jobId OUTPUT
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
-/****** Object:  Step [AVRSReports Merge Replication]    Script Date: 23/06/2018 11:08:46 a.m. ******/
-EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N''AVRSReports Merge Replication'', 
+/****** Object:  Step [CW Tran Replication]    Script Date: 23/06/2018 11:12:45 a.m. ******/
+EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N''CW Tran Replication'', 
 		@step_id=1, 
 		@cmdexec_success_code=0, 
 		@on_success_action=1, 
@@ -81,23 +91,23 @@ declare @dateStart datetime,@dateNow datetime
 declare @status int
 declare @maxId int,@minId int
 
---delete from MigrationAVRSReports
+--delete from migration
 
-select @maxId=isnull(max(id),99),@dateNow =getdate(),@i=0 FROM MigrationAVRSReports
+select @maxId=isnull(max(id),99),@dateNow =getdate(),@i=0 FROM migration
 
-insert into MigrationAVRSReports
-SELECT ROW_NUMBER() OVER(ORDER BY name desc)+@maxId AS id, P.name as [description],0 as status,'''''''' as error,''''1901-01-01'''' as dateStart,''''1901-01-01'''' as dateEnd FROM dbo.sysmergepublications P
-left join MigrationAVRSReports M on P.name=M.[description]
-where  P.publisher_db=''''CCRecorderRIA'''' and M.[description] is null 
+insert into migration
+SELECT ROW_NUMBER() OVER(ORDER BY name desc)+@maxId AS id, P.name as [description],0 as status,'''''''' as error,''''1901-01-01'''' as dateStart,''''1901-01-01'''' as dateEnd FROM dbo.syspublications P
+left join migration M on P.name=M.[description]
+where  db_name()=''''CCenterRia'''' and M.[description] is null 
 
-select @minId=ISNULL(min(id),99), @maxId=isnull(max(id),99),@count=COUNT(*) FROM MigrationAVRSReports
+select @minId=ISNULL(min(id),99), @maxId=isnull(max(id),99),@count=COUNT(*) FROM migration
 
-select * FROM MigrationAVRSReports
+select * FROM migration
 
-if exists(select * FROM MigrationAVRSReports where status in(0,1)) begin
+if exists(select * FROM migration where status in(0,1)) begin
 
 	while @i<@count and DATEDIFF(ss,@dateNow,getdate())<59 begin
-		select @publicationName=[description],  @dateStart  = dateStart, @status = status from MigrationAVRSReports  with (nolock) where id=@minId+@i
+		select @publicationName=[description],  @dateStart  = dateStart, @status = status from migration  with (nolock) where id=@minId+@i
 		
 		if @status = 2 begin		 
 		 set @i=@i+1
@@ -105,11 +115,10 @@ if exists(select * FROM MigrationAVRSReports where status in(0,1)) begin
 		end
 
 		if (not exists( select * from distribution.dbo.MSsnapshot_history a ,distribution.dbo.MSsnapshot_agents b
-			where b.publisher_db = ''''CCRecorderRIA'''' and b.id = a.agent_id 
+			where b.publisher_db = ''''CCenterRia'''' and b.id = a.agent_id 
 			and a.runstatus = 2 and b.publication = @publicationName and a.start_time < convert(datetime,convert(varchar(10),@dateStart,121)))	   
 			) begin
-				 update MigrationAVRSReports with (rowlock) set [status] = 1, [dateStart] = getdate() where id=@minId+@i     
-				 
+				 update migration with (rowlock) set [status] = 1, [dateStart] = getdate() where id=@minId+@i     				 
 				 exec sp_startpublication_snapshot @publication = @publicationName
 
 				 WAITFOR DELAY ''''00:00:01''''
@@ -117,7 +126,7 @@ if exists(select * FROM MigrationAVRSReports where status in(0,1)) begin
 				while not exists(
 					select *
 					from distribution.dbo.MSsnapshot_history a ,distribution.dbo.MSsnapshot_agents b
-					where b.publisher_db = ''''CCRecorderRIA'''' and b.id = a.agent_id 
+					where b.publisher_db = ''''CCenterRia'''' and b.id = a.agent_id 
 					and a.runstatus = 2
 					and b.publication = @publicationName and a.start_time > convert(datetime,convert(varchar(10),@dateStart,121))	
 				)
@@ -127,23 +136,25 @@ if exists(select * FROM MigrationAVRSReports where status in(0,1)) begin
 						break
 					end
 				end
-				update MigrationAVRSReports with (rowlock) set [status] = 2, [dateEnd] = getdate() where id=@minId+@i
+				update migration with (rowlock) set [status] = 2, [dateEnd] = getdate() where id=@minId+@i				
 		end
 		else if(@status = 1 and
 				exists( select * from distribution.dbo.MSsnapshot_history a ,distribution.dbo.MSsnapshot_agents b
-						where b.publisher_db = ''''CCRecorderRIA'''' and b.id = a.agent_id 
+						where b.publisher_db = ''''CCenterRia'''' and b.id = a.agent_id 
 						and a.runstatus = 2 and b.publication = @publicationName and a.start_time > convert(datetime,convert(varchar(10),@dateStart,121))
 						)
-			) begin 	
-			update MigrationAVRSReports with (rowlock) set [status] = 2, [dateEnd] = getdate() where id=@minId+@i  and status=1
-		end		
+			) begin 
+	
+			update migration with (rowlock) set [status] = 2, [dateEnd] = getdate() where id=@minId+@i  and status=1
+		end
+
 		set @i=@i+1
 		
 	end
 
 end
 '', 
-		@database_name=N''CCRecorderRIA'', 
+		@database_name=N''CCenterRia'', 
 		@flags=0
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_update_job @job_id = @jobId, @start_step_id = 1
@@ -168,18 +179,18 @@ GOTO EndSave
 QuitWithRollback:
     IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION
 EndSave:
-'
+	'
 
 		EXEC(@Sql)
 
 	------------------ FIN SCRIPT @Sql ------------------
 
-	select 'Merge Snapshots Finished'
+	select 'Tran Snapshots Finished'
  end
 
 else
  begin
-	select 'Version incorrecta de base de datos, version actual: ' 
+	select 'Version incorrecta de base de datos, version actual: '
 	+ cast(@Version_Actual as varchar(5))
 	+ ', version que desea ingresar: ' + cast(@Version as varchar(5))
  end

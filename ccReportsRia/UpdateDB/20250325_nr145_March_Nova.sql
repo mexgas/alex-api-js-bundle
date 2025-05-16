@@ -241,6 +241,7 @@ END'
     SET @process = 'Alter Sp ReportsMasterProcessWIthOnlyGenerate Correcion para indices y filtro para tomar 02:59:30'
     SET @sql = 'ALTER procedure [dbo].[ReportsMasterProcessWIthOnlyGenerate] 
 @from as datetime = null,@to as datetime=null,@scheduleTime int=10,@dateStart datetime =null
+,@isAllReport tinyint =0 --0 Only table ReportHighUse,1  not in table ReportHighUse, 2 all 
 as
 
 SET ANSI_WARNINGS off
@@ -334,8 +335,47 @@ end
 
 create table #tmpProcedureReports( id int, name sysname)
 
-insert into #tmpProcedureReports
-select ROW_NUMBER() OVER(ORDER BY [name] ) AS id,[name] from  sys.procedures where [name] like ''ccspRep%'' and [name] not in(''ccspRepCatalogos'',''ccsprepLogAgentriaseparate'')
+insert into #tmpProcedureReports values(1,''ccspRepAgentSession'')
+insert into #tmpProcedureReports values(2,''ccspRepAgentNotReadyDet'')
+insert into #tmpProcedureReports values(3,''ccspRepAgentNotReady'')
+insert into #tmpProcedureReports values(4,''ccspRepAgentGI'')
+
+declare @numReportId int = 4
+
+if @isAllReport =0 begin
+
+    INSERT INTO #tmpProcedureReports
+    SELECT ROW_NUMBER() OVER (
+            ORDER BY [name]
+            ) + @numReportId  AS id
+        ,[name]
+    FROM sys.procedures
+    WHERE [name] LIKE ''ccspRep%''  
+        AND [name] NOT IN (select name from #tmpProcedureReports)
+        AND [name] IN (select nameSp from ReportHighUse)        
+end
+else if @isAllReport =1 begin
+    INSERT INTO #tmpProcedureReports
+    SELECT ROW_NUMBER() OVER (
+            ORDER BY [name]
+            ) + @numReportId AS id
+        ,[name]
+    FROM sys.procedures
+    WHERE [name] LIKE ''ccspRep%''
+        AND [name] NOT IN (select name from #tmpProcedureReports)
+        AND [name] Not IN (select nameSp from ReportHighUse)        
+end
+else begin
+    INSERT INTO #tmpProcedureReports
+    SELECT ROW_NUMBER() OVER (
+            ORDER BY [name]
+            ) + @numReportId AS id
+        ,[name]
+    FROM sys.procedures
+    WHERE [name] LIKE ''ccspRep%''
+        AND [name] NOT IN (select name from #tmpProcedureReports)        
+end
+
 
 insert into [logsReportsMaster] (name,status,dateStart,dateEnd,error,maxTime)
 select name,0,''19000101'',''19000101'','''',@scheduleTime from #tmpProcedureReports
@@ -2617,21 +2657,6 @@ exec ccspTimesReports @from=@from,@to=@to,@interval=@interval
 set nocount off'
     EXEC(@sql)
 
-
-    SET @process = ''
-    SET @sql = ''
-    EXEC(@sql)
-
-    SET @process = ''
-    SET @sql = ''
-    EXEC(@sql)
-
-    SET @process = ''
-    SET @sql = ''
-    EXEC(@sql)
-
-
-
     --------------------------------------------------------END 127.20250325.0.0 Jesus Gallardo----------------------------------------------------------------------
 
     -------------------------------------------  BEGIN Ricardo Nunez LRSV  ----------------------------------------
@@ -2878,8 +2903,8 @@ BEGIN
 
     IF @DateFrom IS NULL AND @DateTo IS NULL
     BEGIN
-        SET @DateFrom = DATEADD(DAY, -1, CAST(GETDATE() AS DATETIME));
-        SET @DateTo = DATEADD(SECOND, -1, DATEADD(DAY, 0, CAST(GETDATE() AS DATETIME)));
+		SET @DateTo = DATEADD(HOUR, DATEDIFF(HOUR, 0, GETDATE()), 0);
+		SET @DateFrom = DATEADD(HOUR, -1, @DateTo);
     END
     ELSE
     BEGIN
@@ -2887,7 +2912,7 @@ BEGIN
         SET @DateTo = ISNULL(CONVERT(DATETIME, CONVERT(VARCHAR(10), @DateTo, 120) + '' 23:59:59''), ''9999-12-31 23:59:59'');
     END
 
-    -- Crear tabla temporal completa
+    -- Create temp table
     IF OBJECT_ID(''tempdb..#Temp_Facturacion'') IS NOT NULL DROP TABLE #Temp_Facturacion;
 
     CREATE TABLE #Temp_Facturacion (
@@ -2902,19 +2927,19 @@ BEGIN
         TargetCountry VARCHAR(10),
         TargetCountryCode VARCHAR(10),
         TargetNumber VARCHAR(50),
-        ConversationDate VARCHAR(30),
-        ConversationTime VARCHAR(20),
+        ConversationStartDate VARCHAR(30),
+        ConversationStartTime VARCHAR(20),
+        ConversationEndDate VARCHAR(30),
+        ConversationEndTime VARCHAR(20),
         CReserved01 VARCHAR(100),
         CReserved02 VARCHAR(100),
         CReserved03 VARCHAR(100),
         CReserved04 VARCHAR(100),
         CReserved05 VARCHAR(100),
-        CReserved06 VARCHAR(100),
-        CReserved07 VARCHAR(100),
-        BillingIDWhatsApp VARCHAR(100),
+        ConversationIDWhatsApp VARCHAR(100),
         TemplateCategory VARCHAR(100),
         TemplateName VARCHAR(200),
-        PaymentCodeWA VARCHAR(50),
+        TypeWhatsApp VARCHAR(50),
         WAReserved01 VARCHAR(100),
         WAReserved02 VARCHAR(100),
         WAReserved03 VARCHAR(100),
@@ -2931,265 +2956,135 @@ BEGIN
         SMSReserved04 VARCHAR(100),
         SMSReserved05 VARCHAR(100),
         SMSReserved06 VARCHAR(100),
-        VirtualAgentID VARCHAR(100),
-        ConversationID VARCHAR(100),
+        ModelIDVirtualAgent VARCHAR(100),
+        ConversationIDVirtualAgent VARCHAR(100),
         Channel VARCHAR(50),
         ConversationDuration VARCHAR(20),
-        Seconds VARCHAR(10),
-        Minutes VARCHAR(10),
+        ConversationDurationSeconds VARCHAR(10),
+        ConversationDurationMinutes VARCHAR(10),
         VAReserved01 VARCHAR(100),
         VAReserved02 VARCHAR(100),
         VAReserved03 VARCHAR(100),
         VAReserved04 VARCHAR(100),
-        CallID VARCHAR(100),
+		VMR VARCHAR(100),
+        CallIDVMR VARCHAR(100),
+		CampaignType VARCHAR(10),
         Detection VARCHAR(100),
-        DurationSeconds VARCHAR(10),
-        DurationMinutes VARCHAR(10),
+		BilledVMR VARCHAR(10),
+        DetectionTimeSeconds VARCHAR(10),
+        DetectionTimeMinutes VARCHAR(10),
         VMReserved01 VARCHAR(100),
         VMReserved02 VARCHAR(100),
         VMReserved03 VARCHAR(100),
-        VMReserved04 VARCHAR(100),
-        VMReserved05 VARCHAR(100),
-        VMReserved06 VARCHAR(100)
+		CallIDCenterWare VARCHAR(100),
+        InboundTrunk VARCHAR(100),
+        OutboundTrunk VARCHAR(100),
+        OriginIPAddress VARCHAR(100),
+        DestinationIPAddress VARCHAR(100),
+		OriginLocality VARCHAR(100),
+        OriginRegion VARCHAR(100),
+        TargetLocality VARCHAR(100),
+        TargetRegion VARCHAR(100),
+        Modality VARCHAR(100),
+		NetworkType VARCHAR(100),
+        CallDurationSeconds VARCHAR(100),
+		CallDurationMinutes VARCHAR(100),
+        SIPCode VARCHAR(100),
+        SIPCodeDescription VARCHAR(100),
+        FreeswitchIPAddress VARCHAR(100),
+        FSReserved01 VARCHAR(100),
+        FSReserved02 VARCHAR(100),
+        FSReserved03 VARCHAR(100),
+        FSReserved04 VARCHAR(100),
     );
-    IF @action = 0
+
+    ----------------------------------------
+    -- WhatsApp
+    ----------------------------------------
+
+    IF @action IN (0, 1)
+
     BEGIN
         INSERT INTO #Temp_Facturacion (
             Account, IPAddress, Service, Billed, Type,
             OriginCountry, OriginCountryCode, OriginNumber,
             TargetCountry, TargetCountryCode, TargetNumber,
-            ConversationDate, ConversationTime,
-            CReserved01, CReserved02, CReserved03, CReserved04, CReserved05, CReserved06, CReserved07,
-            BillingIDWhatsApp, TemplateCategory, TemplateName, PaymentCodeWA,
+            ConversationStartDate, ConversationStartTime, ConversationEndDate, ConversationEndTime,
+            CReserved01, CReserved02, CReserved03, CReserved04, CReserved05,
+            ConversationIDWhatsApp, TemplateCategory, TemplateName, TypeWhatsApp,
             WAReserved01, WAReserved02, WAReserved03, WAReserved04, WAReserved05, WAReserved06,
             ConversationIDSMS, NumberType, MessageCharacters, TargetCarrier,
             SMSReserved01, SMSReserved02, SMSReserved03, SMSReserved04, SMSReserved05, SMSReserved06,
-            VirtualAgentID, ConversationID, Channel, ConversationDuration, Seconds, Minutes,
+            ModelIDVirtualAgent, ConversationIDVirtualAgent, Channel, ConversationDuration, ConversationDurationSeconds, ConversationDurationMinutes,
             VAReserved01, VAReserved02, VAReserved03, VAReserved04,
-            CallID, Detection, DurationSeconds, DurationMinutes,
-            VMReserved01, VMReserved02, VMReserved03, VMReserved04, VMReserved05, VMReserved06
+            VMR, CallIDVMR, CampaignType, Detection, BilledVMR, 
+			DetectionTimeSeconds, DetectionTimeMinutes, VMReserved01, VMReserved02, VMReserved03,
+			CallIDCenterWare, InboundTrunk, OutboundTrunk, OriginIPAddress, DestinationIPAddress,
+			OriginLocality, OriginRegion, TargetLocality, TargetRegion, Modality,
+			NetworkType, CallDurationSeconds, CallDurationMinutes, SIPCode, SIPCodeDescription,
+			FreeswitchIPAddress, FSReserved01, FSReserved02, FSReserved03, FSReserved04
         )
         SELECT 
             @CompanyName, ISNULL(@ip, ''''), ''WhatsApp'',
             ISNULL(CAST(IsBilled AS VARCHAR), ''0''),
-            CASE WHEN FirstMessageConversationTypeFromAgent = 0 THEN ''inbound'' ELSE ''outbound'' END,
+            CASE WHEN FirstMessageConversationTypeFromAgent = 0 THEN ''Inbound'' ELSE ''Outbound'' END,
             ISNULL(dbo.GetCountryDetailWhatsApp(AssociatedNumber, 1), ''''),
             ISNULL(dbo.GetCountryDetailWhatsApp(AssociatedNumber, 0), ''''),
             ISNULL(AssociatedNumber, ''''),
             ISNULL(dbo.GetCountryDetailWhatsApp(ClientNumber, 1), ''''),
             ISNULL(dbo.GetCountryDetailWhatsApp(ClientNumber, 0), ''''),
             ISNULL(ClientNumber, ''''),
-            CAST(CAST(FirstMessageDateFromAgent AS DATE) AS VARCHAR(MAX)),
-            FORMAT(FirstMessageDateFromAgent, ''HH:mm:ss''),
-            '''', '''', '''', '''', '''', '''', '''',
-            ISNULL(GlobalId, NULL),
-            ISNULL(wa.Category, ''''),
+            ISNULL(CAST(FORMAT(CAST(FirstMessageDateFromAgent AS DATE),''dd-MM-yyyy'') AS VARCHAR(MAX)), ''''),
+            ISNULL(FORMAT(FirstMessageDateFromAgent, ''HH:mm:ss''),''''),
+			CASE WHEN FirstMessageConversationTypeFromAgent = 0 THEN
+			ISNULL(FORMAT(DATEADD(SECOND, ci.tConversation, FirstMessageDateFromAgent), ''dd-MM-yyyy''), '''') ELSE
+			ISNULL(FORMAT(DATEADD(SECOND, co.tConversation, FirstMessageDateFromAgent), ''dd-MM-yyyy''), '''') END,
+			CASE WHEN FirstMessageConversationTypeFromAgent = 0 THEN
+			ISNULL(FORMAT(DATEADD(SECOND, ci.tConversation, FirstMessageDateFromAgent),''HH:mm:ss''), '''') ELSE
+			ISNULL(FORMAT(DATEADD(SECOND, co.tConversation, FirstMessageDateFromAgent),''HH:mm:ss''), '''') END,
+			'''', '''', '''', '''', '''',
+            ISNULL(GlobalId, ''''),
+			CASE WHEN wa.Category = ''MARKETING'' THEN ''Marketing'' 
+			WHEN wa.Category = ''UTILITY'' THEN ''Utility'' ELSE '''' END,
             ISNULL(mt.TemplateName, ''''),
-            CASE WHEN FirstMessageConversationTypeFromAgent = 0 THEN ''Wa In'' ELSE ''Wa Out'' END,
+            CASE WHEN FirstMessageConversationTypeFromAgent = 0 THEN ''Inbound'' ELSE ''Outbound'' END,
             '''', '''', '''', '''', '''', '''',
             '''', '''', '''', '''',
             '''', '''', '''', '''', '''', '''',
-            '''', '''', '''', '''', '''', '''',
             '''', '''', '''', '''',
             '''', '''', '''', '''', '''', '''',
-            '''', '''', '''', ''''
+            '''', '''', '''', '''',
+			'''', '''', '''', '''', '''', '''',
+			'''', '''', '''', '''',
+            '''', '''', '''', '''', '''', '''',
+            '''', '''', '''', '''',
+			'''', '''', '''', '''', '''', ''''
+		FROM ccWhatsAppGlobalIds wa
+OUTER APPLY (
+    SELECT TOP 1 * 
+    FROM ccoWhatsLogDials a 
+    WHERE a.ConversationId = wa.FirstMessageConversationIdFromAgent
+      AND a.Type = CASE 
+                     WHEN wa.FirstMessageConversationTypeFromAgent = 1 THEN ''template'' 
+                     ELSE ''text'' 
+                   END
+    ORDER BY a.TimeSpam
+) a
+		LEFT JOIN ccMetaWAOutboundTemplates mt 
+		ON mt.Id = a.TemplateId
+LEFT JOIN ccWhatsAppConversationsOut co 
+    ON co.conversationId = a.ConversationId
+   AND wa.FirstMessageConversationTypeFromAgent = 1 -- Solo Outbound
+ 
+LEFT JOIN ccWhatsAppConversations ci 
+    ON ci.conversationId = a.ConversationId
+   AND wa.FirstMessageConversationTypeFromAgent = 0 -- Solo Inbound
+		WHERE FirstMessageDateFromAgent BETWEEN @DateFrom AND @DateTo;
 
-        FROM ccWhatsAppGlobalIds wa
-        LEFT JOIN ccoWhatsLogDials a ON a.ConversationId = wa.FirstMessageConversationIdFromAgent
-        LEFT JOIN ccMetaWAOutboundTemplates mt ON mt.Id = a.TemplateId
-        WHERE FirstMessageDateFromAgent BETWEEN @DateFrom AND @DateTo;
-
-        SELECT * FROM #Temp_Facturacion ORDER BY ConversationDate;
-    END
-
-    -- Acción 1: WhatsApp
-    IF @action = 1
-    BEGIN
-        INSERT INTO #Temp_Facturacion (
-            Account, IPAddress, Service, Billed, Type,
-            OriginCountry, OriginCountryCode, OriginNumber,
-            TargetCountry, TargetCountryCode, TargetNumber,
-            ConversationDate, ConversationTime,
-            CReserved01, CReserved02, CReserved03, CReserved04, CReserved05, CReserved06, CReserved07,
-            BillingIDWhatsApp, TemplateCategory, TemplateName, PaymentCodeWA,
-            WAReserved01, WAReserved02, WAReserved03, WAReserved04, WAReserved05, WAReserved06
-        )
-        SELECT 
-            @CompanyName,
-            ISNULL(@ip, ''''),
-            ''WhatsApp'',
-            ISNULL(CAST(IsBilled AS VARCHAR), ''0''),
-            CASE WHEN FirstMessageConversationTypeFromAgent = 0 THEN ''inbound'' ELSE ''outbound'' END,
-            ISNULL(dbo.GetCountryDetailWhatsApp(AssociatedNumber, 1), ''''),
-            ISNULL(dbo.GetCountryDetailWhatsApp(AssociatedNumber, 0), ''''),
-            ISNULL(AssociatedNumber, ''''),
-            ISNULL(dbo.GetCountryDetailWhatsApp(ClientNumber, 1), ''''),
-            ISNULL(dbo.GetCountryDetailWhatsApp(ClientNumber, 0), ''''),
-            ISNULL(ClientNumber, ''''),
-            CAST(CAST(FirstMessageDateFromAgent AS DATE) AS VARCHAR(MAX)),
-            FORMAT(FirstMessageDateFromAgent, ''HH:mm:ss''),
-            '''', '''', '''', '''', '''', '''', '''',
-            ISNULL(GlobalId, NULL),
-            ISNULL(wa.Category, ''''),
-            ISNULL(mt.TemplateName, ''''),
-            CASE WHEN FirstMessageConversationTypeFromAgent = 0 THEN ''Wa In'' ELSE ''Wa Out'' END,
-            '''', '''', '''', '''', '''', ''''
-        FROM ccWhatsAppGlobalIds wa
-        LEFT JOIN ccoWhatsLogDials a ON a.ConversationId = wa.FirstMessageConversationIdFromAgent
-        LEFT JOIN ccMetaWAOutboundTemplates mt ON mt.Id = a.TemplateId
-        WHERE FirstMessageDateFromAgent BETWEEN @DateFrom AND @DateTo;
     END
 
-    -- Acción 2: SMS
-    IF @action = 2
-    BEGIN
-        INSERT INTO #Temp_Facturacion (
-            Account, IPAddress, Service, Billed, Type,
-            OriginCountry, OriginCountryCode, OriginNumber,
-            TargetCountry, TargetCountryCode, TargetNumber,
-            ConversationDate, ConversationTime,
-            CReserved01, CReserved02, CReserved03, CReserved04, CReserved05, CReserved06, CReserved07,
-            ConversationIDSMS, NumberType, MessageCharacters, TargetCarrier
-        )
-        SELECT 
-            @CompanyName,
-            ISNULL(@ip, ''''),
-            ''SMS'',
-            ISNULL(CAST(IsBilled AS VARCHAR), ''0''),
-            CASE WHEN FirstMessageConversationTypeFromAgent = 0 THEN ''inbound'' ELSE ''outbound'' END,
-            ISNULL(dbo.GetCountryDetailWhatsApp(AssociatedNumber, 1), ''''),
-            ISNULL(dbo.GetCountryDetailWhatsApp(AssociatedNumber, 0), ''''),
-            ISNULL(AssociatedNumber, ''''),
-            ISNULL(dbo.GetCountryDetailWhatsApp(ClientNumber, 1), ''''),
-            ISNULL(dbo.GetCountryDetailWhatsApp(ClientNumber, 0), ''''),
-            ISNULL(ClientNumber, ''''),
-            CAST(CAST(FirstMessageDateFromAgent AS DATE) AS VARCHAR(MAX)),
-            FORMAT(FirstMessageDateFromAgent, ''HH:mm:ss''),
-            '''', '''', '''', '''', '''', '''', '''',
-            '''', '''', '''', ''''
-        FROM ccWhatsAppGlobalIds wa
-        WHERE FirstMessageDateFromAgent BETWEEN @DateFrom AND @DateTo;
-    END
-
-    -- Acción 3: VA
-    IF @action = 3
-    BEGIN
-        INSERT INTO #Temp_Facturacion (
-            Account, IPAddress, Service, Billed, Type,
-            OriginCountry, OriginCountryCode, OriginNumber,
-            TargetCountry, TargetCountryCode, TargetNumber,
-            ConversationDate, ConversationTime,
-            CReserved01, CReserved02, CReserved03, CReserved04, CReserved05, CReserved06, CReserved07,
-            VirtualAgentID, ConversationID, Channel,
-            ConversationDuration, Seconds, Minutes
-        )
-        SELECT 
-            @CompanyName,
-            ISNULL(@ip, ''''),
-            ''Virtual Agent'',
-            ISNULL(CAST(IsBilled AS VARCHAR), ''0''),
-            CASE WHEN FirstMessageConversationTypeFromAgent = 0 THEN ''inbound'' ELSE ''outbound'' END,
-            ISNULL(dbo.GetCountryDetailWhatsApp(AssociatedNumber, 1), ''''),
-            ISNULL(dbo.GetCountryDetailWhatsApp(AssociatedNumber, 0), ''''),
-            ISNULL(AssociatedNumber, ''''),
-            ISNULL(dbo.GetCountryDetailWhatsApp(ClientNumber, 1), ''''),
-            ISNULL(dbo.GetCountryDetailWhatsApp(ClientNumber, 0), ''''),
-            ISNULL(ClientNumber, ''''),
-            CAST(CAST(FirstMessageDateFromAgent AS DATE) AS VARCHAR(MAX)),
-            FORMAT(FirstMessageDateFromAgent, ''HH:mm:ss''),
-            '''', '''', '''', '''', '''', '''', '''',
-            '''', '''', '''', '''', '''', ''''
-        FROM ccWhatsAppGlobalIds wa
-        WHERE FirstMessageDateFromAgent BETWEEN @DateFrom AND @DateTo;
-    END
-
-    -- Acción 4: VM
-    IF @action = 4
-    BEGIN
-        INSERT INTO #Temp_Facturacion (
-            Account, IPAddress, Service, Billed, Type,
-            OriginCountry, OriginCountryCode, OriginNumber,
-            TargetCountry, TargetCountryCode, TargetNumber,
-            ConversationDate, ConversationTime,
-            CReserved01, CReserved02, CReserved03, CReserved04, CReserved05, CReserved06, CReserved07,
-            CallID, Detection, DurationSeconds, DurationMinutes
-        )
-        SELECT 
-            @CompanyName,
-            ISNULL(@ip, ''''),
-            ''VMR'',
-            ISNULL(CAST(IsBilled AS VARCHAR), ''0''),
-            CASE WHEN FirstMessageConversationTypeFromAgent = 0 THEN ''inbound'' ELSE ''outbound'' END,
-            ISNULL(dbo.GetCountryDetailWhatsApp(AssociatedNumber, 1), ''''),
-            ISNULL(dbo.GetCountryDetailWhatsApp(AssociatedNumber, 0), ''''),
-            ISNULL(AssociatedNumber, ''''),
-            ISNULL(dbo.GetCountryDetailWhatsApp(ClientNumber, 1), ''''),
-            ISNULL(dbo.GetCountryDetailWhatsApp(ClientNumber, 0), ''''),
-            ISNULL(ClientNumber, ''''),
-            CAST(CAST(FirstMessageDateFromAgent AS DATE) AS VARCHAR(MAX)),
-            FORMAT(FirstMessageDateFromAgent, ''HH:mm:ss''),
-            '''', '''', '''', '''', '''', '''', '''',
-            '''', '''', '''', ''''
-        FROM ccWhatsAppGlobalIds wa
-        WHERE FirstMessageDateFromAgent BETWEEN @DateFrom AND @DateTo;
-    END
-
-    ---------------------------
-    -- Mostrar columnas por acción
-    ---------------------------
-    IF @action = 1
-    BEGIN
-        SELECT Account, IPAddress, Service, Billed, Type,
-               OriginCountry, OriginCountryCode, OriginNumber,
-               TargetCountry, TargetCountryCode, TargetNumber,
-               ConversationDate, ConversationTime,
-               CReserved01, CReserved02, CReserved03, CReserved04,
-               CReserved05, CReserved06, CReserved07,
-               BillingIDWhatsApp, TemplateCategory, TemplateName, PaymentCodeWA,
-               WAReserved01, WAReserved02, WAReserved03, WAReserved04, WAReserved05, WAReserved06
-        FROM #Temp_Facturacion
-        ORDER BY ConversationDate;
-    END
-    ELSE IF @action = 2
-    BEGIN
-        SELECT Account, IPAddress, Service, Billed, Type,
-               OriginCountry, OriginCountryCode, OriginNumber,
-               TargetCountry, TargetCountryCode, TargetNumber,
-               ConversationDate, ConversationTime,
-               CReserved01, CReserved02, CReserved03, CReserved04,
-               CReserved05, CReserved06, CReserved07,
-               ConversationIDSMS, NumberType, MessageCharacters, TargetCarrier,
-               SMSReserved01, SMSReserved02, SMSReserved03, SMSReserved04, SMSReserved05, SMSReserved06
-        FROM #Temp_Facturacion
-        ORDER BY ConversationDate;
-    END
-    ELSE IF @action = 3
-    BEGIN
-        SELECT Account, IPAddress, Service, Billed, Type,
-               OriginCountry, OriginCountryCode, OriginNumber,
-               TargetCountry, TargetCountryCode, TargetNumber,
-               ConversationDate, ConversationTime,
-               CReserved01, CReserved02, CReserved03, CReserved04,
-               CReserved05, CReserved06, CReserved07,
-               VirtualAgentID, ConversationID, Channel,
-               ConversationDuration, Seconds, Minutes,
-               VAReserved01, VAReserved02, VAReserved03, VAReserved04
-        FROM #Temp_Facturacion
-        ORDER BY ConversationDate;
-    END
-    ELSE IF @action = 4
-    BEGIN
-        SELECT Account, IPAddress, Service, Billed, Type,
-               OriginCountry, OriginCountryCode, OriginNumber,
-               TargetCountry, TargetCountryCode, TargetNumber,
-               ConversationDate, ConversationTime,
-               CReserved01, CReserved02, CReserved03, CReserved04,
-               CReserved05, CReserved06, CReserved07,
-               CallID, Detection, DurationSeconds, DurationMinutes,
-               VMReserved01, VMReserved02, VMReserved03, VMReserved04, VMReserved05, VMReserved06
-        FROM #Temp_Facturacion
-        ORDER BY ConversationDate;
-    END
+    -- Final output
+    SELECT * FROM #Temp_Facturacion ORDER BY ConversationStartDate;
 
     DROP TABLE #Temp_Facturacion;
 END;
@@ -3964,6 +3859,517 @@ END
 '
     EXEC(@sql)
 
+	-------------------------------------------  BEGIN Frida Orta  ----------------------------------------
+	set @process = 'CW-9631 drop sp ccspRepOutCallsDetail'
+		set @sql='if exists (select * from sys.procedures where name = N''ccspRepOutCallsDetail'')
+		begin
+			DROP PROCEDURE ccspRepOutCallsDetail;
+		end'
+		EXEC(@sql)
+
+	SET @process = 'CW-9631 create sp ccspRepOutCallsDetail '
+        SET @sql = 'CREATE PROCEDURE ccspRepOutCallsDetail 
+		@action as tinyint,
+		@from as datetime = NULL,
+		@to as datetime = NULL
+		AS
+
+		IF @from IS NULL
+			SELECT @from = convert(DATETIME, convert(VARCHAR(11), getdate()))
+
+		IF @to IS NULL
+			SELECT @to = getdate()
+
+		DECLARE @IVA INT, @IVAstring varchar(3)
+		DECLARE @country AS TINYINT
+
+		SELECT @IVA = convert(INT, isnull(valor, 0))
+		FROM ccsettings
+		WHERE setting_id = 25
+
+		SELECT @IVAstring =CONVERT(VARCHAR(5),@IVA) + ''%''
+
+		SELECT @country = convert(TINYINT, isnull(valor, 1))
+		FROM ccsettings
+		WHERE setting_id = 104
+
+		IF @country IS NULL
+			SET @country = 1
+
+		IF @action = 1
+		BEGIN
+			DELETE FROM RepOutCallsDetail WITH (ROWLOCK)
+			WHERE DATE >= @from AND DATE < @to
+
+			INSERT INTO RepOutCallsDetail
+			SELECT Call.cal_inicio AS [date],
+				Call.cal_key AS [callKey],
+				Call.cal_telefono AS [telephone],
+				Call.cal_txfer + call.cal_tring AS [transfer],
+				Call.cal_tdialog AS [dialog],
+				ISNULL(Call.cal_tMoh, 0) AS [nque],
+				Call.cal_tnotas AS [wrapup],
+				ISNULL(Tipo.[description], '''') AS [CallDisposition],
+				Call.cal_extension AS [extension],
+				isnull(Usr.user_id, 0) AS [userId],
+				ISNULL(Usr.ApellidoPaterno + '' '' + ISNULL(Usr.ApellidoMaterno, '''') + '' '' + Usr.Nombres, '''')[login],
+				ISNULL(convert(VARCHAR(255), Usr.LOGIN), ''systemTranslated_NoUserName'')  AS [username],
+				camps.cam_id AS [campaignId],
+				ISNULL(camps.cam_descripcion, ''systemTranslated_NoCampaign'') AS [campaign],
+				(CEILING((ISNULL(Call.totalCall_Time, 0) + ISNULL(Call.cal_tMsg, 0)) / 60.0) * 60) AS [duration],
+				CONVERT(DECIMAL(10,2), dbo.fnGetCstoTarifa(Call.tipoLlamada_id, Call.provedor_id, (CEILING((ISNULL(Call.totalCall_Time, 0) + ISNULL(Call.cal_tMsg, 0)) / 60.0) * 60),@country)) AS [ncost],
+
+				@IVAstring AS iva,
+				CONVERT(DECIMAL(10,2), dbo.fnGetCstoTarifa(Call.tipoLlamada_id, Call.provedor_id, (CEILING((ISNULL(Call.totalCall_Time, 0) + ISNULL(Call.cal_tMsg, 0)) / 60.0) * 60),@country) * (1 + (@IVA / 100.00))) AS total,
+				CASE 
+					WHEN prov.descrip IS NOT NULL THEN prov.descrip
+					ELSE ''systemTranslated_NoCarrier'' 
+				END AS [ByCarrier],
+				case 
+					when @country<>1 then '''' 
+					WHEN ld.tipoLlamada_id IN (1, 2, 5) THEN ''systemTranslated_fijo'' 
+					WHEN ld.tipoLlamada_id IN (3, 4) THEN ''systemTranslated_cellPhone'' 
+					ELSE ''systemTranslated_Indefinite'' END [Calltypes],
+				CASE 
+				WHEN ld.TipoDialingMode = ''100000000'' THEN ''systemTranslated_Preview'' 
+				WHEN ld.TipoDialingMode =  ''10000000'' THEN ''systemTranslated_Assisted'' 
+				WHEN ld.TipoDialingMode IN (''00001000'',''00010000'', ''000010000'') THEN ''systemTranslated_Callback'' 
+				WHEN RIGHT(ld.TipoDialingMode, 3) = ''100'' THEN ''systemTranslated_Auto'' 
+				WHEN RIGHT(ld.TipoDialingMode, 2) IN (''10'', ''01'') THEN ''systemTranslated_Manual'' 
+				WHEN ld.TipoDialingMode = ''000000000'' THEN ''systemTranslated_Auto''
+				ELSE ''''
+				END AS [dialType], 
+				CASE 
+					WHEN Call.cal_whoHung = 0 THEN ''systemTranslated_Client'' 
+					WHEN Call.cal_whoHung = 1 THEN ''systemTranslated_Agent'' 
+					ELSE ''systemTranslated_AgentSurvey'' 
+				END [whoHangUp], 
+				CASE 
+					WHEN call.califsub_id = 0 THEN ''systemTranslated_NoSubDisposition'' 
+					ELSE isnull(sub.califSubDesc, '''') 
+				END AS [subDisposition],
+				sta.descTranslated AS [dialResult], 
+				Call.cal_id as [calId],
+				datepart(yyyy, Call.cal_inicio) AS [year],
+				datepart(mm, Call.cal_inicio) AS [month],
+				datepart(dd, Call.cal_inicio) AS [day],
+				datepart(hh, Call.cal_inicio) AS [hour],
+				datepart(mi, Call.cal_inicio) AS [minutes],
+				Call.cal_puerto,
+				ISNULL(cod.Data1,ISNULL(cs.Dato1, '''')) AS [data1],
+				ISNULL(cod.Data2,ISNULL(cs.Dato2, '''')) AS [data2],
+				ISNULL(cod.Data3,ISNULL(cs.Dato3, '''')) AS [data3],
+				ISNULL(cod.Data4,ISNULL(cs.Dato4, '''')) AS [data4],
+				ISNULL(cod.Data5,ISNULL(cs.Dato5, '''')) AS [data5],
+				ISNULL(Call.cal_tMsg, 0) AS [MessageTime],
+				ISNULL(rc.grab_id, 0) as grabId
+			FROM ccoCallsOut Call (nolock)
+				LEFT JOiN ccoLogDials ld (nolock) ON Call.cal_id=ld.cal_id
+				LEFT JOIN ccTipoCalifOUT Tipo (nolock) ON Call.calif_id = Tipo.calif_id
+				LEFT JOIN ccUserView Usr (nolock) ON Usr.[user_id] = Call.[user_id] -- User_id IS NOT NULL
+				LEFT JOIN ccCamps camps (nolock) ON camps.[cam_id] = Call.[cam_id]
+				LEFT JOIN ccStatusLlamada sta (nolock) ON call.statuscall_id = sta.statuscall_id
+				LEFT JOIN cstoProvedor prov (nolock) ON prov.[provedor_id] = Call.[provedor_id]
+				LEFT JOIN cstoTipoLlamada tl (nolock) ON (tl.[tipoLlamada_id] = ld.[tipoLlamada_id] AND tl.Country_id = @country)
+				LEFT JOIN ccTipoCalifSubOut sub (nolock) ON call.califsub_id = sub.califsub_id
+				LEFT JOIN ccoDialers di (nolock) ON di.dialer_id = Call.cal_puerto AND call.provedor_id = di.provedor_id
+				LEFT JOIN ccoCallsOutSource cs (nolock) ON Call.callout_id = cs.callout_id
+				LEFT JOIN ccoCallsOutData cod (NOLOCK) on cod.cal_id = call.cal_id
+				LEFT JOIN ccCallCost_RIA cc (nolock) ON cc.country_id = tl.country_id AND cc.tipoLlamada_id = tl.tipoLlamada_id
+				LEFT JOIN Ria_grabacion rc (nolock) on (rc.cal_id = Call.cal_id and rc.tipo_llamada = 2)
+			WHERE Call.cal_inicio >= @from AND Call.cal_inicio < @to AND Call.cal_manual IN (0, 2) and ld.TipoDialingMode IS NOT NULL
+			ORDER BY DATE
+		END'
+        EXEC(@sql)
+    -----------------------------------------End Frida Orta  ------------------------------------------------------------
+
+	------------------------------------------ Transactional Replication ----------------------------------------
+
+	SET @process = 'DROP PROCEDURE ReportsMasterProcess';
+	SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ReportsMasterProcess'')
+		BEGIN
+			DROP PROCEDURE ReportsMasterProcess;
+		END';
+	EXEC(@sql);
+    
+	SET @process = 'CREATE PROCEDURE ReportsMasterProcess';
+	SET @sql = 'CREATE PROCEDURE [dbo].[ReportsMasterProcess]
+AS
+SET NOCOUNT ON;
+
+DECLARE @replicationName NVARCHAR(MAX);
+DECLARE @dateStart DATETIME = GETDATE();
+DECLARE @scheduleTime INT = 15;  -- total minutes for all jobs
+DECLARE @count INT;
+
+PRINT ''--------------- Retrieving Replication Jobs ------------------------------'';
+
+CREATE TABLE #replications (
+    [name] NVARCHAR(500),
+    flag BIT
+);
+
+;WITH jobNotStart AS (
+    SELECT DISTINCT A.[name]
+    FROM msdb.dbo.sysjobs A
+    INNER JOIN PublicationLowLoad B ON A.[name] LIKE ''%'' + B.namePublication + ''%''
+    WHERE A.[name] LIKE ''%CCReportsRIA%'' AND A.[name] LIKE ''%CCenterRIA%''    
+)
+
+INSERT INTO #replications
+SELECT DISTINCT A.[name], 0
+FROM msdb.dbo.sysjobs A
+WHERE A.[name] LIKE ''%CCReportsRIA%'' AND A.[name] LIKE ''%CCenterRIA%''
+AND A.name NOT IN (SELECT name FROM jobNotStart);
+
+INSERT INTO #replications
+SELECT [name], 0
+FROM msdb.dbo.sysjobs
+WHERE [name] LIKE ''%CCReportsRIA%'' AND [name] LIKE ''%CCRecorderRIA%'';
+
+SELECT @count = COUNT(*) FROM #replications;
+
+IF @count = 0
+BEGIN
+    PRINT ''No replication jobs found to execute.'';
+    DROP TABLE #replications;
+    RETURN;
+END
+
+WHILE (SELECT COUNT(*) FROM #replications WITH(NOLOCK) WHERE flag = 0) > 0
+BEGIN
+    SET ROWCOUNT 1;
+    SELECT @replicationName = [name]
+    FROM #replications WITH(NOLOCK)
+    WHERE flag = 0;
+    SET ROWCOUNT 0;
+
+    BEGIN TRY
+        DECLARE @isRunning INT;
+
+        SELECT @isRunning = COUNT(*)
+        FROM msdb.dbo.sysjobs_view job
+        INNER JOIN msdb.dbo.sysjobactivity activity ON job.job_id = activity.job_id
+        INNER JOIN msdb.dbo.syssessions sess ON sess.session_id = activity.session_id
+        INNER JOIN (
+            SELECT MAX(agent_start_date) AS max_agent_start_date
+            FROM msdb.dbo.syssessions
+        ) sess_max ON sess.agent_start_date = sess_max.max_agent_start_date
+        WHERE activity.run_requested_date IS NOT NULL 
+            AND activity.stop_execution_date IS NULL
+            AND job.name = @replicationName;
+
+        IF @isRunning = 0
+        BEGIN
+            EXEC msdb.dbo.sp_start_job @job_name = @replicationName;
+            PRINT ''Job started: '' + @replicationName;
+        END
+        ELSE
+        BEGIN
+            PRINT ''Job already running: '' + @replicationName;
+        END
+
+        UPDATE #replications WITH(ROWLOCK) SET flag = 1 WHERE [name] = @replicationName;
+
+        WAITFOR DELAY ''00:00:03'';
+
+        DECLARE @jobStart DATETIME = GETDATE();
+
+        WHILE EXISTS (
+            SELECT 1
+            FROM msdb.dbo.sysjobs_view job
+            INNER JOIN msdb.dbo.sysjobactivity activity ON job.job_id = activity.job_id
+            INNER JOIN msdb.dbo.syssessions sess ON sess.session_id = activity.session_id
+            INNER JOIN (
+                SELECT MAX(agent_start_date) AS max_agent_start_date
+                FROM msdb.dbo.syssessions
+            ) sess_max ON sess.agent_start_date = sess_max.max_agent_start_date
+            WHERE activity.run_requested_date IS NOT NULL 
+                AND activity.stop_execution_date IS NULL
+                AND job.name = @replicationName
+        )
+        BEGIN
+            WAITFOR DELAY ''00:00:01'';
+            PRINT ''Job in progress: '' + @replicationName;
+
+            IF DATEDIFF(SECOND, @jobStart, GETDATE()) > ((@scheduleTime * 60) / @count)
+            BEGIN
+                PRINT ''Timeout reached for job: '' + @replicationName;
+                BREAK;
+            END
+        END
+
+        PRINT ''Job finished or exited: '' + @replicationName;
+    END TRY
+    BEGIN CATCH
+        PRINT ''Error processing job: '' + @replicationName;
+        PRINT ERROR_MESSAGE();
+    END CATCH
+END
+
+DROP TABLE #replications;
+
+
+
+INSERT INTO RIA_FORMATOCONCEPTO
+SELECT
+    t.id_formato AS ''ID Formato'',
+    c.id_concepto AS ''id concepto''
+FROM RIA_FORMATOS f
+INNER JOIN (
+    SELECT id_formato, nombre, MAX(version) AS version
+    FROM RIA_FORMATOS
+    WHERE activo = 1
+    GROUP BY id_formato, nombre
+) AS t ON f.id_formato = t.id_formato AND f.version = t.version
+INNER JOIN RIA_CONCEPTOS c ON t.id_formato = c.id_formato AND t.version = c.version
+LEFT JOIN RIA_FORMATOCONCEPTO a ON a.templateId = t.id_formato AND a.sectionId = c.id_concepto
+WHERE a.id IS NULL;
+
+
+
+PRINT ''--------------------------- Comienzo de subprocesos de reportes ---------------------------'';
+PRINT ''EXEC ReportsMasterSubProcess'';
+EXEC ReportsMasterSubProcess;';
+	EXEC(@sql);
+
+	SET @process = 'DROP PROCEDURE ReportsMasterProcessPublicationHighLoad';
+	SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ReportsMasterProcessPublicationHighLoad'')
+		BEGIN
+			DROP PROCEDURE ReportsMasterProcessPublicationHighLoad;
+		END';
+	EXEC(@sql);
+
+	SET @process = 'CREATE PROCEDURE ReportsMasterProcessPublicationHighLoad';
+	SET @sql = 'CREATE PROCEDURE [dbo].[ReportsMasterProcessPublicationHighLoad]
+AS
+SET NOCOUNT ON;
+
+DECLARE @replicationName VARCHAR(MAX);
+DECLARE @dateStart DATETIME = GETDATE();
+DECLARE @schedule_id INT, @scheduleTime INT;
+DECLARE @count INT;
+
+SET @scheduleTime = 5;
+
+PRINT ''---Get schedule_id and @scheduleTime ----'';
+SELECT 
+    @schedule_id = C.schedule_id,
+    @scheduleTime = C.freq_subday_interval
+FROM msdb.dbo.sysjobs A
+LEFT JOIN msdb.dbo.sysjobschedules B ON A.job_id = B.job_id
+INNER JOIN msdb.dbo.sysschedules C ON C.schedule_id = B.schedule_id
+WHERE A.name = ''ReportsMasterProcessPublicationHighLoad'';
+
+PRINT ''--------------- Get Jobs Replication ------------------------------'';
+CREATE TABLE #replications ([name] NVARCHAR(500), flag BIT);
+
+INSERT INTO #replications
+SELECT DISTINCT A.[name], 0
+FROM msdb.dbo.sysjobs A
+INNER JOIN PublicationHighLoad B ON A.[name] LIKE ''%'' + B.namePublication + ''%''
+WHERE A.[name] LIKE ''%ccReportsRia%'' AND A.[name] LIKE ''%CCenterRia%'';
+
+SELECT @count = COUNT(*) FROM #replications;
+
+WHILE (
+    SELECT COUNT(*) FROM #replications WITH (NOLOCK) WHERE flag = 0
+) > 0 AND DATEDIFF(SECOND, @dateStart, GETDATE()) < (@scheduleTime * 60)
+BEGIN
+    SET ROWCOUNT 1;
+    SELECT @replicationName = [name]
+    FROM #replications WITH (NOLOCK)
+    WHERE flag = 0;
+    SET ROWCOUNT 0;
+
+    DECLARE @isRunning INT;
+
+    SELECT @isRunning = COUNT(*)
+    FROM msdb.dbo.sysjobs_view job
+    INNER JOIN msdb.dbo.sysjobactivity activity ON job.job_id = activity.job_id
+    INNER JOIN msdb.dbo.syssessions sess ON sess.session_id = activity.session_id
+    INNER JOIN (
+        SELECT MAX(agent_start_date) AS max_agent_start_date
+        FROM msdb.dbo.syssessions
+    ) sess_max ON sess.agent_start_date = sess_max.max_agent_start_date
+    WHERE activity.run_requested_date IS NOT NULL
+      AND activity.stop_execution_date IS NULL
+      AND job.name = @replicationName;
+
+    IF @isRunning = 0
+    BEGIN
+        EXEC msdb.dbo.sp_start_job @job_name = @replicationName;
+        PRINT ''sp_start_job '' + @replicationName;
+    END
+    ELSE
+    BEGIN
+        PRINT ''Job is already running: '' + @replicationName;
+    END
+
+    UPDATE #replications WITH (ROWLOCK)
+    SET flag = 1
+    WHERE [name] = @replicationName;
+
+    WAITFOR DELAY ''00:00:03'';
+
+    DECLARE @jobStart DATETIME = GETDATE();
+
+    WHILE EXISTS (
+        SELECT 1
+        FROM msdb.dbo.sysjobs_view job
+        INNER JOIN msdb.dbo.sysjobactivity activity ON job.job_id = activity.job_id
+        INNER JOIN msdb.dbo.syssessions sess ON sess.session_id = activity.session_id
+        INNER JOIN (
+            SELECT MAX(agent_start_date) AS max_agent_start_date
+            FROM msdb.dbo.syssessions
+        ) sess_max ON sess.agent_start_date = sess_max.max_agent_start_date
+        WHERE activity.run_requested_date IS NOT NULL
+          AND activity.stop_execution_date IS NULL
+          AND job.name = @replicationName
+    )
+    BEGIN
+        WAITFOR DELAY ''00:00:01'';
+        PRINT ''In Progress Job in ReplicationName: '' + @replicationName;
+
+        IF DATEDIFF(SECOND, @jobStart, GETDATE()) > ((@scheduleTime * 60) / @count)
+        BEGIN
+            PRINT ''Stop Job in ReplicationName (timeout): '' + @replicationName;
+            BREAK;
+        END
+    END
+
+    PRINT ''Progress End Job in ReplicationName: '' + @replicationName;
+END
+
+DROP TABLE #replications;';
+	EXEC(@sql);
+
+	SET @process = 'DROP PROCEDURE ReportsMasterProcessPublicationLowLoad';
+	SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ReportsMasterProcessPublicationLowLoad'')
+		BEGIN
+			DROP PROCEDURE ReportsMasterProcessPublicationLowLoad;
+		END';
+	EXEC(@sql);
+
+	SET @process = 'CREATE PROCEDURE ReportsMasterProcessPublicationLowLoad';
+	SET @sql = 'CREATE PROCEDURE [dbo].[ReportsMasterProcessPublicationLowLoad]
+AS
+SET NOCOUNT ON;
+
+DECLARE @replicationName VARCHAR(MAX);
+DECLARE @jobName VARCHAR(500), @duration INT = 0;
+
+SELECT 
+    @jobName = j.name,
+    @duration = DATEDIFF(SECOND, ja.start_execution_date, GETDATE())
+FROM msdb.dbo.sysjobactivity ja
+JOIN msdb.dbo.sysjobs j ON ja.job_id = j.job_id
+JOIN msdb.dbo.syssessions s ON ja.session_id = s.session_id
+JOIN (
+    SELECT MAX(agent_start_date) AS max_start
+    FROM msdb.dbo.syssessions
+) max_s ON s.agent_start_date = max_s.max_start
+WHERE ja.start_execution_date IS NOT NULL
+  AND ja.stop_execution_date IS NULL
+  AND j.name = ''ReportsMasterProcessPublicationLowLoad'';
+
+IF @jobName IS NOT NULL AND @duration > 2
+BEGIN
+    PRINT ''Process Active Job'';
+    SELECT @jobName AS job_name, @duration AS [DurationInSeconds];
+    RETURN(0);
+END
+
+PRINT ''--------------- Get Jobs Replication ------------------------------'';
+
+CREATE TABLE #replications (
+    [name] NVARCHAR(500),
+    flag BIT
+);
+
+INSERT INTO #replications
+SELECT DISTINCT A.[name], 0
+FROM msdb.dbo.sysjobs A
+INNER JOIN PublicationLowLoad B ON A.[name] LIKE ''%'' + B.namePublication + ''%''
+    AND (B.active IS NULL OR B.active = 1)
+WHERE A.[name] LIKE ''%CCReportsRIA%'' AND A.[name] LIKE ''%CCenterRIA%'';
+
+WHILE EXISTS (SELECT * FROM #replications WITH (NOLOCK) WHERE flag = 0)
+BEGIN
+    SET ROWCOUNT 1;
+    SELECT @replicationName = [name]
+    FROM #replications WITH (NOLOCK)
+    WHERE flag = 0;
+    SET ROWCOUNT 0;
+
+    DECLARE @isRunning INT;
+
+    SELECT @isRunning = COUNT(*)
+    FROM msdb.dbo.sysjobs_view job
+    INNER JOIN msdb.dbo.sysjobactivity activity ON job.job_id = activity.job_id
+    INNER JOIN msdb.dbo.syssessions sess ON sess.session_id = activity.session_id
+    INNER JOIN (
+        SELECT MAX(agent_start_date) AS max_agent_start_date
+        FROM msdb.dbo.syssessions
+    ) sess_max ON sess.agent_start_date = sess_max.max_agent_start_date
+    WHERE activity.run_requested_date IS NOT NULL 
+      AND activity.stop_execution_date IS NULL
+      AND job.name = @replicationName;
+
+    IF @isRunning = 0
+    BEGIN
+        EXEC msdb.dbo.sp_start_job @job_name = @replicationName;
+        PRINT ''sp_start_job '' + @replicationName;
+    END
+    ELSE
+    BEGIN
+        PRINT ''Job is already running: '' + @replicationName;
+    END
+
+    UPDATE #replications WITH (ROWLOCK)
+    SET flag = 1
+    WHERE [name] = @replicationName;
+
+    WAITFOR DELAY ''00:00:03'';
+
+    WHILE EXISTS (
+        SELECT 1
+        FROM msdb.dbo.sysjobs_view job
+        INNER JOIN msdb.dbo.sysjobactivity activity ON job.job_id = activity.job_id
+        INNER JOIN msdb.dbo.syssessions sess ON sess.session_id = activity.session_id
+        INNER JOIN (
+            SELECT MAX(agent_start_date) AS max_agent_start_date
+            FROM msdb.dbo.syssessions
+        ) sess_max ON sess.agent_start_date = sess_max.max_agent_start_date
+        WHERE activity.run_requested_date IS NOT NULL 
+          AND activity.stop_execution_date IS NULL
+          AND job.name = @replicationName
+    )
+    BEGIN
+        WAITFOR DELAY ''00:00:01'';
+        PRINT ''In Progress Job in ReplicationName: '' + @replicationName;
+    END
+
+    PRINT ''Progress End Job in ReplicationName: '' + @replicationName;
+END
+
+DROP TABLE #replications;';
+	EXEC(@sql);
+
+	-------------------------------------------------------------------------------------------------------------
+SET @process = 'Alter RepOutAnswAndXferCalls columna dialTimeSec de SMALLINT a INT';
+	SET @sql = '
+IF EXISTS (
+    SELECT 1 
+    FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE TABLE_NAME = ''RepOutAnswAndXferCalls'' 
+      AND COLUMN_NAME = ''dialTimeSec_int'' 
+      AND DATA_TYPE = ''int''
+)
+BEGIN
+    ALTER TABLE dbo.RepOutAnswAndXferCalls DROP COLUMN dialTimeSec_int
+END';
+	EXEC(@sql);
 
 
     	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version

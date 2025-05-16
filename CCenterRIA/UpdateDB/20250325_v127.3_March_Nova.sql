@@ -15065,7 +15065,6 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns]
 '
  EXEC(@sql);
 
-
   --------------------------------------------------- END Juan Medina  -------------------------------------------------------------
 
 
@@ -15791,7 +15790,7 @@ IF OBJECT_ID(''tempdb..#CampLog'') IS NOT NULL DROP TABLE #CampLog
     SET @process = 'Se agrega validacion para LISTAS ANI
     Se agrega validacion de identificador nulo en el insert a ccGalateaActivityLog: WHERE CCCT.identifierInfo IS NOT NULL;'
 
-    SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
+    SET @sql = 'CREATE PROCEDURE ccsp_RIAUpdateCamConfig
     @cam_id smallint,
     @cam_descripcion varchar(40) = null,
     @cam_tnotas smallint = null,
@@ -15949,14 +15948,14 @@ IF OBJECT_ID(''tempdb..#CampLog'') IS NOT NULL DROP TABLE #CampLog
                         END
                     WHEN @CampType is not null THEN @CampType 
                     WHEN @progDial = 2 THEN 6 
-                    WHEN @progDial IS NOT NULL AND @progDial <> 2 THEN 0 
+                    WHEN @progDial IS NOT NULL AND @progDial <> 2 and @CampType is not null THEN 0 
                     WHEN CampType is not null THEN CampType ELSE 0 END),
         selectRotativeANI = isnull(@selectRotativeANI, selectRotativeANI),
         messagingOrder = isnull(@messagingorder, messagingOrder),
         autoStart = isnull(@autoStart,autoStart),
         recordHold = isnull(@recordHold, recordHold),
-    CamCanceled = ISNULL(@camCanceled, CamCanceled),
-    recordIvr = isnull(@recordIvr, recordIvr)
+        CamCanceled = ISNULL(@camCanceled, CamCanceled),
+        recordIvr = isnull(@recordIvr, recordIvr)
 
         Where cam_id = @cam_id
 
@@ -16007,6 +16006,7 @@ IF OBJECT_ID(''tempdb..#CampLog'') IS NOT NULL DROP TABLE #CampLog
             ELSE IF(@CampType = 5 AND @isCreating = 2) DELETE FROM #ccCampsTable WHERE columnInfo NOT IN (''cam_ModoManual'', ''cam_descripcion'', ''exitAssisted'');
             ELSE IF(@CampType = 5) DELETE FROM #ccCampsTable WHERE columnInfo NOT IN (''cam_ModoManual'');
             ELSE IF(@CampType = 7) DELETE FROM #ccCampsTable WHERE columnInfo NOT IN (''messagingOrder'', ''autoStart'', ''rotativeAlgo'', ''id_anilist'', ''cam_descripcion'');
+            ELSE IF(@CampType = 9) DELETE FROM #ccCampsTable WHERE columnInfo NOT IN (''ProgDial'');
             ELSE DELETE FROM #ccCampsTable WHERE columnInfo IN (''previewDiscard'', ''CampType'', ''cam_fDialOnWU'', ''ProgDial'');
 
             IF(@idArea IS NULL OR @idArea = -1) SET @idArea = (SELECT [IDArea] FROM ccCamps WHERE cam_id = @cam_id)

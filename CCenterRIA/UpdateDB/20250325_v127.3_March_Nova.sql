@@ -3481,6 +3481,66 @@ END
     '
     EXEC(@sql)
 
+    SET @process = 'Drop function fn_RIASplitDelimited'
+    SET @sql = '
+    if exists (select * from sys.objects where object_id = OBJECT_ID(N''fn_RIASplitDelimited'') and type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
+    begin
+        DROP FUNCTION fn_RIASplitDelimited;
+    end'
+    EXEC(@sql)
+
+    SET @process = 'Create function fn_RIASplitDelimited'
+    SET @sql = '
+CREATE FUNCTION fn_RIASplitDelimited
+(   
+    @List NVARCHAR(max),
+    @SplitOn NVARCHAR(3)
+)
+RETURNS @RtnValue TABLE (
+    Id INT IDENTITY(1,1),
+    Value NVARCHAR(MAX)
+)
+AS
+BEGIN
+    DECLARE @Pos INT = 1
+    DECLARE @NextPos INT
+    DECLARE @Fragment NVARCHAR(MAX)
+
+    IF LEN(@List) = 0  -- Verificar si la lista está vacía y salir
+        RETURN
+
+    WHILE @Pos > 0
+    BEGIN
+        SET @NextPos = CHARINDEX(@SplitOn, @List, @Pos)
+        
+        IF @NextPos > 0
+        BEGIN
+            SET @Fragment = SUBSTRING(@List, @Pos, @NextPos - @Pos)
+            IF LEN(@Fragment) > 0  -- Solo insertar si el fragmento tiene longitud
+            BEGIN
+                INSERT INTO @RtnValue (Value)
+                VALUES (LTRIM(RTRIM(@Fragment)))
+            END
+            SET @Pos = @NextPos + 1
+        END
+        ELSE
+        BEGIN
+            SET @Fragment = SUBSTRING(@List, @Pos, LEN(@List) - @Pos + 1)
+            IF LEN(@Fragment) > 0
+            BEGIN
+                INSERT INTO @RtnValue (Value)
+                VALUES (LTRIM(RTRIM(@Fragment)))
+            END
+            SET @Pos = 0
+        END
+    END
+
+    RETURN
+END
+    '
+    EXEC(@sql)
+
+
 
         -------------------------------------------  END Isaac  ----------------------------------------
 

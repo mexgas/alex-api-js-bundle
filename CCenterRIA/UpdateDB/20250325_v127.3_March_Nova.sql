@@ -17238,6 +17238,10 @@ end
 	BEGIN
 		insert into relationTableColumnIdentifiers values (''OUT_INTERVAL_AM_VOICEMAIL'', ''ccCamps'', ''cam_inter_graba'')
 	END
+    ELSE
+    BEGIN
+        UPDATE relationTableColumnIdentifiers SET colunName = ''cam_inter_graba''  WHERE Identifiers = ''OUT_INTERVAL_AM_VOICEMAIL'' AND tableName = ''ccCamps''
+    END
 	'
     EXEC(@sql)
 

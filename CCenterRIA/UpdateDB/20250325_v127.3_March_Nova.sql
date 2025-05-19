@@ -12063,7 +12063,7 @@ BEGIN --save conversation Times
     SET
     conversationStatus = @conversationStatus
     , finishedBy = case when @conversationStatus in(4,10,17,18,19) then 2
-    when @conversationStatus in(11) then 1
+    when @conversationStatus in(11, 13) then 1
         else 0 end
     , tConversation =  case when @conversationStatus = 10 OR conversationDate is null then 0 else DATEDIFF(ss, conversationDate, GETDATE()) end
     ,tQueue = case when @conversationStatus = 10 then DATEDIFF(ss,requestDate,getdate()) else tQueue end
@@ -12537,7 +12537,7 @@ BEGIN --save conversation Times
     SET
     conversationStatus = @conversationStatus
     , finishedBy = case when @conversationStatus in(4,10,17,18) then 2
-    when @conversationStatus in(11) then 1
+    when @conversationStatus in(11, 13) then 1
     else 0 end
     , tConversation =  case when @conversationStatus = 10 OR conversationDate is null then 0 else DATEDIFF(ss, conversationDate, GETDATE()) end
     ,tQueue = case when @conversationStatus = 10 then DATEDIFF(ss,requestDate,getdate()) else tQueue end

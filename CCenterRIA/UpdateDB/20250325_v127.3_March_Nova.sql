@@ -3540,6 +3540,50 @@ END
     '
     EXEC(@sql)
 
+    SET @process = 'CW-9790 drop sp ccsp_WhatsappTemplatesStatus'
+    SET @sql = '
+    IF EXISTS (SELECT 1 FROM sys.procedures WHERE name = N''ccsp_WhatsappTemplatesStatus'')
+    BEGIN
+        DROP PROCEDURE ccsp_WhatsappTemplatesStatus;
+    END
+    '
+    EXEC(@sql)
+
+    SET @process = 'CW-9790 create sp ccsp_WhatsappTemplatesStatus'
+    SET @sql = '
+CREATE PROCEDURE ccsp_WhatsappTemplatesStatus
+@action as smallint,
+@messageId as bigint = 0,
+@status as varchar(30) = '',
+@notes as varchar(500) = '',
+@quality as int = 0
+
+AS
+IF(@action = 0) begin
+    DECLARE @oldStautsCW BIT
+
+    SELECT @oldStautsCW = StatusCW FROM ccMetaWAOutboundTemplates WITH(NOLOCK) WHERE Id = @messageId
+
+    UPDATE ccMetaWAOutboundTemplates 
+    SET 
+        Status = @status, 
+        notes = @notes,
+        StatusCW = CASE 
+                        WHEN @status = ''PENDING_DELETION'' THEN 0
+                        ELSE @oldStautsCW
+                    END
+    WHERE Id = @messageId
+end
+IF(@action = 1) begin
+    declare @isPendingQuality bit; 
+    select @isPendingQuality=IsPendingQuality from  ccMetaWAOutboundTemplates where Id = @messageId;
+    if(@isPendingQuality = 1) update ccMetaWAOutboundTemplates set quality = @quality, IsPendingQuality = 0 where Id = @messageId 
+    else update ccMetaWAOutboundTemplates set quality = @quality where Id = @messageId
+end
+    '
+    EXEC(@sql)
+
+
 
 
 

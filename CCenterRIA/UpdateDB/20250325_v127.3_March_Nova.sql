@@ -299,7 +299,7 @@ BEGIN
         FROM  dbo.ccMetaWAOutboundTemplates cmwot
         LEFT JOIN TemplateIsEditable tie ON tie.TemplateName = CAST(cmwot.TemplateName AS VARCHAR(MAX))
         WHERE cmwot.MetaId = @whatsAppTemplateID
-        AND cmwot.StatusCW = 1
+        AND (cmwot.StatusCW = 1 OR cmwot.Status <> ''DELETED'')
     END
     ELSE IF(@action = 10) -- Check if an other load is executing for the campaign
     BEGIN

@@ -3542,6 +3542,7 @@ END
 
 
 
+
         -------------------------------------------  END Isaac  ----------------------------------------
 
 ------------------------------------------------Begin Gaby -----------------------------------------------------------
@@ -16066,7 +16067,7 @@ IF OBJECT_ID(''tempdb..#CampLog'') IS NOT NULL DROP TABLE #CampLog
             ELSE IF(@CampType = 5 AND @isCreating = 2) DELETE FROM #ccCampsTable WHERE columnInfo NOT IN (''cam_ModoManual'', ''cam_descripcion'', ''exitAssisted'');
             ELSE IF(@CampType = 5) DELETE FROM #ccCampsTable WHERE columnInfo NOT IN (''cam_ModoManual'');
             ELSE IF(@CampType = 7) DELETE FROM #ccCampsTable WHERE columnInfo NOT IN (''messagingOrder'', ''autoStart'', ''rotativeAlgo'', ''id_anilist'', ''cam_descripcion'');
-            ELSE IF(@CampType = 9) DELETE FROM #ccCampsTable WHERE columnInfo NOT IN (''ProgDial'');
+            ELSE IF(@CampType = 9) DELETE FROM #ccCampsTable WHERE columnInfo IN (''timeZoneRule'', ''CampType'');
             ELSE DELETE FROM #ccCampsTable WHERE columnInfo IN (''previewDiscard'', ''CampType'', ''cam_fDialOnWU'', ''ProgDial'');
 
             IF(@idArea IS NULL OR @idArea = -1) SET @idArea = (SELECT [IDArea] FROM ccCamps WHERE cam_id = @cam_id)

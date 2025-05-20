@@ -3579,8 +3579,8 @@ END
 CREATE PROCEDURE ccsp_WhatsappTemplatesStatus
 @action as smallint,
 @messageId as bigint = 0,
-@status as varchar(30) = '',
-@notes as varchar(500) = '',
+@status as varchar(30) = '''',
+@notes as varchar(500) = '''',
 @quality as int = 0
 
 AS

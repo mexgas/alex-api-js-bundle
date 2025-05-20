@@ -2948,8 +2948,8 @@ BEGIN
     END
     ELSE
     BEGIN
-        SET @DateFrom = ISNULL(@DateFrom, ''1900-01-01 00:00:00'');
-		SET @DateTo = ISNULL(@DateTo, ''9999-12-31 23:59:59'');
+        SET @DateFrom = ISNULL(@DateFrom, DATEADD(HOUR, -1, @DateTo));
+		SET @DateTo = ISNULL(@DateTo, DATEADD(HOUR, DATEDIFF(HOUR, 0, GETDATE()) - 1, 0));
     END
 
     -- Create temp table

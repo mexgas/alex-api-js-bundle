@@ -39,6 +39,46 @@ BEGIN
 	BEGIN TRY
 --------------------------------------------------------BEGIN 127.20250325.0.0 Jesus Gallardo----------------------------------------------------------------------
     
+     set @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
+set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+    begin
+    DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+    end'
+EXEC(@sql)
+ 
+SET @process = 'Facturacion - Columna TemplateId en ccoWhatsLogDials.TemplateId'
+        SET @sql = 'IF NOT EXISTS (
+        SELECT * FROM sys.columns 
+        WHERE Name = ''TemplateId'' 
+        AND Object_ID = Object_ID(''dbo.ccoWhatsLogDials'')
+    )
+    BEGIN
+        ALTER TABLE dbo.ccoWhatsLogDials ADD TemplateId bigint NULL;
+    END
+'
+        EXEC(@sql)
+
+    SET @process = 'Facturacion - Columna TemplateId en ccoWhatsLogDials.IsManual'
+    SET @sql = 'IF NOT EXISTS (
+    SELECT * FROM sys.columns 
+    WHERE Name = ''IsManual'' 
+    AND Object_ID = Object_ID(''dbo.ccoWhatsLogDials'')
+)
+    BEGIN
+        ALTER TABLE dbo.ccoWhatsLogDials ADD IsManual bit NOT NULL DEFAULT 0;
+    END
+'
+        EXEC(@sql)
+ 
+set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+        begin
+        ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+        end'
+EXEC(@sql)
+
+
+
 	SET @process = 'Alter RepOutAnswAndXferCalls columna dialTimeSec de SMALLINT a INT';
 	SET @sql = '
 IF EXISTS (
@@ -2903,13 +2943,13 @@ BEGIN
 
     IF @DateFrom IS NULL AND @DateTo IS NULL
     BEGIN
-		SET @DateTo = DATEADD(HOUR, DATEDIFF(HOUR, 0, GETDATE()), 0);
+		SET @DateTo = DATEADD(HOUR, DATEDIFF(HOUR, 0, GETDATE()) - 1, 0);
 		SET @DateFrom = DATEADD(HOUR, -1, @DateTo);
     END
     ELSE
     BEGIN
-        SET @DateFrom = ISNULL(CONVERT(DATETIME, CONVERT(VARCHAR(10), @DateFrom, 120) + '' 00:00:00''), ''1900-01-01 00:00:00'');
-        SET @DateTo = ISNULL(CONVERT(DATETIME, CONVERT(VARCHAR(10), @DateTo, 120) + '' 23:59:59''), ''9999-12-31 23:59:59'');
+        SET @DateFrom = ISNULL(@DateFrom, DATEADD(HOUR, -1, @DateTo));
+		SET @DateTo = ISNULL(@DateTo, DATEADD(HOUR, DATEDIFF(HOUR, 0, GETDATE()) - 1, 0));
     END
 
     -- Create temp table

@@ -17373,7 +17373,7 @@ end
 -------------------------------------------------------- End LRSV ------------------------------------------------------
 
 -------------------------------------------------------- BEGIN Luis Zamora -------------------------------------------------------
- SET @process = 'Alter SP ccsp_RIARegistryLists  listas de carga'
+ SET @process = 'Alter SP ccsp_RIARegistryLists (se modifica action 6 para eliminar listas)'
     SET @sql = 'ALTER Procedure [dbo].[ccsp_RIARegistryLists]
 @action tinyint = 0, 
 @list_id int = 0,

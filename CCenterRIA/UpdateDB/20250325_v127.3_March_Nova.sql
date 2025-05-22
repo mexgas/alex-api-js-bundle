@@ -299,7 +299,7 @@ BEGIN
         FROM  dbo.ccMetaWAOutboundTemplates cmwot
         LEFT JOIN TemplateIsEditable tie ON tie.TemplateName = CAST(cmwot.TemplateName AS VARCHAR(MAX))
         WHERE cmwot.MetaId = @whatsAppTemplateID
-        AND cmwot.StatusCW = 1
+        AND (cmwot.StatusCW = 1 OR cmwot.Status <> ''DELETED'')
     END
     ELSE IF(@action = 10) -- Check if an other load is executing for the campaign
     BEGIN
@@ -3505,6 +3505,111 @@ BEGIN
 END
     '
     EXEC(@sql)
+
+    SET @process = 'Drop function fn_RIASplitDelimited'
+    SET @sql = '
+    if exists (select * from sys.objects where object_id = OBJECT_ID(N''fn_RIASplitDelimited'') and type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
+    begin
+        DROP FUNCTION fn_RIASplitDelimited;
+    end'
+    EXEC(@sql)
+
+    SET @process = 'Create function fn_RIASplitDelimited'
+    SET @sql = '
+CREATE FUNCTION fn_RIASplitDelimited
+(   
+    @List NVARCHAR(max),
+    @SplitOn NVARCHAR(3)
+)
+RETURNS @RtnValue TABLE (
+    Id INT IDENTITY(1,1),
+    Value NVARCHAR(MAX)
+)
+AS
+BEGIN
+    DECLARE @Pos INT = 1
+    DECLARE @NextPos INT
+    DECLARE @Fragment NVARCHAR(MAX)
+
+    IF LEN(@List) = 0  -- Verificar si la lista está vacía y salir
+        RETURN
+
+    WHILE @Pos > 0
+    BEGIN
+        SET @NextPos = CHARINDEX(@SplitOn, @List, @Pos)
+        
+        IF @NextPos > 0
+        BEGIN
+            SET @Fragment = SUBSTRING(@List, @Pos, @NextPos - @Pos)
+            IF LEN(@Fragment) > 0  -- Solo insertar si el fragmento tiene longitud
+            BEGIN
+                INSERT INTO @RtnValue (Value)
+                VALUES (LTRIM(RTRIM(@Fragment)))
+            END
+            SET @Pos = @NextPos + 1
+        END
+        ELSE
+        BEGIN
+            SET @Fragment = SUBSTRING(@List, @Pos, LEN(@List) - @Pos + 1)
+            IF LEN(@Fragment) > 0
+            BEGIN
+                INSERT INTO @RtnValue (Value)
+                VALUES (LTRIM(RTRIM(@Fragment)))
+            END
+            SET @Pos = 0
+        END
+    END
+
+    RETURN
+END
+    '
+    EXEC(@sql)
+
+    SET @process = 'CW-9790 drop sp ccsp_WhatsappTemplatesStatus'
+    SET @sql = '
+    IF EXISTS (SELECT 1 FROM sys.procedures WHERE name = N''ccsp_WhatsappTemplatesStatus'')
+    BEGIN
+        DROP PROCEDURE ccsp_WhatsappTemplatesStatus;
+    END
+    '
+    EXEC(@sql)
+
+    SET @process = 'CW-9790 create sp ccsp_WhatsappTemplatesStatus'
+    SET @sql = '
+CREATE PROCEDURE ccsp_WhatsappTemplatesStatus
+@action as smallint,
+@messageId as bigint = 0,
+@status as varchar(30) = '''',
+@notes as varchar(500) = '''',
+@quality as int = 0
+
+AS
+IF(@action = 0) begin
+    DECLARE @oldStautsCW BIT
+
+    SELECT @oldStautsCW = StatusCW FROM ccMetaWAOutboundTemplates WITH(NOLOCK) WHERE Id = @messageId
+
+    UPDATE ccMetaWAOutboundTemplates 
+    SET 
+        Status = @status, 
+        notes = @notes,
+        StatusCW = CASE 
+                        WHEN @status = ''PENDING_DELETION'' THEN 0
+                        ELSE @oldStautsCW
+                    END
+    WHERE Id = @messageId
+end
+IF(@action = 1) begin
+    declare @isPendingQuality bit; 
+    select @isPendingQuality=IsPendingQuality from  ccMetaWAOutboundTemplates where Id = @messageId;
+    if(@isPendingQuality = 1) update ccMetaWAOutboundTemplates set quality = @quality, IsPendingQuality = 0 where Id = @messageId 
+    else update ccMetaWAOutboundTemplates set quality = @quality where Id = @messageId
+end
+    '
+    EXEC(@sql)
+
+
+
 
 
         -------------------------------------------  END Isaac  ----------------------------------------
@@ -12027,7 +12132,7 @@ BEGIN --save conversation Times
     SET
     conversationStatus = @conversationStatus
     , finishedBy = case when @conversationStatus in(4,10,17,18,19) then 2
-    when @conversationStatus in(11) then 1
+    when @conversationStatus in(11, 13) then 1
         else 0 end
     , tConversation =  case when @conversationStatus = 10 OR conversationDate is null then 0 else DATEDIFF(ss, conversationDate, GETDATE()) end
     ,tQueue = case when @conversationStatus = 10 then DATEDIFF(ss,requestDate,getdate()) else tQueue end
@@ -12195,7 +12300,9 @@ END;
 
 Else IF @action = 11
 BEGIN --register desconnection agent by conversationID
-    exec ccsp_ConversationWASaveOut @action = 9, @conversationId=@conversationId
+    UPDATE ccLastMessageAgentByConversationOut
+	SET desconnectionAgent = getDate()
+	WHERE conversationId = @conversationId;
 END;
 
 else IF @action = 12  BEGIN --Obtain conversationsWA post MCS reset
@@ -12499,7 +12606,7 @@ BEGIN --save conversation Times
     SET
     conversationStatus = @conversationStatus
     , finishedBy = case when @conversationStatus in(4,10,17,18) then 2
-    when @conversationStatus in(11) then 1
+    when @conversationStatus in(11, 13) then 1
     else 0 end
     , tConversation =  case when @conversationStatus = 10 OR conversationDate is null then 0 else DATEDIFF(ss, conversationDate, GETDATE()) end
     ,tQueue = case when @conversationStatus = 10 then DATEDIFF(ss,requestDate,getdate()) else tQueue end
@@ -16029,7 +16136,7 @@ IF OBJECT_ID(''tempdb..#CampLog'') IS NOT NULL DROP TABLE #CampLog
             ELSE IF(@CampType = 5 AND @isCreating = 2) DELETE FROM #ccCampsTable WHERE columnInfo NOT IN (''cam_ModoManual'', ''cam_descripcion'', ''exitAssisted'');
             ELSE IF(@CampType = 5) DELETE FROM #ccCampsTable WHERE columnInfo NOT IN (''cam_ModoManual'');
             ELSE IF(@CampType = 7) DELETE FROM #ccCampsTable WHERE columnInfo NOT IN (''messagingOrder'', ''autoStart'', ''rotativeAlgo'', ''id_anilist'', ''cam_descripcion'');
-            ELSE IF(@CampType = 9) DELETE FROM #ccCampsTable WHERE columnInfo NOT IN (''ProgDial'');
+            ELSE IF(@CampType = 9) DELETE FROM #ccCampsTable WHERE columnInfo IN (''timeZoneRule'', ''CampType'');
             ELSE DELETE FROM #ccCampsTable WHERE columnInfo IN (''previewDiscard'', ''CampType'', ''cam_fDialOnWU'', ''ProgDial'');
 
             IF(@idArea IS NULL OR @idArea = -1) SET @idArea = (SELECT [IDArea] FROM ccCamps WHERE cam_id = @cam_id)
@@ -17200,6 +17307,10 @@ end
 	BEGIN
 		insert into relationTableColumnIdentifiers values (''OUT_INTERVAL_AM_VOICEMAIL'', ''ccCamps'', ''cam_inter_graba'')
 	END
+    ELSE
+    BEGIN
+        UPDATE relationTableColumnIdentifiers SET colunName = ''cam_inter_graba''  WHERE Identifiers = ''OUT_INTERVAL_AM_VOICEMAIL'' AND tableName = ''ccCamps''
+    END
 	'
     EXEC(@sql)
 

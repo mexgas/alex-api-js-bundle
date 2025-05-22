@@ -70,7 +70,7 @@ SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_MetaWAOutboundTemplates]
 @TemplateName varchar(512) = NULL,
 @AllowCategoryChange tinyint = NULL,
 @LanguageCode varchar(10)= NULL,
-@Status varchar(200)= NULL, 
+@Status varchar(200)= NULL,
 @header nvarchar(max)= null,
 @body nvarchar(max) = null,
 @footer nvarchar(max) = null,
@@ -2685,6 +2685,62 @@ SET @process = 'CW-9242 DROP PROCEDURE ccsp_GalateaAreas'
             insert into ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) 
             values (''T&SET_MAX_WHATS'', ''Conversaciones de WhatsApp de entrada por agente'', ''Inbound WhatsApp conversations per agent'', ''Conversas de WhatsApp de entrada por agente'')
         END'
+    EXEC(@sql)
+
+	SET @process = 'CW-9166 DROP PROCEDURE ccsp_OutboundMultimediaCommon'
+    SET @sql = '
+    if exists (select * from sys.procedures where name = N''ccsp_OutboundMultimediaCommon'')
+    begin
+        DROP PROCEDURE ccsp_OutboundMultimediaCommon
+    end'
+    EXEC(@sql)
+
+	SET @process = 'Obtención de id global para cuando se reabre conversación de salida'
+    SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_OutboundMultimediaCommon] 
+                    @Action INT,
+                    @ConversationId INT = NULL
+                    AS
+                    BEGIN
+                    SET NOCOUNT ON;
+
+                        IF @Action = 0 -- Get WhatsApp Campaigns List
+                        BEGIN 
+                            SELECT CAST(campaigns.cam_id AS INT) AS Id,
+                                   campaigns.cam_descripcion AS Name,
+                                   waNumbers.number AS Phone,
+                                   5 as [Type]
+                            FROM ccCamps campaigns
+                            INNER JOIN ccWhatsAppNumbers waNumbers
+                            ON campaigns.cam_id = waNumbers.camp_id
+                            WHERE campaigns.CampType = 5 AND waNumbers.status = 1
+                            ORDER BY campaigns.cam_id 
+                        END
+
+                        ELSE IF @Action = 1 -- Get Outbound WhatsApp conversation by conversation id
+                        BEGIN 
+                            DECLARE @ServiceType VARCHAR(20) = ''whatsapp''
+							DECLARE @ClientId VARCHAR(20), @PhoneCamp VARCHAR(20)
+
+							SELECT @ClientId = clientId, @PhoneCamp = phoneCamp FROM ccWhatsAppConversationsOut WHERE conversationId = @ConversationId
+
+							SELECT 
+								c.conversationId AS ConversationID,
+								c.clientId AS ClientId,
+								c.phoneCamp AS CampaignPhone,
+								c.agentId AS AgentId,
+								@ServiceType AS ServiceType,
+								c.requestDate AS InitialTime,
+								(SELECT TOP 1 Category 
+								 FROM ccWhatsAppGlobalIds
+								 WHERE ClientNumber = @ClientId 
+								   AND AssociatedNumber = @PhoneCamp
+								   AND FirstMessageConversationTypeFromAgent = 1
+								 ORDER BY FirstMessageDateFromAgent DESC
+								)AS TemplateCategory
+							FROM ccWhatsAppConversationsOut c
+							WHERE c.conversationId = @ConversationId
+						END
+					END'
     EXEC(@sql)
     -----------------------------------------------  END David  ---------------------------------------------------
 

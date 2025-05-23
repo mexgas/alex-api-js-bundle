@@ -172,7 +172,7 @@ insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'me
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'messageUnAssigned',@idInt,0)
 
 set @idInt=@idInt+1
-insert into publicationTableCCenterRIA(publicationName,status) values(N'ConvrWhatsApp',0)	
+insert into publicationTableCCenterRIA(publicationName,status) values(N'ConverWhatsApp',0)	
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccWhatsAppConversations',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccWhatsAppSpam',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccWAMessagesConversations',@idInt,0)
@@ -232,7 +232,7 @@ insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'Chats'
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'ConversationMail',0)
 
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'AVRSGraphs',0)
-insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'ConvrWhatsApp',0)
+insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'ConverWhatsApp',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'ConvrWhatsAppOut',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'SMS',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'AuxiliarReady',0)

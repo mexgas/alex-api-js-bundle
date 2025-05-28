@@ -70,7 +70,7 @@ SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_MetaWAOutboundTemplates]
 @TemplateName varchar(512) = NULL,
 @AllowCategoryChange tinyint = NULL,
 @LanguageCode varchar(10)= NULL,
-@Status varchar(200)= NULL, 
+@Status varchar(200)= NULL,
 @header nvarchar(max)= null,
 @body nvarchar(max) = null,
 @footer nvarchar(max) = null,
@@ -299,7 +299,7 @@ BEGIN
         FROM  dbo.ccMetaWAOutboundTemplates cmwot
         LEFT JOIN TemplateIsEditable tie ON tie.TemplateName = CAST(cmwot.TemplateName AS VARCHAR(MAX))
         WHERE cmwot.MetaId = @whatsAppTemplateID
-        AND cmwot.StatusCW = 1
+        AND (cmwot.StatusCW = 1 OR cmwot.Status <> ''DELETED'')
     END
     ELSE IF(@action = 10) -- Check if an other load is executing for the campaign
     BEGIN
@@ -1020,10 +1020,35 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
         END
     END'
         EXEC(@sql)
-    -----------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------
 
-    ---------------------------------------------  BEGIN David  ---------------------------------------------------
 ---------------------------------------------  BEGIN David  ---------------------------------------------------
+    SET @process = 'Delete Index IX_TimeSpam_PhoneClient_PhoneWa'
+    SET @sql = 'IF EXISTS (
+					SELECT 1
+					FROM sys.indexes
+					WHERE name = ''IX_TimeSpam_PhoneClient_PhoneWa''
+					  AND object_id = OBJECT_ID(''dbo.ccoWhatsLogDials'')
+				)
+				BEGIN
+					DROP INDEX IX_TimeSpam_PhoneClient_PhoneWa ON dbo.ccoWhatsLogDials;
+				END'
+    EXEC(@sql)
+
+	SET @process = 'Creating Index IX_ccoWhatsLogDials_PhoneWa_PhoneClient_TimeSpam'
+    SET @sql = 'IF NOT EXISTS (
+					SELECT 1
+					FROM sys.indexes
+					WHERE name = ''IX_ccoWhatsLogDials_PhoneWa_PhoneClient_TimeSpam''
+					  AND object_id = OBJECT_ID(''dbo.ccoWhatsLogDials'')
+				)
+				BEGIN
+					CREATE NONCLUSTERED INDEX IX_ccoWhatsLogDials_PhoneWa_PhoneClient_TimeSpam
+					ON dbo.ccoWhatsLogDials (PhoneWa, PhoneClient, TimeSpam)
+					INCLUDE (answered, isManual);
+				END'
+    EXEC(@sql)
+
     SET @process = 'CW-9166 DROP PROCEDURE ccsp_WhatsAppConversationHistory'
     SET @sql = '
     if exists (select * from sys.procedures where name = N''ccsp_WhatsAppConversationHistory'')
@@ -2099,7 +2124,7 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
         SET @TimeThreshold = DATEADD(hour, -23, GETDATE());
 
 
-        IF EXISTS (SELECT 1 FROM ccWhatsAppGlobalIds WHERE AssociatedNumber = @CamNumber AND ClientNumber = @ClientNumber AND @ActualTime <= DATEADD(HOUR, 24, FirstMessageDateFromAgent))
+        IF EXISTS (SELECT TOP 1 1 FROM ccWhatsAppGlobalIds WHERE AssociatedNumber = @CamNumber AND ClientNumber = @ClientNumber AND @ActualTime <= DATEADD(HOUR, 24, FirstMessageDateFromAgent))
         BEGIN  
             SET @ReopenConversationButtonResponse = ''REOPEN_CONVERSATION'';
         END
@@ -2110,9 +2135,9 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
 
         IF @CamType = 0
         BEGIN
-            IF EXISTS (SELECT 1 FROM ccWhatsAppConversations WHERE InboundId = @CamId AND phoneACD = @CamNumber AND clientId = @ClientNumber AND conversationStatus = 2 AND (agentId = @agentId OR agentId <> @agentId))
+            IF EXISTS (SELECT TOP 1 1 FROM ccWhatsAppConversations WHERE InboundId = @CamId AND phoneACD = @CamNumber AND clientId = @ClientNumber AND conversationStatus = 2)
             BEGIN
-                SELECT TOP 1 @ConvId = ConversationId FROM ccWhatsAppConversations WHERE InboundId = @CamId  AND phoneACD = @CamNumber  AND clientId = @ClientNumber  AND conversationStatus = 2  AND (agentId = @agentId OR agentId <> @agentId);
+                SELECT TOP 1 @ConvId = ConversationId FROM ccWhatsAppConversations WHERE InboundId = @CamId  AND phoneACD = @CamNumber  AND clientId = @ClientNumber  AND conversationStatus = 2;
                 SELECT @AgentName = u.Nombres FROM ccWhatsAppConversations c
                                                 INNER JOIN ccusers u ON c.agentId = u.User_id 
                                                 WHERE c.ConversationId = @ConvId;
@@ -2132,7 +2157,7 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
 
             IF @ReopenConversationButtonResponse = ''REOPEN_CONVERSATION_WITH_TEMPLATE''
             BEGIN
-                IF EXISTS (SELECT 1 FROM ccoWhatsLogDials WITH (NOLOCK, INDEX(IX_TimeSpam_PhoneClient_PhoneWa)) WHERE TimeSpam >= @TimeThreshold AND PhoneWa = @CamNumber AND PhoneClient = @ClientNumber AND answered = 0)
+                IF EXISTS (SELECT 1 FROM ccoWhatsLogDials WITH (NOLOCK, INDEX(IX_ccoWhatsLogDials_PhoneWa_PhoneClient_TimeSpam)) WHERE TimeSpam >= @TimeThreshold AND PhoneWa = @CamNumber AND PhoneClient = @ClientNumber AND answered = 0 AND isManual = 0)
                 BEGIN
                     SELECT ''CONVERSATION_SENT_IN_BULK_IN_COURSE'' AS ReopenConversationButtonResponse,
                                        ''N/A'' AS AgentName;
@@ -2146,9 +2171,9 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
 
         IF @CamType = 1
         BEGIN
-            IF EXISTS (SELECT 1 FROM ccWhatsAppConversationsOut WHERE camId = @CamId AND phoneCamp = @CamNumber AND clientId = @ClientNumber AND conversationStatus = 2 AND (agentId = @agentId OR agentId <> @agentId))
+            IF EXISTS (SELECT TOP 1 1 FROM ccWhatsAppConversationsOut WHERE camId = @CamId AND phoneCamp = @CamNumber AND clientId = @ClientNumber AND conversationStatus = 2)
             BEGIN
-                SELECT TOP 1 @ConvId = ConversationId FROM ccWhatsAppConversationsOut WHERE camId = @CamId  AND phoneCamp = @CamNumber  AND clientId = @ClientNumber  AND conversationStatus = 2  AND (agentId = @agentId OR agentId <> @agentId);
+                SELECT TOP 1 @ConvId = ConversationId FROM ccWhatsAppConversationsOut WHERE camId = @CamId  AND phoneCamp = @CamNumber  AND clientId = @ClientNumber  AND conversationStatus = 2;
                 SELECT @AgentName = u.Nombres FROM ccWhatsAppConversationsOut c
                                               INNER JOIN ccusers u ON c.agentId = u.User_id 
                                               WHERE c.ConversationId = @ConvId;
@@ -2157,7 +2182,7 @@ CREATE PROCEDURE ccsp_RIAGetAveTimeEspec
                 RETURN(0);
             END
 
-            IF EXISTS (SELECT 1 FROM ccoWhatsLogDials WITH (NOLOCK, INDEX(IX_TimeSpam_PhoneClient_PhoneWa)) WHERE TimeSpam >= @TimeThreshold AND PhoneWa = @CamNumber AND PhoneClient = @ClientNumber AND answered = 0)
+            IF EXISTS (SELECT TOP 1 1 FROM ccoWhatsLogDials WITH (NOLOCK, INDEX(IX_ccoWhatsLogDials_PhoneWa_PhoneClient_TimeSpam)) WHERE TimeSpam >= @TimeThreshold AND PhoneWa = @CamNumber AND PhoneClient = @ClientNumber AND answered = 0 AND isManual = 0)
             BEGIN
                 SELECT ''CONVERSATION_SENT_IN_BULK_IN_COURSE'' AS ReopenConversationButtonResponse,
                 ''N/A'' AS AgentName;
@@ -2660,6 +2685,62 @@ SET @process = 'CW-9242 DROP PROCEDURE ccsp_GalateaAreas'
             insert into ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) 
             values (''T&SET_MAX_WHATS'', ''Conversaciones de WhatsApp de entrada por agente'', ''Inbound WhatsApp conversations per agent'', ''Conversas de WhatsApp de entrada por agente'')
         END'
+    EXEC(@sql)
+
+	SET @process = 'CW-9166 DROP PROCEDURE ccsp_OutboundMultimediaCommon'
+    SET @sql = '
+    if exists (select * from sys.procedures where name = N''ccsp_OutboundMultimediaCommon'')
+    begin
+        DROP PROCEDURE ccsp_OutboundMultimediaCommon
+    end'
+    EXEC(@sql)
+
+	SET @process = 'Obtención de id global para cuando se reabre conversación de salida'
+    SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_OutboundMultimediaCommon] 
+                    @Action INT,
+                    @ConversationId INT = NULL
+                    AS
+                    BEGIN
+                    SET NOCOUNT ON;
+
+                        IF @Action = 0 -- Get WhatsApp Campaigns List
+                        BEGIN 
+                            SELECT CAST(campaigns.cam_id AS INT) AS Id,
+                                   campaigns.cam_descripcion AS Name,
+                                   waNumbers.number AS Phone,
+                                   5 as [Type]
+                            FROM ccCamps campaigns
+                            INNER JOIN ccWhatsAppNumbers waNumbers
+                            ON campaigns.cam_id = waNumbers.camp_id
+                            WHERE campaigns.CampType = 5 AND waNumbers.status = 1
+                            ORDER BY campaigns.cam_id 
+                        END
+
+                        ELSE IF @Action = 1 -- Get Outbound WhatsApp conversation by conversation id
+                        BEGIN 
+                            DECLARE @ServiceType VARCHAR(20) = ''whatsapp''
+							DECLARE @ClientId VARCHAR(20), @PhoneCamp VARCHAR(20)
+
+							SELECT @ClientId = clientId, @PhoneCamp = phoneCamp FROM ccWhatsAppConversationsOut WHERE conversationId = @ConversationId
+
+							SELECT 
+								c.conversationId AS ConversationID,
+								c.clientId AS ClientId,
+								c.phoneCamp AS CampaignPhone,
+								c.agentId AS AgentId,
+								@ServiceType AS ServiceType,
+								c.requestDate AS InitialTime,
+								(SELECT TOP 1 Category 
+								 FROM ccWhatsAppGlobalIds
+								 WHERE ClientNumber = @ClientId 
+								   AND AssociatedNumber = @PhoneCamp
+								   AND FirstMessageConversationTypeFromAgent = 1
+								 ORDER BY FirstMessageDateFromAgent DESC
+								)AS TemplateCategory
+							FROM ccWhatsAppConversationsOut c
+							WHERE c.conversationId = @ConversationId
+						END
+					END'
     EXEC(@sql)
     -----------------------------------------------  END David  ---------------------------------------------------
 
@@ -3480,6 +3561,111 @@ BEGIN
 END
     '
     EXEC(@sql)
+
+    SET @process = 'Drop function fn_RIASplitDelimited'
+    SET @sql = '
+    if exists (select * from sys.objects where object_id = OBJECT_ID(N''fn_RIASplitDelimited'') and type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
+    begin
+        DROP FUNCTION fn_RIASplitDelimited;
+    end'
+    EXEC(@sql)
+
+    SET @process = 'Create function fn_RIASplitDelimited'
+    SET @sql = '
+CREATE FUNCTION fn_RIASplitDelimited
+(   
+    @List NVARCHAR(max),
+    @SplitOn NVARCHAR(3)
+)
+RETURNS @RtnValue TABLE (
+    Id INT IDENTITY(1,1),
+    Value NVARCHAR(MAX)
+)
+AS
+BEGIN
+    DECLARE @Pos INT = 1
+    DECLARE @NextPos INT
+    DECLARE @Fragment NVARCHAR(MAX)
+
+    IF LEN(@List) = 0  -- Verificar si la lista está vacía y salir
+        RETURN
+
+    WHILE @Pos > 0
+    BEGIN
+        SET @NextPos = CHARINDEX(@SplitOn, @List, @Pos)
+        
+        IF @NextPos > 0
+        BEGIN
+            SET @Fragment = SUBSTRING(@List, @Pos, @NextPos - @Pos)
+            IF LEN(@Fragment) > 0  -- Solo insertar si el fragmento tiene longitud
+            BEGIN
+                INSERT INTO @RtnValue (Value)
+                VALUES (LTRIM(RTRIM(@Fragment)))
+            END
+            SET @Pos = @NextPos + 1
+        END
+        ELSE
+        BEGIN
+            SET @Fragment = SUBSTRING(@List, @Pos, LEN(@List) - @Pos + 1)
+            IF LEN(@Fragment) > 0
+            BEGIN
+                INSERT INTO @RtnValue (Value)
+                VALUES (LTRIM(RTRIM(@Fragment)))
+            END
+            SET @Pos = 0
+        END
+    END
+
+    RETURN
+END
+    '
+    EXEC(@sql)
+
+    SET @process = 'CW-9790 drop sp ccsp_WhatsappTemplatesStatus'
+    SET @sql = '
+    IF EXISTS (SELECT 1 FROM sys.procedures WHERE name = N''ccsp_WhatsappTemplatesStatus'')
+    BEGIN
+        DROP PROCEDURE ccsp_WhatsappTemplatesStatus;
+    END
+    '
+    EXEC(@sql)
+
+    SET @process = 'CW-9790 create sp ccsp_WhatsappTemplatesStatus'
+    SET @sql = '
+CREATE PROCEDURE ccsp_WhatsappTemplatesStatus
+@action as smallint,
+@messageId as bigint = 0,
+@status as varchar(30) = '''',
+@notes as varchar(500) = '''',
+@quality as int = 0
+
+AS
+IF(@action = 0) begin
+    DECLARE @oldStautsCW BIT
+
+    SELECT @oldStautsCW = StatusCW FROM ccMetaWAOutboundTemplates WITH(NOLOCK) WHERE Id = @messageId
+
+    UPDATE ccMetaWAOutboundTemplates 
+    SET 
+        Status = @status, 
+        notes = @notes,
+        StatusCW = CASE 
+                        WHEN @status = ''PENDING_DELETION'' THEN 0
+                        ELSE @oldStautsCW
+                    END
+    WHERE Id = @messageId
+end
+IF(@action = 1) begin
+    declare @isPendingQuality bit; 
+    select @isPendingQuality=IsPendingQuality from  ccMetaWAOutboundTemplates where Id = @messageId;
+    if(@isPendingQuality = 1) update ccMetaWAOutboundTemplates set quality = @quality, IsPendingQuality = 0 where Id = @messageId 
+    else update ccMetaWAOutboundTemplates set quality = @quality where Id = @messageId
+end
+    '
+    EXEC(@sql)
+
+
+
 
 
         -------------------------------------------  END Isaac  ----------------------------------------
@@ -12002,7 +12188,7 @@ BEGIN --save conversation Times
     SET
     conversationStatus = @conversationStatus
     , finishedBy = case when @conversationStatus in(4,10,17,18,19) then 2
-    when @conversationStatus in(11) then 1
+    when @conversationStatus in(11, 13) then 1
         else 0 end
     , tConversation =  case when @conversationStatus = 10 OR conversationDate is null then 0 else DATEDIFF(ss, conversationDate, GETDATE()) end
     ,tQueue = case when @conversationStatus = 10 then DATEDIFF(ss,requestDate,getdate()) else tQueue end
@@ -12170,7 +12356,9 @@ END;
 
 Else IF @action = 11
 BEGIN --register desconnection agent by conversationID
-    exec ccsp_ConversationWASaveOut @action = 9, @conversationId=@conversationId
+    UPDATE ccLastMessageAgentByConversationOut
+	SET desconnectionAgent = getDate()
+	WHERE conversationId = @conversationId;
 END;
 
 else IF @action = 12  BEGIN --Obtain conversationsWA post MCS reset
@@ -12474,7 +12662,7 @@ BEGIN --save conversation Times
     SET
     conversationStatus = @conversationStatus
     , finishedBy = case when @conversationStatus in(4,10,17,18) then 2
-    when @conversationStatus in(11) then 1
+    when @conversationStatus in(11, 13) then 1
     else 0 end
     , tConversation =  case when @conversationStatus = 10 OR conversationDate is null then 0 else DATEDIFF(ss, conversationDate, GETDATE()) end
     ,tQueue = case when @conversationStatus = 10 then DATEDIFF(ss,requestDate,getdate()) else tQueue end
@@ -15063,7 +15251,6 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns]
 '
  EXEC(@sql);
 
-
   --------------------------------------------------- END Juan Medina  -------------------------------------------------------------
 
 
@@ -15789,7 +15976,7 @@ IF OBJECT_ID(''tempdb..#CampLog'') IS NOT NULL DROP TABLE #CampLog
     SET @process = 'Se agrega validacion para LISTAS ANI
     Se agrega validacion de identificador nulo en el insert a ccGalateaActivityLog: WHERE CCCT.identifierInfo IS NOT NULL;'
 
-    SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
+    SET @sql = 'CREATE PROCEDURE ccsp_RIAUpdateCamConfig
     @cam_id smallint,
     @cam_descripcion varchar(40) = null,
     @cam_tnotas smallint = null,
@@ -15947,14 +16134,14 @@ IF OBJECT_ID(''tempdb..#CampLog'') IS NOT NULL DROP TABLE #CampLog
                         END
                     WHEN @CampType is not null THEN @CampType 
                     WHEN @progDial = 2 THEN 6 
-                    WHEN @progDial IS NOT NULL AND @progDial <> 2 THEN 0 
+                    WHEN @progDial IS NOT NULL AND @progDial <> 2 and @CampType is not null THEN 0 
                     WHEN CampType is not null THEN CampType ELSE 0 END),
         selectRotativeANI = isnull(@selectRotativeANI, selectRotativeANI),
         messagingOrder = isnull(@messagingorder, messagingOrder),
         autoStart = isnull(@autoStart,autoStart),
         recordHold = isnull(@recordHold, recordHold),
-    CamCanceled = ISNULL(@camCanceled, CamCanceled),
-    recordIvr = isnull(@recordIvr, recordIvr)
+        CamCanceled = ISNULL(@camCanceled, CamCanceled),
+        recordIvr = isnull(@recordIvr, recordIvr)
 
         Where cam_id = @cam_id
 
@@ -16005,6 +16192,7 @@ IF OBJECT_ID(''tempdb..#CampLog'') IS NOT NULL DROP TABLE #CampLog
             ELSE IF(@CampType = 5 AND @isCreating = 2) DELETE FROM #ccCampsTable WHERE columnInfo NOT IN (''cam_ModoManual'', ''cam_descripcion'', ''exitAssisted'');
             ELSE IF(@CampType = 5) DELETE FROM #ccCampsTable WHERE columnInfo NOT IN (''cam_ModoManual'');
             ELSE IF(@CampType = 7) DELETE FROM #ccCampsTable WHERE columnInfo NOT IN (''messagingOrder'', ''autoStart'', ''rotativeAlgo'', ''id_anilist'', ''cam_descripcion'');
+            ELSE IF(@CampType = 9) DELETE FROM #ccCampsTable WHERE columnInfo IN (''timeZoneRule'', ''CampType'');
             ELSE DELETE FROM #ccCampsTable WHERE columnInfo IN (''previewDiscard'', ''CampType'', ''cam_fDialOnWU'', ''ProgDial'');
 
             IF(@idArea IS NULL OR @idArea = -1) SET @idArea = (SELECT [IDArea] FROM ccCamps WHERE cam_id = @cam_id)
@@ -17175,10 +17363,224 @@ end
 	BEGIN
 		insert into relationTableColumnIdentifiers values (''OUT_INTERVAL_AM_VOICEMAIL'', ''ccCamps'', ''cam_inter_graba'')
 	END
+    ELSE
+    BEGIN
+        UPDATE relationTableColumnIdentifiers SET colunName = ''cam_inter_graba''  WHERE Identifiers = ''OUT_INTERVAL_AM_VOICEMAIL'' AND tableName = ''ccCamps''
+    END
 	'
     EXEC(@sql)
 
 -------------------------------------------------------- End LRSV ------------------------------------------------------
+
+-------------------------------------------------------- BEGIN Luis Zamora -------------------------------------------------------
+ SET @process = 'Alter SP ccsp_RIARegistryLists (se modifica action 6 para eliminar listas)'
+    SET @sql = 'ALTER Procedure [dbo].[ccsp_RIARegistryLists]
+@action tinyint = 0, 
+@list_id int = 0,
+@cam_id smallint = 0,
+@name varchar(80) = '''',
+@status tinyint = 0,
+@sequence smallint = 0,
+@load_id int = 0,
+@listIds VARCHAR(MAX) = '''',
+@sequences VARCHAR(MAX) = ''''
+
+AS
+
+--Status lista 0: inactiva, 1:pausa, 2:procesar
+
+--Insert
+IF @action = 1 begin
+
+    IF @cam_id <> 0 begin
+        select @sequence = isnull(max( sequence ),0) from ccRIARegistryLists where cam_id = @cam_id
+        set @sequence = @sequence + 1
+        Insert into ccRIARegistryLists(cam_id,name,status,sequence) values (@cam_id, @name, 2, @sequence)
+        select max(list_id) from ccRIARegistryLists
+    end
+end
+
+--Update sequence
+IF @action = 2 begin
+    
+    declare @oldSeq as int
+    select @oldSeq = sequence, @cam_id = cam_id from ccRIARegistryLists where list_id = @list_id
+
+    if @oldSeq <> @sequence begin
+        
+        if @oldSeq > @sequence begin
+            update ccRIARegistryLists set sequence = sequence + 1 where cam_id = @cam_id and sequence >= @sequence and sequence < @oldSeq
+        end
+
+        if @oldSeq < @sequence begin
+            update ccRIARegistryLists set sequence = sequence - 1 where cam_id = @cam_id and sequence <= @sequence and sequence > @oldSeq
+        end
+
+        update ccRIARegistryLists set sequence = @sequence where list_id = @list_id
+
+    end
+
+end
+
+--Change status
+IF @action = 3 begin
+    
+    update ccRIARegistryLists set status = @status where list_id = @list_id
+    SELECT 200 as ReturnValue
+
+end
+
+-- lista campañas y listas de registros
+IF @action = 4 begin
+    select a.cam_id, b.cam_descripcion, count(list_id) as NoListas, c.graphic_id as Frame 
+    from ccRIARegistryLists a  with(nolock)
+    left join cccamps b on a.cam_id = b.cam_id
+    left join ccRIACampsGraph c on a.cam_id = c.cam_id
+    where b.cam_activo = 1 and a.cam_id in ( select distinct(cam_id) from ccRIARegistryLists ) 
+    group by a.cam_id,b.cam_descripcion,c.graphic_id order by a.cam_id asc
+
+end
+
+-- listas de registros y no. registros
+IF @action = 5 
+begin
+    select a.list_id,a.name,count(b.list_id) as NoRegistros,a.sequence   
+    from ccRIARegistryLists a with(index(IX_ccRIARegistryLists_1),nolock) 
+    left join ccocallsoutsource b with(index(IX_ccoCallsOutSource_13),nolock) 
+    on b.cam_id = @cam_id and a.list_id = b.list_id 
+    where a.status > 0 and a.cam_id = @cam_id and status > 0 
+    group by a.list_id,a.name,a.sequence 
+    order by a.sequence
+end
+
+-- borrar lista
+IF @action = 6 begin
+    DECLARE @listName Varchar(255);
+    DECLARE @campaignStatus BIT;
+    CREATE TABLE #DummyTable (Columna1 INT);
+
+    select @cam_id = cam_id, @listName = name from ccRIARegistryLists where list_id = @list_id
+    select @sequence = max(sequence) from ccRIARegistryLists where cam_id = @cam_id
+    SELECT @campaignStatus = cam_procesando FROM ccCamps WHERE cam_id = @cam_id;
+
+    IF @campaignStatus = 0
+    BEGIN
+        INSERT INTO #DummyTable
+        exec ccsp_RIARegistryLists @action = 3, @status = 0, @list_id = @list_id
+
+        --delete new records in workingTable by camp_id and list_id
+        delete ccoWorkingTable where cam_id = @cam_id and cal_status = 0 AND list_id = @list_id
+
+        --delete callbacks by camp_id and list_id
+        delete from ccRIAUpdateCallBack_Abandon where callout_id in(
+        SELECT callout_id from ccoWorkingTable with(nolock) where cam_id = @cam_id and cal_status = 1 AND list_id = @list_id)
+        delete ccoWorkingTable where cam_id = @cam_id and cal_status = 1 AND list_id = @list_id
+
+        exec ccsp_RIARegistryLists @action = 2, @sequence = @sequence, @list_id = @list_id
+        SELECT 200 as StatusCode, @listName as ListName
+    END
+    ELSE
+    BEGIN
+        SELECT -8 as StatusCode,'''' as ListName
+    END
+end
+
+-- Detalle de numero de registros
+IF @action = 7 begin
+
+    declare @total as int
+    declare @countWorkingtable as int
+
+    select @total = count(*) from ccocallsoutsource where list_id = @list_id
+    select @total = (@total - count(*)) from ccoworkingtable where list_id = @list_id
+
+    if exists(select list_id from ccoWorkingTable where list_id = @list_id) begin
+        select @status = status from ccRIARegistryLists where list_id = @list_id
+        select @list_id as list_id,cast(cam_id as smallint) as cam_id, @status as status,
+            count(case cal_status when 0 then 1 else null end) as New,
+            count(case cal_status when 1 then 1 else null end) as CB,
+            count(case cal_status when 2 then 1 else null end) as Pro, 
+            @total as Fin
+        from ccoWorkingTable where list_id = @list_id group by cam_id
+    end
+    ELSE begin
+        select list_id, cam_id, status, 
+        0 as New,
+        0 as CB,
+        0 as Pro,
+        0 as Fin
+        from ccRIARegistryLists where list_id = @list_id
+    end
+
+
+end
+
+-- Cambia de nombre a la lista
+IF @action = 8 begin
+    
+    update ccRIARegistryLists set name = @name where list_id = @list_id
+
+end
+
+-- Borra listas sin registros y reordena las listas
+IF @action = 9 begin
+
+    Create table #TempRegs(
+        list_id int,
+        [name] varchar(100),
+        NoRegistros int,
+        sequence int)
+
+    insert into #TempRegs 
+        select a.list_id,a.name,count(b.list_id) as NoRegistros,a.sequence 
+        from ccRIARegistryLists a with(index(IX_ccRIARegistryLists_1),nolock)
+        left join ccocallsoutsource b with(index(IX_ccoCallsOutSource_14),nolock)
+        on a.list_id = b.list_id
+        where a.status > 0 and a.cam_id = @cam_id and status > 0 
+        group by a.list_id,a.name,a.sequence,a.status order by a.sequence
+
+    while ( exists( select list_id from #TempRegs where NoRegistros = 0 ) ) begin
+        declare @listToDelete as int
+        select top 1 @listToDelete = list_id from #TempRegs where NoRegistros = 0
+        exec ccsp_RIARegistryLists @action = 6, @list_id = @listToDelete
+        delete from #TempRegs where list_id =  @listToDelete
+    end
+
+    drop table #TempRegs
+    
+    select @sequence=min(sequence) from ccRIARegistryLists where  cam_id = @cam_id and status = 0 
+
+    select @list_id= list_id from ccRIARegistryLists where sequence =(
+    select  max(sequence) as sequence from ccRIARegistryLists where  cam_id = @cam_id and status > 0 ) and cam_id = @cam_id
+    update ccRIALoading set list_id = @list_id where load_id=@load_id
+    exec ccsp_RIARegistryLists @action=2,@list_id=@list_id,@sequence=@sequence
+
+    end
+    --- Actualizar orden de las listas ------------
+    IF @action = 9 begin
+
+
+    DECLARE @list_Ids TABLE (i int, ListId int)
+    insert @list_Ids select * from dbo.fn_RIASplitDelimited (@listIds, '','') 
+
+    DECLARE @list_sequence TABLE (i int, ListSecuence int)
+    insert @list_sequence  select * from dbo.fn_RIASplitDelimited (@sequences, '','') 
+
+
+    declare @i int, @n int, @idList int, @secuence int 
+    select @i = 1 , @n = COUNT(ListId) from @list_Ids
+    while (@i <= @n)
+        begin
+            select @secuence = ListSecuence from @list_sequence where i = @i 
+            select @idList = ListId from @list_Ids where i = @i 
+            update ccRIARegistryLists set sequence=@secuence where list_id=@idList 
+            set @i = @i + 1
+        end
+    select 1
+    end'
+    EXEC(@sql)
+
+-------------------------------------------------------- END Luis Zamora ---------------------------------------------------------
 
 
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */

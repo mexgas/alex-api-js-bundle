@@ -189,7 +189,7 @@ insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'cc
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccWhatsAppGlobalIdsRelationship',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccMetaWAOutboundTemplates',@idInt,0)	
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccWhatsAppOutSource',@idInt,0)	
-insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccOWhatsLogDials',@idInt,0)
+insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccoWhatsLogDials',@idInt,0)
 
 
 set @idInt=@idInt+1

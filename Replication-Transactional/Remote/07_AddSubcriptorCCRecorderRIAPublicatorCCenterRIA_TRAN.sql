@@ -65,9 +65,7 @@ if @Version_Actual >= @Version
 				@sync_type = N'automatic', 
 				--@article = N'all', 
 				@update_mode = N'read only', 
-				@subscriber_type = 0, 
-				@memory_optimized = 0
-	
+				@subscriber_type = 0	
 		end
 
 			update subcripcionTableCCRecorderRIA set status=1 where id=@publicationId

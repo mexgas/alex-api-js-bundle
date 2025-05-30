@@ -4025,6 +4025,46 @@ END
 
 	------------------------------------------ Transactional Replication ----------------------------------------
 
+	SET @process = 'Remove ConversationWhatsAppOut entry from PublicationLowLoad'
+    SET @sql='
+if exists(select * from PublicationLowLoad where namePublication=''ConversationWhatsAppOut'') begin
+    delete PublicationLowLoad where namePublication=''ConversationWhatsAppOut''
+end
+'
+    EXEC(@sql)
+
+
+	SET @process = 'Add ConvrWhatsAppOut entry to PublicationHighLoad'
+    SET @sql='
+if not exists(select * from PublicationHighLoad where namePublication=''ConvrWhatsAppOut'') begin
+    insert into PublicationHighLoad (namePublication) values (''ConvrWhatsAppOut'')
+end
+'
+    EXEC(@sql)
+
+	SET @process = 'Shorten namePublication values to max 17 chars in PublicationLowLoad'
+    SET @sql='
+if exists(select * from PublicationLowLoad where namePublication=''ConversationWhatsApp'') begin
+    update PublicationLowLoad set namePublication=''ConverWhatsApp'' where namePublication=''ConversationWhatsApp''
+end
+if exists(select * from PublicationLowLoad where namePublication=''RecordingEvaluation'') begin
+    update PublicationLowLoad set namePublication=''RecordEvaluation'' where namePublication=''RecordingEvaluation''
+end
+'
+    EXEC(@sql)
+
+	SET @process = 'Shorten namePublication values to max 17 chars in PublicationHighLoad'
+    SET @sql='
+if exists(select * from PublicationHighLoad where namePublication=''LogAgentesDia_Dialog'') begin
+    update PublicationHighLoad set namePublication=''LogAgtsDia_Dialog'' where namePublication=''LogAgentesDia_Dialog''
+end
+if exists(select * from PublicationHighLoad where namePublication=''ccRIAWorkGroup_Calid'') begin
+    update PublicationHighLoad set namePublication=''WorkGroup_Calid'' where namePublication=''ccRIAWorkGroup_Calid''
+end
+'
+    EXEC(@sql)
+
+
 	SET @process = 'DROP PROCEDURE ReportsMasterProcess';
 	SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ReportsMasterProcess'')
 		BEGIN
@@ -4396,7 +4436,8 @@ END
 DROP TABLE #replications;';
 	EXEC(@sql);
 
-	-------------------------------------------------------------------------------------------------------------
+	--------------------------------------------- End Transactional Replication ----------------------------------------------------------------
+	
 SET @process = 'Alter RepOutAnswAndXferCalls columna dialTimeSec de SMALLINT a INT';
 	SET @sql = '
 IF EXISTS (

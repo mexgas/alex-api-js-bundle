@@ -314,7 +314,16 @@ END'
 	
 	--------------------------------------------------END MACL--------------------------------------------------
 
-	------------------------------------------ Transactional Replication ----------------------------------------
+	------------------------------------------ Begin Transactional Replication ----------------------------------------
+	
+	SET @process = 'Shorten namePublication values to max 17 chars in PublicationHighLoad'
+    SET @sql='
+if exists(select * from PublicationHighLoad where namePublication=''ccRIAWorkGroup_Calid'') begin
+    update PublicationHighLoad set namePublication=''WorkGroup_Calid'' where namePublication=''ccRIAWorkGroup_Calid''
+end
+'
+    EXEC(@sql)
+	
 	
 	SET @process = 'DROP PROCEDURE ReportsMasterProcessAVRS'
     SET @Sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ReportsMasterProcessAVRS'')
@@ -726,7 +735,8 @@ END
 DROP TABLE #replications;'
     EXEC(@Sql)	
 	
-	-------------------------------------------------------------------------------------------------------------
+	------------------------------------------ End Transactional Replication ----------------------------------------
+
 
 
 	SET @process = ''

@@ -17081,7 +17081,8 @@ if not exists(SELECT User_id FROM ccUsers WHERE TipoUser_id IN(2,6) AND Status>0
 
 if exists (select * from ccUsers_Roles where User_id = @userID and Rol_id = (select Rol_id from ccRoles where Level = 7))
     BEGIN
-        SELECT DISTINCT load_id, cccamps.cam_descripcion as camName, pctg, regsLoaded+alreadyLoaded as regsLoaded, regsNotLoaded+regsBlocked+isnull(regsNotLoadedCp,0)+ISNULL(recordsNotLoadedPort,0) as regsNotLoaded, state, loadDate 
+        SELECT DISTINCT load_id, cccamps.cam_descripcion as camName, pctg, regsLoaded+alreadyLoaded as regsLoaded, regsNotLoaded+regsBlocked+isnull(regsNotLoadedCp,0)+ISNULL(recordsNotLoadedPort,0) as regsNotLoaded, state, loadDate,
+		riaLoad.description
         FROM ccRIALoading riaLoad
         JOIN ccCamps cccamps ON riaLoad.cam_id = cccamps.cam_id
         WHERE 
@@ -17090,8 +17091,8 @@ if exists (select * from ccUsers_Roles where User_id = @userID and Rol_id = (sel
     END
 else
     BEGIN
-        SELECT DISTINCT load_id, cccamps.cam_descripcion as camName, pctg, regsLoaded+alreadyLoaded as regsLoaded, regsNotLoaded+regsBlocked+isnull(regsNotLoadedCp,0)+ISNULL(recordsNotLoadedPort,0) as regsNotLoaded, state, loadDate
-        
+        SELECT DISTINCT load_id, cccamps.cam_descripcion as camName, pctg, regsLoaded+alreadyLoaded as regsLoaded, regsNotLoaded+regsBlocked+isnull(regsNotLoadedCp,0)+ISNULL(recordsNotLoadedPort,0) as regsNotLoaded, state, loadDate,
+        riaLoad.description
         FROM ccRIALoading riaLoad
         JOIN ccSupervisorCam superCam ON riaLoad.cam_id = superCam.cam_id
         JOIN ccCamps cccamps ON riaLoad.cam_id = cccamps.cam_id
@@ -17142,7 +17143,8 @@ if not exists(SELECT load_id FROM ccRIALoading)
     return(0)
     END
 
-    SELECT state,case when state in(3,4) and pctg<100 then convert(smallint, 100) else pctg end pctg
+     SELECT state,case when state in(3) and pctg<100 then convert(smallint, 100) else pctg end pctg,
+	description
   FROM ccRIALoading
   WHERE load_id  = @loadID
 

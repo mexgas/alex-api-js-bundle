@@ -1002,7 +1002,8 @@ begin
                 else ''systemTranslated_Survey'' end 
         when modo = 3 then ''systemTranslated_conference'' 
         when modo = 4 then ''systemTranslated_supXfer'' 
-        when modo in(5,6) then ''systemTranslated_overflow'' 
+        when modo = 5 then ''systemTranslated_overflow''
+		when modo = 6 then ''systemTranslated_assistedCall''
         when modo in(7) then ''systemTranslated_press8'' 
         else ''systemTranslated_Default'' 
     end as xfertype, 
@@ -1028,9 +1029,10 @@ begin
         when modo = 4 then isnull((select top 1 nombre 
                                     from telefonosTransferencia 
                                     where tel = clt.destino),clt.destino) 
-        when modo in(5,6) then isnull((select Computer 
+        when modo = 5 then isnull((select Computer 
                                         from ccposicion 
-                                        where pos_id = abs(clt.destino)),clt.destino) 
+                                        where pos_id = abs(clt.destino)),clt.destino)
+		when modo = 6 then isnull((select descripcion from ccinbound where inbound_id = clt.destino), ''systemTranslated_Indefinite'')
     end), ''systemTranslated_Indefinite'') destination, 
     tantesxfer timebeforexfer, 
     tdespuesxfer timeafterxfer, 

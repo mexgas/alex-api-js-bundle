@@ -13910,6 +13910,34 @@ CREATE PROCEDURE [dbo].[SaveDispositionsAI]
 		insert into ccoCallsOutTranscriptionIA (call_id, Transcription) values (@call_Id, @Transcription)
 	END'
 EXEC(@sql);
+
+SET @process = 'Se elimina procedure ccsp_AIToHumanTransfer si existe'
+SET @sql = '
+IF EXISTS (SELECT 1 FROM sys.procedures WHERE name = N''ccsp_AIToHumanTransfer'')
+BEGIN
+    DROP PROCEDURE ccsp_AIToHumanTransfer;
+END'
+EXEC(@sql)
+
+SET @process = 'Se crea procedure ccsp_AIToHumanTransfer si no existe'
+SET @sql = '
+CREATE PROCEDURE [dbo].[ccsp_AIToHumanTransfer] 
+	@action int = null,
+	@camId int = null,
+	@CallOutId int = null
+AS
+BEGIN 
+	if @action = 1
+	Begin
+		select Inbound_id from ccInbound where cam_id = @camId
+	end
+
+	if @action = 2
+	Begin
+		select data_overflow_variables_quantum from ccoCallsOutSource where callout_id = @CallOutId
+	end
+END'
+EXEC(@sql)
 --------------------------------------------------------END DMM-----------------------------------------------------------------------
 -------------------------------------------------------- Begin MAGV -----------------------------------------------------------------
  SET @process = 'alter ccsp_RIAChatDispositions CW-8811

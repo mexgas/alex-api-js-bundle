@@ -13866,6 +13866,22 @@ BEGIN
 END'
 EXEC(@sql);
 
+SET @process = 'Creación de tabla ccoCallsOutTranscriptionIA para guardar Transcripcion ed llamadas IA'
+SET @sql= 'IF NOT EXISTS (SELECT * 
+                 FROM INFORMATION_SCHEMA.TABLES 
+                 WHERE TABLE_SCHEMA = ''dbo'' 
+                 AND  TABLE_NAME = ''ccoCallsOutTranscriptionIA'')
+BEGIN
+	CREATE TABLE ccoCallsOutTranscriptionIA (
+		call_id int Primary key ,
+		Transcription VARCHAR(MAX)
+		CONSTRAINT FK_ccoCallsOutTranscriptionIA_cal_id FOREIGN KEY (call_id)
+		REFERENCES ccoCallsOut(cal_id)
+		ON DELETE CASCADE
+	);
+END'
+EXEC(@sql);
+
 SET @process = 'Drop procedure SaveDispositionsAI'
 SET @sql = 'IF EXISTS (SELECT * FROM sysobjects WHERE name=''SaveDispositionsAI'')
     BEGIN
@@ -13875,15 +13891,23 @@ EXEC(@sql);
 
 SET @process = 'Creación de SP SaveDispositionsAI para guardar resultados de llamada IA'
 SET @sql = '
-CREATE PROCEDURE SaveDispositionsAI
+CREATE PROCEDURE [dbo].[SaveDispositionsAI]
+	@action smallint = null,
 	@call_Id int = null,
 	@Qualification varchar(max) = null,
 	@result VARCHAR(MAX) = null,
-	@Observations VARCHAR(MAX) = null
+	@Observations VARCHAR(MAX) = null,
+	@Transcription VARCHAR(MAX) = null
 
 	AS
+	IF @action = 1 
 	BEGIN
 		insert into ccoCallsOutDispositionIA (call_id, Qualification, result, Observations) values (@call_Id, @Qualification, @result, @Observations)
+	END
+		
+	IF @action = 2 
+	BEGIN
+		insert into ccoCallsOutTranscriptionIA (call_id, Transcription) values (@call_Id, @Transcription)
 	END'
 EXEC(@sql);
 --------------------------------------------------------END DMM-----------------------------------------------------------------------

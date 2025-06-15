@@ -392,7 +392,8 @@ if @isAllReport =0 begin
     FROM sys.procedures
     WHERE [name] LIKE ''ccspRep%''  
         AND [name] NOT IN (select name from #tmpProcedureReports)
-        AND [name] IN (select nameSp from ReportHighUse)        
+        AND [name] IN (select nameSp from ReportHighUse)
+        and [name] not in (''ccspRepCatalogos'')     
 end
 else if @isAllReport =1 begin
     INSERT INTO #tmpProcedureReports
@@ -403,7 +404,8 @@ else if @isAllReport =1 begin
     FROM sys.procedures
     WHERE [name] LIKE ''ccspRep%''
         AND [name] NOT IN (select name from #tmpProcedureReports)
-        AND [name] Not IN (select nameSp from ReportHighUse)        
+        AND [name] Not IN (select nameSp from ReportHighUse)
+        and [name] not in (''ccspRepCatalogos'')     
 end
 else begin
     INSERT INTO #tmpProcedureReports
@@ -413,7 +415,8 @@ else begin
         ,[name]
     FROM sys.procedures
     WHERE [name] LIKE ''ccspRep%''
-        AND [name] NOT IN (select name from #tmpProcedureReports)        
+        AND [name] NOT IN (select name from #tmpProcedureReports)
+        and [name] not in (''ccspRepCatalogos'')    
 end
 
 
@@ -1202,70 +1205,7 @@ end
     EXEC(@sql)
 
 
-    SET @process = 'ALTER PROCEDURE [dbo].[ccspRepOutAnswCalls] set @from=convert(date,@from)'
-    SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepOutAnswCalls]
-@action as tinyint,
-@from AS datetime = null,
-@to AS datetime = null
-AS
-
-SET NOCOUNT ON
-
-if @action = 1
-begin
-    if @from is null
-        select @from = convert(date,getdate())
-
-    if @to is null
-        select @to = getdate()
-
-    set @from=convert(date,@from)
-                            
-    delete RepOutAnswCalls with(rowlock)
-    where [date] between @from and @to
-
-    ;with   
-    co as(
-    select
-    convert(date,cal_inicio,121) [date],
-    co.cam_id campaignId, count(*) total, 
-    COUNT(CASE WHEN(statusCall_id = 16)THEN co.cal_id ELSE NULL END) nasig_tl,
-    COUNT(CASE WHEN(statuscall_id = 15)THEN co.cal_id ELSE NULL END) nasig_nc,
-    COUNT(CASE WHEN(statuscall_id = 13)THEN co.cal_id ELSE NULL END) nAnswered,
-    COUNT(CASE WHEN(statuscall_id = 11)THEN co.cal_id ELSE NULL END) nassigned,
-    COUNT(CASE WHEN(statuscall_id in (6,4))THEN co.cal_id ELSE NULL END) nabdn_sis
-    from ccocallsout co with(nolock,index(IX_ccoCallsOut13))    
-    where cal_inicio between @from and @to 
-    group by convert(date,cal_inicio,121),co.cam_id
-    ) 
-    ,wgCalId as(
     
-        select campaignId,isnull(min(wg.IDWG),1) IDWG
-        from co o 
-        left join ccRIACampEspWG wg on o.campaignId =wg.IdCampEsp and wg.Tipo=1
-        group by campaignId
-    )
-    
-
-    insert RepOutAnswCalls
-    select 
-    [date], abnd.campaignId, ca.cam_descripcion campaign, 
-    wg.IDWG workgroupId, e.WGName workgroup, isnull(f.IDArea,0) areaId, g.AreaName area, total,
-    cast(((nasig_tl*100.0)/total) as decimal(5,2)) asig_tl,
-    cast(((nasig_nc*100.0)/total) as decimal(5,2)) asig_nc,
-    cast(((nAnswered*100.0)/total) as decimal(5,2)) Answered,
-    cast(((nassigned*100.0)/total) as decimal(5,2)) assigned,
-    cast(((nabdn_sis*100.0)/total) as decimal(5,2)) abdn_sis
-    from co abnd    
-    left join cccamps ca on ca.cam_id=abnd.campaignId 
-    left join wgCalId wg on abnd.campaignId=wg.campaignId
-    left join ccRIACat_WorkGroup as e on e.idwg = wg.idwg
-    left join ccRIAAreaWorkGroup as f on f.idwg = e.idwg
-    left join ccRIACat_Areas as g on g.idarea = f.idarea
-                            
-end'
-    EXEC(@sql)
-
 
 
     SET @process = 'ALTER PROCEDURE [dbo].[ccspRepOutCallsByTelephone] set @from=convert(date,@from)'
@@ -4454,6 +4394,256 @@ BEGIN
 END';
 	EXEC(@sql);
 
+--------------------------------------------- Begin Jesus 127.20250325.0.29  ----------------------------------------------------------------
+
+    SET @process = 'ALTER VIEW [dbo].[RepViewSummary] se agrega descripcion_auxiliarRedyTime_time';
+    SET @sql = 'ALTER VIEW [dbo].[RepViewSummary] AS -- Correccion del Ticket TT14523
+select 
+[date]
+,[login]
+,[user]
+,sessionTime
+,loginMktTime
+,logoutMktTime
+,0 callTengaged
+,ndTime
+,NCallsOut
+,NCallsIn
+,NCallsCorta
+,NAtend
+,NNoCalif
+,Available
+,0 avgCallTengaged
+,twrapup
+,userId
+,0 TypeNotReady
+,'''' descripcion
+,''_Time'' descripcion_time
+,0 [time]
+,0 transferStatus
+,0 ringingTime
+,0 unknownStatus
+,0 otherStatus
+,0 failureStatus
+,0 chatTengaged
+,0 undefinedTime
+,0 dialingStatus
+,null TipoReadyAuxiliarId
+,'''' auxiliarRedy_descripcion
+,''_TimeAux'' descripcion_auxiliarRedyTime_time
+,0 auxiliarRedyTime
+from RepAgentSummary_VersionAmatech
+union
+select date
+,login
+,[user]
+,sessionTime
+,loginMktTime
+,logoutMktTime
+,callTengaged
+,ndTime
+,NCallsOut
+,NCallsIn
+,NCallsCorta
+,NAtend
+,NNoCalif
+,Available
+,avgCallTengaged
+,twrapup
+,userId
+,TypeNotReady
+,descripcion
+,descripcion_time
+,time
+,transferStatus
+,ringingTime
+,unknownStatus
+,otherStatus
+,failureStatus
+,chatTengaged
+,undefinedTime
+,dialingStatus
+,TipoReadyAuxiliarId
+,auxiliarRedy_descripcion
+,isnull(descripcion_auxiliarRedyTime_time,''_TimeAux'') as descripcion_auxiliarRedyTime_time
+,auxiliarRedyTime
+from RepAgentSummary
+';
+    EXEC(@sql);
+
+    SET @process = 'ALTER PROCEDURE [dbo].[ccspRepOutAnswCalls] se agrega isnull';
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepOutAnswCalls]
+@action as tinyint,
+@from AS datetime = null,
+@to AS datetime = null
+AS
+
+SET NOCOUNT ON
+
+if @action = 1
+begin
+    if @from is null
+        select @from = convert(date,getdate())
+
+    if @to is null
+        select @to = getdate()
+
+    set @from=convert(date,@from)
+                            
+    delete RepOutAnswCalls with(rowlock)
+    where [date] between @from and @to
+
+    ;with   
+    co as(
+    select
+    convert(date,cal_inicio,121) [date],
+    co.cam_id campaignId, count(*) total, 
+    COUNT(CASE WHEN(statusCall_id = 16)THEN co.cal_id ELSE NULL END) nasig_tl,
+    COUNT(CASE WHEN(statuscall_id = 15)THEN co.cal_id ELSE NULL END) nasig_nc,
+    COUNT(CASE WHEN(statuscall_id = 13)THEN co.cal_id ELSE NULL END) nAnswered,
+    COUNT(CASE WHEN(statuscall_id = 11)THEN co.cal_id ELSE NULL END) nassigned,
+    COUNT(CASE WHEN(statuscall_id in (6,4))THEN co.cal_id ELSE NULL END) nabdn_sis
+    from ccocallsout co with(nolock,index(IX_ccoCallsOut13))    
+    where cal_inicio between @from and @to 
+    group by convert(date,cal_inicio,121),co.cam_id
+    ) 
+    ,wgCalId as(
+    
+        select campaignId,isnull(min(wg.IDWG),1) IDWG
+        from co o 
+        left join ccRIACampEspWG wg on o.campaignId =wg.IdCampEsp and wg.Tipo=1
+        group by campaignId
+    )
+    
+
+    insert RepOutAnswCalls
+    select 
+    [date], abnd.campaignId, ca.cam_descripcion campaign, 
+    wg.IDWG workgroupId, e.WGName workgroup, isnull(f.IDArea,0) areaId, isnull(g.AreaName,'''') area, total,
+    cast(((nasig_tl*100.0)/total) as decimal(5,2)) asig_tl,
+    cast(((nasig_nc*100.0)/total) as decimal(5,2)) asig_nc,
+    cast(((nAnswered*100.0)/total) as decimal(5,2)) Answered,
+    cast(((nassigned*100.0)/total) as decimal(5,2)) assigned,
+    cast(((nabdn_sis*100.0)/total) as decimal(5,2)) abdn_sis
+    from co abnd    
+    left join cccamps ca on ca.cam_id=abnd.campaignId 
+    left join wgCalId wg on abnd.campaignId=wg.campaignId
+    left join ccRIACat_WorkGroup as e on e.idwg = wg.idwg
+    left join ccRIAAreaWorkGroup as f on f.idwg = e.idwg
+    left join ccRIACat_Areas as g on g.idarea = f.idarea
+                            
+end';
+    EXEC(@sql);
+
+    SET @process = 'ALTER PROCEDURE [dbo].[ccspRepOutCalls] se agrea is null';
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepOutCalls]
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+AS
+
+if @from is null
+    select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to  is null
+    select @to = getdate()
+
+    IF OBJECT_ID(N''tempdb..#tempTime'', N''U'') IS NOT NULL  drop table #tempTime
+    IF OBJECT_ID(N''tempdb..#tempRepOutCalls'', N''U'') IS NOT NULL  drop table #tempRepOutCalls
+
+
+if @action = 1
+begin
+
+    
+     select ROW_NUMBER() OVER(Order by row) as id,
+          A.row, A.timegroup as [date],isnull(B.IDArea,0) as areaId,isnull(C.AreaName, '''') as area
+         ,A.idwg as workgroupid,isnull(WG.WGName, '''') as workgroup
+         ,A.cam_id as campaignid,isnull(B.cam_descripcion,'''') as campaign
+         ,A.[User_id] as userId,isnull(userView.[Login],'''') as [user]
+         ,ntotal, nxfer, nno_agent, nanswer, nno_answer, nlost, nabnd_xfer, nabnd_ring, nabnd_dialog
+         ,1 as pos_tot,
+         tmp.tlog as  pos_time,  ---falta restar tnot_av + tprob + tother
+         
+         nhangup, (tdialog + tnotes) as  tatencion
+         ,datepart(yy,convert(datetime,A.timegroup)) as [year]
+         ,datepart(mm,convert(datetime,A.timegroup)) as [mounth]
+         ,datepart(dd,convert(datetime,A.timegroup)) as [day]
+         ,datepart(hh,convert(datetime,A.timegroup)) as [hour]
+         ,datepart(mi,convert(datetime,A.timegroup)) as [minutes]
+         ,cal_id,phone_out,dateStartDetail
+         into #tempRepOutCalls
+         from tmpTimesOutboundData A
+         left join ccUserView userView on A.User_id=userView.User_id
+         left join cccamps B on A.cam_id=B.cam_id
+         left join ccriacat_areas C on B.IDArea=C.IDArea
+         left join ccriacat_workgroup WG on Wg.IDWG=A.idwg
+         left join TmpSessionTimeGroup  tmp ON tmp.timegroup=A.timegroup and tmp.user_id=A.User_id
+         where A.User_id>0 AND B.IDArea IS NOT NULL AND B.IDArea>0
+         and cal_manual in (0,2,3)
+         
+
+     SELECT
+      RANK() OVER(PARTITION BY row ORDER by id) as [rank],
+      ROW_NUMBER() OVER(Order by id) as rowNumber,
+      id
+      into #tempTime
+      FROM #tempRepOutCalls
+      where row in
+            (select row from #tempRepOutCalls temp GROUP BY temp.row HAVING Count(*) > 1 )
+
+       update t
+            set ntotal=0,nxfer=0,nno_agent=0,nanswer=0,nno_answer=0,nlost=0,nabnd_xfer=0,nabnd_ring=0,nabnd_dialog=0,tatencion=0
+            from #tempRepOutCalls t
+            inner join #tempTime temp on t.id = temp.id
+            where [rank]>1
+
+        
+    delete #tempTime
+
+    insert into #tempTime([rank],rowNumber,id)
+    SELECT
+      RANK() OVER(PARTITION BY cal_id ORDER by id) as [rank],
+      ROW_NUMBER() OVER(Order by id) as rowNumber,
+      id
+      FROM #tempRepOutCalls
+      where cal_id in
+            (select cal_id from #tempRepOutCalls temp GROUP BY temp.cal_id HAVING Count(*) > 1 )
+
+       update t
+            set pos_tot=0
+            from #tempRepOutCalls t
+            inner join #tempTime temp on t.id = temp.id
+            where [rank]>1
+
+    --Borrar lo que esta para no repetir
+    delete from RepOutCalls with(rowlock)
+    where date >= @from AND date < @to
+
+     insert into RepOutCalls
+        select date,areaId,isnull(area,''''),isnull(workgroupid,1),isnull(workgroup,''''),campaignid,campaign,userId,[user],ntotal,nxfer,nno_agent,nanswer,nno_answer,nlost,nabnd_xfer,nabnd_ring,nabnd_dialog
+        ,isnull(pos_tot,0),isnull(pos_time,0),nhangup,tatencion,year,mounth,day,hour,minutes,cal_id,phone_out,dateStartDetail
+        from #tempRepOutCalls order by cal_id   
+
+
+    IF OBJECT_ID(N''tempdb..#tempTime'', N''U'') IS NOT NULL  drop table #tempTime
+    IF OBJECT_ID(N''tempdb..#tempRepOutCalls'', N''U'') IS NOT NULL  drop table #tempRepOutCalls    
+
+end';
+    EXEC(@sql);
+
+    SET @process = '';
+    SET @sql = '';
+    EXEC(@sql);
+
+    SET @process = '';
+    SET @sql = '';
+    EXEC(@sql);
+
+    SET @process = '';
+    SET @sql = '';
+    EXEC(@sql);
+
+--------------------------------------------- Begin Jesus 127.20250325.0.29  ----------------------------------------------------------------
 
     	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version
 

@@ -134,10 +134,6 @@ insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'cc
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccBaseXDB',@idInt,0)
 
 set @idInt=@idInt+1
-insert into publicationTableCCenterRIA(publicationName,status) values(N'ccRIAWorkGroup_Calid',0)	
-insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccRIAWorkGroup_Calid',@idInt,0)
-
-set @idInt=@idInt+1
 insert into publicationTableCCenterRIA(publicationName,status) values(N'AVRSCampEsp',0)	
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccRIACampEspWG',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccCalifCamp',@idInt,0)

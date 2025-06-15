@@ -62,7 +62,7 @@ insert into publicationTableCCenterRIA(publicationName,status) values('AVRSCampE
 insert into publicationTableCCenterRIA(publicationName,status) values('AVRSGraphs',0)
 insert into publicationTableCCenterRIA(publicationName,status) values('AVRSSettings',0)
 insert into publicationTableCCenterRIA(publicationName,status) values('SpecialAVRS',0)
-insert into publicationTableCCenterRIA(publicationName,status) values('ccRIAWorkGroup_Calid',0)
+
 insert into publicationTableCCenterRIA(publicationName,status) values('Chats',0)
 insert into publicationTableCCenterRIA(publicationName,status) values('OutIn',0)
 insert into publicationTableCCenterRIA(publicationName,status) values('ConversationMail',0)

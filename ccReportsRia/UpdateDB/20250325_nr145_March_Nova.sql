@@ -4645,6 +4645,66 @@ end';
 
 --------------------------------------------- Begin Jesus 127.20250325.0.29  ----------------------------------------------------------------
 
+
+--------------------------------------------- BEGIN MACL .29 ------------------------------------------------
+	SET @process = 'DELETE sp ccsp_ReconnectMessage';
+	SET @sql = 'IF EXISTS (SELECT * FROM sysobjects WHERE name=''ccsp_ReconnectMessage'') 
+BEGIN
+	DROP PROCEDURE dbo.ccsp_ReconnectMessage
+END';
+	EXEC(@sql);
+
+
+	SET @process = 'CREATE sp ccsp_ReconnectMessage';
+    SET @sql = 'CREATE PROCEDURE dbo.ccsp_ReconnectMessage 
+@Action int,
+@UserId int
+AS
+BEGIN
+	IF @Action = 1
+	BEGIN
+		DECLARE @reconnectMsg int = 0;
+		SELECT @reconnectMsg = ISNULL(reconnectMsg, 0) from ccUsers (NOLOCK)
+		WHERE [User_id] = @UserID
+
+		Select @reconnectMsg
+
+		IF(@reconnectMsg > 0)
+		BEGIN
+			UPDATE ccUsers SET reconnectMsg = 0 WHERE [User_id] = @UserID
+		END
+	END
+END';
+    EXEC(@sql);
+
+	SET @process = 'DELETE sp ccsp_AIToHumanTransfer';
+	SET @sql = 'IF EXISTS (SELECT * FROM sysobjects WHERE name=''ccsp_AIToHumanTransfer'') 
+BEGIN
+	DROP PROCEDURE dbo.ccsp_AIToHumanTransfer
+END';
+	EXEC(@sql);
+
+
+	SET @process = 'CREATE sp ccsp_ReconnectMessage';
+    SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_AIToHumanTransfer] 
+	@action int = null,
+	@camId int = null,
+	@CallOutId int = null
+AS
+BEGIN 
+	if @action = 1
+	Begin
+		select Inbound_id from ccInbound where cam_id = @camId
+	end
+
+	if @action = 2
+	Begin
+		select data_overflow_variables_quantum from ccoCallsOutSource where callout_id = @CallOutId
+	end
+END';
+    EXEC(@sql);
+
+---------------------------------------------- END MACL .29 -------------------------------------------------
     	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version
 
 		COMMIT TRAN

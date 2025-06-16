@@ -4647,6 +4647,16 @@ end';
 
 
 --------------------------------------------- BEGIN MACL .29 ------------------------------------------------
+    SET @process = 'Se crea columna reconnectMsg en caso de no existir ';
+    SET @sql = 'IF NOT EXISTS(SELECT 1 FROM sys.columns 
+          WHERE Name = N''reconnectMsg''
+          AND Object_ID = Object_ID(N''ccUsers''))
+BEGIN
+    ALTER TABLE ccUsers ADD reconnectMsg int
+END';
+    EXEC(@sql);
+
+
 	SET @process = 'DELETE sp ccsp_ReconnectMessage';
 	SET @sql = 'IF EXISTS (SELECT * FROM sysobjects WHERE name=''ccsp_ReconnectMessage'') 
 BEGIN

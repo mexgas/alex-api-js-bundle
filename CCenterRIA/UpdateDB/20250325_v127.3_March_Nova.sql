@@ -17459,7 +17459,6 @@ end
 			WHERE ccIN.IDArea = (CASE WHEN @id_admin = 1 THEN ccIN.IDArea
 								ELSE @id_userArea END) and ccIN.chat = 5
 		END
-	GO
 	'
 	EXEC(@sql)
 -------------------------------------------------------- End LRSV ------------------------------------------------------

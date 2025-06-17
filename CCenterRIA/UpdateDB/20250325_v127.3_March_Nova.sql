@@ -17433,7 +17433,7 @@ end
 	EXEC(@sql);
 
 	SET @process = 'LRSV fix CW-9874 create procedure ccsp_GetInboundConversations'
-	SET @sql = '
+	SET @sql = '	
 	CREATE PROC [dbo].[ccsp_GetInboundConversations] 
 		@id_admin INT
 		AS
@@ -17445,20 +17445,21 @@ end
 			END
 
 			SELECT 
-				ISNULL(ccIN.descripcion, '') AS Descripcion, 
+				ISNULL(ccIN.descripcion, '''') AS Descripcion, 
 				ISNULL(ccWA.Request, 0) AS TodayConversations, 
 				ISNULL(ccWA.Assigned, 0) AS InProgress, 
 				ISNULL(ccWA.OnQueue, 0) AS InQueue, 
 				ISNULL(ccWA.EndedBySystem, 0) AS FinishedBySystem, 
 				ISNULL(ccWA.Attended, 0) AS FinishedByAgent, 
 				ISNULL(ccWA.MarkedAsSpam, 0) AS MarkedAsSpam,
-				ISNULL(ccRCA.AreaName, '') AS AreaName
+				ISNULL(ccRCA.AreaName, '''') AS AreaName
 			FROM ccInbound ccIN 
 				LEFT JOIN ccWAOperatingSummary ccWA ON ccIN.Inbound_id = ccWA.InboundId
 				LEFT JOIN ccRIACat_Areas ccRCA on  ccIN.IDArea = ccRCA.IDArea
 			WHERE ccIN.IDArea = (CASE WHEN @id_admin = 1 THEN ccIN.IDArea
 								ELSE @id_userArea END) and ccIN.chat = 5
 		END
+	
 	'
 	EXEC(@sql)
 -------------------------------------------------------- End LRSV ------------------------------------------------------

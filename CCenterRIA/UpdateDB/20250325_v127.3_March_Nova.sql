@@ -13255,7 +13255,7 @@ BEGIN
         DECLARE @TimeStamp DATETIME
         DECLARE @TimeStampUTC DATETIME
         DECLARE @TemplateCategory varchar(50);
-        DECLARE @TemplateContent varchar(1000);
+        DECLARE @TemplateContent varchar(max);
         DECLARE @ConvId int
     
         DECLARE @CurrentId INT = 1

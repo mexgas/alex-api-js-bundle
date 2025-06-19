@@ -17433,7 +17433,7 @@ end
 	EXEC(@sql);
 
 	SET @process = 'LRSV fix CW-9874 create procedure ccsp_GetInboundConversations'
-	SET @sql = '	
+	SET @sql = '
 	CREATE PROC [dbo].[ccsp_GetInboundConversations] 
 		@id_admin INT
 		AS

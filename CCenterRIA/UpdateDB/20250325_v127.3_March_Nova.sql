@@ -15308,10 +15308,10 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns]
      -- Validación de calKey con valor nulo o vacío
 
 
-    SET @process = 'CW-9795 Validar Function  - Drop procedure hashList'
+    SET @process = 'CW-9795 Validar Function  - Drop function hashList'
     SET @sql = 'IF EXISTS (SELECT * FROM sysobjects WHERE name=''hashList'')
         BEGIN
-            DROP PROCEDURE dbo.hashList
+            DROP FUNCTION dbo.hashList
         END'
     EXEC(@sql);
 

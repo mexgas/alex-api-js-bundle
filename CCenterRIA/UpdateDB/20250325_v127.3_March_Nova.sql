@@ -15303,6 +15303,53 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns]
 '
  EXEC(@sql);
 
+
+     -- Se agrega fix para CW-9795 - Juan Medina - 19/06/2025
+     -- Validación de calKey con valor nulo o vacío
+
+
+    SET @process = 'CW-9795 Validar Function  - Drop procedure hashList'
+    SET @sql = 'IF EXISTS (SELECT * FROM sysobjects WHERE name=''hashList'')
+        BEGIN
+            DROP PROCEDURE dbo.hashList
+        END'
+    EXEC(@sql);
+
+
+	SET @process = 'CW-9795 Validar Function  - Create function hashList'
+    SET @sql ='
+
+
+        CREATE FUNCTION [dbo].[hashList] (@calKey varchar(255)) 
+        RETURNS bigint AS
+        BEGIN
+
+            IF @calKey IS NULL OR @calKey = ''''
+                RETURN NULL;
+
+            declare @codigo varchar(max)
+            declare @hash bigint
+    
+            set @codigo=''''
+            set @hash=0
+            declare @i int,@len int
+            select @i=1,@len=len(@calKey)
+            while @i<=@len begin
+    	        select @codigo=@codigo+convert(varchar(max), ASCII(SUBSTRING(@calKey,@i,1)))
+	            if @i%5=0 begin
+		        set @hash=@hash+cast(@codigo as bigint)
+		        set @codigo=''''
+	       end	
+	     set @i=@i+1
+        end
+        if @codigo<>''''
+            set @hash=@hash+cast(@codigo as bigint)
+            return @hash % 99999999999973
+        END
+'
+
+    EXEC(@sql);
+
   --------------------------------------------------- END Juan Medina  -------------------------------------------------------------
 
 

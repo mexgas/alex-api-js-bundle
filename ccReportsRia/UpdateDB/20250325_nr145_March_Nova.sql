@@ -2015,6 +2015,9 @@ declare @today date,@dateNow datetime
 SET @today = convert(DATE, GETDATE(), 121)
 SET @dateNow=GETDATE()
 
+declare @maxId int
+
+select @maxId =isnull(max(id),0)+1 from tmpccLogAgentesDia
 
 IF @today = CONVERT(DATE, @to, 121)
 BEGIN
@@ -2028,7 +2031,7 @@ BEGIN
         )           
 
     INSERT INTO tmpccLogAgentesDia
-    SELECT 0
+    SELECT @maxId+ ROW_NUMBER() OVER (PARTITION BY A.userId ORDER BY B.dateStart) AS RowId
         ,A.userId
         ,A.currentStatus
         ,DATEDIFF(ss, A.dateEnd, @dateNow) AS tStatus

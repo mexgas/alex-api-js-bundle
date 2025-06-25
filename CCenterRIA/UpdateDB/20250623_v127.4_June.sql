@@ -44,8 +44,131 @@ BEGIN
     BEGIN TRAN
     BEGIN TRY
 
-	
----------------------------------------------------------------------------- BEGIN JUAN MEDINA ----------------------------------------------------------------------------
+
+
+	---------------------- BEGIN IGC ADD ----------------------
+	SET @process = 'K070051, K070208, K070219 - add columns to ccInboundExtend'
+	SET @sql = '
+		IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''IsCallTranscriptionEnabled'' AND Object_ID = Object_ID(N''ccInboundExtend''))
+		BEGIN
+			ALTER TABLE ccInboundExtend ADD IsCallTranscriptionEnabled BIT NULL
+		END
+
+		IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''TransferToHumanAgents'' AND Object_ID = Object_ID(N''ccInboundExtend''))
+		BEGIN
+			ALTER TABLE ccInboundExtend ADD TransferToHumanAgents INT NULL
+		END
+
+		IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''TransferOnSuccessfulHandling'' AND Object_ID = Object_ID(N''ccInboundExtend''))
+		BEGIN
+			ALTER TABLE ccInboundExtend ADD TransferOnSuccessfulHandling INT NULL
+		END
+
+		IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''TransferOnFallback_ExternalNumber'' AND Object_ID = Object_ID(N''ccInboundExtend''))
+		BEGIN
+			ALTER TABLE ccInboundExtend ADD TransferOnFallback_ExternalNumber VARCHAR(10) NULL;
+		END
+		
+		IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''TransferOnFallback_DirectoryId'' AND Object_ID = Object_ID(N''ccInboundExtend''))
+		BEGIN
+			ALTER TABLE ccInboundExtend ADD TransferOnFallback_DirectoryId SMALLINT NULL;
+			ALTER TABLE ccInboundExtend ADD CONSTRAINT FK_ccIBX_Fallback_Directory FOREIGN KEY (TransferOnFallback_DirectoryId) REFERENCES dbo.telefonosTransferencia(numtra_id);
+		END
+
+		IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''TransferOnFallback_Mode'' AND Object_ID = Object_ID(N''ccInboundExtend''))
+		BEGIN
+			ALTER TABLE ccInboundExtend ADD TransferOnFallback_Mode BIT NULL CONSTRAINT DF_ccIBX_Fallback_Mode DEFAULT(0);
+		END
+
+		IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''TransferOnFallback_TimeoutSec'' AND Object_ID = Object_ID(N''ccInboundExtend''))
+		BEGIN
+			ALTER TABLE ccInboundExtend ADD TransferOnFallback_TimeoutSec SMALLINT NULL CONSTRAINT DF_ccIBX_Fallback_TimeoutSec DEFAULT(60);
+		END
+
+		IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''TransferOnSuccess_ExternalNumber'' AND Object_ID = Object_ID(N''ccInboundExtend''))
+		BEGIN
+			ALTER TABLE ccInboundExtend ADD TransferOnSuccess_ExternalNumber VARCHAR(10) NULL;
+		END
+
+		IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''TransferOnSuccess_DirectoryId'' AND Object_ID = Object_ID(N''ccInboundExtend''))
+		BEGIN
+			ALTER TABLE ccInboundExtend ADD TransferOnSuccess_DirectoryId SMALLINT NULL;
+			ALTER TABLE ccInboundExtend ADD CONSTRAINT FK_ccIBX_Success_Directory FOREIGN KEY (TransferOnSuccess_DirectoryId) REFERENCES dbo.telefonosTransferencia(numtra_id);
+		END
+
+		IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''TransferOnSuccess_Mode'' AND Object_ID = Object_ID(N''ccInboundExtend''))
+		BEGIN
+			ALTER TABLE ccInboundExtend ADD TransferOnSuccess_Mode BIT NULL CONSTRAINT DF_ccIBX_Success_Mode DEFAULT(0);
+		END
+
+		IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''TransferOnSuccess_TimeoutSec'' AND Object_ID = Object_ID(N''ccInboundExtend''))
+		BEGIN
+			ALTER TABLE ccInboundExtend ADD TransferOnSuccess_TimeoutSec SMALLINT NULL CONSTRAINT DF_ccIBX_Success_TimeoutSec DEFAULT(60);
+		END
+	'
+    EXEC(@sql)
+
+	SET @process = 'K070051, K070208, K070219 - add operation create ai inbound campaign'
+	SET @sql = '
+		IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 137) BEGIN 
+			INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (137, ''Crear campaña (llamada de entrada IA)'', ''Create campaign (AI inbound call)'', ''Criar campanha (chamada de entrada IA)'');
+			INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 137);
+		END
+	'
+    EXEC(@sql)
+
+	SET @process = 'K070051, K070208, K070219 - add identifier and relation to table-column'
+	SET @sql = '
+		IF NOT EXISTS(SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_CALL_IA_CALL_TRANSCRIPTION'') BEGIN 
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt)
+			VALUES (''IN_CALL_IA_CALL_TRANSCRIPTION'', ''Mostrar transcripción de llamadas en Buscador'', ''Show call transcripts in Finder'', ''Mostrar transcri��es de chamadas em Localizador'')
+		END
+
+		IF NOT EXISTS(SELECT * FROM relationTableColumnIdentifiers WHERE Identifiers = ''IN_CALL_IA_CALL_TRANSCRIPTION'' AND tableName = ''ccInboundExtend'') BEGIN 
+			INSERT INTO relationTableColumnIdentifiers (Identifiers, tableName, colunName)
+			VALUES (''IN_CALL_IA_CALL_TRANSCRIPTION'',''ccInboundExtend'',''IsCallTranscriptionEnabled'')
+		END
+
+		IF NOT EXISTS(SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_CALL_IA_TRANSFER_TO_HUMAN_AGENTS'') BEGIN 
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt)
+			VALUES (''IN_CALL_IA_TRANSFER_TO_HUMAN_AGENTS'', ''Transferencia a agentes humanos'', ''Live agent transfer'', ''Transferência para agentes humanos'')
+		END
+		IF NOT EXISTS(SELECT * FROM relationTableColumnIdentifiers WHERE Identifiers = ''IN_CALL_IA_TRANSFER_TO_HUMAN_AGENTS'' AND tableName = ''ccInboundExtend'') BEGIN 
+			INSERT INTO relationTableColumnIdentifiers (Identifiers, tableName, colunName)
+			VALUES (''IN_CALL_IA_TRANSFER_TO_HUMAN_AGENTS'',''ccInboundExtend'',''TransferToHumanAgents'')
+		END
+
+		IF NOT EXISTS(SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_CALL_IA_TRANSFER_ON_SUCCESSFUL_HANDLING'') BEGIN 
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt)
+			VALUES (''IN_CALL_IA_TRANSFER_ON_SUCCESSFUL_HANDLING'', ''Transferencia por gestión exitosa'', ''Successful interaction transfer'', ''Transferência de interação bem-sucedida'')
+		END
+		IF NOT EXISTS(SELECT * FROM relationTableColumnIdentifiers WHERE Identifiers = ''IN_CALL_IA_TRANSFER_ON_SUCCESSFUL_HANDLING'' AND tableName = ''ccInboundExtend'') BEGIN 
+			INSERT INTO relationTableColumnIdentifiers (Identifiers, tableName, colunName)
+			VALUES (''IN_CALL_IA_TRANSFER_ON_SUCCESSFUL_HANDLING'',''ccInboundExtend'',''TransferOnSuccessfulHandling'')
+		END
+	'
+    EXEC(@sql)
+
+	SET @process = 'K070051, K070208, K070219 - Add multiple identifiers'
+	SET @sql = '
+		IF NOT EXISTS(SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_CAMPAIGN'') BEGIN 
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt)
+			VALUES (''COMMON_CAMPAIGN'', ''campaña'', ''campaign'', ''campanha'')
+		END
+		IF NOT EXISTS(SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_DIRECTORY'') BEGIN 
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt)
+			VALUES (''COMMON_DIRECTORY'', ''directorio '', ''transfer list '', ''catálogo '')
+		END
+		IF NOT EXISTS(SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_EXTERNAL_NUMBER'') BEGIN 
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt)
+			VALUES (''COMMON_EXTERNAL_NUMBER'', ''número externo '', ''external number '', ''número externo '')
+		END
+	'
+    EXEC(@sql)
+
+	---------------------- END IGC ADD ----------------------
+
+--------------------------------------------------------------------------- BEGIN JUAN MEDINA ADD---------------------------------------------------------------------------
 
        -- Cambios para HU's K070061, K070062, K070063
 
@@ -222,6 +345,10 @@ BEGIN
 END
 '
     EXEC(@sql)
+
+---------------------------------------------------------------------------- END JUAN MEDINA ADD----------------------------------------------------------------------------
+
+---------------------------------------------------------------------------- BEGIN JUAN MEDINA ----------------------------------------------------------------------------
 
 --Cambios para K070063 - Eliminar campaña de entrada de IA - JM 
 
@@ -432,7 +559,7 @@ END
 
 
 	'
-    EXEC(@sql)
+    EXEC(@sql);
 --Cambios para K070063 - Editar campaña de entrada de IA - JM 
 
 	SET @process = 'K070061 - K070062 Drop SP ccsp_GalateaUpdateVoiceConfiguration'
@@ -614,7 +741,7 @@ BEGIN
 END	
 
 	'
-    EXEC(@sql)
+    EXEC(@sql);
 
 	--Cambios para K070063 - Mostrar campaña de entrada de IA - JM 
 
@@ -835,129 +962,7 @@ END
 ----------------------------------------------------------------------------- END JUAN MEDINA -----------------------------------------------------------------------------
 
 
-
-
-
-	---------------------- BEGIN IGC ----------------------
-	SET @process = 'K070051, K070208, K070219 - add columns to ccInboundExtend'
-	SET @sql = '
-		IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''IsCallTranscriptionEnabled'' AND Object_ID = Object_ID(N''ccInboundExtend''))
-		BEGIN
-			ALTER TABLE ccInboundExtend ADD IsCallTranscriptionEnabled BIT NULL
-		END
-
-		IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''TransferToHumanAgents'' AND Object_ID = Object_ID(N''ccInboundExtend''))
-		BEGIN
-			ALTER TABLE ccInboundExtend ADD TransferToHumanAgents INT NULL
-		END
-
-		IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''TransferOnSuccessfulHandling'' AND Object_ID = Object_ID(N''ccInboundExtend''))
-		BEGIN
-			ALTER TABLE ccInboundExtend ADD TransferOnSuccessfulHandling INT NULL
-		END
-
-		IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''TransferOnFallback_ExternalNumber'' AND Object_ID = Object_ID(N''ccInboundExtend''))
-		BEGIN
-			ALTER TABLE ccInboundExtend ADD TransferOnFallback_ExternalNumber VARCHAR(10) NULL;
-		END
-		
-		IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''TransferOnFallback_DirectoryId'' AND Object_ID = Object_ID(N''ccInboundExtend''))
-		BEGIN
-			ALTER TABLE ccInboundExtend ADD TransferOnFallback_DirectoryId SMALLINT NULL;
-			ALTER TABLE ccInboundExtend ADD CONSTRAINT FK_ccIBX_Fallback_Directory FOREIGN KEY (TransferOnFallback_DirectoryId) REFERENCES dbo.telefonosTransferencia(numtra_id);
-		END
-
-		IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''TransferOnFallback_Mode'' AND Object_ID = Object_ID(N''ccInboundExtend''))
-		BEGIN
-			ALTER TABLE ccInboundExtend ADD TransferOnFallback_Mode BIT NULL CONSTRAINT DF_ccIBX_Fallback_Mode DEFAULT(0);
-		END
-
-		IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''TransferOnFallback_TimeoutSec'' AND Object_ID = Object_ID(N''ccInboundExtend''))
-		BEGIN
-			ALTER TABLE ccInboundExtend ADD TransferOnFallback_TimeoutSec SMALLINT NULL CONSTRAINT DF_ccIBX_Fallback_TimeoutSec DEFAULT(60);
-		END
-
-		IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''TransferOnSuccess_ExternalNumber'' AND Object_ID = Object_ID(N''ccInboundExtend''))
-		BEGIN
-			ALTER TABLE ccInboundExtend ADD TransferOnSuccess_ExternalNumber VARCHAR(10) NULL;
-		END
-
-		IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''TransferOnSuccess_DirectoryId'' AND Object_ID = Object_ID(N''ccInboundExtend''))
-		BEGIN
-			ALTER TABLE ccInboundExtend ADD TransferOnSuccess_DirectoryId SMALLINT NULL;
-			ALTER TABLE ccInboundExtend ADD CONSTRAINT FK_ccIBX_Success_Directory FOREIGN KEY (TransferOnSuccess_DirectoryId) REFERENCES dbo.telefonosTransferencia(numtra_id);
-		END
-
-		IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''TransferOnSuccess_Mode'' AND Object_ID = Object_ID(N''ccInboundExtend''))
-		BEGIN
-			ALTER TABLE ccInboundExtend ADD TransferOnSuccess_Mode BIT NULL CONSTRAINT DF_ccIBX_Success_Mode DEFAULT(0);
-		END
-
-		IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''TransferOnSuccess_TimeoutSec'' AND Object_ID = Object_ID(N''ccInboundExtend''))
-		BEGIN
-			ALTER TABLE ccInboundExtend ADD TransferOnSuccess_TimeoutSec SMALLINT NULL CONSTRAINT DF_ccIBX_Success_TimeoutSec DEFAULT(60);
-		END
-	'
-    EXEC(@sql)
-
-	SET @process = 'K070051, K070208, K070219 - add operation create ai inbound campaign'
-	SET @sql = '
-		IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 137) BEGIN 
-			INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (137, ''Crear campaña (llamada de entrada IA)'', ''Create campaign (AI inbound call)'', ''Criar campanha (chamada de entrada IA)'');
-			INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 137);
-		END
-	'
-    EXEC(@sql)
-
-	SET @process = 'K070051, K070208, K070219 - add identifier and relation to table-column'
-	SET @sql = '
-		IF NOT EXISTS(SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_CALL_IA_CALL_TRANSCRIPTION'') BEGIN 
-			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt)
-			VALUES (''IN_CALL_IA_CALL_TRANSCRIPTION'', ''Mostrar transcripción de llamadas en Buscador'', ''Show call transcripts in Finder'', ''Mostrar transcri��es de chamadas em Localizador'')
-		END
-
-		IF NOT EXISTS(SELECT * FROM relationTableColumnIdentifiers WHERE Identifiers = ''IN_CALL_IA_CALL_TRANSCRIPTION'' AND tableName = ''ccInboundExtend'') BEGIN 
-			INSERT INTO relationTableColumnIdentifiers (Identifiers, tableName, colunName)
-			VALUES (''IN_CALL_IA_CALL_TRANSCRIPTION'',''ccInboundExtend'',''IsCallTranscriptionEnabled'')
-		END
-
-		IF NOT EXISTS(SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_CALL_IA_TRANSFER_TO_HUMAN_AGENTS'') BEGIN 
-			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt)
-			VALUES (''IN_CALL_IA_TRANSFER_TO_HUMAN_AGENTS'', ''Transferencia a agentes humanos'', ''Live agent transfer'', ''Transferência para agentes humanos'')
-		END
-		IF NOT EXISTS(SELECT * FROM relationTableColumnIdentifiers WHERE Identifiers = ''IN_CALL_IA_TRANSFER_TO_HUMAN_AGENTS'' AND tableName = ''ccInboundExtend'') BEGIN 
-			INSERT INTO relationTableColumnIdentifiers (Identifiers, tableName, colunName)
-			VALUES (''IN_CALL_IA_TRANSFER_TO_HUMAN_AGENTS'',''ccInboundExtend'',''TransferToHumanAgents'')
-		END
-
-		IF NOT EXISTS(SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_CALL_IA_TRANSFER_ON_SUCCESSFUL_HANDLING'') BEGIN 
-			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt)
-			VALUES (''IN_CALL_IA_TRANSFER_ON_SUCCESSFUL_HANDLING'', ''Transferencia por gestión exitosa'', ''Successful interaction transfer'', ''Transferência de interação bem-sucedida'')
-		END
-		IF NOT EXISTS(SELECT * FROM relationTableColumnIdentifiers WHERE Identifiers = ''IN_CALL_IA_TRANSFER_ON_SUCCESSFUL_HANDLING'' AND tableName = ''ccInboundExtend'') BEGIN 
-			INSERT INTO relationTableColumnIdentifiers (Identifiers, tableName, colunName)
-			VALUES (''IN_CALL_IA_TRANSFER_ON_SUCCESSFUL_HANDLING'',''ccInboundExtend'',''TransferOnSuccessfulHandling'')
-		END
-	'
-    EXEC(@sql)
-
-	SET @process = 'K070051, K070208, K070219 - Add multiple identifiers'
-	SET @sql = '
-		IF NOT EXISTS(SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_CAMPAIGN'') BEGIN 
-			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt)
-			VALUES (''COMMON_CAMPAIGN'', ''campaña'', ''campaign'', ''campanha'')
-		END
-		IF NOT EXISTS(SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_DIRECTORY'') BEGIN 
-			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt)
-			VALUES (''COMMON_DIRECTORY'', ''directorio '', ''transfer list '', ''catálogo '')
-		END
-		IF NOT EXISTS(SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_EXTERNAL_NUMBER'') BEGIN 
-			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt)
-			VALUES (''COMMON_EXTERNAL_NUMBER'', ''número externo '', ''external number '', ''número externo '')
-		END
-	'
-    EXEC(@sql)
-
+---------------------- BEGIN IGC ----------------------
 	SET @process = 'K070051, K070208, K070219 - Delete scalar fuction GetAIVoiceCampaignHistory'
 	SET @sql = '
 	IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''dbo.GetAIVoiceCampaignHistory'') AND type IN (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))

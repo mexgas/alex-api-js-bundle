@@ -3447,6 +3447,240 @@ end'
 
 
     ----------------------- END Carlos Muñoz -----------------------
+	SET @process = 'KL70008 drop sp ccsp_VirtualAgents'
+	SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_VirtualAgents'')
+    begin
+        DROP PROCEDURE ccsp_VirtualAgents;
+    end'
+    EXEC(@sql);
+
+	SET @process = 'KL70008 create sp ccsp_VirtualAgents'
+	SET @sql = '
+
+    CREATE PROCEDURE ccsp_VirtualAgents
+    @action INT,
+	@idVirtualAgent INT = 0,
+    @nameAgent NVARCHAR(255) = NULL,
+    @statusAgent BIT = NULL,
+	@campaignId INT = NULL,
+	@mediaType INT = NULL, -- CALLS, WHATSAPP, SMS
+	@campType INT = NULL, -- 0 IN - 1 OUT
+	@voiceID INT= 0,
+	-- Masivo
+	@virtualAgentIds VARCHAR(600) = NULL
+    AS
+    BEGIN
+        IF @action = 1
+        BEGIN
+            SELECT
+                va.idAgent AS idAgent,
+                va.NameAgent AS nombre,
+                ISNULL(CAST(va.idCampaign AS INT),0) AS idCampaign,
+                ISNULL(va.concurrentSessionsLimit, 0) AS concurrentSessionsLimit,
+                CAST(va.StatusAgent AS BIT) AS status,
+                CAST(va.mediaType AS INT) as SubType,
+                ISNULL(
+                    CASE 
+                        WHEN va.CampType = 0 THEN ci.descripcion 
+                        ELSE co.cam_descripcion
+                    END, ''N/A''
+                ) AS campName,
+                ISNULL(
+                    CASE 
+                        WHEN va.CampType = 0 THEN ci.IDArea -- Campaña de entrada
+                        ELSE co.IDArea -- Campaña de salida
+                    END,
+                0) AS IDArea,
+                CAST(ISNULL(
+                    CASE 
+                        WHEN va.CampType = 0 THEN ig.graphic_id -- Icono para entrada
+                        ELSE og.graphic_id -- Icono para salida
+                    END, 0
+                ) AS int) AS campaignGraph,
+                CAST(va.CampType AS int) CampType,
+                ISNULL(
+                    CASE 
+                        WHEN va.CampType = 0 THEN CAST(ci.Status AS BIT) -- Estado de la campaña de entrada
+                        ELSE CAST(co.cam_procesando AS BIT) -- Estado de la campaña de salida
+                    END, 0
+                ) AS IsActiveCampaign, -- Devuelve 1 o 0
+                ISNULL(
+                    CASE 
+                        WHEN (va.CampType = 0 AND ci.chat = 5) THEN wn.Number
+                        WHEN (va.CampType = 1 AND co.CampType = 5) THEN wno.Number
+                        ELSE ''N/A''
+                    END, ''N/A''
+                ) AS NumeroAsociado,
+                CONVERT(VARCHAR(10), va.createDateAgent, 120) AS FechaCreacion, -- Devuelve como ''YYYY-MM-DD''
+                ISNULL(
+                    CASE 
+                        WHEN va.latestUpdateDateAgent IS NULL OR va.latestUpdateDateAgent = '''' THEN ''N/A''
+                        ELSE CONVERT(VARCHAR(10), va.latestUpdateDateAgent, 120) -- Devuelve como ''YYYY-MM-DD''
+                    END, ''N/A''
+                ) AS FechaUltimaModificacion -- Devuelve ''YYYY-MM-DD'' o ''N/A''
+            FROM dbo.ccVirtualAgent va
+            LEFT JOIN dbo.ccInbound ci ON ci.Inbound_id = va.idCampaign AND va.campType = 0
+            LEFT JOIN dbo.ccCamps co ON co.cam_id = va.idCampaign AND va.campType = 1
+            LEFT JOIN dbo.ccMetaWhatsAppNumbers wn ON wn.Inbound_Id = va.idCampaign AND va.campType = 0 AND mediaType != 0
+            LEFT JOIN dbo.ccMetaWhatsAppNumbers wno ON wno.Cam_Id = va.idCampaign AND va.campType = 1 AND mediaType != 0
+            LEFT JOIN dbo.ccRIAInboundGraph ig ON ig.Inbound_id = va.idCampaign AND va.campType = 0
+            LEFT JOIN dbo.ccRIACampsGraph og ON og.cam_id = va.idCampaign AND va.campType = 1
+        END
+
+        ELSE IF @action = 2
+        BEGIN
+            -- Creación de un nuevo agente virtual
+            INSERT INTO dbo.ccVirtualAgent (
+                nameAgent, 
+                statusAgent, 
+                createDateAgent, 
+                latestUpdateDateAgent
+            )
+            VALUES (
+                @nameAgent, 
+                @statusAgent, 
+                GETDATE(), -- Fecha de creación actual
+                NULL -- latestUpdateDateAgent
+            );
+
+            -- Retornar mensaje de éxito
+            SELECT ''Agente creado exitosamente'' AS Resultado, SCOPE_IDENTITY() AS IdAgenteCreado;
+        END
+
+        ELSE IF @action = 3 -- Elimination of virtual Agent
+        BEGIN
+            CREATE TABLE #deletedVirtualAgents(idAgent int, agentName varchar(255))
+
+            DELETE FROM dbo.ccVirtualAgent
+            OUTPUT deleted.idAgent, deleted.nameAgent INTO #deletedVirtualAgents
+            WHERE idAgent IN(SELECT Value FROM fn_RIASplitDelimited(@virtualAgentIds,'','')) AND statusAgent = 0;
+
+            SELECT * FROM #deletedVirtualAgents
+        END
+
+        ELSE IF @action = 4 -- Change of campaign
+        BEGIN
+			DECLARE @PreviousAgentData AS TABLE(
+				idAgent INT,
+				nameAgent VARCHAR(255),
+				idCampaign SMALLINT,
+				camptype TINYINT
+			);
+
+            IF NOT EXISTS (SELECT 1 FROM ccVirtualAgent WHERE idAgent != @idVirtualAgent AND idCampaign = @campaignId AND mediaType = @mediaType AND campType = @campType) OR
+            (@campaignId = 0)
+            BEGIN
+                UPDATE ccVirtualAgent SET idCampaign = @campaignId, 
+                                        mediaType = @mediaType, 
+                                        campType = @campType,
+                                        latestUpdateDateAgent = GETDATE()
+									  OUTPUT deleted.idAgent, deleted.nameAgent, deleted.idCampaign, deleted.campType INTO @PreviousAgentData
+                WHERE idAgent = @idVirtualAgent
+
+				IF @campaignId != 0
+					BEGIN
+						SELECT 
+							va.idAgent,
+							va.nameAgent,
+							CAST(va.idCampaign as int) idCampaign,
+							CASE 
+								WHEN @campType = 0 THEN i.descripcion
+								ELSE cout.cam_descripcion 
+							END AS campaignName
+						FROM ccVirtualAgent va
+						LEFT JOIN ccInbound i ON va.idCampaign = i.Inbound_id AND @campType = 0
+						LEFT JOIN ccCamps cout ON va.idCampaign = cout.cam_id AND @campType = 1
+						WHERE va.idAgent = @idVirtualAgent;
+					END
+
+				ELSE
+					BEGIN
+						SELECT 
+							pvd.idAgent,
+							pvd.nameAgent,
+							CAST(0 as int) idCampaign,
+							CASE 
+								WHEN pvd.camptype = 0 THEN i.descripcion
+								ELSE cout.cam_descripcion 
+							END AS campaignName
+						FROM @PreviousAgentData pvd
+						LEFT JOIN ccInbound i ON pvd.idCampaign = i.Inbound_id AND pvd.camptype = 0
+						LEFT JOIN ccCamps cout ON pvd.idCampaign = cout.cam_id AND pvd.camptype = 1
+					END
+            END
+
+            ELSE
+				SELECT -1 as idAgent,-1 as idCampaign, '''' AS descripcion
+        END
+
+        ELSE IF @action = 5 -- Status change
+        BEGIN
+            CREATE TABLE #updatedVirtualAgents(idAgent int, nameAgent varchar(255), newStatus BIT)
+
+            UPDATE ccVirtualAgent SET statusAgent = @statusAgent,
+                                    latestUpdateDateAgent = GETDATE()
+            OUTPUT inserted.idAgent, inserted.nameAgent, inserted.statusAgent as newStatus INTO #updatedVirtualAgents
+            WHERE idAgent IN (SELECT Value FROM fn_RIASplitDelimited(@virtualAgentIds,'','')) and statusAgent != @statusAgent
+
+            SELECT * FROM #updatedVirtualAgents
+        END
+
+		ELSE IF @action = 6 --Check if there''s enabled related agent to camp 
+		BEGIN
+			DECLARE @result bit = 0;
+
+			IF EXISTS (SELECT 1 FROM ccVirtualAgent WHERE idCampaign = @campaignId)
+			BEGIN
+				SELECT @result = statusAgent from ccVirtualAgent where idCampaign = @campaignId
+			END
+
+			select @result
+			
+		END
+		ELSE IF (@action = 7) --- Get virtual agents by campaign id and camptype
+        BEGIN
+                SELECT 
+                cva.idAgent
+                , ISNULL(cva.quantumAgentId,'''') AS QuantumAgentId
+                , ISNULL(cva.location,'''') AS Location
+                , ISNULL('''','''')  AS ProjectId
+				, ISNULL(cva.voice,'''')  AS Voice
+                FROM dbo.ccVirtualAgent AS cva
+                WHERE cva.idCampaign = @campaignId AND cva.campType = @campType;
+        END
+        ELSE IF (@action = 8) --- Reload virtual agent association
+		BEGIN
+			SELECT 
+                cva.idAgent AS IdAgentVirtual
+                ,cva.nameAgent AS NameAgentVirtual
+                ,ISNULL(cva.concurrentSessionsLimit, 0) AS NumberSessions
+                ,CONVERT(INT, cva.idCampaign) AS IdCampaign
+            FROM ccVirtualAgent cva
+            LEFT JOIN ccCamps cc ON cva.idCampaign = cc.cam_id AND cva.campType = 1
+            WHERE cva.idAgent = (CASE WHEN @idVirtualAgent = 0 THEN cva.idAgent ELSE @idVirtualAgent END)
+		END
+		ELSE IF (@action = 9) --Get FileLocation from ccVirtualAgentVoices
+		BEGIN
+			select Name, FileName from ccVirtualAgentVoices where ID = @voiceID
+		END
+		ELSE IF (@action = 10) --Update voice
+		BEGIN
+			if exists(select * from ccVirtualAgent where idAgent=@idVirtualAgent)
+			BEGIN
+				update ccVirtualAgent set voice=@voiceID where idAgent=@idVirtualAgent
+				select 1
+			END
+			ELSE BEGIN
+				select 0
+			END
+		END
+		ELSE IF(@action = 11) --get voice library
+		BEGIN 
+			select ID,Name,Gender, FileName from ccVirtualAgentVoices
+		END
+  
+    END'
+    EXEC(@sql);
 
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
     EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

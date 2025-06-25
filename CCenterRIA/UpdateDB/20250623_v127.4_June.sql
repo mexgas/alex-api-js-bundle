@@ -980,25 +980,25 @@ BEGIN
 	DECLARE @stringFormated VARCHAR(MAX) = '''';
 
 	SELECT 
-      @stringFormated =
-        STUFF(
-          (
-            SELECT
-              ''('' +
-              CASE 
-                WHEN cgi.Description IS NULL THEN res.Value
-                WHEN @lang = 0             THEN cgi.TagEs 
-                WHEN @lang = 2             THEN cgi.TagPt 
-                WHEN @lang > 0 AND @lang < 2 THEN cgi.TagEn
-              END
-            FROM dbo.fn_RIASplitDelimited(@value, ''<'') AS res
-            LEFT JOIN ccGalateaIdentifiers AS cgi  ON cgi.Description = res.Value
-            FOR XML PATH(''''), TYPE
-          ).value(''.'', ''VARCHAR(MAX)'')
-        , 1, 1, '''' 
-        )
-        + '')''
-    ;
+		@stringFormated =
+		STUFF(
+			(
+			SELECT
+				''('' +
+				CASE 
+				WHEN cgi.Description IS NULL THEN res.Value
+				WHEN @lang = 0             THEN cgi.TagEs 
+				WHEN @lang = 2             THEN cgi.TagPt 
+				WHEN @lang > 0 AND @lang < 2 THEN cgi.TagEn
+				END
+			FROM dbo.fn_RIASplitDelimited(@value, ''<'') AS res
+			LEFT JOIN ccGalateaIdentifiers AS cgi  ON cgi.Description = res.Value
+			FOR XML PATH(''''), TYPE
+			).value(''.'', ''VARCHAR(MAX)'')
+		, 1, 1, '''' 
+		)
+		+ '')''
+		;
 
 	RETURN @stringFormated
 END

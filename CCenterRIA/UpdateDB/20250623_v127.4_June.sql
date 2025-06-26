@@ -3516,7 +3516,8 @@ end'
                         WHEN va.latestUpdateDateAgent IS NULL OR va.latestUpdateDateAgent = '''' THEN ''N/A''
                         ELSE CONVERT(VARCHAR(10), va.latestUpdateDateAgent, 120) -- Devuelve como ''YYYY-MM-DD''
                     END, ''N/A''
-                ) AS FechaUltimaModificacion -- Devuelve ''YYYY-MM-DD'' o ''N/A''
+                ) AS FechaUltimaModificacion, -- Devuelve ''YYYY-MM-DD'' o ''N/A''
+				ISNULL(va.voice,1) as Voice
             FROM dbo.ccVirtualAgent va
             LEFT JOIN dbo.ccInbound ci ON ci.Inbound_id = va.idCampaign AND va.campType = 0
             LEFT JOIN dbo.ccCamps co ON co.cam_id = va.idCampaign AND va.campType = 1

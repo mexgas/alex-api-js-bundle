@@ -170,6 +170,20 @@ else if @action = 14 begin
 
 end'
     EXEC(@sql)
+	SET @process = 'CW-9760 delete table  ccBaseXDB'
+    SET @sql = '
+	   IF EXISTS (
+		SELECT 1
+		FROM sys.columns c
+		INNER JOIN sys.tables t ON c.object_id = t.object_id
+		WHERE t.name = N''ccBaseXDB''
+		  AND c.name = N''id''
+		  AND c.is_identity = 1
+	)
+	BEGIN
+	 DROP TABLE ccBaseXDB;
+	END'
+    EXEC(@sql)
 
 	SET @process = 'CW-9760 create table  ccsp_BaseXmngr'
     SET @sql = '

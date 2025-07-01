@@ -19314,8 +19314,7 @@ END;
 BEGIN
     ALTER TABLE dbo.xxClienteCarga DROP CONSTRAINT PK_clienteCarga;
 
-END
-Go'
+END'
     EXEC(@sql)
 
     SET @process = 'ALTER TABLE dbo.xxClienteCarga ALTER COLUMN cam_id INT NOT NULL;'

@@ -94,152 +94,7 @@ BEGIN
 END';
 	EXEC(@sql);
 
-    SET @process = 'ALTER PROCEDURE [dbo].[ccspGenSession] @from y @to Datetime'
-    SET @sql = 'ALTER PROCEDURE [dbo].[ccspGenSession]
-@from AS DATETIME,
-@to AS DATETIME
-AS
-SET NOCOUNT ON
-
-DECLARE @date DATETIME
-
-CREATE TABLE #tempccGenSession ([fila] INT NOT NULL, [user_id] [smallint] NOT NULL, [login] [datetime] NOT NULL, [logout] [datetime] NULL, [extension] [varchar](7) NOT NULL, PRIMARY KEY (fila, user_id))
-CREATE TABLE #temUserIdLogoutNull ([user_id] [smallint] NOT NULL)
-CREATE TABLE #temIdMaxLogoutNull ([fila] INT NOT NULL, [user_id] [smallint] NOT NULL, PRIMARY KEY (fila, user_id))
-
-
-;with dataLoginLogout as(
-select ROW_NUMBER() OVER (
-PARTITION BY user_id ORDER BY FECHA, tipoMov
-) Fila
-,User_id,Extension,TipoMov,
-case when TipoMov =1 then
-dateadd(ms, - DATEPART(ms, fecha), fecha) 
-else fecha  end 
-fecha 
-from ccLogLogin with(nolock) where fecha between @from and @to 
-)
-
-
-
-INSERT INTO #tempccGenSession
-select A.Fila, A.User_id
-,dateadd(ms, - DATEPART(ms, A.fecha), A.fecha) LOGIN,  S.fecha logout
-, A.Extension
-from dataLoginLogout A
-left join dataLoginLogout S on A.Fila =S.Fila-1 and A.TipoMov=1 and S.TipoMov=0 AND A.User_id = S.User_id
-where A.TipoMov=1
-
-
-
-UPDATE x
-SET x.fila = x.row
-FROM (
-    SELECT fila, ROW_NUMBER() OVER (
-            PARTITION BY user_id ORDER BY LOGIN
-            ) row
-    FROM #tempccGenSession
-    ) x
-
-
-
-INSERT INTO #temUserIdLogoutNull
-    SELECT user_id
-    FROM #tempccGenSession
-    WHERE logout IS NULL
-    GROUP BY user_id
-
-INSERT INTO #temIdMaxLogoutNull
-    SELECT A.fila, A.user_id
-    FROM #tempccGenSession A
-    INNER JOIN (
-        SELECT max(fila) fila, user_id
-        FROM #tempccGenSession
-        WHERE user_id IN (
-                SELECT user_id
-                FROM #temUserIdLogoutNull
-                )
-        GROUP BY user_id
-        ) B
-        ON A.fila = B.fila
-            AND A.user_id = B.user_id
-    WHERE A.logout IS NULL
-
-
-
-
-SET @date = GETDATE()
-
-UPDATE A
-    SET A.logout = CASE WHEN @to < @date THEN @to ELSE @date END
-    FROM #tempccGenSession A
-    INNER JOIN #temIdMaxLogoutNull B
-        ON A.user_id = B.user_id
-            AND A.fila = B.fila
-
-    ;with logoutAgentDia as(
-    select A.fila,A.user_id,A.login, A.extension,
-    (
-    select max( fecha) from ccLogAgentesDia where fecha between A.login and B.login
-    and User_id=A.user_id 
-    ) logout2
-    FROM #tempccGenSession A
-    LEFT JOIN #tempccGenSession B
-        ON A.fila = B.fila - 1
-            AND A.user_id = B.user_id
-    WHERE A.logout IS NULL
-    )
-
-    update A set A.logout=B.logout2
-    --select A.fila,A.user_id,A.login,B.logout2 as logout, A.extension 
-    from #tempccGenSession A
-    inner join logoutAgentDia B on A.fila=B.fila and A.user_id=B.user_id 
-    where A.logout is null
-
-DELETE
-FROM #tempccGenSession
-WHERE LOGIN = logout
-
-
-
-
-DELETE A
-FROM #tempccGenSession A
-INNER JOIN (
-    SELECT user_id, [login], logout
-    FROM #tempccGenSession
-    GROUP BY user_id, [login], logout
-    HAVING count(*) > 1
-    ) B
-    ON A.user_id = B.user_id
-        AND A.LOGIN = B.LOGIN
-        AND A.logout = B.logout
-
-UPDATE a
-WITH (ROWLOCK)
-
-SET a.logout = b.logout
-FROM #tempccGenSession b
-INNER JOIN #tempccGenSession a
-    ON a.user_id = b.user_id
-        AND a.LOGIN = b.LOGIN
-        AND a.logout <> b.logout;
-
-    ;WITH tmpccGenSession
-    AS (
-        SELECT user_id, [login], [logout], extension
-        , dbo.GetTimeGroup([login], 0) AS timeGroup, dbo.GetTimeGroup([logout], 1) AS timeGroupNext
-        FROM #tempccGenSession
-        )
-    SELECT A.*, datediff(ss, [login], [logout]) AS tlog
-    FROM tmpccGenSession A
-
-DROP TABLE #tempccGenSession
-DROP TABLE #temUserIdLogoutNull
-DROP TABLE #temIdMaxLogoutNull
-
-SET NOCOUNT OFF'
-    EXEC(@sql)
+    
 
 
     SET @process = 'Alter FN TimeInterval correcion visita muñoz'
@@ -4634,19 +4489,357 @@ begin
 end';
     EXEC(@sql);
 
-    SET @process = '';
-    SET @sql = '';
-    EXEC(@sql);
-
-    SET @process = '';
-    SET @sql = '';
-    EXEC(@sql);
-
-    SET @process = '';
-    SET @sql = '';
-    EXEC(@sql);
-
+  
 --------------------------------------------- Begin Jesus 127.20250325.0.29  ----------------------------------------------------------------
+
+--------------------------------- BEGIN Jesus Gallardo .31 tickets ----------------------------------------------------------
+
+    SET @process = 'ALTER PROCEDURE [dbo].[ccspGenSession] @from y @to SMALLDATETIME se revisa los login y logout para que no tengamos huerfanos'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccspGenSession]
+    @from AS SMALLDATETIME,
+    @to AS SMALLDATETIME
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @date DATETIME = GETDATE();
+
+    CREATE TABLE #tempccGenSession ([fila] INT NOT NULL, 
+        [user_id] [smallint] NOT NULL, 
+        [login] [datetime] NULL, 
+        [logout] [datetime] NULL, 
+        [extension] [varchar](7) NOT NULL, 
+        PRIMARY KEY (fila, user_id))
+
+
+    CREATE TABLE #temUserIdLogoutNull ([user_id] [smallint] NOT NULL);
+    CREATE TABLE #temIdMaxLogoutNull ([fila] INT NOT NULL, [user_id] [smallint] NOT NULL, PRIMARY KEY (fila, user_id));
+
+    set @date=GETDATE()
+
+  ;
+
+  ;WITH eventos AS (
+    SELECT 
+        user_id,
+        extension,
+        tipoMov,
+        fecha,
+        ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY fecha) AS rn
+    FROM ccLogLogin
+    WHERE fecha BETWEEN @from AND @to
+     -- AND user_id in(252,169,104,261,68)
+),
+paired AS (
+    -- Login con su logout más próximo si no hay otro login entre medio
+    SELECT 
+        e1.user_id,
+        e1.extension,
+        e1.fecha AS login,
+        (
+            SELECT TOP 1 e2.fecha
+            FROM eventos e2
+            WHERE e2.user_id = e1.user_id
+              AND e2.tipoMov = 0
+              AND e2.fecha > e1.fecha
+              AND NOT EXISTS (
+                  SELECT 1 
+                  FROM eventos e3
+                  WHERE e3.user_id = e1.user_id
+                    AND e3.fecha > e1.fecha AND e3.fecha < e2.fecha
+                    AND e3.tipoMov = 1
+              )
+            ORDER BY e2.fecha
+        ) AS logout
+    FROM eventos e1
+    WHERE e1.tipoMov = 1
+),
+logouts_usados AS (
+    SELECT user_id, logout FROM paired WHERE logout IS NOT NULL
+),
+logout_huerfanos AS (
+    -- Logouts que no fueron usados en el emparejamiento
+    SELECT 
+        e.user_id,
+        e.extension,
+        NULL AS login,
+        e.fecha AS logout
+    FROM eventos e
+    WHERE e.tipoMov = 0
+      AND NOT EXISTS (
+          SELECT 1 FROM logouts_usados lu
+          WHERE lu.user_id = e.user_id AND lu.logout = e.fecha
+      )
+)
+-- Resultado final combinado
+INSERT INTO #tempccGenSession (fila, user_id, login, logout, extension)
+SELECT 
+    ROW_NUMBER() OVER (ORDER BY login, logout) AS fila,
+    user_id,
+    login,
+    logout,
+    extension
+FROM (
+    SELECT * FROM paired
+    UNION ALL
+    SELECT * FROM logout_huerfanos
+) AS sesiones;
+
+
+
+-- Buscar registros en ccLogAgentesDia que:
+-- - No estén ya insertados como logout
+-- - Estén dentro del rango
+-- - Corresponden a un user_id que tiene logout sin login
+-- Buscar logouts en #tempccGenSession sin login
+-- y ver si existe un login posterior en ccLogLogin
+;WITH LogoutHuérfanos AS (
+    SELECT user_id, logout
+    FROM #tempccGenSession
+    WHERE login IS NULL AND logout IS NOT NULL
+),
+SiguientesLogin AS (
+    SELECT 
+        l.user_id,
+        l.logout,
+        (
+            SELECT TOP 1 fecha
+            FROM ccLogLogin
+            WHERE tipoMov = 1
+              AND user_id = l.user_id
+              AND fecha > l.logout
+            ORDER BY fecha
+        ) AS siguiente_login,
+        (
+            SELECT MAX(fecha)
+            FROM ccLogLogin
+            WHERE tipoMov = 1
+              AND user_id = l.user_id
+              AND fecha < l.logout
+        ) AS login_anterior
+    FROM LogoutHuérfanos l
+), ActividadEnIntervalo AS (
+    SELECT 
+        s.user_id,
+        s.logout,
+        s.siguiente_login,
+        a.fecha AS ultima_actividad,
+        a.TipoStatusAge_id,
+        a.tStatus
+    FROM SiguientesLogin s
+    OUTER APPLY (
+        SELECT TOP 1 *
+        FROM ccLogAgentesDia a
+        WHERE a.user_id = s.user_id
+          AND a.fecha >= s.logout
+          AND a.fecha < s.siguiente_login
+        ORDER BY a.fecha DESC
+    ) a
+)
+-- Actualizar logout, TipoStatusAge_id y tStatus con la actividad real detectada
+UPDATE T
+SET 
+    T.login = dateadd(ss,-A.tStatus, A.ultima_actividad)    
+FROM #tempccGenSession T
+INNER JOIN ActividadEnIntervalo A
+    ON T.user_id = A.user_id
+   AND T.logout = A.logout
+   AND T.login IS NULL
+WHERE A.ultima_actividad IS NOT NULL;
+
+
+IF @to >= CONVERT(DATETIME, CONVERT(DATE, @date)) -- solo si @to es hoy o futuro
+BEGIN
+    ;WITH UltimosLoginsPendientes AS (
+        SELECT
+            fila,
+            user_id,
+            login,
+            ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY login DESC) AS rn
+        FROM #tempccGenSession
+        WHERE logout IS NULL
+    )
+    UPDATE T
+    SET logout = @date
+    FROM #tempccGenSession T
+    INNER JOIN UltimosLoginsPendientes U
+        ON T.fila = U.fila AND T.user_id = U.user_id
+    WHERE U.rn = 1
+      AND CONVERT(DATE, U.login) = CONVERT(DATE, @date); -- login es hoy
+END;
+
+;WITH LoginHuerfano AS (
+    SELECT user_id, login
+    FROM #tempccGenSession
+    WHERE logout IS NULL AND login IS NOT NULL
+)
+, LogoutYActividad AS (
+    SELECT 
+        l.user_id,
+        l.login,
+        -- Siguiente logout
+        (
+            SELECT TOP 1 fecha
+            FROM ccLogLogin
+            WHERE tipoMov = 0
+              AND user_id = l.user_id
+              AND fecha > l.login
+            ORDER BY fecha
+        ) AS siguiente_logout,
+        -- Última actividad entre login y siguiente logout
+        (
+            SELECT TOP 1 a.fecha
+            FROM ccLogAgentesDia a
+            WHERE a.user_id = l.user_id
+              AND a.fecha >= l.login
+              AND a.fecha < (
+                SELECT TOP 1 fecha
+                FROM ccLogLogin
+                WHERE tipoMov = 0
+                  AND user_id = l.user_id
+                  AND fecha > l.login
+                ORDER BY fecha
+              )
+            ORDER BY a.fecha DESC
+        ) AS ultima_actividad,
+        (
+            SELECT TOP 1 a.TipoStatusAge_id
+            FROM ccLogAgentesDia a
+            WHERE a.user_id = l.user_id
+              AND a.fecha >= l.login
+              AND a.fecha < (
+                SELECT TOP 1 fecha
+                FROM ccLogLogin
+                WHERE tipoMov = 0
+                  AND user_id = l.user_id
+                  AND fecha > l.login
+                ORDER BY fecha
+              )
+            ORDER BY a.fecha DESC
+        ) AS TipoStatusAge_id,
+        (
+            SELECT TOP 1 a.tStatus
+            FROM ccLogAgentesDia a
+            WHERE a.user_id = l.user_id
+              AND a.fecha >= l.login
+              AND a.fecha < (
+                SELECT TOP 1 fecha
+                FROM ccLogLogin
+                WHERE tipoMov = 0
+                  AND user_id = l.user_id
+                  AND fecha > l.login
+                ORDER BY fecha
+              )
+            ORDER BY a.fecha DESC
+        ) AS tStatus
+    FROM LoginHuerfano l
+)
+-- Actualizar logout, TipoStatusAge_id y tStatus con actividad entre login y logout
+UPDATE T
+SET 
+    T.logout = A.ultima_actividad   
+FROM #tempccGenSession T
+INNER JOIN LogoutYActividad A
+    ON T.user_id = A.user_id
+   AND T.login = A.login
+   AND T.logout IS NULL
+WHERE A.ultima_actividad IS NOT NULL;
+
+  ;WITH tmpccGenSession
+    AS (
+        SELECT user_id, [login], [logout], extension
+        , dbo.GetTimeGroup([login], 0) AS timeGroup, dbo.GetTimeGroup([logout], 1) AS timeGroupNext
+        FROM #tempccGenSession
+        )
+    SELECT A.*, datediff(ss, [login], [logout]) AS tlog
+    FROM tmpccGenSession A
+    where A.login is not null and A.logout is not null
+
+    -- Limpieza
+    DROP TABLE #tempccGenSession;
+    DROP TABLE #temUserIdLogoutNull;
+    DROP TABLE #temIdMaxLogoutNull;
+
+    SET NOCOUNT OFF;
+END'
+    EXEC(@sql)
+
+    SET @process = 'ALTER PROCEDURE [dbo].[ccspRepOutDials] SE AGREGA para validar que la campaña no es cero';
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepOutDials]
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+AS
+
+if @from is null
+    select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null 
+    select @to = getdate()
+
+if @action = 1 
+begin
+    declare @total decimal(10,2)
+        
+        
+
+    select @total = count(*) from ccologdials as a WITH(NOLOCK, INDEX(IX_ccoLogDials_8))
+    inner join ccTipoResultadoDial as b (NOLOCK) on (a.tipoResDial_id = b.tipoResDial_id)
+    where fecha >= @from and fecha < @to        
+    and cal_id is not null
+        
+    delete from RepOutDials where date >= @from AND date < @to
+        
+        
+    ;with tmpRepOutDials as(
+    select  DATEADD(HOUR, DATEDIFF(HOUR, 0, fecha), 0) as fecha ,cal_id
+    ,a.tipoResDial_id, descripcion,cam_id
+    from ccologdials as a WITH(NOLOCK, INDEX(IX_ccoLogDials_8))
+    inner join ccTipoResultadoDial as b (NOLOCK) on (a.tipoResDial_id = b.tipoResDial_id)
+    where fecha >= @from and fecha < @to        
+    and a.cal_id is not null
+    and cam_id>0
+    )
+
+    
+   insert into RepOutDials
+
+    select fecha as [date]      
+    ,isnull(a.cam_id,0) as campaignId, isnull(c.cam_descripcion,'''') as campaign
+    , isnull(min(d.idwg),1) as workgroupId, isnull(min(wgname),'''') as workgroup, isnull(min(c.idarea),1) as areaId, isnull(min(areaname),'''') as area
+        
+    ,a.tipoResDial_id, descripcion,
+    descripcion + ''_Count'' as descripcion_count,
+    count(*) as count,
+    descripcion + ''_Avg'' as descripcion_avg,
+    convert(decimal(10,2), (count(*)/@total)*100.00) as avg,
+    datepart(yyyy,fecha) AS [year],
+    datepart(mm,fecha) as [month],
+    datepart(dd,fecha) as [day],
+    datepart(hh,fecha) as [hour],
+    0 as [minutes]
+    from  tmpRepOutDials as a
+    left join ccCampsView as c (NOLOCK) on (a.cam_id = c.cam_id)
+    left join ccRIACampEspWG as d (NOLOCK) on a.cam_id = d.IdCampEsp and d.tipo = 1 
+    left join ccRIACat_WorkGroup as e (NOLOCK) on (d.idwg = e.idwg)
+    left join ccRIAAreaWorkGroup as f (NOLOCK) on (e.idwg = f.idwg)
+    left join ccRIACat_Areas as g (NOLOCK) on (c.idarea = g.idarea)     
+    group by fecha ,        
+    a.cam_id, c.cam_descripcion, a.tipoResDial_id, descripcion  
+    
+end';
+    EXEC(@sql);
+
+    SET @process = '';
+    SET @sql = '';
+    EXEC(@sql);
+
+    SET @process = '';
+    SET @sql = '';
+    EXEC(@sql);
+
+
+
+--------------------------------- BEGIN Jesus Gallardo .31 tickets ----------------------------------------------------------
 
     	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version
 

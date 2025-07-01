@@ -142,11 +142,6 @@ insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'cc
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccInbound_consulta',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccVirtualAgent',@idInt,0)
 
-
-set @idInt=@idInt+1
-insert into publicationTableCCenterRIA(publicationName,status) values(N'WorkGroup_Calid',0)	
-insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccRIAWorkGroup_Calid',@idInt,0)
-
 set @idInt=@idInt+1
 insert into publicationTableCCenterRIA(publicationName,status) values(N'AVRSCampEsp',0)	
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccRIACampEspWG',@idInt,0)

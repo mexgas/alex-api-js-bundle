@@ -19301,35 +19301,30 @@ END;
 
     SET @process = 'ALTER TABLE dbo.xxClienteCarga DROP CONSTRAINT PK_clienteCarga;'
     SET @sql = 'IF EXISTS (
-    SELECT *
-    FROM sys.indexes i
-    INNER JOIN sys.index_columns ic 
-        ON i.object_id = ic.object_id AND i.index_id = ic.index_id
-    INNER JOIN sys.columns c 
-        ON ic.object_id = c.object_id AND ic.column_id = c.column_id
-    WHERE i.object_id = OBJECT_ID(''dbo.xxClienteCarga'')
-      AND i.is_primary_key = 1
-      AND c.name = ''cam_id''
-)
-BEGIN
-    ALTER TABLE dbo.xxClienteCarga DROP CONSTRAINT PK_clienteCarga;
-
-END'
-    EXEC(@sql)
-
-    SET @process = 'ALTER TABLE dbo.xxClienteCarga ALTER COLUMN cam_id INT NOT NULL;'
-    SET @sql = 'IF NOT EXISTS (
     SELECT 1
     FROM sys.indexes i
-    INNER JOIN sys.index_columns ic 
-        ON i.object_id = ic.object_id AND i.index_id = ic.index_id
-    INNER JOIN sys.columns c 
-        ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+    INNER JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+    INNER JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
     WHERE i.object_id = OBJECT_ID(''dbo.xxClienteCarga'')
       AND i.is_primary_key = 1
-      AND c.name = ''cam_id''
+    GROUP BY i.name
+    HAVING COUNT(*) = 1 AND MAX(c.name) = ''cuenta''
 )
-BEGIN
+BEGIN    
+    ALTER TABLE dbo.xxClienteCarga DROP CONSTRAINT PK_clienteCarga;
+END
+'
+    EXEC(@sql)		
+
+    SET @process = 'ALTER TABLE dbo.xxClienteCarga ALTER COLUMN cam_id INT NOT NULL;'
+    SET @sql = 'IF EXISTS (
+    SELECT 1
+    FROM sys.columns
+    WHERE object_id = OBJECT_ID(''dbo.xxClienteCarga'')
+      AND name = ''cam_id''
+      AND is_nullable = 1
+)
+BEGIN    
     ALTER TABLE dbo.xxClienteCarga ALTER COLUMN cam_id INT NOT NULL;
 END'
     EXEC(@sql)
@@ -19338,18 +19333,12 @@ END'
     SET @sql = 'IF NOT EXISTS (
     SELECT 1
     FROM sys.indexes i
-    INNER JOIN sys.index_columns ic 
-        ON i.object_id = ic.object_id AND i.index_id = ic.index_id
-    INNER JOIN sys.columns c 
-        ON ic.object_id = c.object_id AND ic.column_id = c.column_id
     WHERE i.object_id = OBJECT_ID(''dbo.xxClienteCarga'')
       AND i.is_primary_key = 1
-      AND c.name = ''cam_id''
 )
-BEGIN
-  
+BEGIN   
     ALTER TABLE dbo.xxClienteCarga 
-    ADD CONSTRAINT PK_clienteCarga PRIMARY KEY CLUSTERED (cuenta, cam_id);
+        ADD CONSTRAINT PK_clienteCarga PRIMARY KEY CLUSTERED (cuenta, cam_id);
 END
 '
     EXEC(@sql)

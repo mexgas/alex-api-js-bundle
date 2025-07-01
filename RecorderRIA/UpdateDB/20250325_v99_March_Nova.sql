@@ -768,7 +768,7 @@ DROP TABLE #replications;'
     EXEC(@sql)
 
 	SET @process = 'CW-9760 DROP PROCEDURE ccsp_BaseXmngr';
-	SET @sql = 'if exists (select * from sys.procedures where name = N'ccsp_BaseXmngr')
+	SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_BaseXmngr'')
     begin
         DROP PROCEDURE ccsp_BaseXmngr;
     end';

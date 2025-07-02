@@ -137,7 +137,6 @@ insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'cc
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccriacat_workgroup',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccriaworkgroupusers',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'cctipocalifout',@idInt,0)
-insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccBaseXDB',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccCamps_consulta',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccInbound_consulta',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccVirtualAgent',@idInt,0)

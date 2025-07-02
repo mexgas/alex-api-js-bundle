@@ -238,7 +238,6 @@ insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'Specia
 print('----------------------------- subcripcionTableCCRecorderRIA --------------')
 
 insert into  subcripcionTableCCRecorderRIA (publicationName,status) values(N'SpecialAVRS',0)
-insert into  subcripcionTableCCRecorderRIA (publicationName,status) values(N'WorkGroup_Calid',0)
 insert into  subcripcionTableCCRecorderRIA (publicationName,status) values(N'AVRSCampEsp',0)
 insert into  subcripcionTableCCRecorderRIA (publicationName,status) values(N'AVRSGraphs',0)
 insert into  subcripcionTableCCRecorderRIA (publicationName,status) values(N'AVRSSettings',0)

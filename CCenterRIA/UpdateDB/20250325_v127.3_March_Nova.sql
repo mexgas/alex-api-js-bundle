@@ -15313,13 +15313,13 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns]
         RETURNS BIGINT
 AS
 BEGIN
-    DECLARE @codigo VARCHAR(100) = ''
+    DECLARE @codigo VARCHAR(100) = ''''
     DECLARE @hash BIGINT = 0
     DECLARE @i INT
     DECLARE @len INT
 
     -- Validación inicial
-    IF @calKey IS NULL OR LTRIM(RTRIM(@calKey)) = ''
+    IF @calKey IS NULL OR LTRIM(RTRIM(@calKey)) = ''''
         RETURN NULL
 
     SET @i = 1
@@ -15331,15 +15331,15 @@ BEGIN
 
         IF @i % 5 = 0
         BEGIN
-            SET @hash = @hash + CAST(ISNULL(@codigo, '0') AS BIGINT)
-            SET @codigo = ''
+            SET @hash = @hash + CAST(ISNULL(@codigo, ''0'') AS BIGINT)
+            SET @codigo = ''''
         END
 
         SET @i = @i + 1
     END
 
-    IF @codigo <> ''
-        SET @hash = @hash + CAST(ISNULL(@codigo, '0') AS BIGINT)
+    IF @codigo <> ''''
+        SET @hash = @hash + CAST(ISNULL(@codigo,  ''0'') AS BIGINT)
 
     RETURN @hash % 99999999999973
 END

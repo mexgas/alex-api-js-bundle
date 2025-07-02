@@ -752,6 +752,21 @@ DROP TABLE #replications;'
 	END'
     EXEC(@sql)
 
+	SET @process = 'CW-9760 create table  ccsp_BaseXmngr'
+    SET @sql = '
+	if not exists (select * from sys.tables where name = N''ccBaseXDB'')
+    begin
+        CREATE TABLE ccBaseXDB (
+            id INT NOT NULL,
+            serviceId INT NULL,
+            dateStart DATETIME NULL,
+            dateEnd DATETIME NULL,
+            Xname VARCHAR(25) NULL,
+            isFull BIT NULL
+        );
+    end'
+    EXEC(@sql)
+
 
 	SET @process = 'CW-9760 DROP PROCEDURE ccsp_BaseXmngr';
 	SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_BaseXmngr'')

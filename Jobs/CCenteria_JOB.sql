@@ -368,13 +368,21 @@ set nocount on
 declare @idSqlCmd int
 declare @sqlCmd nvarchar(max)
 declare @days int
+declare @daysSms int
 declare @date datetime
+declare @dateSms datetime
 
 set @idSqlCmd = 0
 set @sqlCmd  =''''''''
 set @days = 30
-
 set @date =dateadd(dd, -@days, getdate())
+
+-------------------- BEGIN SMS ------------------------------------ 
+
+set @daysSms = 180
+set @dateSms =dateadd(dd, -@daysSms, getdate())
+
+-------------------- END SMS ------------------------------------ 
 
 
 create table #sqlCmdDeleteOldRecords(
@@ -528,6 +536,15 @@ where B.callout_id is null
 '''', 0, 1)
 
 
+
+-------------------- BEGIN SMS ------------------------------------ 
+
+insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
+values (''''delete smsccoLogDial where smsDate < @dateSms'''', 0, 1)
+
+-------------------- END SMS -------------------------------------
+
+
 while (select count(*) from #sqlCmdDeleteOldRecords where [status] = 0 ) > 0
     begin
         set rowcount 1
@@ -536,7 +553,7 @@ while (select count(*) from #sqlCmdDeleteOldRecords where [status] = 0 ) > 0
         
 		--print (@sqlCmd)
 		BEGIN TRY  
-    		exec sp_executesql @sqlCmd, N''''@date datetime'''', @date
+    		exec sp_executesql @sqlCmd, N''''@date datetime,@dateSms datetime'''', @date,@dateSms
 		END TRY  
 		BEGIN CATCH  
 		    SELECT ERROR_NUMBER() AS ErrorNumber  ,ERROR_MESSAGE() AS ErrorMessage;  

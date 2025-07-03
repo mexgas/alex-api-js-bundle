@@ -142,9 +142,6 @@ insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'cc
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccVirtualAgent',@idInt,0)
 
 
-set @idInt=@idInt+1
-insert into publicationTableCCenterRIA(publicationName,status) values(N'ccRIAWorkGroup_Calid',0)	
-insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccRIAWorkGroup_Calid',@idInt,0)
 
 set @idInt=@idInt+1
 insert into publicationTableCCenterRIA(publicationName,status) values(N'AVRSCampEsp',0)	
@@ -226,7 +223,7 @@ insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'Catalo
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'LogAgentesDia_Dialog',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'Callbacks',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'SpecialAVRS',0)
-insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'ccRIAWorkGroup_Calid',0)
+
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'AVRSCampEsp',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'Chats',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'ConversationMail',0)
@@ -243,7 +240,7 @@ insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'Specia
 print('----------------------------- subcripcionTableCCRecorderRIA --------------')
 
 insert into  subcripcionTableCCRecorderRIA (publicationName,status) values(N'SpecialAVRS',0)
-insert into  subcripcionTableCCRecorderRIA (publicationName,status) values(N'ccRIAWorkGroup_Calid',0)
+
 insert into  subcripcionTableCCRecorderRIA (publicationName,status) values(N'AVRSCampEsp',0)
 insert into  subcripcionTableCCRecorderRIA (publicationName,status) values(N'AVRSGraphs',0)
 insert into  subcripcionTableCCRecorderRIA (publicationName,status) values(N'AVRSSettings',0)

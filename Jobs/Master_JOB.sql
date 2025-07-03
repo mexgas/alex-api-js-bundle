@@ -409,7 +409,102 @@ QuitWithRollback:
 EndSave:'
     EXEC(@sql)
 
-    set @process = 'CREATE JOB '
+    set @process = 'CREATE JOB NuxibaShrink_tempdb_Weekly'
+    set @sql = 'USE [msdb]
+/****** Object:  Job [NuxibaShrink_tempdb_Weekly]    Script Date: 12/06/2025 10:28:25 a. m. ******/
+IF EXISTS (SELECT 1 FROM msdb.dbo.sysjobs WHERE name = N''NuxibaShrink_tempdb_Weekly'')
+BEGIN
+    EXEC msdb.dbo.sp_delete_job @job_name = N''NuxibaShrink_tempdb_Weekly'';
+END
+
+/****** Object:  Job [NuxibaShrink_tempdb_Weekly]    Script Date: 12/06/2025 10:28:25 a. m. ******/
+BEGIN TRANSACTION
+DECLARE @ReturnCode INT
+SELECT @ReturnCode = 0
+/****** Object:  JobCategory [[Uncategorized (Local)]]    Script Date: 12/06/2025 10:28:26 a. m. ******/
+IF NOT EXISTS (SELECT name FROM msdb.dbo.syscategories WHERE name=N''[Uncategorized (Local)]'' AND category_class=1)
+BEGIN
+EXEC @ReturnCode = msdb.dbo.sp_add_category @class=N''JOB'', @type=N''LOCAL'', @name=N''[Uncategorized (Local)]''
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+
+END
+
+DECLARE @jobId BINARY(16)
+EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N''NuxibaShrink_tempdb_Weekly'', 
+                @enabled=1, 
+                @notify_level_eventlog=2, 
+                @notify_level_email=0, 
+                @notify_level_netsend=0, 
+                @notify_level_page=0, 
+                @delete_level=0, 
+                @description=N''Ejecuta SHRINK del log de tempdb y ajusta crecimiento a 256MB si aplica.'', 
+                @category_name=N''[Uncategorized (Local)]'', 
+                @owner_login_name=N''sa'', @job_id = @jobId OUTPUT
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+/****** Object:  Step [Validar_y_Shrink_tempdb_log]    Script Date: 12/06/2025 10:28:27 a. m. ******/
+EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N''Validar_y_Shrink_tempdb_log'', 
+                @step_id=1, 
+                @cmdexec_success_code=0, 
+                @on_success_action=1, 
+                @on_success_step_id=0, 
+                @on_fail_action=2, 
+                @on_fail_step_id=0, 
+                @retry_attempts=0, 
+                @retry_interval=0, 
+                @os_run_priority=0, @subsystem=N''TSQL'', 
+                @command=N''
+DECLARE @log_size_mb FLOAT, @log_used_pct FLOAT;
+
+-- Confirmar base activa
+PRINT ''''Base actual: '''' + DB_NAME();
+
+-- Obtener uso actual del log
+SELECT 
+    @log_size_mb = total_log_size_in_bytes / 1024.0 / 1024.0,
+    @log_used_pct = used_log_space_in_percent
+FROM sys.dm_db_log_space_usage;
+
+PRINT ''''Tamaño actual del log de tempdb (MB): '''' + CAST(@log_size_mb AS VARCHAR(20));
+PRINT ''''Uso actual del log (%): '''' + CAST(@log_used_pct AS VARCHAR(10));
+
+-- Validar si SHRINK aplica
+--IF @log_size_mb > 1024 AND @log_used_pct < 10
+--BEGIN
+    PRINT ''''✅ Ejecutando SHRINK del log de tempdb...'''';
+    DBCC SHRINKFILE (templog, 1024);
+    PRINT ''''✅ SHRINK completado.'''';
+--END
+'', 
+                @database_name=N''tempdb'', 
+                @flags=0
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+EXEC @ReturnCode = msdb.dbo.sp_update_job @job_id = @jobId, @start_step_id = 1
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N''NuxibaShrink_tempdb_Weekly'', 
+                @enabled=1, 
+                @freq_type=8, 
+                @freq_interval=64, 
+                @freq_subday_type=1, 
+                @freq_subday_interval=0, 
+                @freq_relative_interval=0, 
+                @freq_recurrence_factor=1, 
+                @active_start_date=20250612, 
+                @active_end_date=99991231, 
+                @active_start_time=43000, 
+                @active_end_time=235959 
+                
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+EXEC @ReturnCode = msdb.dbo.sp_add_jobserver @job_id = @jobId, @server_name = N''(local)''
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+COMMIT TRANSACTION
+GOTO EndSave
+QuitWithRollback:
+    IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION
+EndSave:
+'
+    EXEC(@sql)
+
+     set @process = 'CREATE JOB '
     set @sql = ''
     EXEC(@sql)
 

@@ -2312,20 +2312,12 @@ SET NOCOUNT OFF
 									);
 						END;
 
-						WITH lastState
-						AS (
-							SELECT A.user_id, MAX(A.fecha) AS fecha
-							FROM ccLogAgentesDiaViewLast A
-							INNER JOIN @AgentsList B ON A.User_id = B.id
-							WHERE fecha >= @date
-							GROUP BY user_id
-							)
 						INSERT INTO @CurrentStatus
-						SELECT B.User_id, CASE WHEN B.currentStatus <= 0 THEN 0 ELSE B.currentStatus END AS 
-							currentStatus, B.IdCampEsp, B.Tipo
-						FROM lastState A
-						INNER JOIN ccLogAgentesDia B ON A.User_id = B.User_id
-							AND A.fecha = B.fecha;
+							SELECT A.user_id, CASE WHEN A.currentStatus <= 0 THEN 0 ELSE A.currentStatus END AS 
+						        currentStatus,A.IdCampEsp, A.Tipo
+						        FROM ccLogAgentesDiaViewLast A
+						        INNER JOIN @AgentsList B ON A.User_id = B.id
+						        WHERE fecha >= @date
 
 						IF @Id = 0
 							AND @CampType = 0

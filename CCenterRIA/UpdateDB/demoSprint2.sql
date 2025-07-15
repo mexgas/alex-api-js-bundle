@@ -599,6 +599,303 @@ BEGIN
     EXEC(@sql);
 
 	--------------------------------- END MAGV ---------------------------------------------------------
+	--------------------------------- BEGIN DMM --------------------------------------------------------
+	SET @process = 'K070029 drop SP ccsp_InboundCallQuantumInfo'
+	SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_InboundCallQuantumInfo'')
+	BEGIN
+		DROP PROCEDURE dbo.ccsp_InboundCallQuantumInfo;
+	END'
+	EXEC(@sql);
+
+	SET @process = 'SP para obtener datos de para Quantum en llamada IA entrada'
+	SET @sql = '
+	CREATE PROCEDURE [dbo].[ccsp_InboundCallQuantumInfo]
+		@InboundId INT
+	AS
+	BEGIN
+		SELECT 
+			s.valor AS key_api_quantum,
+			''{"type":0,"agent_id":"'' + ISNULL(v.quantumAgentId, '''') + ''"}'' AS data_api_quantum
+		FROM 
+			(SELECT valor FROM ccSettings2 WHERE setting_id = 284) AS s
+		OUTER APPLY 
+			(SELECT quantumAgentId FROM ccVirtualAgent 
+			 WHERE idCampaign = @InboundId AND campType = 0) AS v
+	END'
+	EXEC(@sql);
+
+
+	SET @process = ' Drop SP ccsp_RIAGetAveTimeEspec'
+	SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIAGetAveTimeEspec'')
+	BEGIN
+		DROP PROCEDURE dbo.ccsp_RIAGetAveTimeEspec;
+	END'
+	EXEC(@sql);
+	
+	SET @process = 'Se agrega cambio para que regrese datos de llamada IA entrada tipo 11 en: if @acdType in (0,11) begin --call'
+	SET @sql = '
+	CREATE PROCEDURE [dbo].[ccsp_RIAGetAveTimeEspec] --exec [ccsp_RIAGetAveTimeEspec] @CveCamp = 35, @IsKolob = 1
+		@CveCamp INT,
+		@IsKolob BIT = 0
+		AS
+
+		declare @fechaI as datetime, @fechaF as datetime
+		declare @Dlgs as int
+		declare @DlgsAveTime as int
+		declare @Que as int
+		declare @QueueAveTime as INT
+		declare @QueueMaxTime as int
+		declare @CallsLost as int
+		declare @SL1 as int
+		declare @SL2 as int
+		declare @answ_tres as smallint
+		declare @abnd_tres as smallint
+
+		declare @nanswer as smallint
+		declare @nno_answer as smallint
+		declare @nlost as smallint
+		declare @nabnd as smallint
+		declare @ntimeout as smallint
+		declare @noverflow as smallint
+		declare @nno_agent as smallint
+		declare @total as int
+		declare @setting as tinyint
+
+		declare @dia as varchar(11)
+
+		declare @tresRing as smallint
+		declare @tresDialog as smallint
+		declare @tresDelayIn as smallint
+
+		exec @tresRing = ccspConfigTresRing
+		exec @tresDialog = ccspConfigTresDialog
+		exec @tresDelayIn = ccspConfigtresDelayIn
+
+		--select @dia = ''2003/01/22'' --, @CveCamp=5
+		select @dia=CONVERT(datetime,CONVERT(varchar(20),GETDATE(),106))
+
+		select @fechaI = convert(datetime, @dia, 101)
+		select @fechaF = dateadd( d, 1, @fechaI )
+		select @setting = valor from ccsettings where setting_id = 127
+
+
+		declare @acdType tinyint 
+
+		select @acdType= chat from ccInbound where Inbound_id = @CveCamp
+
+		if @acdType in (0,11) begin --call
+		SELECT 
+		@Dlgs = count(case when statuscall_id = 13 then 1 else null end), 
+		@DlgsAveTime = ISNULL(sum( case when statuscall_id = 13 then cal_tDialog + cal_tNotas else null end), 0),
+
+		@Que = count(case when cal_que> 0 then 1 else null end), 
+		@QueueAveTime = ISNULL(sum( case when cal_que > 0 then cal_tWait else null end), 0),
+
+		@CallsLost= isnull(COUNT(CASE WHEN (statuscall_id IN (5,6) AND (cal_que > 0) AND (cal_xfer IS NULL))  THEN 1 ELSE NULL END), 0), -- ODC
+
+		@abnd_tres = COUNT(CASE WHEN((statuscall_id IN(5,6)AND cal_que>0 AND cal_xfer IS NULL)AND(cal_twait + cal_txfer + cal_tring<@tresDelayIn))THEN 1 ELSE NULL END),
+		@answ_tres =  case when @setting = 0 then COUNT(CASE WHEN((statuscall_id=13 AND cal_tdialog>@tresDialog)AND(cal_twait + cal_txfer + cal_tring<@tresDelayIn))THEN 1 ELSE NULL END) else Count(case when (statuscall_id = 13 and (cal_twait + cal_txfer + cal_tring<@tresDelayIn)) then 1 else null end) end,
+
+		@SL1 = case when @setting = 0 then @abnd_tres + @answ_tres else @answ_tres end,
+
+		@nanswer = COUNT(CASE WHEN((statuscall_id=13)AND(cal_tdialog >@tresDialog))THEN 1 ELSE NULL END),
+		@nno_answer = COUNT(CASE WHEN((statuscall_id=15)AND(cal_tring>@tresRing))THEN 1 ELSE NULL END),
+		@nlost = COUNT(CASE WHEN(statuscall_id=16)THEN 1 ELSE NULL END),
+		@nabnd = COUNT(CASE WHEN(statuscall_id IN(5,6)AND(cal_que>0)AND(cal_xfer IS NULL))THEN 1 ELSE NULL END),
+		@ntimeout = COUNT(CASE WHEN(statuscall_id=7)THEN 1 ELSE NULL END),
+		@noverflow = COUNT(CASE WHEN(statuscall_id=8)THEN 1 ELSE NULL END),
+		@nno_agent = COUNT(CASE WHEN(statuscall_id=4)THEN 1 ELSE NULL END),
+		@total = count(*),
+
+		@SL2 = case when @setting = 0 then @nanswer + @nno_answer + @nlost + @nabnd + @ntimeout + @noverflow + @nno_agent else @total end
+		FROM ccCallsIN
+		WHERE cal_Inicio between @fechaI AND @fechaF
+		AND Inbound_id = @CveCamp
+
+		select 
+			''Id''=@CveCamp, 
+			''AverageServiceTime''=@DlgsAveTime/ (@Dlgs+1), 
+			''AverageWaitingTime''=@QueueAveTime / (@Que +1),
+			''ServiceLevel'' = case 
+				when @SL2 > 0 
+				then 100 * @SL1 / @SL2 
+				else 0 end, 
+			''ServiceLevel2'' = case 
+				when @setting = 0 
+				then 
+					case 
+						when (@nanswer + @nno_answer + @nlost + @nabnd + @ntimeout + @noverflow + @nno_agent) > 0 
+						then 100 * (@abnd_tres + @answ_tres) / (@nanswer + @nno_answer + @nlost + @nabnd + @ntimeout + @noverflow + @nno_agent)
+						else 0 end 
+				else case 
+					when @total > 0 
+					then 100 * @answ_tres/@total 
+					else 0 end end
+				,@acdType as Type
+		end
+
+		else if @acdType= 1 begin
+
+		declare @CC int,@CCAb int,@ccme int,@ccma int,@cAs int,@cs int,@cAb int,@cDt int,@cDe int
+		select @CC=0,@ccme=0,@ccma=0,@cAs=0,@cs=0,@cAb=1,@cDt=0,@cDe=0,@DlgsAveTime=0
+
+		select
+		@CC = count(case when chatStatus=4 and tChatting>=@tresDialog then 1 else null end) ,
+		@DlgsAveTime = isnull(sum(case when chatStatus=4 then tChatting+tWrapUp else null end),0) ,
+		@ccme = count(case when chatStatus=4 and tChatting<=@tresDialog and tChatting <> 0 then 1 else null end),
+		@ccma = count(case when chatStatus=4 and tChatting>@tresDialog and tChatting <> 0 then 1 else null end) ,
+		@cAs= count(case when chatStatus=3 then 1 else null end) ,
+		@cs = count(case when chatStatus=7 then 1 else null end) ,
+		@cAb = count(case when chatStatus=9 and tQueue>=@tresDialog then 1 else null end) ,
+		@cDt = count(case when chatStatus=11 then 1 else null end) ,
+		@cDe = count(case when chatStatus=10 then 1 else null end),
+		@Que = count(case when onQueue > 0 then 1 else null end), 
+		@QueueAveTime = ISNULL(sum( case when onQueue > 0 then tQueue else null end), 0),
+		@QueueMaxTime = ISNULL (MAX (CASE WHEN onQueue    = 1 THEN  tQueue ELSE NULL END), 0),
+		@SL2 = @ccme+@ccma+@cAs+@cs+@cAb+@cDt+@cDe
+		from ccRIAChats 
+		where requestDate between @fechaI AND @fechaF
+		and inboundId=@CveCamp 
+		group by inboundId 
+
+		DECLARE @RESULT DECIMAL(18,2);
+
+			IF(@IsKolob = 1)
+			BEGIN
+				select 
+					@CveCamp as ID, 
+					isnull(@DlgsAveTime/(@CC + 1),0) as AverageServiceTime, 
+					isnull(@QueueAveTime / (@Que + 1),0) as AverageWaitingTime,
+					ISNULL(CONVERT(BIGINT,@QueueMaxTime),0) AS MaximumWaitingTime,
+					case when @SL2>0 then (@CC)*100/(@SL2) else 0 end as ServiceLevel,
+					isnull((@CC)*100/nullif(@ccme+@ccma+@cAs+@cs+@cAb+@cDt+@cDe,0),0) as ServiceLevel2,
+					@acdType as acdType,
+					ISNULL(@CC,0) as CC,
+					ISNULL(@SL2,0) as SumSL
+			END
+			ELSE 
+			BEGIN
+				select 
+				@CveCamp as ID, 
+				isnull(@DlgsAveTime/(@CC + 1),0) as DlgsAveTime, 
+				isnull(@QueueAveTime / (@Que + 1),0) as QueueAveTime,
+				case when @SL2>0 then (@CC)*100/(@SL2) else 0 end as SL,
+				isnull((@CC)*100/nullif(@ccme+@ccma+@cAs+@cs+@cAb+@cDt+@cDe,0),0) as Sl2,
+				@acdType as acdType,
+				ISNULL(@CC,0) as CC,
+				ISNULL(@SL2,0) as SumSL
+			END
+		END'
+	EXEC(@sql);
+
+	
+	SET @process = 'Drop SP ccsp_VerifyCampaignRelationships'
+	SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_VerifyCampaignRelationships'')
+	BEGIN
+		DROP PROCEDURE dbo.ccsp_VerifyCampaignRelationships;
+	END'
+	EXEC(@sql);
+
+
+	SET @process = 'Se crea SP ccsp_VerifyCampaignRelationships para verificar relaciones de campañas con otras camapñas, WG 
+					y eliminar relaciones con agentes virtuales al momento de ser eliminadas'
+	SET @sql = '
+	CREATE PROCEDURE [dbo].[ccsp_VerifyCampaignRelationships]
+		@Option SMALLINT = 0,
+		@ACDIds VARCHAR(MAX)
+	AS
+	BEGIN
+		SET NOCOUNT ON;
+
+		IF @Option = 1 --ACDs
+		BEGIN
+			IF OBJECT_ID(''tempdb..#TmpACDs'') IS NOT NULL DROP TABLE #TmpACDs;
+			IF OBJECT_ID(''tempdb..#FinalACDs'') IS NOT NULL DROP TABLE #FinalACDs;
+			IF OBJECT_ID(''tempdb..#ClassifiedACDs'') IS NOT NULL DROP TABLE #ClassifiedACDs;
+
+			CREATE TABLE #TmpACDs (Id INT);
+			CREATE TABLE #FinalACDs (Id INT);
+			CREATE TABLE #ClassifiedACDs (
+				Id INT,
+				HasWGRelation BIT,
+				HasCampaignRelation BIT,
+				UnassignVirtualAgent BIT
+			);
+
+			INSERT INTO #TmpACDs (Id)
+			SELECT CAST(Value AS INT)
+			FROM dbo.fn_RIASplitDelimited(@ACDIds, '','');
+
+			INSERT INTO #ClassifiedACDs (Id, HasWGRelation, HasCampaignRelation, UnassignVirtualAgent) 
+			SELECT
+				t.Id,
+				CASE WHEN r.IdCampEsp IS NOT NULL THEN 1 ELSE 0 END AS HasWGRelation,
+				CASE WHEN i.inbound_id IS NOT NULL AND (i.cam_id IS NULL OR i.cam_id = 0) THEN 1 ELSE 0 END AS HasCampaignRelation,
+				CASE WHEN v.idCampaign IS NOT NULL THEN 1 ELSE 0 END AS UnassignVirtualAgent
+			FROM #TmpACDs t
+			LEFT JOIN ccRIACampESPWG r
+				ON r.IdCampEsp = t.Id AND r.Tipo = 0
+			LEFT JOIN ccinbound i
+				ON i.inbound_id = t.Id
+			LEFT JOIN ccVirtualAgent v
+				ON v.idCampaign = t.Id AND v.campType = 0 AND v.mediaType = 11;
+
+			INSERT INTO #FinalACDs (Id)
+			SELECT Id
+			FROM #ClassifiedACDs
+			WHERE HasWGRelation = 0 AND HasCampaignRelation = 1 AND UnassignVirtualAgent = 0;
+
+			DECLARE @CurrentId INT;
+
+			DECLARE cur CURSOR LOCAL FOR
+			SELECT Id
+			FROM #ClassifiedACDs
+			WHERE HasWGRelation = 0 AND HasCampaignRelation = 1 AND UnassignVirtualAgent = 1;
+
+			OPEN cur;
+			FETCH NEXT FROM cur INTO @CurrentId;
+
+			WHILE @@FETCH_STATUS = 0
+			BEGIN
+				UPDATE ccVirtualAgent
+				SET idCampaign = 0,
+					mediaType = NULL
+				WHERE idCampaign = @CurrentId AND campType = 0 AND mediaType = 11;
+
+				INSERT INTO #FinalACDs (Id) VALUES (@CurrentId);
+
+				FETCH NEXT FROM cur INTO @CurrentId;
+			END
+
+			CLOSE cur;
+			DEALLOCATE cur;
+
+			DECLARE @CleanACDIds VARCHAR(MAX);
+			SELECT @CleanACDIds = STRING_AGG(CAST(Id AS VARCHAR), '','') FROM #FinalACDs;
+
+			DECLARE @HasRelations BIT = CASE 
+											WHEN (SELECT COUNT(*) FROM #FinalACDs) < (SELECT COUNT(*) FROM #TmpACDs)
+											THEN 1 ELSE 0 
+										END;
+
+
+			SELECT 
+				@HasRelations AS HasRelations,
+				ISNULL(@CleanACDIds, '''') AS ACDIds;
+
+			IF OBJECT_ID(''tempdb..#TmpACDs'') IS NOT NULL DROP TABLE #TmpACDs;
+			IF OBJECT_ID(''tempdb..#FinalACDs'') IS NOT NULL DROP TABLE #FinalACDs;
+			IF OBJECT_ID(''tempdb..#ClassifiedACDs'') IS NOT NULL DROP TABLE #ClassifiedACDs;
+		END
+	END'
+	EXEC(@sql);
+
+
+
+
+
+
+	--------------------------------- BEGIN DMM --------------------------------------------------------
 
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
     EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

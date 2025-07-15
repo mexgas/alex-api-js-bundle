@@ -355,7 +355,8 @@ BEGIN
     EXEC(@sql);
 
 	SET @process = 'K070029 CREATE SP ccsp_GalateaDnis'
-    SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_VirtualAgents]
+    SET @sql = '
+    CREATE PROCEDURE [dbo].[ccsp_VirtualAgents]
     @action INT,
 	@idVirtualAgent INT = 0,
     @nameAgent NVARCHAR(255) = NULL,
@@ -549,16 +550,31 @@ BEGIN
         END
         ELSE IF (@action = 8) --- Reload virtual agent association
 		BEGIN
-			SELECT 
-                cva.idAgent AS IdAgentVirtual
-                ,cva.nameAgent AS NameAgentVirtual
-                ,ISNULL(cva.concurrentSessionsLimit, 0) AS NumberSessions
-                ,CONVERT(INT, cva.idCampaign) AS IdCampaign
-				, cva.campType AS CampType
-            FROM ccVirtualAgent cva
-            LEFT JOIN ccCamps cc ON cva.idCampaign = cc.cam_id AND cva.campType = @campType
-            WHERE cva.idAgent = (CASE WHEN @idVirtualAgent = 0 THEN cva.idAgent ELSE @idVirtualAgent END)
-		END
+			IF (@campType = 0)
+				BEGIN 
+					SELECT 
+					cva.idAgent AS IdAgentVirtual
+					,cva.nameAgent AS NameAgentVirtual
+					,ISNULL(cva.concurrentSessionsLimit, 0) AS NumberSessions
+					,CONVERT(INT, cva.idCampaign) AS IdCampaign
+					, cva.campType AS CampType
+				FROM ccVirtualAgent cva
+				LEFT JOIN ccInbound ci ON cva.idCampaign = ci.Inbound_id AND cva.campType = @campType
+				WHERE cva.idAgent = (CASE WHEN @idVirtualAgent = 0 THEN cva.idAgent ELSE @idVirtualAgent END) 
+				END
+			ELSE 
+			BEGIN 
+					SELECT 
+					cva.idAgent AS IdAgentVirtual
+					,cva.nameAgent AS NameAgentVirtual
+					,ISNULL(cva.concurrentSessionsLimit, 0) AS NumberSessions
+					,CONVERT(INT, cva.idCampaign) AS IdCampaign
+					, cva.campType AS CampType
+				FROM ccVirtualAgent cva
+				LEFT JOIN ccCamps cc ON cva.idCampaign = cc.cam_id AND cva.campType = @campType
+				WHERE cva.idAgent = (CASE WHEN @idVirtualAgent = 0 THEN cva.idAgent ELSE @idVirtualAgent END) 
+				END
+			END
 		ELSE IF (@action = 9) --Get FileLocation from ccVirtualAgentVoices
 		BEGIN
 			select Name, FileName from ccVirtualAgentVoices where ID = @voiceID

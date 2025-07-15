@@ -897,6 +897,351 @@ BEGIN
 
 	--------------------------------- BEGIN DMM --------------------------------------------------------
 
+	---------------------------------- BEGIN MACL -------------------------------------------------
+	SET @process = 'K070190 se agregan filtros al sp ccspGalatea_Finder'
+	SET @sql = '
+ALTER PROCEDURE [dbo].[ccspGalatea_Finder] 
+				@action INT, 
+				@userId INT = 0, 
+				@conversationId BIGINT = 0,
+				@isSuperUser bit=0
+				AS
+				IF @action = 1
+				    BEGIN--trae el nombre de la base de datos en BX
+				    if @isSuperUser =0 begin
+
+				            SELECT CAST(WGCam.IdCampEsp AS INT) AS [Value], CAST(WGCam.Tipo AS INT) + 1 AS callType, c.cam_descripcion AS label
+				            FROM ccRIAWorkGroupUsers Wguser
+				                INNER JOIN ccRIACampEspWG WGCam ON WGCam.IDWG = Wguser.IDWG
+				                INNER JOIN ccCamps c ON WGCam.IdCampEsp = c.cam_id
+				                                        AND WGCam.Tipo = 1
+				            WHERE Wguser.User_id = @userId
+				            UNION
+				            SELECT CAST(WGCam.IdCampEsp AS INT) AS [Value], CAST(WGCam.Tipo AS INT) + 1 AS callType, inb.descripcion AS label
+				            FROM ccRIAWorkGroupUsers Wguser
+				                INNER JOIN ccRIACampEspWG WGCam ON WGCam.IDWG = Wguser.IDWG
+				                INNER JOIN ccInbound inb ON WGCam.IdCampEsp = inb.Inbound_id
+				                                            AND WGCam.Tipo = 0
+				            WHERE Wguser.User_id = @userId;
+				        end
+				        else begin
+				        SELECT CAST(c.cam_id AS INT) AS [Value], CAST(2 AS INT) AS callType, c.cam_descripcion AS label FROM ccCamps c
+				        UNION
+				        SELECT CAST(inb.Inbound_id AS INT) AS [Value], CAST(1 AS INT) AS callType, inb.descripcion AS label FROM ccInbound inb;
+				        end
+				        RETURN 0;
+				END;
+				IF @action = 2
+				    BEGIN
+				    if @isSuperUser =0 begin
+				        WITH WgId
+				            AS (SELECT IDWG
+				                FROM ccRIAWorkGroupUsers Wguser
+				                WHERE Wguser.User_id = @userId)
+				            SELECT DISTINCT 
+				                    CAST(Wguser.User_id AS INT) AS [Value], CONCAT(ccUsers.Nombres, '' '', ccUsers.ApellidoPaterno, '' '', ccUsers.ApellidoMaterno)  AS label
+				            FROM ccRIAWorkGroupUsers Wguser
+				                INNER JOIN WgId ON Wguser.IDWG = WgId.IDWG
+				                INNER JOIN ccUsers ON ccUsers.User_id = Wguser.User_id
+				                                        AND TipoUser_id = 1;
+				end
+				else begin
+				        select CAST(ccUsers.User_id AS INT) AS [Value], CONCAT(ccUsers.Nombres, '' '', ccUsers.ApellidoPaterno, '' '', ccUsers.ApellidoMaterno)  AS label
+				        from ccUsers where TipoUser_id = 1;
+				end
+				        RETURN 0;
+				END;
+				IF @action = 3
+				         BEGIN--Informacion de la conversacion de whatsApp
+				               SELECT A.ConversationID, A.inboundId AS AcdId, ISNULL(graph.graphic_id, 1) AS GraphicId, A.phoneACD AS PhoneAcd, A.clientId AS PhoneClient, ISNULL(B.descripcion, ''N/A'') AS AcdName, ISNULL(cctipocalif.[Description], ''N/A'') AS Disposition, ISNULL(cctipocalifsub.califSubdesc, ''N/A'') AS SubDisposition, ISNULL(conversationDate, requestDate) DateStart, ISNULL(A.agentId, 0) AgentID, C.Login AS UserName
+				                        ,(cast(sum(A.tConversation) / 3600 as varchar(10)) + '':'' + 
+				                        right(''0'' + cast((sum(A.tConversation) % 3600) / 60 as varchar(10)), 2) + '':'' + 
+				                        right(''0'' + cast(sum(A.tConversation) % 60 as varchar(10)), 2)) as Duration
+				             FROM ccWhatsAppConversations A
+				                  LEFT JOIN ccInbound B ON A.inboundId = B.Inbound_id
+				                  LEFT OUTER JOIN cctipocalif ON cctipocalif.calif_id = A.disposition
+				                  LEFT OUTER JOIN cctipocalifsub ON cctipocalifsub.califsub_id = A.subdisposition
+				                  LEFT JOIN ccRIAInboundGraph graph ON graph.Inbound_id = A.inboundId
+				                  LEFT JOIN ccUsers C ON A.agentId = C.User_id
+				             WHERE A.conversationId = @conversationId
+				             group by A.conversationId, A.inboundId, graph.graphic_id, A.phoneACD, A.clientId, B.descripcion, cctipocalif.[Description], cctipocalifsub.califSubdesc, conversationDate, requestDate, A.agentId, C.Login;
+
+				             RETURN 0;
+				     END;
+				IF @action = 4
+				         BEGIN--Informacion de la conversacion de whatsApp out
+				               SELECT A.ConversationID, A.camId AS AcdId, ISNULL(graph.graphic_id, 1) AS GraphicId, A.phoneCamp AS PhoneAcd, A.clientId AS PhoneClient, ISNULL(B.cam_descripcion, ''N/A'') AS AcdName, ISNULL(cctipocalif.[Description], ''N/A'') AS Disposition, ISNULL(cctipocalifsub.califSubdesc, ''N/A'') AS SubDisposition, ISNULL(conversationDate, requestDate) DateStart, ISNULL(A.agentId, 0) AgentID, C.Login AS UserName
+				                        ,(cast(sum(A.tConversation) / 3600 as varchar(10)) + '':'' + 
+				                        right(''0'' + cast((sum(A.tConversation) % 3600) / 60 as varchar(10)), 2) + '':'' + 
+				                        right(''0'' + cast(sum(A.tConversation) % 60 as varchar(10)), 2)) as Duration
+				             FROM ccWhatsAppConversationsOut A
+				                  LEFT JOIN ccCamps B ON A.camId = B.cam_id
+				                  LEFT OUTER JOIN cctipocalif ON cctipocalif.calif_id = A.disposition
+				                  LEFT OUTER JOIN cctipocalifsub ON cctipocalifsub.califsub_id = A.subdisposition
+				                  LEFT JOIN ccRIACampsGraph graph ON graph.cam_id = A.camId
+				                  LEFT JOIN ccUsers C ON A.agentId = C.User_id
+				             WHERE A.conversationId = @conversationId
+				             group by A.conversationId, A.camid, graph.graphic_id, A.phoneCamp, A.clientId, B.cam_descripcion, cctipocalif.[Description], cctipocalifsub.califSubdesc, conversationDate, requestDate, A.agentId, C.Login;
+
+				             RETURN 0;
+				     END;
+				IF @action = 5
+				         BEGIN--Informacion de la conversacion de Chat
+				                SELECT A.ChatId AS ConversationID, A.inboundId AS CampaignId, A.userId AS AgentID, ISNULL(B.descripcion, ''N/A'') AS CampaignName,
+							   ISNULL(cctipocalif.[Description], ''N/A'') AS Disposition, ISNULL(cctipocalifsub.califSubdesc, ''N/A'') AS SubDisposition, 
+							   C.Login AS UserName, A.clientName as Client, ISNULL(A.chatDate, A.requestDate) as DateStart,
+							   (cast(sum(A.tChatting) / 3600 as varchar(10)) + '':'' + 
+				                right(''0'' + cast((sum(A.tChatting) % 3600) / 60 as varchar(10)), 2) + '':'' + 
+				                right(''0'' + cast(sum(A.tChatting) % 60 as varchar(10)), 2)) as Duration
+				             FROM ccRIAChats A
+				                  LEFT JOIN ccInbound B ON A.inboundId = B.Inbound_id
+				                  LEFT OUTER JOIN cctipocalif ON cctipocalif.calif_id = A.disposition
+				                  LEFT OUTER JOIN cctipocalifsub ON cctipocalifsub.califsub_id = A.subdisposition
+				                  LEFT JOIN ccUsers C ON A.userId = C.User_id
+				             WHERE A.chatId = @conversationId
+				             group by A.chatId, A.inboundId, A.userId, A.userId, B.descripcion, cctipocalif.[Description], cctipocalifsub.califSubdesc,
+							 chatDate, requestDate, A.userId, C.Login, tChatting, clientName;
+
+				             RETURN 0;
+				     END;
+				IF @action = 6
+				BEGIN
+					SELECT cfwadm.FinderWhatsAppMessageId,
+                           cfwadm.Description,
+                           cfwadm.OpTagEs,
+                           cfwadm.OpTagEn,
+                           cfwadm.OpTagPt FROM dbo.ccFinderWhatsAppDownloadedMessage AS cfwadm
+					RETURN 0
+				END
+				IF @action = 7
+				BEGIN
+					SELECT [Description] AS [Label],  CAST(calif_id as VARCHAR) + ''|2'' AS [Value] FROM cctipocalifout
+					UNION
+					SELECT [Description] AS [Label],  CAST(calif_id as VARCHAR) + ''|1'' AS [Value] FROM cctipocalif
+					RETURN 0
+				END'
+	EXEC(@sql)
+
+	SET @process = 'K070098 se modifica ccsp_AvrsSyncronization para tomar en cuenta las campañas de AI'
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_AvrsSyncronization]
+@action SMALLINT,
+@maxRecordsToTransfer INT = 10,
+@ids varchar(max)= 0
+AS
+BEGIN
+SET NOCOUNT ON;
+
+IF @action = 1
+BEGIN
+    DECLARE @countrId INT;
+    SET @countrId = 1;
+
+    SELECT @countrId = valor
+    FROM ccSettings
+    WHERE setting_id = 104;
+
+          -- Declarar la variable tipo tabla
+        declare @tempCalls table(
+        cal_id INT,
+        user_id INT,
+        Inbound_id INT,
+        calif_id int,
+        cal_extension INT,
+        cal_inicio DATETIME,
+        phone VARCHAR(50),
+        duration INT,
+        cal_key VARCHAR(50),
+        cal_manual int,
+        cal_puerto INT,
+        dni_id INT,
+        fvalida datetime,
+        cal_whohung int,
+        califSub_id int,
+        cal_tMoh INT,
+        dateEnd DATETIME,
+        callType INT,
+        avrsId INT,
+        prefijo VARCHAR(20),
+        isCallRecord BIT,
+        DNIS VARCHAR(50),
+        IDWG VARCHAR(1000),
+        IsVoicemail BIT,
+		VirtualAgentId int
+    );
+
+        declare @deleteRow table(id int primary key);
+        declare @relationCallIdUser table(cal_id int, user_id int);
+
+    WITH callsIn AS (
+        SELECT TOP (@maxRecordsToTransfer) 
+            calls.cal_id as CallId,
+            CASE WHEN ccInbound.chat = 11 THEN 0 ELSE calls.[User_id] END AS [user_id],
+            calls.Inbound_id,
+            calls.calif_id,
+            CAST(cal_extension AS INT) AS cal_extension,
+            cal_inicio,
+            cal_ANI AS phone,
+            ISNULL(cal_tDialog - CASE WHEN ccInbound.recordHold = 1 THEN 0 ELSE cal_tMoh END, 0) 
+            + CASE WHEN stopRecording = 0 THEN ISNULL(trans.tDespuesXfer, 0) ELSE 0 END AS duration,
+            cal_key,
+            0 AS cal_manual,
+            cal_puerto,
+            calls.dni_id,
+            fvalida,
+            cal_whohung,
+            ISNULL(CAST(califSub_id AS SMALLINT), 0) AS califSub_id,
+            CASE 
+                WHEN trans.tAntesXfer IS NULL THEN cal_tMoh 
+                WHEN cal_tMoh - trans.tAntesXfer < 0 THEN 0 
+                ELSE cal_tMoh - trans.tAntesXfer 
+            END AS cal_tMoh,
+            DATEADD(ss, ISNULL(cal_tDialog, 0), cal_inicio) AS dateEnd,
+            avrs.tipo + 1 AS callType,
+            avrs.id AS avrsId,
+            ccInbound.prefijo,
+            CONVERT(BIT, CASE WHEN ISNULL(calls.file_moved, 1) = 2 THEN 0 ELSE 1 END) AS isCallRecord,
+            ISNULL(dni.dni_numero, '''') AS DNIS,
+            dbo.AsignaIDWS(calls.cal_id, avrs.tipo) AS IDWG,
+            0 AS IsVoicemail,
+			CASE WHEN ccInbound.chat = 11 THEN calls.[User_id] ELSE 0 END AS VirtualAgentId
+        FROM ccCallsIn AS calls WITH (NOLOCK)
+        INNER JOIN ccInbound ON ccInbound.Inbound_id = calls.Inbound_id
+        INNER JOIN ccAVRSTransfer avrs ON calls.cal_id = avrs.cal_id AND avrs.tipo = 0
+        LEFT JOIN ccDNIS dni ON dni.dni_id = calls.dni_id
+        LEFT JOIN ccInboundExtend inbExt ON inbExt.Inbound_id = calls.Inbound_id
+        LEFT JOIN (
+            SELECT cal_id, tipo, SUM(tAntesXfer) AS tAntesXfer, SUM(tDespuesXfer) AS tDespuesXfer
+            FROM ccLogTransfers  with(nolock)
+            WHERE tipo = 1 AND modo != 7
+            GROUP BY cal_id, tipo
+        ) trans ON calls.cal_id = trans.cal_id    
+    ),
+    callsOut AS (
+        SELECT TOP (@maxRecordsToTransfer) 
+            calls.cal_id AS CallId,
+            user_id AS UserId,
+            calls.cam_id AS camAcdId,
+            CAST(calls.calif_id AS SMALLINT) AS califId,
+            CAST(cal_extension AS INT) AS extension,
+            cal_inicio,
+            cal_telefono,
+            ISNULL(cal_tDialog - CASE WHEN camps.recordHold = 1 THEN 0 ELSE cal_tMoh END, 0) 
+            + CASE WHEN stopRecording = 0 THEN ISNULL(trans.tDespuesXfer, 0) ELSE 0 END AS duration,
+            cal_key,
+            cal_manual,
+            cal_puerto,
+            0 AS dni_id,
+            fvalida,
+            cal_whohung,
+            ISNULL(CAST(califSub_id AS SMALLINT), 0) AS califSub_id,
+            CASE 
+                WHEN trans.tAntesXfer IS NULL THEN cal_tMoh 
+                WHEN cal_tMoh - trans.tAntesXfer < 0 THEN 0 
+                ELSE cal_tMoh - trans.tAntesXfer 
+            END AS cal_tMoh,
+            DATEADD(ss, ISNULL(cal_tDialog, 0), cal_inicio) AS dateEnd,
+            avrs.tipo + 1 AS callType,
+            avrs.id AS avrsId,
+            camps.prefijo,
+            CONVERT(BIT, CASE WHEN ISNULL(calls.file_moved, 1) = 2 THEN 0 ELSE 1 END) AS isCallRecord,
+            '''' AS DNIS,
+            dbo.AsignaIDWS(calls.cal_id, avrs.tipo) AS IDWG,
+            CASE WHEN calls.statusCall_id = 19 THEN 1 ELSE 0 END AS IsVoicemail,
+			calls.virtualAgentId as VirtualAgentId
+        FROM ccoCallsOut AS calls WITH (NOLOCK)
+        INNER JOIN ccCamps camps ON camps.cam_id = calls.cam_id
+        INNER JOIN ccAVRSTransfer avrs ON calls.cal_id = avrs.cal_id AND avrs.tipo = 1
+        LEFT JOIN (
+            SELECT cal_id, tipo, SUM(tAntesXfer) AS tAntesXfer, SUM(tDespuesXfer) AS tDespuesXfer
+            FROM ccLogTransfers with(nolock)
+            WHERE tipo = 2
+            GROUP BY cal_id, tipo
+        ) trans ON calls.cal_id = trans.cal_id      
+    )
+
+    INSERT INTO @tempCalls                
+    SELECT * FROM callsIn
+    UNION 
+    SELECT * FROM callsOut;
+
+
+    insert into @deleteRow
+    select min(avrsId) id
+    from @tempCalls
+    group by cal_id,callType 
+    having count(*)>1
+    
+    delete from @tempCalls where avrsId in( select id from @deleteRow )
+        delete from ccAVRSTransfer where id in( select id from @deleteRow )
+
+        IF EXISTS (SELECT 1 FROM @tempCalls WHERE user_id=0 and callType=0)
+    BEGIN   
+                insert into @relationCallIdUser
+                select A.cal_id,aglog.User_id from @tempCalls A
+                inner join ccCallsIn B with(nolock) on A.cal_id=B.cal_id and A.callType=0
+                inner join ccLogAgentesDia aglog with(nolock) on aglog.callID=B.cal_id and aglog.Tipo=A.callType and aglog.TipoStatusAge_id=4
+
+                update B set B.User_id=A.User_id
+                from @relationCallIdUser A
+                inner join ccCallsIn B with(nolock) on A.cal_id=B.cal_id 
+
+                update B set B.User_id=A.User_id
+                from @relationCallIdUser A
+                inner join @tempCalls B on A.cal_id=B.cal_id and B.callType=0
+                
+                delete from @relationCallIdUser
+        END
+
+        IF EXISTS (SELECT 1 FROM @tempCalls WHERE user_id=0 and callType=1 and IsVoicemail =0)
+    BEGIN   
+                insert into @relationCallIdUser
+                select A.cal_id,aglog.User_id from @tempCalls A
+                inner join ccoCallsOut B with(nolock) on A.cal_id=B.cal_id and A.callType=1
+                inner join ccLogAgentesDia aglog with(nolock) on aglog.callID=B.cal_id and aglog.Tipo=A.callType and aglog.TipoStatusAge_id=4
+
+                update B set B.User_id=A.User_id
+                from @relationCallIdUser A
+                inner join ccoCallsOut B with(nolock) on A.cal_id=B.cal_id 
+
+                update B set B.User_id=A.User_id
+                from @relationCallIdUser A
+                inner join @tempCalls B on A.cal_id=B.cal_id and B.callType=1
+        END
+
+     -- Revisar si hay registros con IsVoicemail = 1
+    IF EXISTS (SELECT 1 FROM @tempCalls WHERE IsVoicemail = 1)
+    BEGIN            
+                update A
+                set A.duration=B.tDialing
+                FROM @tempCalls A
+                Inner JOIN ccoLogDials B with(nolock) ON A.cal_id=B.cal_id
+        WHERE A.IsVoicemail = 1;
+    END
+
+        IF EXISTS (SELECT 1 FROM @tempCalls WHERE user_id=0 and IsVoicemail=0)
+    BEGIN
+                delete A from ccAVRSTransfer A
+                inner join @tempCalls t on A.id=t.avrsId 
+                where t.user_id=0 and t.IsVoicemail=0
+        END
+        
+    -- Si no hay registros con IsVoicemail, simplemente devolver los resultados de la variable tipo tabla
+    SELECT * FROM @tempCalls;
+        
+END
+ELSE IF @action = 2
+BEGIN
+    Delete A
+    from ccAVRSTransfer A
+    inner join dbo.fn_RIASplitDelimited(@ids,'','') t on A.id=t.Value
+    
+END
+END;
+'
+	EXEC(@sql)
+
+	---------------------------------- END MACL -------------------------------------------------
+
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
     EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
     EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)

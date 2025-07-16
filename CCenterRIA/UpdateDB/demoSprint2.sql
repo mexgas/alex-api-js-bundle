@@ -801,8 +801,8 @@ BEGIN
 					y eliminar relaciones con agentes virtuales al momento de ser eliminadas'
 	SET @sql = '
 	CREATE PROCEDURE [dbo].[ccsp_VerifyCampaignRelationships]
-    @Option SMALLINT = 0,
-    @CamIds VARCHAR(MAX)
+		@Option SMALLINT = 0,
+		@CamIds VARCHAR(MAX)
 	AS
 	BEGIN
 		SET NOCOUNT ON;
@@ -832,7 +832,13 @@ BEGIN
 			SELECT
 				t.Id,
 				CASE WHEN r.IdCampEsp IS NOT NULL THEN 1 ELSE 0 END AS HasWGRelation,
-				CASE WHEN i.inbound_id IS NOT NULL AND (i.cam_id IS NULL OR i.cam_id = 0) THEN 1 ELSE 0 END AS HasCampaignRelation,
+			    CASE WHEN i.inbound_id IS NOT NULL 
+					AND (i.cam_id IS NULL OR i.cam_id = 0) 
+					AND (i.idForNonComprehension IS NULL OR i.idForNonComprehension = 0)
+					AND (i.idForSuccessfulTransaction IS NULL OR i.idForSuccessfulTransaction = 0)
+						THEN 1 
+						ELSE 0 
+					END AS HasCampaignRelation,
 				CASE WHEN v.idCampaign IS NOT NULL THEN 1 ELSE 0 END AS UnassignVirtualAgent
 			FROM #TmpACDs t
 			LEFT JOIN ccRIACampESPWG r

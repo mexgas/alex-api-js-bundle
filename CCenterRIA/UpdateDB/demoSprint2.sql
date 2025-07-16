@@ -801,13 +801,15 @@ BEGIN
 					y eliminar relaciones con agentes virtuales al momento de ser eliminadas'
 	SET @sql = '
 	CREATE PROCEDURE [dbo].[ccsp_VerifyCampaignRelationships]
-		@Option SMALLINT = 0,
-		@ACDIds VARCHAR(MAX)
+    @Option SMALLINT = 0,
+    @CamIds VARCHAR(MAX)
 	AS
 	BEGIN
 		SET NOCOUNT ON;
 
-		IF @Option = 1 --ACDs
+		DECLARE @CurrentId INT;
+
+		IF @Option = 0 --ACDs
 		BEGIN
 			IF OBJECT_ID(''tempdb..#TmpACDs'') IS NOT NULL DROP TABLE #TmpACDs;
 			IF OBJECT_ID(''tempdb..#FinalACDs'') IS NOT NULL DROP TABLE #FinalACDs;
@@ -824,7 +826,7 @@ BEGIN
 
 			INSERT INTO #TmpACDs (Id)
 			SELECT CAST(Value AS INT)
-			FROM dbo.fn_RIASplitDelimited(@ACDIds, '','');
+			FROM dbo.fn_RIASplitDelimited(@CamIds, '','');
 
 			INSERT INTO #ClassifiedACDs (Id, HasWGRelation, HasCampaignRelation, UnassignVirtualAgent) 
 			SELECT
@@ -844,8 +846,6 @@ BEGIN
 			SELECT Id
 			FROM #ClassifiedACDs
 			WHERE HasWGRelation = 0 AND HasCampaignRelation = 1 AND UnassignVirtualAgent = 0;
-
-			DECLARE @CurrentId INT;
 
 			DECLARE cur CURSOR LOCAL FOR
 			SELECT Id
@@ -887,15 +887,48 @@ BEGIN
 			IF OBJECT_ID(''tempdb..#FinalACDs'') IS NOT NULL DROP TABLE #FinalACDs;
 			IF OBJECT_ID(''tempdb..#ClassifiedACDs'') IS NOT NULL DROP TABLE #ClassifiedACDs;
 		END
+
+
+		ELSE IF @Option = 1 -- Camps
+		BEGIN
+			IF OBJECT_ID(''tempdb..#TmpOutIDs'') IS NOT NULL DROP TABLE #TmpOutIDs;
+
+			CREATE TABLE #TmpOutIDs (Id INT);
+
+			INSERT INTO #TmpOutIDs (Id)
+			SELECT CAST(Value AS INT)
+			FROM dbo.fn_RIASplitDelimited(@CamIds, '','');
+
+			DECLARE cur CURSOR LOCAL FOR
+			SELECT Id
+			FROM #TmpOutIDs
+			WHERE EXISTS (
+				SELECT 1
+				FROM ccVirtualAgent v
+				WHERE v.idCampaign = Id AND v.campType = 1 AND v.mediaType = 10
+			);
+
+			OPEN cur;
+			FETCH NEXT FROM cur INTO @CurrentId;
+
+			WHILE @@FETCH_STATUS = 0
+			BEGIN
+				UPDATE ccVirtualAgent
+				SET idCampaign = 0,
+					mediaType = NULL
+				WHERE idCampaign = @CurrentId AND campType = 1 AND mediaType = 10;
+
+				FETCH NEXT FROM cur INTO @CurrentId;
+			END
+
+			CLOSE cur;
+			DEALLOCATE cur;
+
+			DROP TABLE #TmpOutIDs;
+		END
 	END'
 	EXEC(@sql);
-
-
-
-
-
-
-	--------------------------------- BEGIN DMM --------------------------------------------------------
+	--------------------------------- END DMM --------------------------------------------------------
 
 	---------------------------------- BEGIN MACL -------------------------------------------------
 	SET @process = 'K070190 se agregan filtros al sp ccspGalatea_Finder'

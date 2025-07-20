@@ -600,6 +600,13 @@ BEGIN
 
 	--------------------------------- END MAGV ---------------------------------------------------------
 	--------------------------------- BEGIN DMM --------------------------------------------------------
+	SET @process = 'K070064 - Se agrega operacion para elminación de campañas IA entrada para historial de actividad'
+	SET @sql = 'IF NOT EXISTS( SELECT * FROM ccGalateaOperations WHERE OperationId = 156)
+	BEGIN
+		INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (156, ''Eliminar campaña (llamada de entrada IA)'', ''Delete campaign (AI inbound call)'', ''Excluir campanha (chamada de entrada IA)'')
+	END';
+	EXEC(@sql);
+
 	SET @process = 'K070029 drop SP ccsp_InboundCallQuantumInfo'
 	SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_InboundCallQuantumInfo'')
 	BEGIN

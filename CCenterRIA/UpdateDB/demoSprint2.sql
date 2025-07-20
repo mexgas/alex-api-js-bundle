@@ -608,7 +608,7 @@ BEGIN
 	EXEC(@sql);
 
 
-	SET @process = 'Creación de tabla ccoCallsInDispositionIA para guardar resultados de llamada IA entrada'
+	SET @process = 'K070239 - Creación de tabla ccoCallsInDispositionIA para guardar resultados de llamada IA entrada'
 	SET @sql= 'IF NOT EXISTS (SELECT * 
 					 FROM INFORMATION_SCHEMA.TABLES 
 					 WHERE TABLE_SCHEMA = ''dbo'' 
@@ -627,7 +627,7 @@ BEGIN
 	EXEC(@sql);
 
 
-	SET @process = 'Creación de tabla ccCallsInTranscriptionIA para guardar transcripción llamada IA entrada'
+	SET @process = 'K070255 - Creación de tabla ccCallsInTranscriptionIA para guardar transcripción llamada IA entrada'
 	SET @sql= 'IF NOT EXISTS (SELECT * 
                  FROM INFORMATION_SCHEMA.TABLES 
                  WHERE TABLE_SCHEMA = ''dbo'' 
@@ -644,14 +644,14 @@ BEGIN
 	EXEC(@sql);
 
 	
-	SET @process = 'K070064 drop SP ccsp_GalateaDeleteCampaignAndACD'
+	SET @process = 'K070064 - drop SP ccsp_GalateaDeleteCampaignAndACD'
 	SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaDeleteCampaignAndACD'')
 	BEGIN
 		DROP PROCEDURE dbo.ccsp_GalateaDeleteCampaignAndACD;
 	END'
 	EXEC(@sql);
 
-	SET @process = 'K070064 Se agrega linea WHEN chat = 11 THEN 156 para guardado en historial de actividad 
+	SET @process = 'K070064 - Se agrega linea WHEN chat = 11 THEN 156 para guardado en historial de actividad 
 					de llamadas IA entrada'
 	SET @sql = '
 	CREATE PROCEDURE [dbo].[ccsp_GalateaDeleteCampaignAndACD] 
@@ -849,14 +849,14 @@ BEGIN
 	EXEC(@sql);
 
 
-	SET @process = 'K070029 drop SP ccsp_InboundCallQuantumInfo'
+	SET @process = 'K070121 - drop SP ccsp_InboundCallQuantumInfo'
 	SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_InboundCallQuantumInfo'')
 	BEGIN
 		DROP PROCEDURE dbo.ccsp_InboundCallQuantumInfo;
 	END'
 	EXEC(@sql);
 
-	SET @process = 'SP para obtener datos de para Quantum en llamada IA entrada'
+	SET @process = 'K070121 - Creación de SP para obtener datos de para Quantum en llamada IA entrada'
 	SET @sql = '
 	CREATE PROCEDURE [dbo].[ccsp_InboundCallQuantumInfo]
 		@InboundId INT
@@ -874,6 +874,47 @@ BEGIN
 	EXEC(@sql);
 
 
+	SET @process = 'K0702939 - K0702010 - K070255 drop SP SaveDispositionsAI'
+	SET @sql = 'if exists (select * from sys.procedures where name = N''SaveDispositionsAI'')
+	BEGIN
+		DROP PROCEDURE dbo.SaveDispositionsAI;
+	END'
+	EXEC(@sql);
+
+	SET @process = 'K0702939 - K0702010 - K070255 Creación de SP para guardado de resultado de llamadas y transcricpiones IA entrada y salida netrada salida '
+	SET @sql = '
+	CREATE PROCEDURE [dbo].[SaveDispositionsAI]
+		@action smallint = null,
+		@call_Id int = null,
+		@Qualification varchar(max) = null,
+		@result VARCHAR(MAX) = null,
+		@Observations VARCHAR(MAX) = null,
+		@Transcription VARCHAR(MAX) = null,
+		@CamType bit = 0
+
+		AS
+		IF @action = 1  --Outbound
+		BEGIN
+			insert into ccoCallsOutDispositionIA (call_id, Qualification, result, Observations) values (@call_Id, @Qualification, @result, @Observations)
+		END
+		
+		IF @action = 2 --Outbound
+		BEGIN
+			insert into ccoCallsOutTranscriptionIA (call_id, Transcription) values (@call_Id, @Transcription)
+		END
+
+		IF @action = 3 --Inbound
+		BEGIN
+			insert into ccCallsInDispositionIA (call_id, Qualification, result, Observations) values (@call_Id, @Qualification, @result, @Observations)
+		END
+
+		IF @action = 4 --Inbound
+		BEGIN
+			insert into ccCallsInTranscriptionIA (call_id, Transcription) values (@call_Id, @Transcription)
+		END'
+	EXEC(@sql);
+
+
 	SET @process = ' Drop SP ccsp_RIAGetAveTimeEspec'
 	SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIAGetAveTimeEspec'')
 	BEGIN
@@ -881,7 +922,7 @@ BEGIN
 	END'
 	EXEC(@sql);
 	
-	SET @process = 'Se agrega cambio para que regrese datos de llamada IA entrada tipo 11 en: if @acdType in (0,11) begin --call'
+	SET @process = 'K070064 - Se agrega cambio para que regrese datos de llamada IA entrada tipo 11 en: if @acdType in (0,11) begin --call'
 	SET @sql = '
 	CREATE PROCEDURE [dbo].[ccsp_RIAGetAveTimeEspec] --exec [ccsp_RIAGetAveTimeEspec] @CveCamp = 35, @IsKolob = 1
 		@CveCamp INT,
@@ -1038,7 +1079,7 @@ BEGIN
 	EXEC(@sql);
 
 	
-	SET @process = 'Drop SP ccsp_VerifyCampaignRelationships'
+	SET @process = 'K070064 - Drop SP ccsp_VerifyCampaignRelationships'
 	SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_VerifyCampaignRelationships'')
 	BEGIN
 		DROP PROCEDURE dbo.ccsp_VerifyCampaignRelationships;
@@ -1046,7 +1087,7 @@ BEGIN
 	EXEC(@sql);
 
 
-	SET @process = 'Se crea SP ccsp_VerifyCampaignRelationships para verificar relaciones de campañas con otras camapñas, WG 
+	SET @process = 'K070064 - Se crea SP ccsp_VerifyCampaignRelationships para verificar relaciones de campañas con otras camapñas, WG 
 					y eliminar relaciones con agentes virtuales al momento de ser eliminadas'
 	SET @sql = '
 	CREATE PROCEDURE [dbo].[ccsp_VerifyCampaignRelationships]

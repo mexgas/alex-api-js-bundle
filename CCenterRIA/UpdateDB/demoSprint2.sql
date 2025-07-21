@@ -862,14 +862,17 @@ BEGIN
 		@InboundId INT
 	AS
 	BEGIN
-		SELECT 
-			s.valor AS key_api_quantum,
-			''{"type":0,"agent_id":"'' + ISNULL(v.quantumAgentId, '''') + ''"}'' AS data_api_quantum
-		FROM 
-			(SELECT valor FROM ccSettings2 WHERE setting_id = 284) AS s
-		OUTER APPLY 
-			(SELECT quantumAgentId FROM ccVirtualAgent 
-			 WHERE idCampaign = @InboundId AND campType = 0) AS v
+		IF EXISTS (SELECT 1 FROM ccInbound WHERE Inbound_id = @InboundId AND chat = 11)
+		BEGIN
+			SELECT 
+				s.valor AS key_api_quantum,
+				''{"type":0,"agent_id":"'' + ISNULL(v.quantumAgentId, '''') + ''"}'' AS data_api_quantum
+			FROM 
+				(SELECT valor FROM ccSettings2 WHERE setting_id = 284) AS s
+			OUTER APPLY 
+				(SELECT quantumAgentId FROM ccVirtualAgent 
+				 WHERE idCampaign = @InboundId AND campType = 0) AS v
+		END
 	END'
 	EXEC(@sql);
 

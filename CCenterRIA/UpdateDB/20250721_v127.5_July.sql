@@ -43,6 +43,33 @@ IF @version >= @actualVersion and @versionfix >= @actualVersionFix
 BEGIN
     BEGIN TRAN
     BEGIN TRY
+	---------------------- BEGIN IC  ----------------------
+
+	SET @process = 'Add column QuantumVoiceId in table ccVirtualAgentVoices'
+	SET @sql = '
+	IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ''ccVirtualAgentVoices'' AND COLUMN_NAME = ''QuantumVoiceId'')
+	BEGIN
+		ALTER TABLE dbo.ccVirtualAgentVoices
+		ADD QuantumVoiceId VARCHAR(50) NULL;
+	END
+	'
+	EXEC(@sql);
+
+	SET @process = 'update column QuantumVoiceId in table ccVirtualAgentVoices'
+	SET @sql = '
+	IF EXISTS (SELECT 1 FROM ccVirtualAgentVoices WHERE ID = 1 AND Name = ''Alma'')
+	BEGIN
+		UPDATE ccVirtualAgentVoices SET QuantumVoiceId = ''DEZQStqDOeAcGjN05hHz'' WHERE ID = 1 AND Name = ''Alma''
+	END
+
+	IF EXISTS (SELECT 1 FROM ccVirtualAgentVoices WHERE ID = 2 AND Name = ''Luis'')
+	BEGIN
+		UPDATE ccVirtualAgentVoices SET QuantumVoiceId = ''rJQrz9Vv8nMjFoahubVm'' WHERE ID = 2 AND Name = ''Luis''
+	END
+	'
+	EXEC(@sql);
+	---------------------- END IC  ----------------------
+
 	---------------------- BEGIN MAGV  ----------------------
 	SET @process = 'K070082 add values in GalateaIdentifiersTable and GalateaModules'
 	SET @sql = 'IF NOT EXISTS (SELECT 1 FROM dbo.ccGalateaIdentifiers AS cgm WHERE cgm.Description = ''DNI_EDIT_NAME'')
@@ -1580,33 +1607,6 @@ END;
 	EXEC(@sql)
 
 	---------------------------------- END MACL -------------------------------------------------
-
-	---------------------- BEGIN IC  ----------------------
-
-	SET @process = 'Add column QuantumVoiceId in table ccVirtualAgentVoices'
-	SET @sql = '
-	IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ''ccVirtualAgentVoices'' AND COLUMN_NAME = ''QuantumVoiceId'')
-	BEGIN
-		ALTER TABLE dbo.ccVirtualAgentVoices
-		ADD QuantumVoiceId VARCHAR(50) NULL;
-	END
-	'
-	EXEC(@sql);
-
-	SET @process = 'update column QuantumVoiceId in table ccVirtualAgentVoices'
-	SET @sql = '
-	IF EXISTS (SELECT 1 FROM ccVirtualAgentVoices WHERE ID = 1 AND Name = ''Alma'')
-	BEGIN
-		UPDATE ccVirtualAgentVoices SET QuantumVoiceId = ''DEZQStqDOeAcGjN05hHz'' WHERE ID = 1 AND Name = ''Alma''
-	END
-
-	IF EXISTS (SELECT 1 FROM ccVirtualAgentVoices WHERE ID = 2 AND Name = ''Luis'')
-	BEGIN
-		UPDATE ccVirtualAgentVoices SET QuantumVoiceId = ''rJQrz9Vv8nMjFoahubVm'' WHERE ID = 2 AND Name = ''Luis''
-	END
-	'
-	EXEC(@sql);
-	---------------------- END IC  ----------------------
 
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
     EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

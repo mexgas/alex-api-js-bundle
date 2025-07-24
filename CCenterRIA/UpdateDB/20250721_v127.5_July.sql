@@ -43,6 +43,33 @@ IF @version >= @actualVersion and @versionfix >= @actualVersionFix
 BEGIN
     BEGIN TRAN
     BEGIN TRY
+	---------------------- BEGIN IC  ----------------------
+
+	SET @process = 'Add column QuantumVoiceId in table ccVirtualAgentVoices'
+	SET @sql = '
+	IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ''ccVirtualAgentVoices'' AND COLUMN_NAME = ''QuantumVoiceId'')
+	BEGIN
+		ALTER TABLE dbo.ccVirtualAgentVoices
+		ADD QuantumVoiceId VARCHAR(50) NULL;
+	END
+	'
+	EXEC(@sql);
+
+	SET @process = 'update column QuantumVoiceId in table ccVirtualAgentVoices'
+	SET @sql = '
+	IF EXISTS (SELECT 1 FROM ccVirtualAgentVoices WHERE ID = 1 AND Name = ''Alma'')
+	BEGIN
+		UPDATE ccVirtualAgentVoices SET QuantumVoiceId = ''DEZQStqDOeAcGjN05hHz'' WHERE ID = 1 AND Name = ''Alma''
+	END
+
+	IF EXISTS (SELECT 1 FROM ccVirtualAgentVoices WHERE ID = 2 AND Name = ''Luis'')
+	BEGIN
+		UPDATE ccVirtualAgentVoices SET QuantumVoiceId = ''rJQrz9Vv8nMjFoahubVm'' WHERE ID = 2 AND Name = ''Luis''
+	END
+	'
+	EXEC(@sql);
+	---------------------- END IC  ----------------------
+
 	---------------------- BEGIN MAGV  ----------------------
 	SET @process = 'K070082 add values in GalateaIdentifiersTable and GalateaModules'
 	SET @sql = 'IF NOT EXISTS (SELECT 1 FROM dbo.ccGalateaIdentifiers AS cgm WHERE cgm.Description = ''DNI_EDIT_NAME'')
@@ -539,14 +566,21 @@ BEGIN
 		END
 		ELSE IF (@action = 7) --- Get virtual agents by campaign id and camptype
         BEGIN
-                SELECT 
-                cva.idAgent
-                , ISNULL(cva.quantumAgentId,'''') AS QuantumAgentId
-                , ISNULL(cva.location,'''') AS Location
-                , ISNULL('''','''')  AS ProjectId
-				, ISNULL(cva.voice,'''')  AS Voice
-                FROM dbo.ccVirtualAgent AS cva
-                WHERE cva.idCampaign = @campaignId AND cva.campType = @campType;
+			DECLARE @defaultVoiceId VARCHAR(MAX)
+			SELECT @defaultVoiceId = QuantumVoiceId FROM ccVirtualAgentVoices WHERE IsDefault = 1
+
+			SELECT 
+			cva.idAgent
+			, ISNULL(cva.quantumAgentId,'''') AS QuantumAgentId
+			, ISNULL(cva.location,'''') AS Location
+			, ISNULL('''','''')  AS ProjectId
+			, CASE 
+				WHEN cva.voice IS NULL OR cva.voice = '''' THEN @defaultVoiceId
+				ELSE ISNULL(cvav.QuantumVoiceId, @defaultVoiceId)
+				END AS Voice
+			FROM dbo.ccVirtualAgent AS cva
+			LEFT JOIN ccVirtualAgentVoices cvav ON cvav.ID = cva.voice
+			WHERE cva.idCampaign = @campaignId AND cva.campType = @campType;
         END
         ELSE IF (@action = 8) --- Reload virtual agent association
 		BEGIN

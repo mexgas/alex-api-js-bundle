@@ -544,11 +544,11 @@ BEGIN
 
 			SELECT 
 			cva.idAgent
-			, ISNULL(cva.quantumAgentId,'') AS QuantumAgentId
-			, ISNULL(cva.location,'') AS Location
-			, ISNULL('','')  AS ProjectId
+			, ISNULL(cva.quantumAgentId,'''') AS QuantumAgentId
+			, ISNULL(cva.location,'''') AS Location
+			, ISNULL('''','''')  AS ProjectId
 			, CASE 
-				WHEN cva.voice IS NULL OR cva.voice = '' THEN @defaultVoiceId
+				WHEN cva.voice IS NULL OR cva.voice = '''' THEN @defaultVoiceId
 				ELSE ISNULL(cvav.QuantumVoiceId, @defaultVoiceId)
 				END AS Voice
 			FROM dbo.ccVirtualAgent AS cva

@@ -45,7 +45,17 @@ BEGIN
     BEGIN TRY
 	
 		set @process = 'cstoProvedor - Alter Table Hugo'
-		set @Sql = 'ALTER table cstoProvedor add trunk varchar(200)'
+		SET @sql = '
+			IF NOT EXISTS (
+				SELECT 1
+				FROM INFORMATION_SCHEMA.COLUMNS
+				WHERE TABLE_NAME = ''cstoProvedor''
+				  AND COLUMN_NAME = ''trunk''
+			)
+			BEGIN
+				ALTER TABLE cstoProvedor ADD trunk VARCHAR(200);
+			END
+		';
 		EXEC(@sql)
 
 	   SET @process = 'Facturacion - Registro de codeCountry 1'

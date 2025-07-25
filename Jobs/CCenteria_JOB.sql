@@ -323,13 +323,16 @@ EndSave:
 
     set @process = 'CREATE JOB CW Delete old records'
     set @sql = 'USE [msdb]
+
+/****** Object:  Job [CW Delete old records]    Script Date: 09/07/2025 03:50:18 p. m. ******/
 if exists(select * from  [msdb].[dbo].[sysjobs] AS [sJOB] where [name]=N''CW Delete old records'') begin
     EXEC msdb.dbo.sp_delete_job @job_name=N''CW Delete old records'', @delete_unused_schedule=1
-end
+END
+/****** Object:  Job [CW Delete old records]    Script Date: 09/07/2025 03:50:18 p. m. ******/
 BEGIN TRANSACTION
 DECLARE @ReturnCode INT
 SELECT @ReturnCode = 0
-/****** Object:  JobCategory [Nuxiba]    Script Date: 03/09/2021 07:46:53 p. m. ******/
+/****** Object:  JobCategory [Nuxiba]    Script Date: 09/07/2025 03:50:19 p. m. ******/
 IF NOT EXISTS (SELECT name FROM msdb.dbo.syscategories WHERE name=N''Nuxiba'' AND category_class=1)
 BEGIN
 EXEC @ReturnCode = msdb.dbo.sp_add_category @class=N''JOB'', @type=N''LOCAL'', @name=N''Nuxiba''
@@ -347,42 +350,34 @@ EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N''CW Delete old records'',
 		@delete_level=0, 
 		@description=N''No description available.'', 
 		@category_name=N''Nuxiba'', 
-        @owner_login_name=N''replication'', @job_id = @jobId OUTPUT
+		@owner_login_name=N''replication'', @job_id = @jobId OUTPUT
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
-/****** Object:  Step [Run sp]    Script Date: 27/11/2023 04:10:50 p. m. ******/
-EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N''Run sp'', 
+/****** Object:  Step [Delete Call And catalog]    Script Date: 09/07/2025 03:50:19 p. m. ******/
+EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N''Delete Call And catalog'', 
 		@step_id=1, 
 		@cmdexec_success_code=0, 
-		@on_success_action=1, 
-		@on_success_step_id=0, 
+		@on_success_action=4, 
+		@on_success_step_id=2, 
 		@on_fail_action=2, 
 		@on_fail_step_id=0, 
 		@retry_attempts=0, 
 		@retry_interval=1, 
 		@os_run_priority=0, @subsystem=N''TSQL'', 
 		@command=N''/***********************************************/
--- Delete Old Records New Version Febrero 2024 --
+-- Delete Old Records New Version Febrero 2025 --
 /***********************************************/
 set nocount on
 
 declare @idSqlCmd int
 declare @sqlCmd nvarchar(max)
 declare @days int
-declare @daysSms int
 declare @date datetime
-declare @dateSms datetime
 
 set @idSqlCmd = 0
 set @sqlCmd  =''''''''
 set @days = 30
+
 set @date =dateadd(dd, -@days, getdate())
-
--------------------- BEGIN SMS ------------------------------------ 
-
-set @daysSms = 180
-set @dateSms =dateadd(dd, -@daysSms, getdate())
-
--------------------- END SMS ------------------------------------ 
 
 
 create table #sqlCmdDeleteOldRecords(
@@ -482,20 +477,12 @@ values (''''delete ivrcallsin where date < @date'''', 0, 1)
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
 values (''''delete ivroptions where date < @date'''', 0, 1)
 
-insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete SmsSegmentsValidationResult where validation_date < @date'''', 0, 0)
 /******************************************************************/
 /* Delete by date because rows in ccoLogDials > ccoCallsOutSource */
 /******************************************************************/
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
 values (''''delete ccoLogDials where fecha < @date'''', 0, 1)
-
-insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete ccoLogDialsData where callDate < @date'''', 0, 1)
-
-insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete ccoCallsOutData where callDate < @date'''', 0, 1)
 
 /******************************************************************/
 
@@ -536,15 +523,6 @@ where B.callout_id is null
 '''', 0, 1)
 
 
-
--------------------- BEGIN SMS ------------------------------------ 
-
-insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete smsccoLogDial where smsDate < @dateSms'''', 0, 1)
-
--------------------- END SMS -------------------------------------
-
-
 while (select count(*) from #sqlCmdDeleteOldRecords where [status] = 0 ) > 0
     begin
         set rowcount 1
@@ -553,10 +531,18 @@ while (select count(*) from #sqlCmdDeleteOldRecords where [status] = 0 ) > 0
         
 		--print (@sqlCmd)
 		BEGIN TRY  
-    		exec sp_executesql @sqlCmd, N''''@date datetime,@dateSms datetime'''', @date,@dateSms
+    		exec sp_executesql @sqlCmd, N''''@date datetime'''', @date
 		END TRY  
 		BEGIN CATCH  
-		    SELECT ERROR_NUMBER() AS ErrorNumber  ,ERROR_MESSAGE() AS ErrorMessage;  
+			SELECT ERROR_NUMBER() AS ErrorNumber  ,ERROR_MESSAGE() AS ErrorMessage
+			INSERT INTO dbo.ccSqlCmdDeleteOldRecords_Errors (idSqlCmd, sqlCmd, errorNumber, errorMessage)
+			VALUES (
+            @idSqlCmd,
+            @sqlCmd,
+            ERROR_NUMBER(),
+            ERROR_MESSAGE()
+			);
+
 		END CATCH;   
 
 		
@@ -587,6 +573,137 @@ drop table #ccoCallsOutSourceIds'',
 		@database_name=N''CCenterRIA'', 
 		@flags=0
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+/****** Object:  Step [Delete SMS]    Script Date: 09/07/2025 03:50:19 p. m. ******/
+EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N''Delete SMS'', 
+		@step_id=2, 
+		@cmdexec_success_code=0, 
+		@on_success_action=1, 
+		@on_success_step_id=0, 
+		@on_fail_action=2, 
+		@on_fail_step_id=0, 
+		@retry_attempts=0, 
+		@retry_interval=0, 
+		@os_run_priority=0, @subsystem=N''TSQL'', 
+		@command=N''/***********************************************/
+-- Delete Old Records New Version Febrero 2025 --
+/***********************************************/
+set nocount on
+
+declare @idSqlCmd int
+declare @sqlCmd nvarchar(max)
+declare @days int
+declare @date datetime
+
+set @idSqlCmd = 0
+set @sqlCmd  =''''''''
+set @days = 90
+
+set @date =dateadd(dd, -@days, getdate())
+
+
+create table #sqlCmdDeleteOldRecords(
+idSqlCmd int identity primary key,
+sqlCmd nvarchar(max) not null,
+[status] int not null,
+isReplicated bit not null
+)
+
+create table #smsOutSourceIds(
+smsout_id int not null primary key
+)
+
+insert into #smsOutSourceIds (smsout_id)
+select distinct A.smsout_id
+from smsOutSource A
+inner join smsccoLogDial b on A.smsout_id = b.smsout_id
+where b.smsDate < dateadd(dd, -@days, getdate())
+
+/******************************************************************/
+/* Delete by date because rows in smsccoLogDial > smsOutSource */
+/******************************************************************/
+
+insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
+values (''''delete smsccoLogDial where smsDate < @date'''', 0, 1)
+
+/******************************************************************/
+
+
+--quita los smsout_id que existen registros recientes
+insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
+values ('''';with logDialsMax as(
+select b.smsout_id,MAX(b.smsDate) smsDate from #smsOutSourceIds A
+inner join smsccoLogDial b on A.smsout_id = b.smsout_id
+group by b.smsout_id
+)
+delete B from logDialsMax A
+inner join #smsOutSourceIds B on A.smsout_id=B.smsout_id
+where @date>A.smsDate'''', 0, 1)
+
+insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
+values (''''delete a from smsWorkingTable as a inner join #smsOutSourceIds as b on a.smsout_id = b.smsout_id and sms_dateDial<@date'''', 0, 0)
+
+
+insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
+values (''''delete a from smsoutSourceMessage a inner join #smsOutSourceIds b on a.smsout_id = b.smsout_id'''', 0, 1)
+
+insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
+values (''''delete a from smsOutSource a inner join #smsOutSourceIds b on a.smsout_id = b.smsout_id and sms_dateDial<@date'''', 0, 1)
+
+insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
+values (''''delete a from ccSqlCmdDeleteOldRecords_Errors where errorDate<@date'''', 0, 1)
+
+
+while (select count(*) from #sqlCmdDeleteOldRecords where [status] = 0 ) > 0
+    begin
+        set rowcount 1
+            select @idSqlCmd = idSqlCmd, @sqlCmd = SqlCmd from #sqlCmdDeleteOldRecords where [status] = 0 order by idSqlCmd
+        set rowcount 0
+        
+		--print (@sqlCmd)
+		BEGIN TRY  
+    		exec sp_executesql @sqlCmd, N''''@date datetime'''', @date
+		END TRY  
+		BEGIN CATCH  
+	 SELECT ERROR_NUMBER() AS ErrorNumber  ,ERROR_MESSAGE() AS ErrorMessage
+			INSERT INTO dbo.ccSqlCmdDeleteOldRecords_Errors (idSqlCmd, sqlCmd, errorNumber, errorMessage)
+			VALUES (
+            @idSqlCmd,
+            @sqlCmd,
+            ERROR_NUMBER(),
+            ERROR_MESSAGE()
+			);
+
+
+		END CATCH;   
+
+		
+
+        WAITFOR DELAY ''''00:00:01''''
+
+        while(SELECT count(*)
+                FROM sys.dm_exec_requests a
+                INNER JOIN sys.dm_exec_connections b
+                ON a.session_id = b.session_id
+                INNER JOIN sys.dm_exec_sessions c
+                ON c.session_id = a.session_id
+                CROSS APPLY sys.dm_exec_sql_text(sql_handle) AS d
+                WHERE a.session_id > 50
+                AND a.session_id = @@SPID
+                and d.text = @sqlCmd) > 0
+            begin
+                WAITFOR DELAY ''''00:00:01''''
+            end
+
+        update #sqlCmdDeleteOldRecords
+        set [status] = 1
+        where idSqlCmd = @idSqlCmd
+    end
+
+drop table #sqlCmdDeleteOldRecords
+drop table #smsOutSourceIds'', 
+		@database_name=N''CCenterRIA'', 
+		@flags=0
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_update_job @job_id = @jobId, @start_step_id = 1
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N''Tuesday, Thursday and Saturday at 3:00 am'', 
@@ -600,7 +717,7 @@ EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N''Tuesday,
 		@active_start_date=20041022, 
 		@active_end_date=99991231, 
 		@active_start_time=10000, 
-        @active_end_time=235959
+		@active_end_time=235959
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_add_jobserver @job_id = @jobId, @server_name = N''(local)''
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
@@ -608,7 +725,8 @@ COMMIT TRANSACTION
 GOTO EndSave
 QuitWithRollback:
     IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION
-EndSave:'
+EndSave:
+'
     EXEC(@sql)
 
     set @process = 'CREATE JOB CW Stop inactive campaigns'

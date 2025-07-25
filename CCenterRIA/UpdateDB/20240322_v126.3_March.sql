@@ -1315,6 +1315,7 @@ SET @sql = '
         select column_name
         from information_schema.columns  
         where table_name = ''ccoCallsOutSource'' AND column_name = ''international''
+        AND AND DATA_TYPE = ''bit''
     )
     BEGIN
         alter table ccoCallsOutSource alter column international int

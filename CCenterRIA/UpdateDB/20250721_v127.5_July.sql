@@ -1204,7 +1204,13 @@ BEGIN
 			DEALLOCATE cur;
 
 			DECLARE @CleanACDIds VARCHAR(MAX);
-			SELECT @CleanACDIds = STRING_AGG(CAST(Id AS VARCHAR), '','') FROM #FinalACDs;
+			SELECT @CleanACDIds = 
+			STUFF((
+				SELECT '','' + CAST(Id AS VARCHAR)
+				FROM #FinalACDs
+				ORDER BY Id
+				FOR XML PATH(''''), TYPE
+			).value(''.'', ''VARCHAR(MAX)''), 1, 1, '''');
 
 			DECLARE @HasRelations BIT = CASE 
 											WHEN (SELECT COUNT(*) FROM #FinalACDs) < (SELECT COUNT(*) FROM #TmpACDs)

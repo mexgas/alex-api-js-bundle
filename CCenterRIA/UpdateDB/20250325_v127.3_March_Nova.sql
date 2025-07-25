@@ -19718,6 +19718,13 @@ END
     '
     EXEC(@sql)
 --------------------------------- BEGIN   Omar Mejia .33 CDR ----------------------------------------------------------
+set @process = 'Facturación - Validación sp ccsp_getCDRData'
+    set @sql='
+    if exists (select * from sys.procedures where name = N''ccsp_getCDRData'')
+    begin
+        DROP PROCEDURE ccsp_getCDRData
+    end'
+    EXEC(@sql)
     SET @process = 'Create  ccsp_getCDRData para obtener datos necesarios del CDR en el Telephony'
     SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_getCDRData]
     @phone VARCHAR(32)

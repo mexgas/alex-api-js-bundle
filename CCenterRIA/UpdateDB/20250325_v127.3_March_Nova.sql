@@ -17768,14 +17768,7 @@ END';
 
 
 	SET @process = 'CREATE sp ccsp_SaveStatusAgent';
-    SET @sql = 'USE [CCenterRIA]
-GO
-/****** Object:  StoredProcedure [dbo].[ccsp_SaveStatusAgent]    Script Date: 14/07/2025 10:29:59 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-ALTER PROCEDURE [dbo].[ccsp_SaveStatusAgent]
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_SaveStatusAgent]
 @User_id smallint,
 @TipoStatusAge_id tinyint,
 @TipoNotReady smallint,

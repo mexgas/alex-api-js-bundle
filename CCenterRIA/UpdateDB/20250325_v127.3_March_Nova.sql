@@ -43,6 +43,20 @@ IF @version >= @actualVersion and @versionfix >= @actualVersionFix
 BEGIN
     BEGIN TRAN
     BEGIN TRY
+	
+		set @process = 'cstoProvedor - Alter Table Hugo'
+		SET @sql = '
+			IF NOT EXISTS (
+				SELECT 1
+				FROM INFORMATION_SCHEMA.COLUMNS
+				WHERE TABLE_NAME = ''cstoProvedor''
+				  AND COLUMN_NAME = ''trunk''
+			)
+			BEGIN
+				ALTER TABLE cstoProvedor ADD trunk VARCHAR(200);
+			END
+		';
+		EXEC(@sql)
 
 	   SET @process = 'Facturacion - Registro de codeCountry 1'
         SET @sql = '
@@ -19591,6 +19605,176 @@ BEGIN
 END
     '
     EXEC(@sql)
+--------------------------------- BEGIN   Omar Mejia .33 CDR ----------------------------------------------------------
+set @process = 'Facturación - Validación sp ccsp_getCDRData'
+    set @sql='
+    if exists (select * from sys.procedures where name = N''ccsp_getCDRData'')
+    begin
+        DROP PROCEDURE ccsp_getCDRData
+    end'
+    EXEC(@sql)
+    SET @process = 'Create  ccsp_getCDRData para obtener datos necesarios del CDR en el Telephony'
+    SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_getCDRData]
+    @phone VARCHAR(32)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @country TINYINT;
+    DECLARE @cldCountry VARCHAR(7);
+    DECLARE @cldLocal VARCHAR(7);
+    DECLARE @tel VARCHAR(32);
+    DECLARE @ld VARCHAR(7);
+    DECLARE @serie VARCHAR(10);
+    DECLARE @cdrCountry VARCHAR(255) = '''';
+    DECLARE @region VARCHAR(255) = '''';
+    DECLARE @locality VARCHAR(255) = '''';
+    DECLARE @modality VARCHAR(255) = '''';
+    DECLARE @network_type VARCHAR(255) = '''';
+    DECLARE @lon TINYINT;
+
+    -- Get settings
+    SELECT @country = valor FROM ccSettings WITH (NOLOCK) WHERE setting_id = 104;
+    SELECT @cldLocal = valor FROM ccSettings WITH (NOLOCK) WHERE setting_id = 17;
+    SELECT @cldCountry = VALOR FROM ccsettings2 WHERE setting_id = 273;
+
+    -- Clean phone
+    SET @tel = dbo.limpia(@phone);
+    SET @lon = LEN(@tel);
+
+    IF @lon > 10
+    BEGIN
+        -- Detect country code
+        SELECT TOP 1 
+            @cldCountry = CAST(CodeCountry AS VARCHAR(50)),
+            @cdrCountry = CountryAbbreviation
+        FROM ccWhatsOringCountry
+        WHERE LEFT(@tel, LEN(CodeCountry)) = CodeCountry
+        ORDER BY LEN(CodeCountry) DESC;
+
+        -- Remove country code prefix from phone
+        IF @cldCountry IS NOT NULL AND LEN(@cldCountry) > 0
+        BEGIN
+            IF LEFT(@tel, LEN(@cldCountry)) = @cldCountry
+                SET @tel = SUBSTRING(@tel, LEN(@cldCountry)+1, LEN(@tel));
+        END
+    END
+    ELSE
+    BEGIN
+        SELECT TOP 1 
+            @cldCountry = CAST(CodeCountry AS VARCHAR(50)),
+            @cdrCountry = CountryAbbreviation
+        FROM ccWhatsOringCountry
+        WHERE REPLACE(@cldCountry, ''+'', '''') = CodeCountry
+        ORDER BY LEN(CodeCountry) DESC;
+    END
+
+    IF @cldCountry = ''52''
+    BEGIN
+        IF @lon IN (7,8)
+        BEGIN
+            SET @tel = @cldLocal + @tel;
+            SET @ld = @cldLocal;
+        END
+
+        SET @tel = RIGHT(@tel,10);
+        SET @lon = LEN(@tel);
+
+        IF @lon = 10
+        BEGIN
+            -- PRIMERO revisa si es 800 nacional de México
+            IF LEFT(@tel, 3) = ''800''
+            BEGIN
+                SET @network_type = ''Toll-free'';
+                SET @modality = '''';
+                SET @region = '''';
+                SET @locality = '''';
+            END
+            ELSE
+            BEGIN
+                IF EXISTS (
+                    SELECT 1 FROM series WITH (NOLOCK)
+                    WHERE cld = LEFT(@tel,3) AND serie = SUBSTRING(@tel,4,3)
+                )
+                BEGIN
+                    SET @ld = LEFT(@tel,3);
+                    SET @serie = SUBSTRING(@tel,4,3);
+                END
+                ELSE IF EXISTS (
+                    SELECT 1 FROM series WITH (NOLOCK)
+                    WHERE cld = LEFT(@tel,2) AND serie = SUBSTRING(@tel,3,4)
+                )
+                BEGIN
+                    SET @ld = LEFT(@tel,2);
+                    SET @serie = SUBSTRING(@tel,3,4);
+                END
+
+                IF @serie IS NOT NULL
+                BEGIN
+                    SELECT TOP 1
+                        @region = estado,
+                        @locality = municipio,
+                        @modality = modalidad,
+                        @network_type = [TIPO DE RED]
+                    FROM series WITH (NOLOCK)
+                    WHERE cld = @ld AND serie = @serie;
+                END
+                ELSE
+                BEGIN
+                    SELECT TOP 1
+                        @region = estado,
+                        @locality = municipio,
+                        @modality = modalidad,
+                        @network_type = [TIPO DE RED]
+                    FROM series WITH (NOLOCK)
+                    WHERE cld = @cldLocal;
+                END
+            END
+        END
+    END
+
+     -- Result with translation logic
+    SELECT
+        @tel AS phone,
+        @locality AS locality,
+        @region AS region,
+        CASE 
+            WHEN @modality = ''FIJO'' THEN ''Fijo''
+            ELSE @modality
+        END AS modality,
+        CASE 
+            WHEN @network_type = ''MOVIL'' THEN ''Mobile''
+            WHEN @network_type = ''FIJO'' THEN ''Landline''
+            ELSE @network_type
+        END AS network_type,
+        @cdrCountry AS country,
+        @cldCountry AS country_code
+END
+'
+    EXEC(@sql)
+--------------------------------- END   Omar Mejia .33 CDR ----------------------------------------------------------
+
+SET @process = ''
+    SET @sql = ''
+    EXEC(@sql)
+
+
+SET @process = ''
+    SET @sql = ''
+    EXEC(@sql)
+
+
+SET @process = ''
+    SET @sql = ''
+    EXEC(@sql)
+
+
+SET @process = ''
+    SET @sql = ''
+    EXEC(@sql)
+
+
+
 
 --------------------------------- END   Jesus Gallardo .31 tickets #1867 ----------------------------------------------------------
 

@@ -596,7 +596,7 @@ declare @date datetime
 
 set @idSqlCmd = 0
 set @sqlCmd  =''''''''
-set @days = 90
+set @days = 180
 
 set @date =dateadd(dd, -@days, getdate())
 

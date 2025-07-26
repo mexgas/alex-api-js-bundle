@@ -17759,15 +17759,7 @@ END';
 --------------------------------------------------------- END MACL .29 ---------------------------------------------------------
 
 --------------------------------- BEGIN MAGV .31 tickets #1867 ----------------------------------------------------------
-SET @process = 'DELETE sp ccsp_SaveStatusAgent';
-	SET @sql = 'IF EXISTS (SELECT * FROM sysobjects WHERE name=''ccsp_SaveStatusAgent'') 
-BEGIN
-	DROP PROCEDURE dbo.ccsp_SaveStatusAgent
-END';
-	EXEC(@sql);
-
-
-	SET @process = 'CREATE sp ccsp_SaveStatusAgent';
+	SET @process = 'ALTER sp ccsp_SaveStatusAgent';
     SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_SaveStatusAgent]
 @User_id smallint,
 @TipoStatusAge_id tinyint,

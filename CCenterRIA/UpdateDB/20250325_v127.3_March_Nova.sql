@@ -20076,7 +20076,7 @@ END
 SET NOCOUNT OFF'
        EXEC(@sql)
 
-         SET @process = '#2493 ALTER FUNCTION [dbo].[ValidateBlackListPhone]'
+       SET @process = '#2493 ALTER FUNCTION [dbo].[ValidateBlackListPhone]'
        SET @sql = 'ALTER FUNCTION [dbo].[ValidateBlackListPhone] (@tel VARCHAR(32), @camId INT, @calKey VARCHAR(20))
 RETURNS BIT
 AS
@@ -20104,40 +20104,11 @@ BEGIN
         SET @isBlackPhone = 1
 
     RETURN @isBlackPhone
-END
-ALTER FUNCTION [dbo].[ValidateBlackListPhone] (@tel VARCHAR(32), @camId INT, @calKey VARCHAR(20))
-RETURNS BIT
-AS
-BEGIN
-    DECLARE @isBlackPhone BIT=0
-    --PARA LA VALIDACION DE LISTAS NEGRAS CON HASH
-    DECLARE @hasTelefono BIGINT
+END'
+   EXEC(@sql)
 
-    if @tel='''' return 0
-
-    SELECT @hasTelefono = dbo.hashPhone(@tel)
-
-    DECLARE @hasCalKey BIGINT
-
-    -- Evitar doble condición innecesaria
-    IF ISNULL(@calKey, '''') <> ''''
-        SET @hasCalKey = dbo.hashList(@calKey)
-
-    IF EXISTS (
-            SELECT 1
-            FROM cclistanegra a1
-            INNER JOIN camplistanegra a2 WITH(nolock) ON a1.idtipolista = a2.idtipolista
-            WHERE a2.cam_id = @camId AND STATUS = 1 AND a1.Hashtel = @hasTelefono AND (a1.HashKey IS NULL OR a1.HashKey = @hasCalKey)
-            )
-        SET @isBlackPhone = 1
-
-    RETURN @isBlackPhone
-END
-'
-       EXEC(@sql)
-
-         SET @process = '#2543 ALTER PROCEDURE [dbo].[ccsp_RecycleByDispositionOrResult]'
-       SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_RecycleByDispositionOrResult]
+   SET @process = '#2543 ALTER PROCEDURE [dbo].[ccsp_RecycleByDispositionOrResult]'
+   SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_RecycleByDispositionOrResult]
 @Action SMALLINT = 0,
 @cam_id SMALLINT = 0,
 @result_id SMALLINT = 0,
@@ -20838,8 +20809,7 @@ END
 
 
 SET @process = '#2543-Outbound-No se respetan tiempo de remarcacion.'
-SET @sql = '
-CREATE PROCEDURE [dbo].[ccsp_OUTUpdateDialJob]
+SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_OUTUpdateDialJob]
 @callout_id     INT,
 @CallResultDial TINYINT,
 @isTCPA         BIT     = 0
@@ -21339,7 +21309,7 @@ SET @process = 'DROP INDEX IX_WGCal_id ON dbo.ccRIAWorkGroup_Calid'
 
     SET @process = '#2453 Se crea el sp ccsp_DLRGetDialInfo, se agrega la columna data_api_quantum, para poder consultarla al 
     obtener los datos de la llamada'
-    SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_DLRGetDialInfo]
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_DLRGetDialInfo]
     @callout_id int,
     @cam_id smallint=0,
     @iPortNumber smallint = 0

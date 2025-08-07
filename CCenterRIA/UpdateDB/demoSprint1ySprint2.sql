@@ -15,7 +15,7 @@ DECLARE @sql VARCHAR(max)
 DECLARE @process VARCHAR(max)
 ------------------- BEGIN MAGV --------------------------------
 /*DEV3-1182*/
-SET @process = 'K0248 - Se realiza cambio de tags, para portugues ya que estaba mal la etiqueta para el historial de actividad'
+SET @process = 'K070088 - Se realiza cambio de tags, para portugues ya que estaba mal la etiqueta para el historial de actividad'
 SET @sql = '
 IF EXISTS (
     SELECT 1 FROM dbo.ccGalateaIdentifiers

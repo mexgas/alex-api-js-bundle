@@ -101,5 +101,43 @@ SET @sql = 'CREATE PROCEDURE [dbo].[SaveDispositionsAI]
 			insert into ccCallsInTranscriptionIA (call_id, Transcription) values (@call_Id, @Transcription)
 		END'
 EXEC(@sql)
-
 ------------------- END MAGV  ----------------------------------------
+------------------- Begin DMM  ----------------------------------------
+SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures where name= N''ccsp_AIToHumanTransfer'')
+		BEGIN
+			DROP PROCEDURE ccsp_AIToHumanTransfer
+		END'
+EXEC(@sql)
+
+SET @process = ''
+SET @sql = '
+CREATE PROCEDURE [dbo].[ccsp_AIToHumanTransfer]
+	@action int = null,
+	@camId int = null,
+	@CallOutId int = null,
+	@acdId int = null
+
+AS
+BEGIN 
+	if @action = 1
+	Begin
+		select Inbound_id from ccInbound where cam_id = @camId
+	end
+
+	if @action = 2
+	Begin
+		select data_overflow_variables_quantum from ccoCallsOutSource where callout_id = @CallOutId
+	end
+
+	if @action = 3
+	Begin
+		select idForNonComprehension from ccInbound where Inbound_id = @acdId
+	end
+
+	if @action = 4
+	Begin
+		select idForSuccessfulTransaction from ccInbound where Inbound_id = @acdId
+	end
+END'
+EXEC(@sql)
+------------------- End DMM  ----------------------------------------

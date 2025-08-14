@@ -197,7 +197,7 @@ BEGIN
 			END'
 	EXEC(@sql)
 
-	SET @process = ''
+	SET @process = 'se agregan @action 3 y @action=4 para transferencias de gesión exitosa y no entenidmiento'
 	SET @sql = '
 	CREATE PROCEDURE [dbo].[ccsp_AIToHumanTransfer]
 		@action int = null,
@@ -227,6 +227,65 @@ BEGIN
 			select idForSuccessfulTransaction from ccInbound where Inbound_id = @acdId
 		end
 	END'
+	EXEC(@sql)
+
+	SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures where name= N''ccsp_IVRGetEspecialidadByDnis'')
+			BEGIN
+				DROP PROCEDURE ccsp_IVRGetEspecialidadByDnis
+			END'
+	EXEC(@sql)
+
+	SET @process = 'Se hacen modificaciones pera validar si la llamada será rechazada al ser xfer de IA a humano '
+	SET @sql = '
+	CREATE PROCEDURE [dbo].[ccsp_IVRGetEspecialidadByDnis] 
+		@sDnis varchar (40),
+		@sAni varchar (19) = null,
+		@IsAITransferedToHuman bit = 0,
+		@acdId int = 0
+		AS
+		set nocount on
+
+		declare @inbound_id INT  = 0, @nMaxQue    SMALLINT = 0;
+
+		if @IsAITransferedToHuman = 1
+		begin
+			SET @inbound_id = ISNULL(@acdId, 0);
+		end
+		else 
+		begin
+			if @sDnis =  ''''
+				set @inbound_id = 0
+			else
+				select @inbound_id = inbound_id from ccInboundDnis where dni_id in (select dni_id from ccDnis where dni_numero like @sDnis)
+		end
+
+		if @inbound_id > 0 
+		begin
+			select @nMaxQue = nMaxQue from ccInbound where inbound_id = @inbound_id
+	
+			if @IsAITransferedToHuman = 0
+			begin
+				-- Verificamos si el Dnis no esta bloqueado
+				if exists (select dni_id from ccDnis where dni_status=1 and dni_isBlock=1 and dni_numero = @sDnis) 
+				begin
+					select -1 inbound_id, @nMaxQue nMaxQue
+					return(0)
+				end
+			end
+
+			-- Valida si el ani esta en lista negra
+			if @inbound_id > 0 and exists(select telefono from ACDlistanegra A join ccListaNegra L on A.idtipolista = L.idtipolista where A.status=1 and telefono=@sAni and inbound_id=@inbound_id) 
+			begin
+				select -1 inbound_id, @nMaxQue nMaxQue
+				return(0)
+			end
+
+		end 
+
+		select isNull(@inbound_id, 0) as inbound_id, 0 as ''is900'', @nMaxQue as nMaxQue
+		return(0)
+
+		set nocount off'
 	EXEC(@sql)
 ------------------- End DMM  ----------------------------------------
 

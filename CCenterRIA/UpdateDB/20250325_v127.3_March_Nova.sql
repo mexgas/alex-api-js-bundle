@@ -24370,7 +24370,8 @@ END'
     @cal_status int = 0,
     @idLoad int=0,
     @motivo varchar(50)=null,
-    @cam_id int=null
+    @cam_id int=null,
+    @isIAQuantumCamp bit =0
 
 AS
 BEGIN
@@ -24380,6 +24381,7 @@ BEGIN
     DECLARE @paramDef NVARCHAR(300);    
     DECLARE @count INT;
     declare @emtpy varchar(1)='''',@zipCodeSchedule bit 
+    declare @columnsIAQuntum varchar(max)=''''   
 
     IF @action = 1
     BEGIN
@@ -24391,6 +24393,11 @@ BEGIN
     END
     ELSE IF @action = 2
     BEGIN
+            
+        if @isIAQuantumCamp =1 begin
+            set @columnsIAQuntum='', data_api_quantum, data_overflow_variables_quantum''
+        end
+
         SET @sql = ''
         INSERT INTO dbo.ccoCallsOutSource (
             cal_Key, cal_telefono, cal_telefono2, cal_telefono3, cal_telefono4, cal_telefono5,
@@ -24401,6 +24408,7 @@ BEGIN
             ,iZonaHoraria3,iZonaHoraria_verano3
             ,iZonaHoraria4,iZonaHoraria_verano4
             ,iZonaHoraria5,iZonaHoraria_verano5
+            '' + @columnsIAQuntum + ''
         )
         SELECT
             cal_Key, cal_telefono, cal_telefono2, cal_telefono3, cal_telefono4, cal_telefono5,
@@ -24411,6 +24419,7 @@ BEGIN
             ,iZonaHoraria3,iZonaHoraria_verano3
             ,iZonaHoraria4,iZonaHoraria_verano4
             ,iZonaHoraria5,iZonaHoraria_verano5
+            '' + @columnsIAQuntum + ''
         FROM '' + QUOTENAME(@tableName) + ''
         WHERE callout_id = 0'';
 
@@ -24452,6 +24461,10 @@ BEGIN
     END
     ELSE IF @action =5
     BEGIN
+        if @isIAQuantumCamp =1 begin
+            set @columnsIAQuntum='', C.data_api_quantum = A.data_api_quantum, C.data_overflow_variables_quantum = A.data_overflow_variables_quantum''
+        end
+
         SET @sql = ''
         UPDATE C SET
             C.cal_status = CASE WHEN B.callout_id IS NULL THEN @cal_status_param ELSE C.cal_status END,
@@ -24479,6 +24492,7 @@ BEGIN
             ,C.iZonaHoraria3=A.iZonaHoraria3,C.iZonaHoraria_verano3=A.iZonaHoraria_verano3
             ,C.iZonaHoraria4=A.iZonaHoraria4,C.iZonaHoraria_verano4=A.iZonaHoraria_verano4
             ,C.iZonaHoraria5=A.iZonaHoraria5,C.iZonaHoraria_verano5=A.iZonaHoraria_verano5
+            '' + @columnsIAQuntum + ''
         FROM '' + QUOTENAME(@tableName) + '' A
         LEFT JOIN dbo.ccoWorkingTable B WITH (ROWLOCK, UPDLOCK, READPAST) ON A.callout_id = B.callout_id AND B.cal_status <= 2
         INNER JOIN dbo.ccoCallsOutSource C WITH (ROWLOCK, UPDLOCK) ON A.callout_id = C.callout_id'';
@@ -25187,6 +25201,29 @@ end
 ON [dbo].[ccoCallsOutSource];
 '
     EXEC(@sql)
+
+
+    set @process = ''
+    SET @sql = '';
+    EXEC(@sql)
+
+    set @process = ''
+    SET @sql = '';
+    EXEC(@sql)
+    
+    set @process = ''
+    SET @sql = '';
+    EXEC(@sql)
+    
+    set @process = ''
+    SET @sql = '';
+    EXEC(@sql)
+    
+    set @process = ''
+    SET @sql = '';
+    EXEC(@sql)
+    
+
 
 --------------------------------- END   Jesus Gallardo .33  ----------------------------------------------------------
 

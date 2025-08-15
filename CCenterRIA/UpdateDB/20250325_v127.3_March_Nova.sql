@@ -23473,7 +23473,6 @@ BEGIN
             0;
     END;
 END
-GO
 '
     EXEC(@sql)
 

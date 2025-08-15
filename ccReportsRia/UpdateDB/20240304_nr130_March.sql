@@ -1435,6 +1435,28 @@ SET @sql = '
 	END'
 EXEC(@sql)
 
+set @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
+set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+    begin
+    DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+    end'
+EXEC(@sql)
+ 
+set @process = 'DEV2-17_K004022-Admin-Config_Tiempo_Preview add column descTranslate'
+        set @sql = '
+		if not exists (select * from sys.columns where name = N''descTranslate'' and Object_ID = Object_ID(N''ccTipoResultadoDial''))
+		begin
+			alter table ccTipoResultadoDial add descTranslate varchar(50)
+		end'
+		EXEC(@sql)
+ 
+set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+        begin
+        ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+        end'
+EXEC(@sql)
+
 
 SET @process = 'Create procedure ccspRepOutDialDetail'
 SET @sql = 'CREATE PROCEDURE [dbo].[ccspRepOutDialDetail] 

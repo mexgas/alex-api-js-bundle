@@ -24309,7 +24309,8 @@ END'
     @idLoad int=0,
     @motivo varchar(50)=null,
     @cam_id int=null,
-    @isIAQuantumCamp bit =0
+    @isIAQuantumCamp bit =0,
+    @internationalRecords int=0
 
 AS
 BEGIN
@@ -24421,6 +24422,7 @@ BEGIN
             C.cal_fechaDial = CASE WHEN A.callout_id = 0 THEN A.cal_fechaDial ELSE C.cal_fechaDial END,
             C.Region = A.Region,
             C.Localidad = A.Localidad,
+            C.international = A.international,
             C.recycledByResult = @emtpy,
             C.recycledByDisposition = 0,
             C.recyclePhone = 0,
@@ -24443,6 +24445,14 @@ BEGIN
         DECLARE @today DATE = CONVERT(DATE, GETDATE());
 
         SET @sql = ''
+    UPDATE B
+    SET B.list_id = A.list_id
+    FROM '' + QUOTENAME(@tableName) + '' A
+    INNER JOIN ccoCallsOutSource C WITH (NOLOCK)  ON A.callout_id = C.callout_id
+    INNER JOIN ccoWorkingTable B WITH (NOLOCK)    ON A.callout_id = B.callout_id AND A.cam_id = B.cam_id
+    WHERE B.list_id <> A.list_id;
+
+
       UPDATE ld WITH (ROWLOCK) SET ld.canBeRecycled = 0
       FROM '' + QUOTENAME(@tableName) + '' t
       LEFT JOIN ccoWorkingTable wt WITH (ROWLOCK, UPDLOCK, READPAST) ON t.cam_id = wt.cam_id AND t.callout_id = wt.callout_id AND wt.cal_status < 2
@@ -24467,14 +24477,14 @@ BEGIN
         FROM '' + QUOTENAME(@tableName) + '' A
         LEFT JOIN ccoWorkingTable B WITH (NOLOCK)
             ON A.callout_id = B.callout_id AND A.cam_id = B.cam_id AND B.cal_status <= 2
-        WHERE B.callout_id IS NULL;'';
+        WHERE B.callout_id IS NULL and A.callout_id > 0;'';
 
         EXEC sp_executesql @sql, N''@cnt INT OUTPUT'', @cnt = @count OUTPUT;
 
         -- Insertar en ccRIALogPhones los registros sin match
         SET @sql = ''
-        INSERT INTO ccRIALogPhones(load_id, cal_key, telefono, tipoMov, motivo)
-        SELECT @idLoad, A.cal_Key, @emtpy, 2, @motivo
+        INSERT INTO ccRIALogPhones(load_id, cal_key, telefono, tipoMov, motivo,internationalRecords)
+        SELECT @idLoad, A.cal_Key, @emtpy, 2, @motivo,@internationalRecords
         FROM '' + QUOTENAME(@tableName) + '' A
         LEFT JOIN ccoWorkingTable B WITH (NOLOCK)
             ON A.callout_id = B.callout_id AND A.cam_id = B.cam_id AND B.cal_status <= 2
@@ -24511,8 +24521,8 @@ BEGIN
 
         -- Log en ccRIALogPhones todos los registros de la tabla temporal
         SET @sql = ''
-        INSERT INTO ccRIALogPhones(load_id, cal_key, telefono, tipoMov, motivo)
-        SELECT @idLoad, cal_Key, @emtpy, 2, @motivo FROM '' + QUOTENAME(@tableName) + '';'';
+        INSERT INTO ccRIALogPhones(load_id, cal_key, telefono, tipoMov, motivo,internationalRecords)
+        SELECT @idLoad, cal_Key, @emtpy, 2, @motivo,@internationalRecords FROM '' + QUOTENAME(@tableName) + '';'';
 
         EXEC sp_executesql @sql,
             N''@idLoad INT, @motivo NVARCHAR(200),@emtpy varchar(1)'',
@@ -24606,6 +24616,18 @@ BEGIN
         SET @sql = ''DELETE FROM '' + QUOTENAME(@tableName) + '' WHERE callout_id = 0;'';    
         EXEC sp_executesql @sql;
     END
+     ELSE IF @action = 11 BEGIN
+                
+        SET @sql = ''
+    UPDATE T SET 
+        international=@internationalRecords
+    FROM '' + QUOTENAME(@tableName) + '' T
+    ''
+    EXEC sp_executesql @sql,
+            N''@internationalRecords int'',         
+            @emtpy = @emtpy
+
+    END
     
 
     ELSE
@@ -24625,7 +24647,8 @@ END
     @idLoad int=0,
     @motivo varchar(50)=null,   
     @DateStart varchar(50) = null,
-    @DateEnd varchar(50) = null
+    @DateEnd varchar(50) = null,
+    @internationalRecords int=0
 
 AS
 BEGIN
@@ -24702,7 +24725,7 @@ C.list_id = A.list_id,
 C.sms_dateDial =  A.cal_fechaDial,
 C.Region = A.Region,
 C.Localidad = A.Localidad
---,C.isSegmentLoad = 0
+,C.isSegmentLoad = 0
 from  '' + QUOTENAME(@tableName) + '' A 
 left join dbo.smsWorkingTable  B with (nolock) on A.callout_id=B.smsout_id and A.cam_id=B.cam_id and B.sms_status <=2
 inner join dbo.smsOutSource  C with(nolock) on A.callout_id=C.smsout_id
@@ -24723,8 +24746,8 @@ where B.smsout_id is null;'';
     END
     ELSE IF @action =6
     BEGIN
-        SET @sql = ''Insert into ccRIALogPhones(load_id,cal_key,telefono,tipoMov,motivo)
-select @idLoad, A.cal_Key,@emtpy, 2, @motivo from '' + QUOTENAME(@tableName) + '' A
+        SET @sql = ''Insert into ccRIALogPhones(load_id,cal_key,telefono,tipoMov,motivo,internationalRecords)
+select @idLoad, A.cal_Key,@emtpy, 2, @motivo, @internationalRecords from '' + QUOTENAME(@tableName) + '' A
 left join smsWorkingTable B with (nolock) on A.callout_id=B.smsout_id and A.cam_id=B.cam_id and B.sms_status <=2
 where B.smsout_id is null;
 
@@ -24755,8 +24778,8 @@ delete from '' + QUOTENAME(@tableName) + '' where callout_id=0;'';
     END
     ELSE IF @action =9
     BEGIN
-        SET @sql = ''Insert into ccRIALogPhones(load_id,cal_key,telefono,tipoMov,motivo)
-select @idLoad, A.cal_Key,@emtpy, 2, @motivo from '' + QUOTENAME(@tableName) + '' A;
+        SET @sql = ''Insert into ccRIALogPhones(load_id,cal_key,telefono,tipoMov,motivo,internationalRecords)
+select @idLoad, A.cal_Key,@emtpy, 2, @motivo, @internationalRecords from '' + QUOTENAME(@tableName) + '' A;
 delete from '' + QUOTENAME(@tableName) + '';'';
 
         SET @paramDef = N''@emtpy varchar(1),@idLoad int,@motivo varchar(50)'';
@@ -24817,8 +24840,8 @@ delete from '' + QUOTENAME(@tableName) + '';'';
             N''@emtpy varchar(1)'',         
             @emtpy = @emtpy
 
-print(@sql)
     END
+    
 
     ELSE
     BEGIN

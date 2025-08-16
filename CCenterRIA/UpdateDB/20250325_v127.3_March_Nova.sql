@@ -15809,68 +15809,6 @@ AS
 
 ---------------------------------------------------------END Ivan Martin fix/IM-CW-9282-Update-Cam-Canceled ---------------------------------------------------------
 
----------------------------------------------------------END Jesus Gallardo ---------------------------------------------------------
-
-       SET @process = 'Update ccInbound y ccInboundExtend cam_id callback and survey'
-        SET @sql = 'IF not exists(select * from sys.tables where name=''ccinbound_Backup'') begin
-    
-    CREATE TABLE dbo.ccinbound_Backup (
-        inbound_id INT NOT NULL,
-        cam_id INT NULL,
-        SurveyCamId INT NULL,
-        backupDate DATETIME NOT NULL DEFAULT GETDATE()
-    );
-
-    -- 2. Insertar respaldo de los datos actuales antes de modificar
-    INSERT INTO dbo.ccinbound_Backup (inbound_id, cam_id, SurveyCamId)
-    SELECT i.Inbound_id, i.cam_id, e.SurveyCamId
-    FROM ccinbound i
-    LEFT JOIN ccinboundExtend e ON i.Inbound_id = e.Inbound_id;
-
-    INSERT INTO ccinboundExtend (Inbound_id,RecordCalls, SurveyCamId)
-    SELECT i.Inbound_id, 0, 0  -- Puedes ajustar valor inicial si es necesario
-    FROM ccinbound i
-    LEFT JOIN ccinboundExtend e ON i.Inbound_id = e.Inbound_id
-    WHERE e.Inbound_id IS NULL;
-
-
-    -- ✅ Ya tienes respaldo antes de hacer cambios
-
-    declare @inboundCamIdSurvey table(inboundId int not null,camId int not null)
-    declare @inboundCamIdCallback table(inboundId int not null,camId int not null)
-
-    declare @ccCampsSurvey table(camId int not null)
-    declare @ccCampsCallback table(camId int not null)
-
-    insert into @ccCampsSurvey
-    select cam_id from ccCamps where CampType=8 or (ivrScript>0 and callsBySurvey>0)
-
-    insert into @ccCampsCallback
-    select cam_id from ccCamps where CampType not in(5,7,8) 
-    and isnull(ivrScript,0)=0 and isnull(callsBySurvey,0)=0
-
-    insert into @inboundCamIdSurvey
-    select inbound_Id,cam_id from ccinbound where isnull(cam_id,0)>0 and cam_id in (select camId from @ccCampsSurvey)
-
-    insert into @inboundCamIdCallback
-    select inbound_Id,cam_id from ccinbound where isnull(cam_id,0)>0 and cam_id in (select camId from @ccCampsCallback)
-
-    update ccinboundExtend set SurveyCamId=0
-    update ccinbound set cam_id=0
-
-    update A set A.SurveyCamId=B.camId
-    from ccinboundExtend A
-    inner join @inboundCamIdSurvey B on A.Inbound_id=B.inboundId
-
-
-    update A set A.cam_id=B.camId
-    from ccinbound A
-    inner join @inboundCamIdCallback B on A.Inbound_id=B.inboundId
-
-end
-'
-        EXEC(@sql)
----------------------------------------------------------END Jesus Gallardo ---------------------------------------------------------
 ---------------------------------------------------------Begin Frida Orta ---------------------------------------------------------
 		SET @process = 'CW-9150 Update setting249'
         SET @sql = '
@@ -24370,7 +24308,8 @@ END'
     @cal_status int = 0,
     @idLoad int=0,
     @motivo varchar(50)=null,
-    @cam_id int=null
+    @cam_id int=null,
+    @isIAQuantumCamp bit =0
 
 AS
 BEGIN
@@ -24380,6 +24319,7 @@ BEGIN
     DECLARE @paramDef NVARCHAR(300);    
     DECLARE @count INT;
     declare @emtpy varchar(1)='''',@zipCodeSchedule bit 
+    declare @columnsIAQuntum varchar(max)=''''   
 
     IF @action = 1
     BEGIN
@@ -24391,6 +24331,11 @@ BEGIN
     END
     ELSE IF @action = 2
     BEGIN
+            
+        if @isIAQuantumCamp =1 begin
+            set @columnsIAQuntum='', data_api_quantum, data_overflow_variables_quantum''
+        end
+
         SET @sql = ''
         INSERT INTO dbo.ccoCallsOutSource (
             cal_Key, cal_telefono, cal_telefono2, cal_telefono3, cal_telefono4, cal_telefono5,
@@ -24401,6 +24346,7 @@ BEGIN
             ,iZonaHoraria3,iZonaHoraria_verano3
             ,iZonaHoraria4,iZonaHoraria_verano4
             ,iZonaHoraria5,iZonaHoraria_verano5
+            '' + @columnsIAQuntum + ''
         )
         SELECT
             cal_Key, cal_telefono, cal_telefono2, cal_telefono3, cal_telefono4, cal_telefono5,
@@ -24411,6 +24357,7 @@ BEGIN
             ,iZonaHoraria3,iZonaHoraria_verano3
             ,iZonaHoraria4,iZonaHoraria_verano4
             ,iZonaHoraria5,iZonaHoraria_verano5
+            '' + @columnsIAQuntum + ''
         FROM '' + QUOTENAME(@tableName) + ''
         WHERE callout_id = 0'';
 
@@ -24452,6 +24399,10 @@ BEGIN
     END
     ELSE IF @action =5
     BEGIN
+        if @isIAQuantumCamp =1 begin
+            set @columnsIAQuntum='', C.data_api_quantum = A.data_api_quantum, C.data_overflow_variables_quantum = A.data_overflow_variables_quantum''
+        end
+
         SET @sql = ''
         UPDATE C SET
             C.cal_status = CASE WHEN B.callout_id IS NULL THEN @cal_status_param ELSE C.cal_status END,
@@ -24479,6 +24430,7 @@ BEGIN
             ,C.iZonaHoraria3=A.iZonaHoraria3,C.iZonaHoraria_verano3=A.iZonaHoraria_verano3
             ,C.iZonaHoraria4=A.iZonaHoraria4,C.iZonaHoraria_verano4=A.iZonaHoraria_verano4
             ,C.iZonaHoraria5=A.iZonaHoraria5,C.iZonaHoraria_verano5=A.iZonaHoraria_verano5
+            '' + @columnsIAQuntum + ''
         FROM '' + QUOTENAME(@tableName) + '' A
         LEFT JOIN dbo.ccoWorkingTable B WITH (ROWLOCK, UPDLOCK, READPAST) ON A.callout_id = B.callout_id AND B.cal_status <= 2
         INNER JOIN dbo.ccoCallsOutSource C WITH (ROWLOCK, UPDLOCK) ON A.callout_id = C.callout_id'';
@@ -25187,6 +25139,122 @@ end
 ON [dbo].[ccoCallsOutSource];
 '
     EXEC(@sql)
+
+
+     SET @process = 'Update ccInbound y ccInboundExtend cam_id callback and survey'
+        SET @sql = 'IF not exists(select * from sys.tables where name=''ccinbound_Backup'') begin
+    
+    CREATE TABLE dbo.ccinbound_Backup (
+        inbound_id INT NOT NULL,
+        cam_id INT NULL,
+        SurveyCamId INT NULL,
+        backupDate DATETIME NOT NULL DEFAULT GETDATE()
+    );
+
+    -- 2. Insertar respaldo de los datos actuales antes de modificar
+    INSERT INTO dbo.ccinbound_Backup (inbound_id, cam_id, SurveyCamId)
+    SELECT i.Inbound_id, i.cam_id, e.SurveyCamId
+    FROM ccinbound i
+    LEFT JOIN ccinboundExtend e ON i.Inbound_id = e.Inbound_id;
+
+    INSERT INTO ccinboundExtend (Inbound_id,RecordCalls, SurveyCamId)
+    SELECT i.Inbound_id, 1, 0  -- Puedes ajustar valor inicial si es necesario
+    FROM ccinbound i
+    LEFT JOIN ccinboundExtend e ON i.Inbound_id = e.Inbound_id
+    WHERE e.Inbound_id IS NULL;
+
+
+    -- ✅ Ya tienes respaldo antes de hacer cambios
+
+    declare @inboundCamIdSurvey table(inboundId int not null,camId int not null)
+    declare @inboundCamIdCallback table(inboundId int not null,camId int not null)
+
+    declare @ccCampsSurvey table(camId int not null)
+    declare @ccCampsCallback table(camId int not null)
+
+    insert into @ccCampsSurvey
+    select cam_id from ccCamps where CampType=8 or (ivrScript>0 and callsBySurvey>0)
+
+    insert into @ccCampsCallback
+    select cam_id from ccCamps where CampType not in(5,7,8) 
+    and isnull(ivrScript,0)=0 and isnull(callsBySurvey,0)=0
+
+    insert into @inboundCamIdSurvey
+    select inbound_Id,cam_id from ccinbound where isnull(cam_id,0)>0 and cam_id in (select camId from @ccCampsSurvey)
+
+    insert into @inboundCamIdCallback
+    select inbound_Id,cam_id from ccinbound where isnull(cam_id,0)>0 and cam_id in (select camId from @ccCampsCallback)
+
+    update ccinboundExtend set SurveyCamId=0
+    update ccinbound set cam_id=0
+
+    update A set A.SurveyCamId=B.camId
+    from ccinboundExtend A
+    inner join @inboundCamIdSurvey B on A.Inbound_id=B.inboundId
+
+
+    update A set A.cam_id=B.camId
+    from ccinbound A
+    inner join @inboundCamIdCallback B on A.Inbound_id=B.inboundId
+
+end
+'
+        EXEC(@sql)
+
+    set @process = 'Update ccinboundExtend.RecordCalls =1 Grabar'
+    SET @sql = 'update e
+set 
+e.RecordCalls=1
+FROM ccinbound i
+inner JOIN ccinboundExtend e ON i.Inbound_id = e.Inbound_id
+
+';
+    EXEC(@sql)
+
+    set @process = 'INSERT INTO ccinboundExtend (Inbound_id,RecordCalls, SurveyCamId)'
+    SET @sql = ' INSERT INTO ccinboundExtend (Inbound_id,RecordCalls, SurveyCamId)
+SELECT i.Inbound_id, 1, 0  -- Puedes ajustar valor inicial si es necesario
+FROM ccinbound i
+LEFT JOIN ccinboundExtend e ON i.Inbound_id = e.Inbound_id
+WHERE e.Inbound_id IS NULL;
+';
+    EXEC(@sql)
+    
+    set @process = 'Update ccCampsExtend.RecordCalls =1 Grabar'
+    SET @sql = 'update ce 
+set 
+ce.RecordCalls=1,
+ce.EnableCallRecordingAI=1
+from ccCamps c
+inner join ccCampsExtend ce on c.cam_id=ce.cam_id';
+    EXEC(@sql)
+    
+    set @process = 'insert into ccCampsExtend RecordCalls =1 Grabar'
+    SET @sql = 'insert into ccCampsExtend
+(cam_id,zipCodeSchedule,SimultaneousRecs,RecordCalls,EditableContactData,AssignConversationSameAgent,RescheduledSurveyAI,ImmediateSurveyAI,
+ApplyRescheduledSurveyForCompletedCallsAI,EnableCallRecordingAI)
+
+select c.cam_id,
+0 as zipCodeSchedule,
+1 as SimultaneousRecs,
+1 as RecordCalls,
+0 as EditableContactData,
+0 as AssignConversationSameAgent,
+0 as RescheduledSurveyAI,
+0 as ImmediateSurveyAI,
+0 as ApplyRescheduledSurveyForCompletedCallsAI,
+1 as EnableCallRecordingAI
+from ccCamps c
+left join ccCampsExtend ce on c.cam_id=ce.cam_id
+where ce.cam_id is null
+';
+    EXEC(@sql)
+    
+    set @process = ''
+    SET @sql = '';
+    EXEC(@sql)
+    
+
 
 --------------------------------- END   Jesus Gallardo .33  ----------------------------------------------------------
 

@@ -25272,12 +25272,265 @@ left join ccCampsExtend ce on c.cam_id=ce.cam_id
 where ce.cam_id is null
 ';
     EXEC(@sql)
+
+    SET @process = 'CW-8305 se modifica update para planchar dialingType'
+SET @sql = '
+    ALTER PROCEDURE [dbo].[ccsp_GalateaDialer]
+    @Description varchar(40)='''',
+    @DialerId int = 0,
+    @PortNumber int = 0,
+    @Status varchar(1)='''',
+    @action smallint=0,
+    @Provider smallint=0,
+    @XferType smallint=0,
+    @PortEnd int = 0,
+    @CampId smallint = 0,
+    @dialer_ids varchar(2000)='''',
+    @DialingType tinyint = 0,
+    @idDialingCode int = 0
+    AS
+    set nocount on
+    if @action=1
+    begin
+        select provedor_id as ProviderId, descrip as ProviderName  from cstoProvedor
+    end
+    if @action=2 --Insert
+    begin
+        create table #tempPortTable( portId int primary key)
+        if @PortEnd>0 begin
+            begin transaction
+                while @PortNumber<=@portEnd begin
+                insert into #tempPortTable values(@PortNumber)
+                set @PortNumber=@PortNumber+1
+                end
+            commit transaction
+        end
+        else begin
+            insert into #tempPortTable values(@PortNumber)
+        end
+        
+        if exists(select Puerto from ccoDialers where Puerto in (select portId from #tempPortTable))
+        begin
+            drop table #tempPortTable
+            select -1 as ResponseCode
+            return(0)
+        end
+        Insert ccoDialers (Descripcion, Puerto, Status, provedor_id, xfertype, DialingType, IdCode) 
+        Select @Description+''_''+CAST(portId as varchar(5)), portId, @Status, @Provider, @XferType, case @DialingType when 2 then 0 else @DialingType end, @idDialingCode from #tempPortTable t
+        select 200 as ResponseCode, dialer_id as DialerId, Descripcion as PortDescription, 
+        p.descrip as ProviderDescription, Puerto, XferType, DialingType, IdCode as DialingCode
+        from ccoDialers d
+        inner join cstoProvedor p on p.provedor_id=d.provedor_id
+        where Puerto in (select portId from #tempPortTable)
+        drop table #tempPortTable
+    end
+    if @action=3 --Update
+    begin
+        if exists(select Puerto from ccoDialers where Puerto=@PortNumber and dialer_id <> @DialerId)
+        begin
+            select -1 as ResponseCode ---Port already exists
+            return(0)
+        end
+        Update ccoDialers set Descripcion=case @Description when '''' then Descripcion else @Description+''_''+cast(@PortNumber as varchar(5)) end,
+        Puerto=case @PortNumber when '''' then Puerto else @PortNumber end, Status=case @Status when '''' then Status else @status end,
+        provedor_id=case @Provider when '''' then provedor_id else @Provider end,
+        xfertype = case @XferType when 0 then xfertype else @XferType end,
+        DialingType = case when @DialingType = 0 then DialingType when @DialingType = 2 then 0 else @DialingType end,
+        IdCode = case when @DialingType = 1 then 0 when @idDialingCode != IdCode then @idDialingCode else IdCode end
+        where Dialer_id=cast(@DialerId as int)
+        
+        select 200 as ResponseCode, dialer_id as DialerId, Descripcion as PortDescription, 
+        p.descrip as ProviderDescription, Puerto, XferType, DialingType, case when DialingType = 1 then 0 else IdCode end as DialingCode
+        from ccoDialers d
+        inner join cstoProvedor p on p.provedor_id=d.provedor_id
+        where dialer_id=@DialerId
+    end
+    if @action=4 --Delete
+    begin
+        if exists(select Dialer_id from ccoDialerCamp where
+            Dialer_id in (select Value from dbo.fn_RIASplitDelimited (@dialer_ids, '','')))
+        begin
+            select -2 as ResponseCode --Existe alguna campaña que esta utilizando este dialer
+            return(0)
+        end
+        declare @portsDelete table(DialerId int, Port int,PortDescription varchar(15))
+        insert @portsDelete (DialerId,Port,PortDescription)
+        select Value, Puerto,Descripcion from dbo.fn_RIASplitDelimited (@dialer_ids, '','') 
+        inner join ccoDialers on dialer_id=Value
+        delete from ccoDialers Where Dialer_id in (select DialerId from @portsDelete)
+        
+        select 200 as ResponseCode, DialerId, PortDescription
+        from @portsDelete
+    end
+    if @action=5 --Ports Info
+    begin
+        select dc.cam_id as CampId, c.cam_descripcion as CampName, graphic_id as Frame, c.IDArea, a.AreaName
+        from ccoDialerCamp dc
+        inner join ccCamps c on c.cam_id=dc.cam_id
+        inner join ccRIACat_Areas a on a.IDArea=c.IDArea
+        inner join ccRIACampsGraph cg on c.cam_id=cg.cam_id
+        where dc.dialer_id=@DialerId
+        return(0)
+    end
+    if @action = 6 
+begin
+    select dialer_id as PortId, Descripcion as PortName from ccoDialers where dialer_id in (select Value from dbo.fn_RIASplitDelimited(@dialer_ids, '',''))
+    return(0)
+end
+
+if @action = 7 
+begin
+    select cam_descripcion from ccCamps where @CampId = cam_id
+    return(0)
+end
+
+if @action = 8 
+begin
+    select 
+        case 
+            when @Description <> '''' and @Description + ''_'' + CAST(d.Puerto as varchar) <> d.Descripcion then cast(1 as bit) 
+            else cast(0 as bit) 
+        end as NameChanged,
+
+        case 
+            when @XferType <> 0 and @XferType <> d.xfertype then cast(1 as bit) 
+            else cast(0 as bit) 
+        end as XferTypeChanged,
+
+        case 
+            when @Provider <> 0 and @Provider <> d.provedor_id then cast(1 as bit) 
+            else cast(0 as bit) 
+        end as ProviderChanged,
+
+        case 
+            when @PortNumber <> 0 and @PortNumber <> d.Puerto then cast(1 as bit) 
+            else cast(0 as bit) 
+        end as PortNumberChanged,
+
+        d.Descripcion as PortName,
+
+        p.descrip as ProviderName,
+
+        x.description as XferName
+
+    from ccoDialers d
+    left join cstoProvedor p on p.provedor_id = @Provider
+    left join ccoXferType x on x.XferType_id = @XferType
+    where d.dialer_id = @DialerId
+
+    return(0)
+end
+    set nocount off
+'
+
+EXEC(@sql)
+    
+   set @process = ''ccGalateaOperations OperationId = 157''
+SET @sql = ''IF NOT EXISTS( SELECT * FROM ccGalateaOperations WHERE OperationId = 157)
+    BEGIN
+        insert into ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
+        values (157, ''''Crear puerto de marcación'''', ''''Create dial-up port'''', ''''Criar porta dial-up'''');
+    END'';
+EXEC(@sql);
+
+set @process = ''ccGalateaOperations OperationId = 158''
+SET @sql = ''IF NOT EXISTS( SELECT * FROM ccGalateaOperations WHERE OperationId = 158)
+    BEGIN
+        insert into ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
+        values (158, ''''Actualizar puerto de marcación (xfer)'''', ''''Update dial-up port (xfer)'''', ''''Atualizar porta dial-up (xfer)'''');
+    END'';
+EXEC(@sql);   
+
+set @process = ''ccGalateaOperations OperationId = 159''
+SET @sql = ''IF NOT EXISTS( SELECT * FROM ccGalateaOperations WHERE OperationId = 159)
+    BEGIN
+        insert into ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
+        values (159, ''''Eliminar puerto de marcación'''', ''''Delete dial-up port'''', ''''Eliminar porta dial-up'''');
+    END'';
+EXEC(@sql);
+
+set @process = ''ccGalateaOperations OperationId = 160''
+SET @sql = ''IF NOT EXISTS( SELECT * FROM ccGalateaOperations WHERE OperationId = 160)
+    BEGIN
+        insert into ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
+        values (160, ''''Asignar puerto de marcación'''', ''''Assign dial-up port'''', ''''Atribuição porta dial-up'''');
+    END'';
+EXEC(@sql);
+
+set @process = ''ccGalateaOperations OperationId = 161''
+SET @sql = ''IF NOT EXISTS( SELECT * FROM ccGalateaOperations WHERE OperationId = 161)
+    BEGIN
+        insert into ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
+        values (161, ''''Desasignar puerto de marcación'''', ''''Unassign dial-up port'''', ''''Desalocação porta dial-up'''');
+    END'';
+EXEC(@sql);
+
+set @process = ''''
+SET @sql = ''IF NOT EXISTS( SELECT * FROM ccGalateaModules WHERE ModuleId = 27)
+    BEGIN
+        insert into ccGalateaModules (ModuleId, MTagEs, MTagEn, MTagPt)
+        values (27, ''''Puertos de marcación'''', ''''Dialing ports'''', ''''Portas de discagem'''');
+    END'';
+EXEC(@sql);
+
+set @process = ''ccGalateaOperations OperationId = 162''
+SET @sql = ''IF NOT EXISTS( SELECT * FROM ccGalateaOperations WHERE OperationId = 162)
+    BEGIN
+        insert into ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)  
+        values (162, ''''Actualizar puerto de marcación (Proveedor)'''', ''''Update dial-up port (Carrier)'''', ''''Atualizar porta dial-up (Fornecedor)'''');
+    END'';
+EXEC(@sql);
+
+set @process = ''ccGalateaOperations OperationId = 163''
+SET @sql = ''IF NOT EXISTS( SELECT * FROM ccGalateaOperations WHERE OperationId = 163)
+    BEGIN
+        insert into ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
+        values (163, ''''Actualizar puerto de marcación (Nombre)'''', ''''Update dial-up port (Name)'''', ''''Atualizar porta dial-up (Nome)'''');
+    END'';
+EXEC(@sql);
+
+set @process = ''ccGalateaOperations OperationId = 164''
+SET @sql = ''IF NOT EXISTS( SELECT * FROM ccGalateaOperations WHERE OperationId = 164)
+    BEGIN
+        insert into ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
+        values (164, ''''Actualizar puerto de marcación (Número)'''', ''''Update dial-up port (Number)'''', ''''Atualizar porta dial-up (Número)'''');
+    END'';
+EXEC(@sql);
+
+
     
     set @process = ''
     SET @sql = '';
     EXEC(@sql)
     
-
+    set @process = ''
+    SET @sql = '';
+    EXEC(@sql)
+    
+    set @process = ''
+    SET @sql = '';
+    EXEC(@sql)
+    
+    set @process = ''
+    SET @sql = '';
+    EXEC(@sql)
+    
+    set @process = ''
+    SET @sql = '';
+    EXEC(@sql)
+    
+    set @process = ''
+    SET @sql = '';
+    EXEC(@sql)
+    
+    set @process = ''
+    SET @sql = '';
+    EXEC(@sql)
+    
+    set @process = ''
+    SET @sql = '';
+    EXEC(@sql)
+    
 
 --------------------------------- END   Jesus Gallardo .33  ----------------------------------------------------------
 

@@ -25425,82 +25425,83 @@ end
 
 EXEC(@sql)
     
-   set @process = ''ccGalateaOperations OperationId = 157''
-SET @sql = ''IF NOT EXISTS( SELECT * FROM ccGalateaOperations WHERE OperationId = 157)
+   SET @process = 'cGalateaOperations OperationId = 157'
+SET @sql = 'IF NOT EXISTS( SELECT * FROM ccGalateaOperations WHERE OperationId = 157)
     BEGIN
         insert into ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
-        values (157, ''''Crear puerto de marcación'''', ''''Create dial-up port'''', ''''Criar porta dial-up'''');
-    END'';
+        values (157, ''Crear puerto de marcación'', ''Create dial-up port'', ''Criar porta dial-up'');
+    END';
 EXEC(@sql);
 
-set @process = ''ccGalateaOperations OperationId = 158''
-SET @sql = ''IF NOT EXISTS( SELECT * FROM ccGalateaOperations WHERE OperationId = 158)
+ SET @process = 'cGalateaOperations OperationId = 158'
+SET @sql = 'IF NOT EXISTS( SELECT * FROM ccGalateaOperations WHERE OperationId = 158)
     BEGIN
         insert into ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
-        values (158, ''''Actualizar puerto de marcación (xfer)'''', ''''Update dial-up port (xfer)'''', ''''Atualizar porta dial-up (xfer)'''');
-    END'';
+        values (158, ''Actualizar puerto de marcación (xfer)'', ''Update dial-up port (xfer)'', ''Atualizar porta dial-up (xfer)'');
+    END';
 EXEC(@sql);   
 
-set @process = ''ccGalateaOperations OperationId = 159''
-SET @sql = ''IF NOT EXISTS( SELECT * FROM ccGalateaOperations WHERE OperationId = 159)
+ SET @process = 'cGalateaOperations OperationId = 159'
+SET @sql = 'IF NOT EXISTS( SELECT * FROM ccGalateaOperations WHERE OperationId = 159)
     BEGIN
         insert into ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
-        values (159, ''''Eliminar puerto de marcación'''', ''''Delete dial-up port'''', ''''Eliminar porta dial-up'''');
-    END'';
+        values (159, ''Eliminar puerto de marcación'', ''Delete dial-up port'', ''Eliminar porta dial-up'');
+    END';
 EXEC(@sql);
 
-set @process = ''ccGalateaOperations OperationId = 160''
-SET @sql = ''IF NOT EXISTS( SELECT * FROM ccGalateaOperations WHERE OperationId = 160)
+ SET @process = 'cGalateaOperations OperationId = 160'
+SET @sql = 'IF NOT EXISTS( SELECT * FROM ccGalateaOperations WHERE OperationId = 160)
     BEGIN
         insert into ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
-        values (160, ''''Asignar puerto de marcación'''', ''''Assign dial-up port'''', ''''Atribuição porta dial-up'''');
-    END'';
+        values (160, ''Asignar puerto de marcación'', ''Assign dial-up port'', ''Atribuição porta dial-up'');
+    END';
 EXEC(@sql);
 
-set @process = ''ccGalateaOperations OperationId = 161''
-SET @sql = ''IF NOT EXISTS( SELECT * FROM ccGalateaOperations WHERE OperationId = 161)
+ SET @process = 'cGalateaOperations OperationId = 161'
+SET @sql = 'IF NOT EXISTS( SELECT * FROM ccGalateaOperations WHERE OperationId = 161)
     BEGIN
         insert into ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
-        values (161, ''''Desasignar puerto de marcación'''', ''''Unassign dial-up port'''', ''''Desalocação porta dial-up'''');
-    END'';
+        values (161, ''Desasignar puerto de marcación'', ''Unassign dial-up port'', ''Desalocação porta dial-up'');
+    END';
 EXEC(@sql);
 
-set @process = ''''
-SET @sql = ''IF NOT EXISTS( SELECT * FROM ccGalateaModules WHERE ModuleId = 27)
+ SET @process = 'ccGalateaModules ModuleId = 27'
+SET @sql = 'IF NOT EXISTS( SELECT * FROM ccGalateaModules WHERE ModuleId = 27)
     BEGIN
         insert into ccGalateaModules (ModuleId, MTagEs, MTagEn, MTagPt)
-        values (27, ''''Puertos de marcación'''', ''''Dialing ports'''', ''''Portas de discagem'''');
-    END'';
+        values (27, ''Puertos de marcación'', ''Dialing ports'', ''Portas de discagem'');
+    END';
 EXEC(@sql);
 
-set @process = ''ccGalateaOperations OperationId = 162''
-SET @sql = ''IF NOT EXISTS( SELECT * FROM ccGalateaOperations WHERE OperationId = 162)
+ SET @process = 'cGalateaOperations OperationId = 162'
+SET @sql = 'IF NOT EXISTS( SELECT * FROM ccGalateaOperations WHERE OperationId = 162)
     BEGIN
         insert into ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)  
-        values (162, ''''Actualizar puerto de marcación (Proveedor)'''', ''''Update dial-up port (Carrier)'''', ''''Atualizar porta dial-up (Fornecedor)'''');
-    END'';
+        values (162, ''Actualizar puerto de marcación (Proveedor)'', ''Update dial-up port (Carrier)'', ''Atualizar porta dial-up (Fornecedor)'');
+    END';
 EXEC(@sql);
 
-set @process = ''ccGalateaOperations OperationId = 163''
-SET @sql = ''IF NOT EXISTS( SELECT * FROM ccGalateaOperations WHERE OperationId = 163)
+ SET @process = 'cGalateaOperations OperationId = 163'
+SET @sql = 'IF NOT EXISTS( SELECT * FROM ccGalateaOperations WHERE OperationId = 163)
     BEGIN
         insert into ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
-        values (163, ''''Actualizar puerto de marcación (Nombre)'''', ''''Update dial-up port (Name)'''', ''''Atualizar porta dial-up (Nome)'''');
-    END'';
+        values (163, ''Actualizar puerto de marcación (Nombre)'', ''Update dial-up port (Name)'', ''Atualizar porta dial-up (Nome)'');
+    END';
 EXEC(@sql);
 
-set @process = ''ccGalateaOperations OperationId = 164''
-SET @sql = ''IF NOT EXISTS( SELECT * FROM ccGalateaOperations WHERE OperationId = 164)
+ SET @process = 'cGalateaOperations OperationId = 164'
+SET @sql = 'IF NOT EXISTS( SELECT * FROM ccGalateaOperations WHERE OperationId = 164)
     BEGIN
         insert into ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
-        values (164, ''''Actualizar puerto de marcación (Número)'''', ''''Update dial-up port (Number)'''', ''''Atualizar porta dial-up (Número)'''');
-    END'';
+        values (164, ''Actualizar puerto de marcación (Número)'', ''Update dial-up port (Number)'', ''Atualizar porta dial-up (Número)'');
+    END';
 EXEC(@sql);
-
 
     
-    set @process = ''
-    SET @sql = '';
+    set @process = 'update telefonosTransferencia para dejar que grabe los telefonos existentes'
+    SET @sql = 'update telefonosTransferencia set stopRecording=0 where stopRecording is null
+update telefonosTransferencia set stopRecordingAssisted=0 where stopRecordingAssisted is null
+';
     EXEC(@sql)
     
     set @process = ''

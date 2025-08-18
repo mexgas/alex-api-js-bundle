@@ -44,6 +44,147 @@ BEGIN
     BEGIN TRAN
     BEGIN TRY
 
+		--------------------------------- BEGIN JUAN MEDINA ------------------------------------------------
+
+	SET @process = 'K070248 - add setting for transcription 289'
+	SET @sql = '
+		IF NOT EXISTS (
+			SELECT 1
+			FROM [CCenterRIA].[dbo].[ccSettings2]
+			WHERE setting_id = 289
+		)
+		BEGIN
+			INSERT INTO [CCenterRIA].[dbo].[ccSettings2] (
+				[setting_id],
+				[valor],
+				[descripcion],
+				[Status],
+				[Tipo],
+				[detalle],
+				[description],
+				[bLoadSettings],
+				[validate]
+			)
+			VALUES (
+				289,
+				''1|521|12'',
+				''Permite configurar el estado, peso máximo y tiempo de retención de la transcripción de llamadas.'',
+				1,
+				''ADM'',
+				''0:Disabled,1:Enabled|Maximum information weight|Retention time'',
+				''Allows configuring the status, maximum weight, and retention time of the call transcription.'',
+				1,
+				''.*''
+			);
+		END
+	'
+
+	EXEC(@sql)
+
+	-- K070248 Validacion de Setting 289
+
+	SET @process = 'K070248 - Drop SP SaveDispositionsAI'
+
+    SET @sql = 'if exists (select * from sys.procedures where name = N''SaveDispositionsAI'')
+    BEGIN
+        DROP PROCEDURE dbo.SaveDispositionsAI;
+    END'
+    EXEC(@sql);
+
+	 SET @process = 'K070248 - CREATE SP SaveDispositionsAI'
+
+    SET @sql = '
+	
+	CREATE PROCEDURE SaveDispositionsAI
+    @action        smallint    = NULL,
+    @call_Id       int         = NULL,
+    @Qualification varchar(MAX)= NULL,
+    @result        varchar(MAX)= NULL,
+    @Observations  varchar(MAX)= NULL,
+    @Transcription varchar(MAX)= NULL,
+    @CamType       bit         = 0
+
+	AS
+	BEGIN
+		SET NOCOUNT ON;
+		-- Validacion del Status del Setting 289 JM
+		DECLARE @trans_status BIT = NULL;
+		
+		DECLARE @valor  NVARCHAR(15) = NULL;
+
+		SELECT @valor = TRY_CAST(valor AS NVARCHAR(15))	
+		FROM ccSettings2
+		WHERE setting_id = 289;
+
+		DECLARE @status NVARCHAR(5);
+		DECLARE @sep    INT;
+
+		SET @sep = CHARINDEX(''|'', ISNULL(@valor, ''''));
+		SET @status = CASE
+						WHEN @sep > 0 THEN SUBSTRING(@valor, 1, @sep - 1)
+						ELSE ISNULL(@valor, '''')
+					  END;
+
+		IF @action = 1  -- Outbound
+		BEGIN
+			INSERT INTO ccoCallsOutDispositionIA (call_id, Qualification, result, Observations)
+			VALUES (@call_Id, @Qualification, @result, @Observations);
+		END
+
+		IF @action = 2 AND @status = ''1''   -- Outbound
+		BEGIN
+			--Se deja pendiente para el siguiente Sprint 
+			--DECLARE @cam_id smallint = NULL;
+
+			--Select @cam_id = cam_id 
+			--From ccoCallsOut
+			--Where cal_id = @call_Id
+
+			--Select @trans_status = IsCallTranscriptionEnabled
+			--From ccCampsExtend
+			--Where cam_id  = @cam_id
+
+			--IF @trans_status = 1
+			--BEGIN
+			--	INSERT INTO ccoCallsOutTranscriptionIA (call_id, Transcription)
+			--	VALUES (@call_Id, @Transcription);
+			--END
+
+			INSERT INTO ccoCallsOutTranscriptionIA (call_id, Transcription)
+				VALUES (@call_Id, @Transcription);
+		END
+
+		IF @action = 3  -- Inbound
+		BEGIN
+			INSERT INTO ccCallsInDispositionIA (call_id, Qualification, result, Observations)
+			VALUES (@call_Id, @Qualification, @result, @Observations);
+		END
+
+		IF @action = 4 AND @status = ''1''   -- Inbound
+		BEGIN
+			DECLARE @inbound_id smallint = NULL;
+
+			Select @inbound_id = Inbound_id 
+			From ccCallsIn 
+			Where cal_id = @call_Id
+
+			Select @trans_status = IsCallTranscriptionEnabled
+			From ccInboundExtend
+			Where Inbound_id  = @inbound_id
+
+			IF @trans_status = 1
+			BEGIN
+				INSERT INTO ccCallsInTranscriptionIA (call_id, Transcription)
+				VALUES (@call_Id, @Transcription);
+			END
+		END
+	END
+	'
+
+	EXEC(@sql);
+
+		--------------------------------- END JUAN MEDINA ------------------------------------------------
+
 	--------------------------------- BEGIN MACL ------------------------------------------------
 	SET @process = 'K070253 - Inserting setting 290'
 	SET @sql = 'IF NOT EXISTS(SELECT 1 FROM ccSettings2 WHERE setting_id = 290)

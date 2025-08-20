@@ -82,16 +82,16 @@ BEGIN
 		BEGIN
 			IF @CampType = @Inbound
 			BEGIN
-				SELECT tc.calif_id AS [Id], tc.[Description] AS [Description] FROM ccCalifCamp cc
-				INNER JOIN ccTipoCalif tc
+				SELECT tc.calif_id AS [Id], tc.[Description] AS [Description], tc.CanReprogram as Callback
+				FROM ccCalifCamp cc INNER JOIN ccTipoCalif tc
 				ON cc.calif_id = tc.calif_id
 				WHERE cc.tipo = 0
 				AND cc.cam_id = @CampId
 			END
 			IF @CampType = @Outbound
 			BEGIN
-				SELECT tc.calif_id AS [Id], tc.[Description] AS [Description] FROM ccCalifCamp cc
-				INNER JOIN ccTipoCalifOut tc
+				SELECT tc.calif_id AS [Id], tc.[Description] AS [Description], tc.CanReprogram as Callback
+				FROM ccCalifCamp cc INNER JOIN ccTipoCalifOut tc
 				ON cc.calif_id = tc.calif_id
 				WHERE cc.tipo = 1
 				AND cc.cam_id = @CampId

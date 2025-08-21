@@ -117,6 +117,15 @@ BEGIN
 	END;'
 	EXEC(@sql)
 
+	SET @process = 'K070108 - add column CallbackAT in ccCallsInDispositionIA table'
+	SET @sql = '
+		IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''CallbackAT'' AND Object_ID = Object_ID(N''ccCallsInDispositionIA''))
+		BEGIN
+			ALTER TABLE ccCallsInDispositionIA ADD CallbackAT DATETIME NULL
+		END
+	'
+	EXEC(@sql)
+
 	--------------------------------- END ALTERS AND ADD ------------------------------------------------
 
 			--------------------------------- BEGIN JUAN MEDINA ------------------------------------------------

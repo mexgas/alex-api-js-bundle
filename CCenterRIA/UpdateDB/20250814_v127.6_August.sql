@@ -288,7 +288,7 @@ BEGIN
 	@cal_key varchar(40) ='''',
 	@cam_id smallint,
 	@cal_telefono varchar(19),
-	@fechadial varchar(17),
+	@fechadial varchar(30),
 	@dato1 varchar(255) = '''',
 	@dato2 varchar(255) = '''',
 	@dato3 varchar(255) = '''',

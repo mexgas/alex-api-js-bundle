@@ -17608,41 +17608,8 @@ IF @action = 8 begin
 end
 
 -- Borra listas sin registros y reordena las listas
+-- Actualizar orden de las listas ------------
 IF @action = 9 begin
-
-    Create table #TempRegs(
-        list_id int,
-        [name] varchar(100),
-        NoRegistros int,
-        sequence int)
-
-    insert into #TempRegs 
-        select a.list_id,a.name,count(b.list_id) as NoRegistros,a.sequence 
-        from ccRIARegistryLists a with(index(IX_ccRIARegistryLists_1),nolock)
-        left join ccocallsoutsource b with(index(IX_ccoCallsOutSource_14),nolock)
-        on a.list_id = b.list_id
-        where a.status > 0 and a.cam_id = @cam_id and status > 0 
-        group by a.list_id,a.name,a.sequence,a.status order by a.sequence
-
-    while ( exists( select list_id from #TempRegs where NoRegistros = 0 ) ) begin
-        declare @listToDelete as int
-        select top 1 @listToDelete = list_id from #TempRegs where NoRegistros = 0
-        exec ccsp_RIARegistryLists @action = 6, @list_id = @listToDelete
-        delete from #TempRegs where list_id =  @listToDelete
-    end
-
-    drop table #TempRegs
-    
-    select @sequence=min(sequence) from ccRIARegistryLists where  cam_id = @cam_id and status = 0 
-
-    select @list_id= list_id from ccRIARegistryLists where sequence =(
-    select  max(sequence) as sequence from ccRIARegistryLists where  cam_id = @cam_id and status > 0 ) and cam_id = @cam_id
-    update ccRIALoading set list_id = @list_id where load_id=@load_id
-    exec ccsp_RIARegistryLists @action=2,@list_id=@list_id,@sequence=@sequence
-
-    end
-    --- Actualizar orden de las listas ------------
-IF @action = 9 begin  ---Revisar con luis
 
 
     DECLARE @list_Ids TABLE (i int, ListId int)
@@ -17666,7 +17633,6 @@ end
 IF @action = 10 begin
     select @cam_id=cam_id from ccRIARegistryLists where list_id=@list_id
     delete from ccoWorkingTable where cam_id=@cam_id and list_id=@list_id
-
 end
     '
     EXEC(@sql)

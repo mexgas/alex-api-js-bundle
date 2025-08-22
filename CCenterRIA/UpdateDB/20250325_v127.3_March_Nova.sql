@@ -17642,7 +17642,7 @@ IF @action = 9 begin
 
     end
     --- Actualizar orden de las listas ------------
-    IF @action = 9 begin
+IF @action = 9 begin  ---Revisar con luis
 
 
     DECLARE @list_Ids TABLE (i int, ListId int)
@@ -17662,7 +17662,13 @@ IF @action = 9 begin
             set @i = @i + 1
         end
     select 1
-    end'
+end
+IF @action = 10 begin
+    select @cam_id=cam_id from ccRIARegistryLists where list_id=@list_id
+    delete from ccoWorkingTable where cam_id=@cam_id and list_id=@list_id
+
+end
+    '
     EXEC(@sql)
 
 -------------------------------------------------------- END Luis Zamora ---------------------------------------------------------
@@ -25504,24 +25510,46 @@ update telefonosTransferencia set stopRecordingAssisted=0 where stopRecordingAss
 ';
     EXEC(@sql)
     
-    set @process = ''
-    SET @sql = '';
+    set @process = 'ccGalateaModules WHERE ModuleId = 28'
+    SET @sql = 'IF NOT EXISTS( SELECT * FROM ccGalateaModules WHERE ModuleId = 28)
+    BEGIN
+        insert into ccGalateaModules (ModuleId, MTagEs, MTagEn, MTagPt)
+        values (28, ''Listas de carga'', ''Upload lists'', ''Listas de carregamento'');
+    END';
     EXEC(@sql)
     
-    set @process = ''
-    SET @sql = '';
+    set @process = 'ccGalateaOperations WHERE OperationId = 165'
+    SET @sql = 'IF NOT EXISTS( SELECT * FROM ccGalateaOperations WHERE OperationId = 165)
+BEGIN
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)  
+    VALUES (165, ''Detener'', ''Stop'', ''Parar'');
+END;
+';
     EXEC(@sql)
     
-    set @process = ''
-    SET @sql = '';
+    set @process = 'ccGalateaOperations WHERE OperationId = 166'
+    SET @sql = 'IF NOT EXISTS( SELECT * FROM ccGalateaOperations WHERE OperationId = 166)
+BEGIN
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)  
+    VALUES (166, ''Iniciar'', ''Start'', ''Iniciar'');
+END;';
     EXEC(@sql)
     
-    set @process = ''
-    SET @sql = '';
+    set @process = 'ccGalateaOperations WHERE OperationId = 167)'
+    SET @sql = 'IF NOT EXISTS( SELECT * FROM ccGalateaOperations WHERE OperationId = 167)
+BEGIN
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)  
+    VALUES (167, ''Reciclar'', ''Recycle'', ''Rediscar'');
+END;';
     EXEC(@sql)
     
-    set @process = ''
-    SET @sql = '';
+    set @process = 'ccGalateaOperations WHERE OperationId = 168'
+    SET @sql = 'IF NOT EXISTS( SELECT * FROM ccGalateaOperations WHERE OperationId = 168)
+BEGIN
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)  
+    VALUES (168, ''Eliminar'', ''Delete'', ''Excluir'');
+END;
+';
     EXEC(@sql)
     
     set @process = ''

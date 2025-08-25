@@ -21236,9 +21236,8 @@ end
 '
     EXEC(@sql)
 
-SET @process = 'CREATE sp ccsp_RIAOUTInsertNewJOBS_WT_Camp';
-    SET @sql = '
-ALTER PROCEDURE [dbo].[ccsp_RIAOUTInsertNewJOBS_WT_Camp] @camp_id AS INT, @reciclar AS INT = 1, @top AS INT = 3000
+SET @process = 'ALTER sp ccsp_RIAOUTInsertNewJOBS_WT_Camp Sears mejora en el proceso de carga';
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAOUTInsertNewJOBS_WT_Camp] @camp_id AS INT, @reciclar AS INT = 1, @top AS INT = 3000
 AS
 SET NOCOUNT ON
 
@@ -21447,7 +21446,10 @@ BEGIN
 END
 ELSE
 BEGIN
-        CREATE TABLE #tempCallsOutSource (Id INT PRIMARY KEY identity, callout_id INT, cam_id INT, cal_telefono VARCHAR(19), cal_status TINYINT, cal_fechaDial DATETIME, cal_keyw VARCHAR(40), iZonaHoraria INT, iZonaHoraria_verano INT, iZonaHoraria2 INT, iZonaHoraria_verano2 INT, iZonaHoraria3 INT, iZonaHoraria_verano3 INT, iZonaHoraria4 INT, iZonaHoraria_verano4 INT, iZonaHoraria5 INT, iZonaHoraria_verano5 INT, list_id INT)
+        CREATE TABLE #tempCallsOutSource (Id INT PRIMARY KEY identity, callout_id INT, cam_id INT, cal_telefono VARCHAR(19), 
+        cal_status TINYINT, cal_fechaDial DATETIME, cal_keyw VARCHAR(40), iZonaHoraria INT, iZonaHoraria_verano INT, iZonaHoraria2 INT, 
+        iZonaHoraria_verano2 INT, iZonaHoraria3 INT, iZonaHoraria_verano3 INT, iZonaHoraria4 INT, iZonaHoraria_verano4 INT, iZonaHoraria5 INT, 
+        iZonaHoraria_verano5 INT, list_id INT, new_status int)
 
         CREATE NONCLUSTERED INDEX [IX_TempCOS] ON [dbo].[#tempCallsOutSource] ([Id] ASC)
             WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
@@ -21542,8 +21544,7 @@ BEGIN
                        t.iZonaHoraria3, t.iZonaHoraria_verano3, t.iZonaHoraria4, t.iZonaHoraria_verano4,
                        t.iZonaHoraria5, t.iZonaHoraria_verano5, t.list_id
                 FROM #tempCallsOutSource t
-                WHERE t.new_status != 4
-                  AND t.id > @batchsizeIni AND t.id <= @batchsizeFin
+                WHERE t.id > @batchsizeIni AND t.id <= @batchsizeFin
                   AND NOT EXISTS (
                     SELECT 1 FROM ccoWorkingTable w WHERE w.callout_id = t.callout_id
                 );

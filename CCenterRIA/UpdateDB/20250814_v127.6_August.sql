@@ -814,6 +814,67 @@ BEGIN
 		END
     '
 	EXEC(@sql)
+
+	SET @process = 'CW-10097 - se modifica [ccsp_RIADNCList] para que solo inserte en historial cuando se elimina un telefono'
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIADNCList] 
+	@phoneNumber AS NVARCHAR(30) = NULL, 
+	@idDNCList AS INTEGER, 
+	@tipoMov AS TINYINT, 
+	@calKey AS VARCHAR(40) = NULL,
+	@cleanType int=0 --0 limpia,2 verifica
+	AS
+	DECLARE @hashCalKey bigint, @hashPhone BIGINT
+
+	IF @calKey IS NOT NULL
+	BEGIN
+		SELECT @hashCalKey = dbo.hashList(@calKey)
+	END
+
+	IF @tipoMov = 1
+	BEGIN -- Inserta Lista Negra    
+		EXEC ccsp_InsertDNCList @telephone = null, @ln_id = @idDNCList, @hashCalKey = null, @calKey = null,@cleanType=@cleanType
+		EXEC ccsp_InsertDNCListSms @telephone = null, @ln_id = @idDNCList, @hashCalKey = null, @calKey = null
+		EXEC [ccsp_InsertDNCListWhatsApp] @telephone = null, @ln_id = @idDNCList, @hashCalKey = null, @calKey = null
+	END
+
+	IF @tipoMov = 2
+	BEGIN -- Borra Lista Negra  
+		SELECT @hashPhone = dbo.hashPhone(@phoneNumber)
+		DECLARE @deletedRows INT
+		IF @hashCalKey IS NULL
+		BEGIN
+			DELETE
+			FROM cclistanegra
+			WHERE Hashtel = @hashPhone AND HashKey IS NULL AND idtipolista = @idDNCList
+			SELECT @deletedRows = @@ROWCOUNT
+		END
+		ELSE
+		BEGIN
+			DELETE
+			FROM cclistanegra
+			WHERE Hashtel = @hashPhone AND HashKey = @hashCalKey AND idtipolista = @idDNCList
+			SELECT @deletedRows = @@ROWCOUNT
+		END
+
+		IF(@deletedRows > 0)
+		BEGIN
+			INSERT cchistoriallistanegra (telefono, idtipomov, idtipolista)
+			VALUES (@phoneNumber, 5, @idDNCList)
+		END
+	END
+
+	IF @tipoMov = 3
+	BEGIN -- Reemplaza Lista Negra
+		INSERT cchistoriallistanegra (telefono, idtipomov, idtipolista)
+		SELECT telefono, ''4'', @idDNCList
+		FROM cclistanegra
+		WHERE idtipolista = @idDNCList
+
+		DELETE
+		FROM cclistanegra
+		WHERE idtipolista = @idDNCList
+	END '
+	EXEC(@sql)
 	---------------------------------- END MACL -------------------------------------------------
 
 	------------------- BEGIN MAGV --------------------------------

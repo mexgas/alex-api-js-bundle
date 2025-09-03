@@ -239,11 +239,25 @@ BEGIN
 					@fechadial = @CallbackAT,
 					@dato4 = @result,
 					@dato5 = @Observations
+
+				IF EXISTS (SELECT 1 FROM ccTipoCalif WHERE calif_id = @disposition_Id)
+				BEGIN
+					UPDATE ccCallsIn
+					SET calif_id = @disposition_Id
+					WHERE cal_id = @call_Id;
+				END
 			END
 
 			ELSE BEGIN
 				INSERT INTO ccCallsInDispositionIA (call_id, Qualification, result, Observations,disposition_id)
 				VALUES (@call_Id, @Qualification, @result, @Observations,@disposition_Id);
+
+				IF EXISTS (SELECT 1 FROM ccTipoCalif WHERE calif_id = @disposition_Id)
+				BEGIN
+					UPDATE ccCallsIn
+					SET calif_id = @disposition_Id
+					WHERE cal_id = @call_Id;
+				END
 			END
 
 		END

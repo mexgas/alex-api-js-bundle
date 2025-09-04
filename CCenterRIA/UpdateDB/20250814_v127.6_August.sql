@@ -1279,6 +1279,13 @@ IF @dropTmpPhone IS NOT NULL EXEC (@dropTmpPhone);'
 	EXEC(@sql)
 	------------------- END MAGV  ----------------------------------------
 	------------------- Begin DMM  ----------------------------------------
+	SET @process = 'Cambio de id a voz por defecto en CW'
+	SET @sql = 'IF EXISTS (SELECT 1 FROM ccVirtualAgentVoices WHERE ID = 1 AND Name = ''Alma'')
+	BEGIN
+		UPDATE ccVirtualAgentVoices SET QuantumVoiceId = ''SxFJEjg7yHpFPb9NC2GU'' WHERE ID = 1 AND Name = ''Alma''
+	END'
+	EXEC(@sql)
+
 	SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures where name= N''ccsp_AIToHumanTransfer'')
 			BEGIN
 				DROP PROCEDURE ccsp_AIToHumanTransfer

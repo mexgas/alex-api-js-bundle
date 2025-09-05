@@ -406,8 +406,7 @@ end'
 
 
     SET @process = 'UPDATE fnGetTimeZone para tomar en cuenta el campo locality y no tener problema cuando hay diferentes municipios con la misma LADA'
-        SET @sql = '
-ALTER FUNCTION [dbo].[fnGetTimeZone](@phone varchar(20), @bIsDaylight bit)
+        SET @sql = 'ALTER FUNCTION [dbo].[fnGetTimeZone](@phone varchar(20), @bIsDaylight bit)
 RETURNS int
 AS
  BEGIN
@@ -805,8 +804,7 @@ END'
        EXEC(@sql)
 
     SET @process = '#2543 - se guarda información a la tabla ccoCallsOutData, Se optimiza para poner ZonasHorarias quitar el trigger '
-    SET @sql = '
-ALTER PROCEDURE [dbo].[ccsp_AGENTInsertCallOut]
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_AGENTInsertCallOut]
     @cam_id smallint,
     @cal_Key varchar(40),
     @cal_Telefono varchar(30),

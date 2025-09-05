@@ -4049,7 +4049,7 @@ delete from ccMenus where menu_id=4140 and type=3
     
         SET @process = 'Actualizar tabla ZonasHorarias'
         SET @sql = '
-Delete ccTimeZoneArea
+Delete ccTimeZoneArea where id_country=1
 
 INSERT [dbo].[ccTimeZoneArea] ([id_country], [area], [location], [tz_standard], [tz_daylight], [call_record], [locality]) VALUES (1, N''56'', N''CDMX'', 64, 32, NULL, N''CUAUHTEMOC'')
 
@@ -24464,9 +24464,10 @@ BEGIN
         WHERE B.callout_id IS NULL;'';
 
         EXEC sp_executesql @sql,
-            N''@idLoad INT, @motivo NVARCHAR(200),@emtpy varchar(1)'',
+            N''@idLoad INT, @motivo NVARCHAR(200),@emtpy varchar(1),@internationalRecords int'',
             @idLoad = @idLoad,
             @motivo = @motivo,
+            @internationalRecords =@internationalRecords,
             @emtpy=@emtpy;
 
         -- Eliminar los registros sin match
@@ -24498,9 +24499,10 @@ BEGIN
         SELECT @idLoad, cal_Key, @emtpy, 2, @motivo,@internationalRecords FROM '' + QUOTENAME(@tableName) + '';'';
 
         EXEC sp_executesql @sql,
-            N''@idLoad INT, @motivo NVARCHAR(200),@emtpy varchar(1)'',
+                N''@idLoad INT, @motivo NVARCHAR(200),@emtpy varchar(1),@internationalRecords int'',
             @idLoad = @idLoad,
             @motivo = @motivo,
+            @internationalRecords =@internationalRecords,
             @emtpy=@emtpy;
 
         -- Eliminar todos los registros de la tabla temporal
@@ -24613,7 +24615,7 @@ END
     EXEC(@sql)
 
      SET @process = 'SEARS CREATE PROCEDURE dbo.ccsp_UpdateSmsOutFromTempAction Mejora proceso carga ZonasHorarias'
-    SET @sql = 'CREATE PROCEDURE dbo.ccsp_UpdateSmsOutFromTempAction
+    SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_UpdateSmsOutFromTempAction]
     @action INT,
     @tableName NVARCHAR(255),
     @sms_status int = 0,
@@ -24728,8 +24730,12 @@ delete A from '' + QUOTENAME(@tableName) + '' A
 left join smsWorkingTable B with (nolock) on A.callout_id=B.smsout_id and A.cam_id=B.cam_id and B.sms_status <=2
 where B.smsout_id is null;'';
 
-        SET @paramDef = N''@emtpy varchar(1),@idLoad int,@motivo varchar(50)'';
-        EXEC sp_executesql @sql, @paramDef, @emtpy=@emtpy,@idLoad=@idLoad,@motivo=@motivo;
+        SET @paramDef = N''@emtpy varchar(1),@idLoad int,@motivo varchar(50),@internationalRecords int'';
+        EXEC sp_executesql @sql, @paramDef, 
+        @emtpy=@emtpy,
+        @idLoad=@idLoad,
+        @motivo=@motivo,
+        @internationalRecords =@internationalRecords;
     END
 
     ELSE IF @action =7
@@ -24755,8 +24761,12 @@ delete from '' + QUOTENAME(@tableName) + '' where callout_id=0;'';
 select @idLoad, A.cal_Key,@emtpy, 2, @motivo, @internationalRecords from '' + QUOTENAME(@tableName) + '' A;
 delete from '' + QUOTENAME(@tableName) + '';'';
 
-        SET @paramDef = N''@emtpy varchar(1),@idLoad int,@motivo varchar(50)'';
-        EXEC sp_executesql @sql, @paramDef, @emtpy = @emtpy,@idLoad=@idLoad,@motivo=@motivo;
+        SET @paramDef = N''@emtpy varchar(1),@idLoad int,@motivo varchar(50), @internationalRecords int'';
+        EXEC sp_executesql @sql, @paramDef, 
+        @emtpy=@emtpy,
+        @idLoad=@idLoad,
+        @motivo=@motivo,
+        @internationalRecords =@internationalRecords;       
     END 
     ELSE IF @action = 10
     BEGIN

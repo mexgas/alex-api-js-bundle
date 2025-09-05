@@ -819,7 +819,7 @@ BEGIN
         SET @sql = '
 		if not exists (select * from sys.columns where name = N''international'' and Object_ID = Object_ID(N''ccoCallsOutSource''))
 		begin
-			alter table ccoCallsOutSource add international bit null
+			alter table ccoCallsOutSource add international int null
 		end'
         EXEC(@sql);
 

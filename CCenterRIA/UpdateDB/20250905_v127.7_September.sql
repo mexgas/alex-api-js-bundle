@@ -3699,9 +3699,9 @@ BEGIN
             INNER JOIN dbo.smsOutSourceMessage A ON A.smsout_id = sos.smsout_id
             LEFT JOIN dbo.smsworkingtable WT 
                 ON A.smsout_id = WT.smsout_id 
-                AND sos.cam_id = WT.cam_id 
-                AND WT.sms_status <= 2
-            WHERE sos.cam_id = @CampId AND WT.smsout_id IS NULL;
+                AND sos.cam_id = WT.cam_id
+            WHERE sos.cam_id = @CampId 
+            AND (WT.smsout_id IS NULL or WT.sms_status=0);
 
             IF @@ROWCOUNT = 0 BREAK;
         END'';
@@ -3727,17 +3727,18 @@ BEGIN
             LEFT JOIN dbo.smsworkingtable WT 
                 ON sos.smsout_id = WT.smsout_id 
                 AND sos.cam_id = WT.cam_id 
-                AND WT.sms_status <= 2
-            WHERE sos.cam_id = @CampId AND WT.smsout_id IS NULL
+               
+            WHERE sos.cam_id = @CampId 
+            AND (WT.smsout_id IS NULL or WT.sms_status=0)
         )
         SELECT smsout_id, callkey 
         FROM RankedSMS 
         WHERE rn = 1;'';
         
+        
         EXEC sp_executesql @SQL, N''@CampId INT'', @CampId = @CampId;
     END
-END
-'
+END'
     EXEC(@sql)
 
 

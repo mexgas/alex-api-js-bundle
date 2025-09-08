@@ -7043,6 +7043,26 @@ end
 ON [dbo].[ccoCallsOutSource];
 '
     EXEC(@sql)
+
+-----------------------------------BEGIN MACL---------------------------------------
+SET @process = 'CW-9434 - Se agrega index para mejorar rendimiento de los querys que usan las tablas'
+	SET @sql = 'if not exists (select * from sys.indexes where name = N''IX_RIA_GRABACION_cam_id_tipo_llamada_finicio'' 
+and object_id = OBJECT_ID(N''RIA_GRABACION''))
+begin
+	CREATE NONCLUSTERED INDEX IX_RIA_GRABACION_cam_id_tipo_llamada_finicio
+	ON dbo.RIA_GRABACION (cam_id, tipo_llamada, finicio)
+	INCLUDE (dni, cal_extension, duracion);
+end
+
+if not exists (select * from sys.indexes where name = N''IX_RIA_GRABACIONCONSULTA_cam_id_tipo_llamada_finicio'' 
+and object_id = OBJECT_ID(N''RIA_GRABACIONCONSULTA''))
+begin
+	CREATE NONCLUSTERED INDEX IX_RIA_GRABACIONCONSULTA_cam_id_tipo_llamada_finicio
+	ON dbo.RIA_GRABACIONCONSULTA (cam_id, tipo_llamada, finicio)
+	INCLUDE (dni, cal_extension, duracion);
+end'
+	EXEC(@sql)
+------------------------------------END MACL----------------------------------------
  
 
 	SET @process = ''

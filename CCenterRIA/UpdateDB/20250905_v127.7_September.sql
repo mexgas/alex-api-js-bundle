@@ -6810,101 +6810,7 @@ delete from '' + QUOTENAME(@tableName) + '';'';
 END'
     EXEC(@sql)
 
-
-     SET @process = 'SEARS ALTER PROCEDURE [dbo].[xx_Inserta]  ZonasHorarias'
-    SET @sql = 'ALTER PROCEDURE [dbo].[xx_Inserta] @cal_key       VARCHAR(40),   
-          @cal_telefono  VARCHAR(19),   
-          @cal_telefono2 VARCHAR(19),   
-          @cal_telefono3 VARCHAR(19),   
-          @cal_telefono4 VARCHAR(19),   
-          @cal_telefono5 VARCHAR(19),   
-          @dato1         VARCHAR(255),   
-          @dato2         VARCHAR(255),   
-          @dato3         VARCHAR(255),   
-          @dato4         VARCHAR(255),   
-          @dato5         VARCHAR(255),   
-          @cam_id        INTEGER,   
-          @FCallBack     SMALLDATETIME = '''''''',   
-          @cal_status    TINYINT       = 0,   
-          @User_id       INTEGER       = 0  
- AS  
-   DECLARE @calloutid INT;  
-   IF(@cal_status = 0)  
-    SET @FCallBack = GETDATE();
-
-    declare @iZonaHoraria int, @iZonaHoraria_verano int,
-    @iZonaHoraria2 int, @iZonaHoraria_verano2 int,
-    @iZonaHoraria3 int, @iZonaHoraria_verano3 int,
-    @iZonaHoraria4 int, @iZonaHoraria_verano4 int,
-    @iZonaHoraria5 int, @iZonaHoraria_verano5 int
-
-    set @iZonaHoraria=dbo.fnGetTimeZone(@cal_Telefono, 0)
-    set @iZonaHoraria_verano=dbo.fnGetTimeZone(@cal_Telefono, 1)
-
-    set @iZonaHoraria2=dbo.fnGetTimeZone(@cal_Telefono2, 0)
-    set @iZonaHoraria_verano2=dbo.fnGetTimeZone(@cal_Telefono2, 1)
-
-    set @iZonaHoraria3=dbo.fnGetTimeZone(@cal_Telefono3, 0)
-    set @iZonaHoraria_verano3=dbo.fnGetTimeZone(@cal_Telefono3, 1)
-
-    set @iZonaHoraria4=dbo.fnGetTimeZone(@cal_Telefono4, 0)
-    set @iZonaHoraria_verano4=dbo.fnGetTimeZone(@cal_Telefono4, 1)
-
-    set @iZonaHoraria5=dbo.fnGetTimeZone(@cal_Telefono5, 0)
-    set @iZonaHoraria_verano5=dbo.fnGetTimeZone(@cal_Telefono5, 1)
-
-
-   INSERT INTO ccoCallsOutSource  
-   (cal_key,   
-    cal_telefono,   
-    cal_telefono2,   
-    cal_telefono3,   
-    cal_telefono4,   
-    cal_telefono5,   
-    dato1,   
-    dato2,   
-    dato3,   
-    dato4,   
-    dato5,   
-    cam_id,   
-    cal_fechaDial,   
-    cal_status,   
-    user_id,
-    iZonaHoraria, iZonaHoraria_verano,
-    iZonaHoraria2, iZonaHoraria_verano2,
-    iZonaHoraria3, iZonaHoraria_verano3,
-    iZonaHoraria4, iZonaHoraria_verano4,
-    iZonaHoraria5, iZonaHoraria_verano5
-   )  
-   VALUES  
-   (@cal_key,   
-    @cal_telefono,   
-    @cal_telefono2,   
-    @cal_telefono3,   
-    @cal_telefono4,   
-    @cal_telefono5,   
-    @dato1,   
-    @dato2,   
-    @dato3,   
-    @dato4,   
-    @dato5,   
-    @cam_id,   
-    @FCallBack,   
-    @cal_status,   
-    @User_id,
-    @iZonaHoraria, @iZonaHoraria_verano,
-    @iZonaHoraria2, @iZonaHoraria_verano2,
-    @iZonaHoraria3, @iZonaHoraria_verano3,
-    @iZonaHoraria4, @iZonaHoraria_verano4,
-    @iZonaHoraria5, @iZonaHoraria_verano5
-
-   );  
-   SELECT @calloutid = SCOPE_IDENTITY();  
-   
-   SELECT @calloutid;'
-    EXEC(@sql)
-
-      SET @process = 'K070104 Crear tabla variables Muñoz - Drop procedure xx_ObtieneAgenteVirtual'
+    SET @process = 'K070104 Crear tabla variables Muñoz - Drop procedure xx_ObtieneAgenteVirtual'
     SET @sql = 'IF EXISTS (SELECT * FROM sysobjects WHERE name=''xx_ObtieneAgenteVirtual'')
         BEGIN
             DROP PROCEDURE dbo.xx_ObtieneAgenteVirtual
@@ -7039,12 +6945,215 @@ end
 '
     EXEC(@sql)
 
-  SET @process = 'SEARS DISABLE TRIGGER [dbo].[trigZonaHoraria] se inserta en otro sp'
+    SET @process = 'SEARS DISABLE TRIGGER [dbo].[trigZonaHoraria] se inserta en otro sp'
     SET @sql = 'DISABLE TRIGGER [dbo].[trigZonaHoraria]
 ON [dbo].[ccoCallsOutSource];
 '
     EXEC(@sql)
- 
+  
+ 	SET @process = 'DEV2-896 DROP SP xx_Inserta'
+	SET @sql = 'IF OBJECT_ID(''dbo.xx_Inserta'',''P'') IS NOT NULL
+    DROP PROCEDURE dbo.xx_Inserta;'
+	EXEC(@sql)
+
+	SET @process = 'DEV2-896 CREATE SP xx_Inserta'
+	SET @sql = 'CREATE PROCEDURE [dbo].[xx_Inserta] 
+    @cal_key VARCHAR(20),
+    @cal_telefono VARCHAR(19),
+    @cal_telefono2 VARCHAR(19),
+    @cal_telefono3 VARCHAR(19),
+    @cal_telefono4 VARCHAR(19),
+    @cal_telefono5 VARCHAR(19),
+    @dato1 VARCHAR(255),
+    @dato2 VARCHAR(255),
+    @dato3 VARCHAR(255),
+    @dato4 VARCHAR(255),
+    @dato5 VARCHAR(255),
+    @cam_id INT,
+    @FCallBack SMALLDATETIME = '''',
+    @cal_status TINYINT = 0,
+    @User_id INT = 0,
+    @dialPrefix VARCHAR(30) = ''''
+AS
+BEGIN
+    DECLARE @calloutid INT;
+
+    IF (@cal_status = 0)
+        SET @FCallBack = GETDATE();
+
+    DECLARE 
+        @z1 INT = CASE WHEN LTRIM(RTRIM(ISNULL(@cal_telefono, ''''))) <> '''' THEN dbo.fnGetTimeZone(@cal_telefono, 0) ELSE 0 END,
+        @zv1 INT = CASE WHEN LTRIM(RTRIM(ISNULL(@cal_telefono, ''''))) <> '''' THEN dbo.fnGetTimeZone(@cal_telefono, 1) ELSE 0 END,
+
+        @z2 INT = CASE WHEN LTRIM(RTRIM(ISNULL(@cal_telefono2, ''''))) <> '''' THEN dbo.fnGetTimeZone(@cal_telefono2, 0) ELSE 0 END,
+        @zv2 INT = CASE WHEN LTRIM(RTRIM(ISNULL(@cal_telefono2, ''''))) <> '''' THEN dbo.fnGetTimeZone(@cal_telefono2, 1) ELSE 0 END,
+
+        @z3 INT = CASE WHEN LTRIM(RTRIM(ISNULL(@cal_telefono3, ''''))) <> '''' THEN dbo.fnGetTimeZone(@cal_telefono3, 0) ELSE 0 END,
+        @zv3 INT = CASE WHEN LTRIM(RTRIM(ISNULL(@cal_telefono3, ''''))) <> '''' THEN dbo.fnGetTimeZone(@cal_telefono3, 1) ELSE 0 END,
+
+        @z4 INT = CASE WHEN LTRIM(RTRIM(ISNULL(@cal_telefono4, ''''))) <> '''' THEN dbo.fnGetTimeZone(@cal_telefono4, 0) ELSE 0 END,
+        @zv4 INT = CASE WHEN LTRIM(RTRIM(ISNULL(@cal_telefono4, ''''))) <> '''' THEN dbo.fnGetTimeZone(@cal_telefono4, 1) ELSE 0 END,
+
+        @z5 INT = CASE WHEN LTRIM(RTRIM(ISNULL(@cal_telefono5, ''''))) <> '''' THEN dbo.fnGetTimeZone(@cal_telefono5, 0) ELSE 0 END,
+        @zv5 INT = CASE WHEN LTRIM(RTRIM(ISNULL(@cal_telefono5, ''''))) <> '''' THEN dbo.fnGetTimeZone(@cal_telefono5, 1) ELSE 0 END;
+
+    INSERT INTO dbo.ccoCallsOutSource (
+        cal_key, cal_telefono, cal_telefono2, cal_telefono3, cal_telefono4, cal_telefono5,
+        dato1, dato2, dato3, dato4, dato5, cam_id, cal_fechaDial, cal_status, user_id, dialPrefix,
+        iZonaHoraria, iZonaHoraria_verano,
+        iZonaHoraria2, iZonaHoraria_verano2,
+        iZonaHoraria3, iZonaHoraria_verano3,
+        iZonaHoraria4, iZonaHoraria_verano4,
+        iZonaHoraria5, iZonaHoraria_verano5
+    )
+    VALUES (
+        @cal_key, @cal_telefono, @cal_telefono2, @cal_telefono3, @cal_telefono4, @cal_telefono5,
+        @dato1, @dato2, @dato3, @dato4, @dato5, @cam_id, @FCallBack, @cal_status, @User_id, @dialPrefix,
+        @z1, @zv1, @z2, @zv2, @z3, @zv3, @z4, @zv4, @z5, @zv5
+    );
+
+    SELECT @calloutid = SCOPE_IDENTITY();
+    SELECT @calloutid;
+END'
+	EXEC(@sql)
+
+	SET @process = 'DEV2-896 DROP SP xx_Actualiza'
+	SET @sql = 'IF OBJECT_ID(''dbo.xx_Actualiza'',''P'') IS NOT NULL
+    DROP PROCEDURE dbo.xx_Actualiza;'
+	EXEC(@sql)
+
+	SET @process = 'DEV2-896 CREATE SP xx_Actualiza'
+	SET @sql = 'CREATE PROCEDURE [dbo].[xx_Actualiza]
+    @callout_id INT,
+    @cal_telefono VARCHAR(19),
+    @cal_telefono2 VARCHAR(19),
+    @cal_telefono3 VARCHAR(19),
+    @cal_telefono4 VARCHAR(19),
+    @cal_telefono5 VARCHAR(19),
+    @dato1 VARCHAR(255),
+    @dato2 VARCHAR(255),
+    @dato3 VARCHAR(255),
+    @dato4 VARCHAR(255),
+    @dato5 VARCHAR(255),
+    @dialPrefix VARCHAR(30) = ''''
+AS
+BEGIN
+    DECLARE 
+        @z1 INT = CASE WHEN LTRIM(RTRIM(ISNULL(@cal_telefono, ''''))) <> '''' THEN dbo.fnGetTimeZone(@cal_telefono, 0) ELSE 0 END,
+        @zv1 INT = CASE WHEN LTRIM(RTRIM(ISNULL(@cal_telefono, ''''))) <> '''' THEN dbo.fnGetTimeZone(@cal_telefono, 1) ELSE 0 END,
+
+        @z2 INT = CASE WHEN LTRIM(RTRIM(ISNULL(@cal_telefono2, ''''))) <> '''' THEN dbo.fnGetTimeZone(@cal_telefono2, 0) ELSE 0 END,
+        @zv2 INT = CASE WHEN LTRIM(RTRIM(ISNULL(@cal_telefono2, ''''))) <> '''' THEN dbo.fnGetTimeZone(@cal_telefono2, 1) ELSE 0 END,
+
+        @z3 INT = CASE WHEN LTRIM(RTRIM(ISNULL(@cal_telefono3, ''''))) <> '''' THEN dbo.fnGetTimeZone(@cal_telefono3, 0) ELSE 0 END,
+        @zv3 INT = CASE WHEN LTRIM(RTRIM(ISNULL(@cal_telefono3, ''''))) <> '''' THEN dbo.fnGetTimeZone(@cal_telefono3, 1) ELSE 0 END,
+
+        @z4 INT = CASE WHEN LTRIM(RTRIM(ISNULL(@cal_telefono4, ''''))) <> '''' THEN dbo.fnGetTimeZone(@cal_telefono4, 0) ELSE 0 END,
+        @zv4 INT = CASE WHEN LTRIM(RTRIM(ISNULL(@cal_telefono4, ''''))) <> '''' THEN dbo.fnGetTimeZone(@cal_telefono4, 1) ELSE 0 END,
+
+        @z5 INT = CASE WHEN LTRIM(RTRIM(ISNULL(@cal_telefono5, ''''))) <> '''' THEN dbo.fnGetTimeZone(@cal_telefono5, 0) ELSE 0 END,
+        @zv5 INT = CASE WHEN LTRIM(RTRIM(ISNULL(@cal_telefono5, ''''))) <> '''' THEN dbo.fnGetTimeZone(@cal_telefono5, 1) ELSE 0 END;
+
+    UPDATE dbo.ccoCallsOutSource
+    SET
+        cal_telefono = @cal_telefono,
+        cal_telefono2 = @cal_telefono2,
+        cal_telefono3 = @cal_telefono3,
+        cal_telefono4 = @cal_telefono4,
+        cal_telefono5 = @cal_telefono5,
+        dato1 = @dato1,
+        dato2 = @dato2,
+        dato3 = @dato3,
+        dato4 = @dato4,
+        dato5 = @dato5,
+        dialPrefix = @dialPrefix,
+        cal_fechaDial = GETDATE(),
+        cal_status = 0,
+        iZonaHoraria = @z1,
+        iZonaHoraria_verano = @zv1,
+        iZonaHoraria2 = @z2,
+        iZonaHoraria_verano2 = @zv2,
+        iZonaHoraria3 = @z3,
+        iZonaHoraria_verano3 = @zv3,
+        iZonaHoraria4 = @z4,
+        iZonaHoraria_verano4 = @zv4,
+        iZonaHoraria5 = @z5,
+        iZonaHoraria_verano5 = @zv5
+    WHERE callout_id = @callout_id;
+END'
+	EXEC(@sql)
+
+	SET @process = 'DEV2-896 DROP SP ccsp_SetTimeZonesForLoadTable'
+	SET @sql = 'IF OBJECT_ID(''dbo.ccsp_SetTimeZonesForLoadTable'',''P'') IS NOT NULL
+    DROP PROCEDURE dbo.ccsp_SetTimeZonesForLoadTable;'
+	EXEC(@sql)
+
+	SET @process = 'DEV2-896 CREATE SP ccsp_SetTimeZonesForLoadTable'
+	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_SetTimeZonesForLoadTable]
+    @loadTable NVARCHAR(128)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @sql NVARCHAR(MAX)
+
+    SET @sql = ''
+    UPDATE T SET 
+        iZonaHoraria = CASE 
+            WHEN (cal_telefono IS NOT NULL AND LTRIM(RTRIM(cal_telefono)) <> '''''''')
+            THEN dbo.fnGetTimeZone(cal_telefono, 0)
+            ELSE 0 END,
+
+        iZonaHoraria_verano = CASE 
+            WHEN (cal_telefono IS NOT NULL AND LTRIM(RTRIM(cal_telefono)) <> '''''''')
+            THEN dbo.fnGetTimeZone(cal_telefono, 1)
+            ELSE 0 END,
+
+        iZonaHoraria2 = CASE 
+            WHEN (LTRIM(RTRIM(cal_telefono2)) <> '''''''')
+            THEN dbo.fnGetTimeZone(cal_telefono2, 0)
+            ELSE 0 END,
+
+        iZonaHoraria_verano2 = CASE 
+            WHEN (LTRIM(RTRIM(cal_telefono2)) <> '''''''')
+            THEN dbo.fnGetTimeZone(cal_telefono2, 1)
+            ELSE 0 END,
+
+        iZonaHoraria3 = CASE 
+            WHEN (LTRIM(RTRIM(cal_telefono3)) <> '''''''')
+            THEN dbo.fnGetTimeZone(cal_telefono3, 0)
+            ELSE 0 END,
+
+        iZonaHoraria_verano3 = CASE 
+            WHEN (LTRIM(RTRIM(cal_telefono3)) <> '''''''')
+            THEN dbo.fnGetTimeZone(cal_telefono3, 1)
+            ELSE 0 END,
+
+        iZonaHoraria4 = CASE 
+            WHEN (LTRIM(RTRIM(cal_telefono4)) <> '''''''')
+            THEN dbo.fnGetTimeZone(cal_telefono4, 0)
+            ELSE 0 END,
+
+        iZonaHoraria_verano4 = CASE 
+            WHEN (LTRIM(RTRIM(cal_telefono4)) <> '''''''')
+            THEN dbo.fnGetTimeZone(cal_telefono4, 1)
+            ELSE 0 END,
+
+        iZonaHoraria5 = CASE 
+            WHEN (LTRIM(RTRIM(cal_telefono5)) <> '''''''')
+            THEN dbo.fnGetTimeZone(cal_telefono5, 0)
+            ELSE 0 END,
+
+        iZonaHoraria_verano5 = CASE 
+            WHEN (LTRIM(RTRIM(cal_telefono5)) <> '''''''')
+            THEN dbo.fnGetTimeZone(cal_telefono5, 1)
+            ELSE 0 END
+    FROM '' + QUOTENAME(@loadTable) + '' T;
+    ''
+
+    EXEC sp_executesql @sql
+END'
+	EXEC(@sql)
 
 	SET @process = ''
 	SET @sql = ''

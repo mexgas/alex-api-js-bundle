@@ -346,7 +346,14 @@ while (select count(*) from logCentinella where status = 0 and convert(datetime,
                 set dateStart = getdate()
                 where idCmdSql = @idCmdSql
 
-                exec(@cmdSql)
+                BEGIN TRY
+
+                        exec(@cmdSql)
+                END TRY
+                BEGIN CATCH
+                        
+                        select @cmdSql, ERROR_MESSAGE(); -- Muestra el mensaje del error
+                END CATCH
 
                 WAITFOR DELAY ''''00:00:01''''
 

@@ -111,7 +111,7 @@ IF @from IS NULL
 IF @to IS NULL
     SELECT @to = GETDATE()
 
-if(@to = convert(datetime,convert(varchar(11),getdate(),121)+''''03:00:00'''',121)) AND @from = DATEADD(dd,-1,@to)
+if(@to = convert(datetime,convert(varchar(11),getdate(),121)+''03:00:00'',121)) AND @from = DATEADD(dd,-1,@to)
 BEGIN   
     select @from = convert(datetime,convert(varchar(11),@from))
 END
@@ -119,7 +119,7 @@ END
 IF @action = 1
 BEGIN
 
-    IF OBJECT_ID(''''tempdb..#AuxiliarReadyDetail'''') IS NOT NULL
+    IF OBJECT_ID(''tempdb..#AuxiliarReadyDetail'') IS NOT NULL
     DROP TABLE #AuxiliarReadyDetail
 
     CREATE TABLE #AuxiliarReadyDetail
@@ -264,8 +264,8 @@ BEGIN
         , ISNULL(AgtGI.tundefined, 0) undefinedTime
         , ISNULL(AgtGI.tManual, 0) dialingStatus
         , isnull(auxiliarReady.TipoReadyAuxiliarId,0) as TipoReadyAuxiliarId
-        , isnull(auxiliarReady.descripcion,'''''''') as auxiliarRedy_descripcion
-        , isnull(auxiliarReady.descripcion_time,''''_Time2'''') as descripcion_auxiliarRedyTime_time
+        , isnull(auxiliarReady.descripcion,'''') as auxiliarRedy_descripcion
+        , isnull(auxiliarReady.descripcion_time,''_Time2'') as descripcion_auxiliarRedyTime_time
         , convert(int,isnull(auxiliarReady.timeSeconds,0)) as auxiliarRedyTime
     FROM AgentSession A
     LEFT JOIN tmpCallout co ON A.DATE = co.DATE AND A.userId = co.userId

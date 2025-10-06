@@ -10728,7 +10728,25 @@ ALTER COLUMN calKey VARCHAR(40);
 END
 
 '
-	EXEC(@sql)
+    EXEC(@sql)
+-------------------------------------------------------------- Begin Ulises ----------------------------------------------------------
+    set @process = 'add values to descTranslate'
+    set @sql = '
+    if exists (select * from sys.columns where name = N''descTranslate'' and Object_ID = Object_ID(N''ccTipoResultadoDial''))
+    begin
+		    update  ccTipoResultadoDial set descTranslate=''systemTranslated_Answer'' where tipoResDial_id=1
+		    update  ccTipoResultadoDial set descTranslate=''systemTranslated_Busy'' where tipoResDial_id=2
+		    update  ccTipoResultadoDial set descTranslate=''systemTranslated_NoAnswer'' where tipoResDial_id=3
+		    update  ccTipoResultadoDial set descTranslate=''systemTranslated_Fax'' where tipoResDial_id=4
+		    update  ccTipoResultadoDial set descTranslate=''systemTranslated_NoDialTone'' where tipoResDial_id=5
+		    update  ccTipoResultadoDial set descTranslate=''systemTranslated_Other'' where tipoResDial_id=8
+		    update  ccTipoResultadoDial set descTranslate=''systemTranslated_NoService'' where tipoResDial_id=10
+		    update  ccTipoResultadoDial set descTranslate=''systemTranslated_VoiceMail'' where tipoResDial_id=11
+		    update  ccTipoResultadoDial set descTranslate=''systemTranslated_Congestion'' where tipoResDial_id=12
+		    update  ccTipoResultadoDial set descTranslate=''systemTranslated_Cancelled'' where tipoResDial_id=13
+    end'
+    EXEC(@sql)
+-------------------------------------------------------------- End Ulises ----------------------------------------------------------------
 
 	SET @process = ''
 	SET @sql = ''

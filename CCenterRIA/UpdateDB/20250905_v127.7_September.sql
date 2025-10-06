@@ -9892,7 +9892,7 @@ BEGIN
                 UPDATE ccWhatsAppConversationsOut SET conversationDate = GETDATE() WHERE conversationId = @ConversationId;
             END
             --Save Conversation Assigned
-            SELECT @camId = camId FROM ccWhatsAppConversationsOut with(nolock) where conversationId=@conversationId; SELECT IsAgentLoggingOut, * FROM ccWhatsAppConversationsOut
+            SELECT @camId = camId FROM ccWhatsAppConversationsOut with(nolock) where conversationId=@conversationId;
             UPDATE ccWAOperatingSummaryOut SET Assigned = (Assigned + 1) WHERE camId = @camId
         END
                 

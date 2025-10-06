@@ -9728,6 +9728,493 @@ ELSE IF @action = 20 BEGIN
 END;'
 	EXEC(@sql)
 	-------------------------------------END MACL------------------------------------------------
+    -------------------------------------begin dmm------------------------------------------------
+    SET @process = 'Drop procedure ccsp_WhatsAppInformationOut'
+SET @sql = 'IF EXISTS (SELECT * FROM sysobjects WHERE name=''ccsp_WhatsAppInformationOut'')
+    BEGIN
+        DROP PROCEDURE dbo.ccsp_WhatsAppInformationOut
+    END'
+EXEC(@sql);
+
+SET @process = 'Se agrega validación en option=3 para saber si hubo desconexión de agente para que no haga update en conversationDate'
+SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_WhatsAppInformationOut]
+@Option SMALLINT,
+@camId SMALLINT = 0,
+@ConversationId INT = 0,
+@AgentsAvailables INT = 0,
+@IncreaseDecreaseAgent BIT = NULL,
+@AdminId int = 0
+
+AS
+SET NOCOUNT ON
+IF @camId>0 and NOT EXISTS (SELECT * FROM ccCamps WHERE cam_Id = @camId AND CampType = 5) BEGIN
+    print (''Camp Is Not WhatsApp'')
+    return(-1);
+End
+
+        
+            
+DECLARE @Today SMALLDATETIME = CAST( GETDATE() AS DATE );
+--set @Today SMALLDATETIME = ''2022-03-24''
+IF @Option = 0 BEGIN-- Reset TABLES
+    TRUNCATE TABLE ccWAConversationsResult
+    TRUNCATE table ccWAOperatingSummaryOut;
+    TRUNCATE TABLE ccWAAverageConversationsOut;
+    TRUNCATE TABLE ccLastMessageAgentByConversationOut;
+END    
+else IF @Option = 1 -- Generate Averages and Obtain all WhatsApp Campaign Information
+BEGIN
+    IF EXISTS (SELECT * FROM ccWAAverageConversationsOut
+                WHERE CamId = @camId
+                AND (LastUpdate IS NULL
+                OR ( StatusUpdate = 1 AND  DATEDIFF(ss, LastUpdate, GETDATE()) >= 5)
+                OR  DATEDIFF(MI, LastUpdate, GETDATE()) >= 5))
+    BEGIN
+        -------------------------- ----------------------- Variable Declaration ---------------------------------------------------
+
+        DECLARE @AverageConversationTime INT = 0;
+        DECLARE @AverageDialogTime INT = 0;
+        DECLARE @AverageWaitingTime INT = 0;
+        DECLARE @MaximumWaitingTime INT = 0;
+        DECLARE @DefaultValue INT = 2
+                
+
+        SET @DefaultValue = @DefaultValue * 60;
+        DECLARE @LessThanDefault INT = 0;
+        DECLARE @ReceivedConversations INT = 0;
+        DECLARE @ServiceLevel SMALLINT = 0;
+
+        --------- Modify Average Conversation, Dialog Time, Queue/Waiting Time, Maximum Waiting Time and Service Level ------------
+
+        SELECT @AverageConversationTime = ROUND(AVG(tConversation), 4),
+                @AverageDialogTime = ROUND(AVG(tChatting), 4),
+                @AverageWaitingTime = ROUND(AVG(CASE WHEN tQueue > 0 THEN tQueue ELSE NULL END), 4),
+                @MaximumWaitingTime = MAX(CASE WHEN tQueue > 0 THEN tQueue ELSE NULL END),
+                @ReceivedConversations = COUNT(conversationDate),
+                @LessThanDefault = COUNT(CASE WHEN DATEDIFF(SECOND, assignDate , FirstMessageAgent) <= @DefaultValue THEN 1 ELSE NULL END)
+        FROM ccWhatsAppConversationsOut with(nolock) WHERE camId = @camId
+        AND requestDate >= @Today
+
+        SET @ServiceLevel = CASE WHEN @ReceivedConversations = 0 THEN 0 ELSE ROUND(((@LessThanDefault*1.0) / @ReceivedConversations) * 100, 2) END
+
+        ----------------------------------------------------- Update table --------------------------------------------------------
+
+        IF EXISTS (SELECT * FROM ccWAAverageConversationsOut WHERE camId = @camId)
+        BEGIN
+            UPDATE ccWAAverageConversationsOut
+            SET AverageConversationTime = @AverageConversationTime,
+                AverageDialogTime = @AverageDialogTime,
+                AverageWaitingTime = @AverageWaitingTime,
+                MaximumWaitingTime = @MaximumWaitingTime,
+                ServiceLevel = @ServiceLevel,
+                StatusUpdate = 0,
+                LastUpdate = GETDATE()
+            WHERE CamId = @camId
+        END
+        ELSE
+        BEGIN
+            INSERT INTO ccWAAverageConversationsOut (CamId, AverageConversationTime, AverageDialogTime,
+                                                    AverageWaitingTime, MaximumWaitingTime, ServiceLevel, StatusUpdate, LastUpdate)
+            VALUES(@camId, @AverageConversationTime, @AverageDialogTime, @AverageWaitingTime, @MaximumWaitingTime,
+                    @ServiceLevel, 0 , GETDATE())
+        END
+    END
+    --------------------------------- Results -----------------------------------
+
+    if exists (select * from ccWAOperatingSummaryOut WITH (NOLOCK) where CamId=@camId
+    and (OnQueue<0 or Assigned<0)
+    ) begin                         
+        set @Today =convert(date,getdate(),121)
+
+        ;WITH waOperationSummary AS (
+        SELECT 
+            CamId,
+            COUNT(CASE WHEN finishedBy = 1 THEN 1 END) AS Attended,
+            COUNT(CASE WHEN conversationStatus = 1 THEN 1 END) AS OnQueue,
+            COUNT(CASE WHEN finishedBy = 0 AND agentId > 0 THEN 1 END) AS Assigned,
+            COUNT(*) AS Request,
+            COUNT(CASE WHEN finishedBy = 2 THEN 1 END) AS EndedBySystem
+        FROM ccWhatsAppConversationsOut WITH (NOLOCK)
+        WHERE camId = @camId AND requestDate >= @Today
+        GROUP BY CamId
+    )
+    UPDATE A
+    SET 
+        A.Attended = B.Attended,
+        A.Assigned = B.Assigned,
+        A.OnQueue = B.OnQueue,
+        A.Request = B.Request,
+        A.EndedBySystem = B.EndedBySystem
+    FROM ccWAOperatingSummaryOut A
+    INNER JOIN waOperationSummary B ON A.CamId = B.CamId;
+    END
+    
+    SELECT ISNULL(conv.AverageConversationTime, 0) AS AverageConversationTime,
+        ISNULL(AverageDialogTime, 0) AS AverageDialogTime,
+        ISNULL(AverageWaitingTime, 0) AS AverageWaitingTime,
+        ISNULL(MaximumWaitingTime, 0) AS MaximumWaitingTime,
+        ISNULL(ServiceLevel, 0) AS ServiceLevel,
+        ISNULL(summary.Attended, 0) AS Attended,
+        ISNULL(summary.Assigned, 0) AS Assigned,
+        ISNULL(summary.OnQueue, 0) AS OnQueue,
+        ISNULL(summary.EndedBySystem, 0) AS EndedBySystem,
+        ISNULL(summary.Available, 0) AS Available,
+        ISNULL(summary.Request, 0) AS Request
+    FROM ccWAAverageConversationsOut conv
+    RIGHT JOIN ccWAOperatingSummaryOut summary ON conv.CamId = summary.camId
+    WHERE conv.CamId = @camId OR summary.camId = @camId
+END
+else IF @Option = 2 -- Set Status Change in any column (Average Conversation Time, Average Dialog Time,
+                -- Average Queue/Waiting Time, and Service Level)
+BEGIN
+    IF EXISTS (SELECT * FROM ccWAAverageConversationsOut WHERE CamId = @camId)
+        BEGIN
+            UPDATE ccWAAverageConversationsOut SET StatusUpdate = 1
+            WHERE CamId = @camId
+        END
+        ELSE
+        BEGIN
+            INSERT INTO ccWAAverageConversationsOut (CamId, StatusUpdate)
+            VALUES(@camId, 1)
+        END
+END
+else IF @Option = 3 -- Save time from accepted conversation by agent
+BEGIN
+    IF @ConversationId IS NOT NULL
+    BEGIN
+        -- Se valida si el conversation date es null para poder actualizarlo
+        DECLARE @IsTransfered BIT, @conversationDate DATETIME, @agentDisconnection BIT;
+        SELECT @IsTransfered = IsTransfered, @agentDisconnection = IsAgentLoggingOut, @conversationDate = conversationDate FROM ccWhatsAppConversationsOut with(nolock)  WHERE conversationId = @ConversationId; 
+        IF(@IsTransfered = 0 OR @conversationDate IS NULL)
+        BEGIN
+            IF (ISNULL(@agentDisconnection, 0) = 0)
+            BEGIN
+                UPDATE ccWhatsAppConversationsOut SET conversationDate = GETDATE() WHERE conversationId = @ConversationId;
+            END
+            --Save Conversation Assigned
+            SELECT @camId = camId FROM ccWhatsAppConversationsOut with(nolock) where conversationId=@conversationId;
+            UPDATE ccWAOperatingSummaryOut SET Assigned = (Assigned + 1) WHERE camId = @camId
+        END
+                
+    END 
+END
+else IF @Option = 4 -- Get Disposition Information
+BEGIN
+declare @nIdioma varchar(22),@nIdiomaSub varchar(22)
+select @nIdioma = case valor 
+    when 0 then ''Sin calificación'' 
+    when 2 then ''Sem classificação''
+    else ''No disposition'' end
+from ccsettings where setting_id = 27 -- 0esp
+SELECT ISNULL(disposition.Description, @nIdioma) AS DispositionName,
+        ISNULL(disposition.calif_id, 0) AS DispositionId,
+        COUNT(whatsConv.disposition) AS Total,
+        ISNULL(disposition.GraphColor, ''1DB4E2'') AS GraphColor,
+        COUNT(CASE WHEN whatsConv.subDisposition != 0 THEN 1 END) AS SubDispositionQuantity
+FROM ccWhatsAppConversationsOut whatsConv with(nolock)
+LEFT JOIN ccTipoCalifOUT disposition ON disposition.calif_id = whatsConv.disposition
+WHERE camId = @camId AND assignDate >= @Today
+    and whatsConv.conversationStatus != 2
+GROUP BY disposition.calif_id, disposition.Description, disposition.GraphColor
+END
+else IF @Option = 5 -- Get Subdisposition Information
+BEGIN
+    SELECT relation.calif_id AS DispositionId,
+            subDispositions.califSubDesc AS SubDispositionsName,
+            COUNT(CASE WHEN whatsConv.subDisposition != 0 THEN 1 END) AS SubDispositionQuantity
+    FROM cctipoSubCalifRel relation
+    INNER JOIN ccTipoCalifSubOUT subDispositions ON subDispositions.califSub_id = relation.califSub_id
+    INNER JOIN ccWhatsAppConversationsOut whatsConv with(nolock) ON whatsConv.subDisposition = subDispositions.califSub_id
+    WHERE whatsConv.camId = @camId AND
+            whatsConv.assignDate >= @Today AND
+            relation.tipoSubRel = 0
+    GROUP BY subDispositions.califSubDesc, relation.calif_id
+END
+ELSE IF @Option = 6 -- Agents Availables
+BEGIN
+    IF NOT EXISTS (SELECT camId FROM ccWAOperatingSummaryOut WHERE camId = @camId)
+        BEGIN
+            INSERT INTO ccWAOperatingSummaryOut (camId, Available) VALUES (@camId, @AgentsAvailables);
+        END
+    ELSE
+        BEGIN
+            UPDATE ccWAOperatingSummaryOut SET Available = @AgentsAvailables WHERE camId = @camId
+        END
+END
+
+ELSE IF @Option = 7 -- Whats Conversations Results
+BEGIN
+    SELECT ISNULL(SentMsg, 0) AS SentMsg,
+            ISNULL(Delivered, 0) AS Delivered,
+            ISNULL(NotDelivered, 0) AS NotDelivered,
+            ISNULL(ReadMsg, 0) AS ReadMsg,
+            ISNULL(NotSupported, 0) AS NotSupported
+    FROM ccWAConversationsResult
+    WHERE camId = @camId
+END
+
+ELSE IF @Option = 8 -- whats outbound conversations
+BEGIN
+    DECLARE @ActualDay DATE = GETDATE()
+
+    declare @conversationOut table (
+    camId int not null,
+    Active int not null,
+    Queued int not null,
+    FinishedAgent int not null,
+    FinishedSystem int not null
+    )
+    insert into @conversationOut
+    SELECT cco.camId ,
+        COUNT(CASE WHEN cco.conversationStatus NOT IN (10,11,17,18) THEN 1 ELSE NULL END) Active
+        ,COUNT(CASE WHEN conversationStatus = 1 THEN 1 ELSE null END) Queued
+        ,count(case when finishedBy=1 then 1 end)  FinishedAgent
+        ,count(case when finishedBy=2 then 1 end)  FinishedSystem
+    FROM ccWhatsAppConversationsOut cco WITH(NOLOCK)
+    WHERE cco.camId = @camId AND cco.conversationDate>= @ActualDay
+    group by cco.camId 
+    
+    --update B 
+    --set B.EndedBySystem=A.FinishedSystem,
+    --B.OnQueue=A.Queued
+    --from @conversationOut A
+    --inner join ccWAOperatingSummaryOut B on A.camId=B.CamId
+
+    select A.Active,B.OnQueue Queued,A.FinishedAgent,B.EndedBySystem as FinishedSystem
+    from @conversationOut A
+    inner join ccWAOperatingSummaryOut B on A.camId=B.CamId
+END
+IF @Option = 9
+BEGIN
+    DECLARE @campsIds TABLE(camid smallint)
+    INSERT INTO @campsIds
+    exec ccsp_GalateaAdminCampaigns @Option = 11, @CampType = 1, @AdminId = @AdminId, @IsWhatsAppCampaign=1
+
+
+    SELECT 
+        waco.camid,
+        SUM(CASE WHEN messageStatus = ''sent'' OR messageStatus = ''submitted'' THEN 1 ELSE 0 END) AS SentMsg,
+        SUM(CASE WHEN messageStatus = ''delivered'' THEN 1 ELSE 0 END) AS Delivered,
+        SUM(CASE WHEN messageStatus = ''read'' THEN 1 ELSE 0 END) AS ReadMsg,
+        SUM(CASE WHEN messageStatus = ''rejected'' OR messageStatus = ''failed'' THEN 1 ELSE 0 END) AS [NotDelivered],
+        SUM(CASE WHEN messageStatus = ''N/A'' THEN 1 ELSE 0 END) AS NA
+    FROM 
+        ccWhatsAppConversationsOut waco
+        INNER JOIN @campsIds c on c.camid = waco.camId 
+        INNER JOIN ccWAMessagesConversationsOut wamco
+        ON waco.conversationId = wamco.conversationId
+        WHERE wamco.timeStampMessage > @Today
+        AND wamco.originType <> ''Client''
+    GROUP BY 
+        waco.camid
+    ORDER BY 
+        waco.camid;
+END
+            
+SET NOCOUNT OFF'
+EXEC(@sql);
+
+SET @process = 'Drop procedure ccsp_VerifyCampaignRelationships'
+SET @sql = 'IF EXISTS (SELECT * FROM sysobjects WHERE name=''ccsp_VerifyCampaignRelationships'')
+    BEGIN
+        DROP PROCEDURE dbo.ccsp_VerifyCampaignRelationships
+    END'
+EXEC(@sql);
+
+SET @process = 'en optiion = 1 se agrega validación para eliminar relacion de tabla ccvirtualAgemt y ccoDialerCamp al eliminar campaña'
+SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_VerifyCampaignRelationships]  
+	@Option SMALLINT = 0,
+            	@CamIds VARCHAR(MAX)
+            AS
+            BEGIN
+            	SET NOCOUNT ON;
+
+            	DECLARE @CurrentId INT;
+            	DECLARE @HasRelations BIT;
+
+            	IF @Option = 0 --ACDs
+            	BEGIN
+            		IF OBJECT_ID(''tempdb..#TmpACDs'') IS NOT NULL DROP TABLE #TmpACDs;
+            		IF OBJECT_ID(''tempdb..#FinalACDs'') IS NOT NULL DROP TABLE #FinalACDs;
+            		IF OBJECT_ID(''tempdb..#ClassifiedACDs'') IS NOT NULL DROP TABLE #ClassifiedACDs;
+
+            		CREATE TABLE #TmpACDs (Id INT);
+            		CREATE TABLE #FinalACDs (Id INT);
+            		CREATE TABLE #ClassifiedACDs (
+            			Id INT,
+            			HasWGRelation BIT,
+            			HasCampaignRelation BIT,
+            			UnassignVirtualAgent BIT
+            		);
+
+            		INSERT INTO #TmpACDs (Id)
+            		SELECT CAST(Value AS INT)
+            		FROM dbo.fn_RIASplitDelimited(@CamIds, '','');
+
+            		INSERT INTO #ClassifiedACDs (Id, HasWGRelation, HasCampaignRelation, UnassignVirtualAgent) 
+            		SELECT
+            			t.Id,
+            			CASE WHEN r.IdCampEsp IS NOT NULL THEN 1 ELSE 0 END AS HasWGRelation,
+            		    CASE WHEN i.inbound_id IS NOT NULL 
+            			THEN 
+            					CASE WHEN (i.cam_id IS NULL OR i.cam_id = 0) 
+            						AND (i.idForNonComprehension IS NULL OR i.idForNonComprehension = 0)
+            						AND (i.idForSuccessfulTransaction IS NULL OR i.idForSuccessfulTransaction = 0)
+            						THEN 0
+            						ELSE 1
+            					END
+            			ELSE 0 END AS HasCampaignRelation,
+            			CASE WHEN v.idCampaign IS NOT NULL THEN 1 ELSE 0 END AS UnassignVirtualAgent
+            		FROM #TmpACDs t
+            		LEFT JOIN ccRIACampESPWG r
+            			ON r.IdCampEsp = t.Id AND r.Tipo = 0
+            		LEFT JOIN ccinbound i
+            			ON i.inbound_id = t.Id
+            		LEFT JOIN ccVirtualAgent v
+            			ON v.idCampaign = t.Id AND v.campType = 0 AND v.mediaType = 11;
+
+            		INSERT INTO #FinalACDs (Id)
+            		SELECT Id
+            		FROM #ClassifiedACDs
+            		WHERE HasWGRelation = 0 AND HasCampaignRelation = 0 AND UnassignVirtualAgent = 0;
+
+            		DECLARE cur CURSOR LOCAL FOR
+            		SELECT Id
+            		FROM #ClassifiedACDs
+            		WHERE HasWGRelation = 0 AND HasCampaignRelation = 0 AND UnassignVirtualAgent = 1;
+
+            		OPEN cur;
+            		FETCH NEXT FROM cur INTO @CurrentId;
+
+            		WHILE @@FETCH_STATUS = 0
+            		BEGIN
+            			UPDATE ccVirtualAgent
+            			SET idCampaign = 0,
+            				mediaType = NULL
+            			WHERE idCampaign = @CurrentId AND campType = 0 AND mediaType = 11;
+
+            			INSERT INTO #FinalACDs (Id) VALUES (@CurrentId);
+
+            			FETCH NEXT FROM cur INTO @CurrentId;
+            		END
+
+            		CLOSE cur;
+            		DEALLOCATE cur;
+
+            		DECLARE @CleanACDIds VARCHAR(MAX);
+            		SELECT @CleanACDIds = 
+            		STUFF((
+            			SELECT '','' + CAST(Id AS VARCHAR)
+            			FROM #FinalACDs
+            			ORDER BY Id
+            			FOR XML PATH(''''), TYPE
+            		).value(''.'', ''VARCHAR(MAX)''), 1, 1, '''');
+
+            		SET @HasRelations = CASE 
+            										WHEN (SELECT COUNT(*) FROM #FinalACDs) < (SELECT COUNT(*) FROM #TmpACDs)
+            										THEN 1 ELSE 0 
+            									END;
+
+
+            		SELECT 
+            			@HasRelations AS HasRelations,
+            			ISNULL(@CleanACDIds, '''') AS ACDIds;
+
+            		IF OBJECT_ID(''tempdb..#TmpACDs'') IS NOT NULL DROP TABLE #TmpACDs;
+            		IF OBJECT_ID(''tempdb..#FinalACDs'') IS NOT NULL DROP TABLE #FinalACDs;
+            		IF OBJECT_ID(''tempdb..#ClassifiedACDs'') IS NOT NULL DROP TABLE #ClassifiedACDs;
+            	END
+
+
+                ELSE IF @Option = 1 -- Camps
+                BEGIN
+
+                    IF OBJECT_ID(''tempdb..#TmpOutIDs'') IS NOT NULL DROP TABLE #TmpOutIDs;
+                    IF OBJECT_ID(''tempdb..#FinalCampsId'') IS NOT NULL DROP TABLE #FinalCampsId;
+                    IF OBJECT_ID(''tempdb..#ClassifiedCamps'') IS NOT NULL DROP TABLE #ClassifiedCamps;
+
+                    CREATE TABLE #TmpOutIDs (Id INT NOT NULL PRIMARY KEY);
+                    CREATE TABLE #FinalCampsId (Id INT NOT NULL PRIMARY KEY);
+                    CREATE TABLE #ClassifiedCamps (
+                        Id INT NOT NULL,
+                        HasWGRelation BIT NOT NULL,
+                        HasCampaignRelation BIT NOT NULL,
+                        UnassignVirtualAgent BIT NOT NULL
+                    );
+
+                    INSERT INTO #TmpOutIDs (Id)
+                    SELECT DISTINCT CAST(Value AS INT)
+                    FROM dbo.fn_RIASplitDelimited(@CamIds, '','');
+
+                    INSERT INTO #ClassifiedCamps (Id, HasWGRelation, HasCampaignRelation, UnassignVirtualAgent)
+                    SELECT
+                        t.Id,
+                        CASE WHEN r.IdCampEsp IS NOT NULL THEN 1 ELSE 0 END AS HasWGRelation,
+                        CASE 
+                            WHEN i.inbound_id IS NOT NULL 
+                                 THEN CASE WHEN (i.cam_id IS NULL OR i.cam_id = 0) THEN 0 ELSE 1 END
+                            ELSE 0 
+                        END AS HasCampaignRelation,
+                        CASE WHEN v.idCampaign IS NOT NULL THEN 1 ELSE 0 END AS UnassignVirtualAgent
+                    FROM #TmpOutIDs AS t
+                    LEFT JOIN ccRIACampESPWG AS r
+                        ON r.IdCampEsp = t.Id AND r.Tipo = 1
+                    LEFT JOIN ccinbound AS i
+                        ON i.cam_id = t.Id
+                    LEFT JOIN ccVirtualAgent AS v
+                        ON v.idCampaign = t.Id AND v.campType = 1 AND v.mediaType = 10;
+
+                    BEGIN TRY
+                        BEGIN TRAN;
+                     
+                        UPDATE va SET va.idCampaign = 0, va.mediaType  = NULL FROM ccVirtualAgent AS va
+                                                                              JOIN #ClassifiedCamps AS c ON c.Id = va.idCampaign
+                                                                              WHERE va.campType = 1
+                                                                                AND va.mediaType = 10
+                                                                                AND c.HasWGRelation = 0
+                                                                                AND c.HasCampaignRelation = 0
+                                                                                AND c.UnassignVirtualAgent = 1;
+
+                        DELETE dc FROM ccoDialerCamp AS dc WHERE dc.cam_id IN (SELECT Id FROM #ClassifiedCamps WHERE HasWGRelation = 0 AND HasCampaignRelation = 0);
+
+                        INSERT INTO #FinalCampsId (Id) SELECT DISTINCT Id FROM #ClassifiedCamps WHERE HasWGRelation = 0 AND HasCampaignRelation = 0;
+
+                        COMMIT;
+                    END TRY
+                    BEGIN CATCH
+                        IF XACT_STATE() <> 0 ROLLBACK;
+
+                        DECLARE @ErrMsg NVARCHAR(4000) = ERROR_MESSAGE(),
+                                @ErrSeverity INT = ERROR_SEVERITY(),
+                                @ErrState INT = ERROR_STATE();
+                        RAISERROR(@ErrMsg, @ErrSeverity, @ErrState);
+                        RETURN;
+                    END CATCH
+                    
+                    DECLARE @CleanCampsIds VARCHAR(MAX);
+
+                    SELECT @CleanCampsIds =
+                    STUFF((
+                        SELECT '','' + CONVERT(VARCHAR(10), Id)
+                        FROM (SELECT DISTINCT Id FROM #FinalCampsId) d
+                        ORDER BY Id
+                        FOR XML PATH(''''), TYPE
+                    ).value(''.'', ''VARCHAR(MAX)''), 1, 1, '''');
+
+                    SET @HasRelations = CASE
+                        WHEN (SELECT COUNT(*) FROM #FinalCampsId) < (SELECT COUNT(*) FROM #TmpOutIDs)
+                        THEN 1 ELSE 0 END;
+
+                    SELECT @HasRelations AS HasRelations,
+                           ISNULL(@CleanCampsIds, '''') AS CampsIds;
+
+                    IF OBJECT_ID(''tempdb..#TmpOutIDs'') IS NOT NULL DROP TABLE #TmpOutIDs;
+                    IF OBJECT_ID(''tempdb..#FinalCampsId'') IS NOT NULL DROP TABLE #FinalCampsId;
+                    IF OBJECT_ID(''tempdb..#ClassifiedCamps'') IS NOT NULL DROP TABLE #ClassifiedCamps;
+                END
+            END'
+    EXEC(@sql);
+    -------------------------------------END dmm------------------------------------------------
 
     ------------------------------------- BEGIN GASJ 20250905.0.1 ------------------------------------------------
 

@@ -10023,7 +10023,7 @@ EXEC(@sql);
 
 SET @process = 'en optiion = 1 se agrega validación para eliminar relacion de tabla ccvirtualAgemt y ccoDialerCamp al eliminar campaña'
 SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_VerifyCampaignRelationships]  
-EXEC(@sql); 	@Option SMALLINT = 0,
+	@Option SMALLINT = 0,
             	@CamIds VARCHAR(MAX)
             AS
             BEGIN

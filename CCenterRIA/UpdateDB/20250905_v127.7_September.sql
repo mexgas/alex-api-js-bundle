@@ -11238,6 +11238,213 @@ IF OBJECT_ID(''tempdb..#ins'') IS NOT NULL
     DROP TABLE #ins;'
 	EXEC(@sql)
 
+	SET @process = 'CW-10197 Drop procedure ccsp_InsertDNCListWhatsApp'
+	SET @sql = 'IF EXISTS (SELECT * FROM sysobjects WHERE name=''ccsp_InsertDNCListWhatsApp'')
+		BEGIN
+			DROP PROCEDURE dbo.ccsp_InsertDNCListWhatsApp
+		END'
+	EXEC(@sql);
+
+		SET @process = 'CW-10197 CREATE STORE PROCEDURE ccsp_InsertDNCListWhatsApp'
+		SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_InsertDNCListWhatsApp]
+	@telephone as varchar(30),
+	@ln_id as integer,
+	@hashCalKey bigint=NULL,
+	@calKey VARCHAR(40) = NULL
+
+	AS
+	SET NOCOUNT ON;  
+
+
+	declare @sqlcmd nvarchar(max), @tmpTableName nvarchar(40), @sqlcmd_replace nvarchar(max),
+	@dropTmpPhone nvarchar(max) = null
+
+
+	if (@telephone is not null) -- Para insertar un solo numero cuando se manda a BL por calificación
+	BEGIN
+		IF EXISTS (SELECT * from ccListaNegra with(nolock) where idtipolista = @ln_id and telefono = @telephone and HashKey = dbo.hashList(@calKey)) begin
+			RETURN 0;
+		end
+
+		set @tmpTableName = ''TMP_BLACKLIST_'' + @telephone;
+		SET @dropTmpPhone = ''if exists (select * from sys.tables where name = N'''''' + @tmpTableName + '''''') drop table '' + @tmpTableName;
+
+		SET @sqlcmd = ''CREATE TABLE '' + @tmpTableName + ''(
+		[phoneNumber] VARCHAR(30),
+		[calKey] VARCHAR(40)); 
+
+		INSERT INTO '' + @tmpTableName + ''(phoneNumber, calKey) values([dbo].[Limpia](@telephone),@calKey );
+		'';
+		EXEC (@dropTmpPhone);   
+		EXEC sp_executesql @sqlcmd, N''@telephone varchar(40), @calKey VARCHAR(40)'', @telephone,@calKey;
+	END
+	else begin
+		SET @tmpTableName = ''TMP_BLACKLIST_'' + CAST(@ln_id as varchar(10));
+	end
+
+
+
+	IF OBJECT_ID(N''tempdb..#mycamps'') IS NOT NULL drop table #mycamps
+	IF OBJECT_ID(N''tempdb..#myprincipaltempWhatsApp'') IS NOT NULL drop table #myprincipaltempWhatsApp
+	IF OBJECT_ID(N''tempdb..#mytempWhatsApp'') IS NOT NULL drop table #mytempWhatsApp
+	IF OBJECT_ID(N''tempdb..#helpTempWhatsApp]'') IS NOT NULL drop table #helpTempWhatsApp
+
+
+	CREATE TABLE [dbo].[#mycamps] ([campsid] [int] NULL )
+
+	CREATE CLUSTERED INDEX [IX_mycamps] ON [dbo].[#mycamps]([campsid]) 
+
+	insert #mycamps
+	select A.cam_id from Camplistanegra A
+	Inner join ccCamps B on A.cam_id=B.cam_id
+	where A.idtipolista = @ln_id And B.CampType=5 --WhatsApp
+
+
+
+	CREATE TABLE [dbo].[#myprincipaltempWhatsApp](
+		[WAOut_Id] [bigint] NULL, 
+		[cam_id] [int] NULL ,
+		[tipomov] [int] NULL,
+		[idtipolista] [int] NULL,
+		[phoneNumber] [varchar] (30) NULL ,    
+		)
+
+	CREATE CLUSTERED INDEX [IX_myprincipaltempWa] ON [dbo].[#myprincipaltempWhatsApp]([WAOut_Id]) 
+	CREATE NONCLUSTERED INDEX [IX_myprincipaltempWa2] ON [dbo].[#myprincipaltempWhatsApp]([PhoneNumber]) 
+
+
+	CREATE TABLE [dbo].[#helpTempWhatsApp](
+		[WAOut_Id] [bigint] NULL, 
+		[cam_id] [int] NULL ,
+		[tipomov] [int] NULL,
+		[idtipolista] [int] NULL,
+		[cal_telefono] [varchar] (30) NULL ,
+		)
+
+	CREATE TABLE [dbo].[#mytempWhatsApp](
+		[WAOut_Id] [bigint] NULL, 
+		[telefono] [varchar] (30) NULL ,
+		[cam_id] [smallint] NULL ,
+		[tipomov] [int] NULL,
+		[idtipolista] [int] NULL
+	)
+
+	CREATE CLUSTERED INDEX [IX_mytemp] ON [dbo].[#mytempWhatsApp]([WAOut_Id]) 
+
+	declare @fech datetime = getdate()-30
+
+		SET @sqlcmd = ''
+		insert into [#helpTempWhatsApp]
+		SELECT a.WAOut_Id as WAOut_Id, a.camId,3, @ln_id as idtipolista, a.PhoneNumber
+		FROM [ccWhatsAppOutSource] as a with(nolock)
+		inner join #mycamps as b with(nolock) on a.camId = b.campsid
+		inner join '' + @tmpTableName +'' t on 
+		t.phoneNumber IN (a.[SPACE_TEL])  AND t.calKey IS NULL    
+		where dateDial > @fech
+		''
+
+		SET @sqlcmd_replace = REPLACE(@sqlcmd,''SPACE_TEL'',''PhoneNumber'')    
+		EXEC sp_executesql @sqlcmd_replace, N''@ln_id int,@fech datetime'', @ln_id,@fech;
+	
+		SET @sqlcmd = ''
+		insert into [#helpTempWhatsApp]
+		SELECT a.WAOut_Id as callout_id, a.camId,3, @ln_id as idtipolista, a.PhoneNumber
+		FROM [ccWhatsAppOutSource] as a with(nolock)
+		inner join #mycamps as b with(nolock) on a.camId = b.campsid
+		inner join '' + @tmpTableName +'' t on 
+		t.phoneNumber IN (a.[SPACE_TEL])  AND t.calKey IS NULL    
+		where dateDial > @fech''
+    
+		SET @sqlcmd_replace = REPLACE(@sqlcmd,''SPACE_TEL'',''PhoneNumber'')
+		EXEC sp_executesql @sqlcmd_replace, N''@ln_id int,@fech datetime'', @ln_id,@fech;
+
+		INSERT INTO #myprincipaltempWhatsApp
+		SELECT * FROM #helpTempWhatsApp
+		GROUP BY WAOut_Id, cam_id, tipomov, idtipolista, cal_telefono
+    
+	if EXISTS (select * from #myprincipaltempWhatsApp)
+		begin
+    
+		declare @column nvarchar(max), @sql nvarchar(max)
+		,@sqlDeleteWorking nvarchar(max)
+		,@sqlUpdateWorking nvarchar(max)
+		,@sqlCaseWorking nvarchar(max)
+		,@params nvarchar(max)
+		,@phoneEmpty varchar(1)
+		,@sqlWithReplace nvarchar(max)
+
+		set @phoneEmpty=''''
+		set @column=''PhoneNumber''
+		set @params=''@phoneEmpty varchar(1),@fech datetime''
+		set @sqlDeleteWorking='' and cs.PhoneNumber=@phoneEmpty''
+		set @sqlCaseWorking=''@phoneEmpty''
+
+		set @sqlUpdateWorking=''-- Actualizamos WT al siguiente telefono disponbile (cuando no es el unico telefono)
+		update wt 
+		set PhoneNumber = CASE_UPDATE_WT
+		from ccWhatsAppOutSource cs
+		inner join ccoWAWorkingTable wt WITH(NOLOCK) on cs.WAOut_Id = wt.WAOut_Id
+		inner join #mytempWhatsApp t on cs.WAOut_id = t.WAOut_id
+		where cs.dateDial > @fech and cs.COLUMN_CHECK= wt.PhoneNumber''
+
+		set @sql=''insert #mytempWhatsApp
+	select WAOut_Id,mp.COLUMN_CHECK,cam_id,tipomov,idtipolista
+	from [#myprincipaltempWhatsApp] mp with(nolock)
+	inner join '' + @tmpTableName + '' t on
+	t.phoneNumber = mp.COLUMN_CHECK
+	where mp.COLUMN_CHECK<>@phoneEmpty
+
+	if EXISTS (select * from #mytempWhatsApp)
+	begin
+		-- Borramos de WT todos los registros en los que el telefono1 sea el unico telefono y este en la lista negra
+		delete wt with(rowlock)
+		from ccoWAWorkingTable wt 
+		inner join ccWhatsAppOutSource cs  on wt.WAOut_Id = cs.WAOut_Id
+		inner join #mytempWhatsApp t on wt.WAOut_Id = t.WAOut_Id
+		where cs.dateDial > @fech and
+		cs.COLUMN_CHECK = wt.PhoneNumber
+		AND_DELETE_WT
+
+		UPDATE_WT_QUERY
+
+		--insertar el historial
+		--insert ccHistoryBlacklistSms (WAOut_Id,Phone,cam_id,movTypeId,listTypeId)
+		--select * from #mytempWhatsApp
+
+		-- Eliminamos el telefono1 de CS
+		update ccWhatsAppOutSource 
+		set COLUMN_CHECK = @phoneEmpty
+		from ccWhatsAppOutSource cs 
+		inner join #mytempWhatsApp t on cs.WAOut_Id = t.WAOut_Id
+		where cs.dateDial > @fech       
+
+		truncate table #mytempWhatsApp
+	end''
+		/******************/
+		/*** Telefono 1 ***/
+		/******************/
+    
+		set @sqlWithReplace=    
+		Replace(        
+		REPLACE(
+		REPLACE(
+			REPLACE(@sql,''UPDATE_WT_QUERY'',@sqlUpdateWorking),
+			''COLUMN_CHECK'',@column)
+			,''AND_DELETE_WT'',@sqlDeleteWorking)
+			,''CASE_UPDATE_WT'',@sqlCaseWorking
+			)
+		--print(@sqlWithReplace)
+		exec sp_executesql @sqlWithReplace, @params,@phoneEmpty,@fech   
+    
+	end
+
+	IF OBJECT_ID(N''tempdb..#mycamps'') IS NOT NULL drop table #mycamps
+	IF OBJECT_ID(N''tempdb..#myprincipaltempWhatsApp'') IS NOT NULL drop table #myprincipaltempWhatsApp
+	IF OBJECT_ID(N''tempdb..#mytempWhatsApp'') IS NOT NULL drop table #mytempWhatsApp
+	IF OBJECT_ID(N''tempdb..#helpTempWhatsApp]'') IS NOT NULL drop table #helpTempWhatsApp
+	'
+	EXEC(@sql)
+
 ------------------------------------------ END MAGV 20250905.0.2   ------------------------------
 
 	SET @process = ''

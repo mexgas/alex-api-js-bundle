@@ -1,0 +1,145 @@
+/*******************************/
+/***** NUXIBA TECHNOLOGIES *****/
+/*******************************/
+/*
+Author: Marco Antonio García
+Date: 2025/06/23
+Description: Demo/Sprint2
+Database: CCenterRia
+Required version: 127.2
+IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
+*/
+SET NOCOUNT ON
+DECLARE @version INT, @versionFix INT
+DECLARE @actualVersion INT, @actualVersionFix INT
+DECLARE @sql VARCHAR(max)
+DECLARE @errorGenerated VARCHAR(max)
+DECLARE @process VARCHAR(max)
+DECLARE @versionALL VARCHAR(max);
+/* Version to release (use the version of your own databse)*/
+/*******************************************************************************************************
+Importante:la variable @version puede tener 2 valores dependiendo la necesidad que se tenga el primer ejemplo
+set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a 118 en caso de que se tenga la version 119 y se vaya a agragar un fix
+sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
+    SET @version = 127 --**********actualizar a 124 sin fix
+    SET @versionfix = 8
+    /* Actual version (use your own script to do it)*/
+    EXEC @actualVersion = ccsp_getVersion 'BD'
+    EXEC @actualVersionFix = ccsp_getVersion 'BDF'
+    SELECT @versionALL = valor
+    FROM ccsettings
+    WHERE setting_id = 77;
+    SELECT @actualVersionFix = cast(isnull(max(value), '0') AS INT)
+    FROM dbo.fn_RIASplitDelimited(@versionALL, '.')
+    WHERE id = 5;
+    --- Validacion para cuando pasamos a una nueva version LTS
+    declare @versioMajer int= case when @version > @actualVersion then 1 else 0 end
+    IF @version > @actualVersion 
+    BEGIN 
+    SET @actualVersionFix = 0
+    select @version,@actualVersion,@versioMajer
+    END
+    IF @version >= @actualVersion and @versionfix >= @actualVersionFix 
+    BEGIN
+    BEGIN TRAN
+    BEGIN TRY
+
+    ------------------------------------ BEGIN CARLOS MUÑOZ ------------------------------------
+    SET @process = 'Added new columns to save behaviour and definition of models as well as a logical elimination of models'
+    SET @sql = '
+        IF COL_LENGTH(''dbo.ccVirtualAgent'', ''quantumRolId'') IS NULL
+        BEGIN
+            ALTER TABLE dbo.ccVirtualAgent
+            ADD quantumRolId INT NULL;
+        END;
+
+        IF COL_LENGTH(''dbo.ccVirtualAgent'', ''roleName'') IS NULL
+        BEGIN
+            ALTER TABLE dbo.ccVirtualAgent
+            ADD roleName VARCHAR(30) NULL;
+        END;
+
+        IF COL_LENGTH(''dbo.ccVirtualAgent'', ''language'') IS NULL
+        BEGIN
+            ALTER TABLE dbo.ccVirtualAgent
+            ADD language TINYINT NULL;
+        END;
+
+        IF COL_LENGTH(''dbo.ccVirtualAgent'', ''responseTone'') IS NULL
+        BEGIN
+            ALTER TABLE dbo.ccVirtualAgent
+            ADD responseTone SMALLINT NULL;
+        END;
+
+        IF COL_LENGTH(''dbo.ccVirtualAgent'', ''responseLength'') IS NULL
+        BEGIN
+            ALTER TABLE dbo.ccVirtualAgent
+            ADD responseLength TINYINT NULL;
+        END;
+
+        IF COL_LENGTH(''dbo.ccVirtualAgent'', ''objective'') IS NULL
+        BEGIN
+            ALTER TABLE dbo.ccVirtualAgent
+            ADD objective VARCHAR(1200) NULL;
+        END;
+
+        IF COL_LENGTH(''dbo.ccVirtualAgent'', ''rules'') IS NULL
+        BEGIN
+            ALTER TABLE dbo.ccVirtualAgent
+            ADD rules VARCHAR(1200) NULL;
+        END;
+
+        IF COL_LENGTH(''dbo.ccVirtualAgent'', ''instructions'') IS NULL
+        BEGIN
+            ALTER TABLE dbo.ccVirtualAgent
+            ADD instructions VARCHAR(8000) NULL;
+        END;
+
+        IF COL_LENGTH(''dbo.ccVirtualAgent'', ''wasDeleted'') IS NULL
+        BEGIN
+            ALTER TABLE dbo.ccVirtualAgent
+            ADD wasDeleted BIT not null DEFAULT(0);
+        END;
+
+        IF COL_LENGTH(''dbo.ccVirtualAgent'', ''ReplyGreeting'') IS NULL
+        BEGIN
+            ALTER TABLE dbo.ccVirtualAgent
+            ADD ReplyGreeting NVARCHAR(350) NULL;
+        END;
+
+        IF COL_LENGTH(''dbo.ccVirtualAgent'', ''ReplyFarewell'') IS NULL
+        BEGIN
+            ALTER TABLE dbo.ccVirtualAgent
+            ADD ReplyFarewell NVARCHAR(350) NULL;
+        END;
+
+        IF COL_LENGTH(''dbo.ccVirtualAgent'', ''ReplySystemFailure'') IS NULL
+        BEGIN
+            ALTER TABLE dbo.ccVirtualAgent
+            ADD ReplySystemFailure NVARCHAR(350) NULL;
+        END;
+
+        IF COL_LENGTH(''dbo.ccVirtualAgent'', ''ReplyNoUnderstanding'') IS NULL
+        BEGIN
+            ALTER TABLE dbo.ccVirtualAgent
+            ADD ReplyNoUnderstanding NVARCHAR(350) NULL;
+        END;
+    '
+
+    EXEC(@sql)
+
+    ------------------------------------- END CARLOS MUÑOZ -------------------------------------
+
+	
+    /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
+        EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
+        EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)
+        COMMIT TRAN
+        END TRY
+        BEGIN CATCH
+       /* Error generated based on sintax */
+       SELECT @errorGenerated = 'DB script version: ' + cast(@version AS NVARCHAR) + '''.''' + cast(@versionfix AS NVARCHAR) + ''' Error process: ''' + @process + ''' Line: ''' + cast(error_line() AS NVARCHAR) + ''' Number: ''' + cast(@@error AS NVARCHAR) + ''' Message: ''' + error_message()
+       RAISERROR (@errorGenerated, 11, 1)
+       ROLLBACK TRAN
+   END CATCH
+END 

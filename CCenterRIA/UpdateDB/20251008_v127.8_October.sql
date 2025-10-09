@@ -47,10 +47,10 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
     ------------------------------------ BEGIN CARLOS MUÑOZ ------------------------------------
     SET @process = 'Added new columns to save behaviour and definition of models as well as a logical elimination of models'
     SET @sql = '
-        IF COL_LENGTH(''dbo.ccVirtualAgent'', ''quantumRolId'') IS NULL
+        IF COL_LENGTH(''dbo.ccVirtualAgent'', ''quantumRoleId'') IS NULL
         BEGIN
             ALTER TABLE dbo.ccVirtualAgent
-            ADD quantumRolId INT NULL;
+            ADD quantumRoleId INT NULL;
         END;
 
         IF COL_LENGTH(''dbo.ccVirtualAgent'', ''roleName'') IS NULL

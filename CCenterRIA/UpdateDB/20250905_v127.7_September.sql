@@ -2255,50 +2255,84 @@ IF @Option = 1 BEGIN -- Get Campaigns Ids List Per Workgroup and Campaign Type
 	RETURN 0;
 END;
 IF @Option = 2 BEGIN-- Get Campaign complete information per Campaign Type and Campaign Id      
-	IF @CampType = 1 BEGIN-- Campaigns Out      
-		IF @Id IS NOT NULL BEGIN
-			SELECT DISTINCT 
-			CAST(camps.cam_id AS INT) AS Id, camps.cam_descripcion AS Name,
-			isnull(CAST(graph.graphic_id AS INT),1) AS Frame, CAST(1 AS SMALLINT) AS Type,
-			camps.cam_procesando IsStarted, 
-			ISNULL(a.AreaName, '''') AS Area, 
-			CAST(ISNULL(camps.IDArea, 0) AS INT) as AreaId,
-			CAST(CASE WHEN camps.progDial = 3 THEN 6 ELSE 0 END as [tinyint]) as InboundType,
-			CASE WHEN ivrScript <> 0 AND callsBySurvey <> 0 THEN 8 when camps.CampType = 9 then 10  ELSE isnull(camps.CampType,0) END as OutboundType,
-			ISNULL(extended.zipCodeSchedule, 0) AS ZipCodeSchedule,
-			a.ToolsTransfer         
-			FROM ccCamps camps
-			LEFT JOIN ccRIACampsGraph graph ON camps.cam_id = graph.cam_id
-			LEFT JOIN ccRIACat_Areas a ON a.IDArea = camps.IDArea
-			LEFT JOIN ccCampsExtend extended ON camps.cam_id = extended.cam_id
-			WHERE camps.cam_id = @Id
-			ORDER BY camps.cam_descripcion ASC;
-		END;
-		ELSE BEGIN
-			RAISERROR(''ERROR. No existe campañas de salida con el id especificado'', 18, 1);
-		END;
-	END;
-	ELSE IF @CampType = 0 -- Campaigns In (ACD)
-		BEGIN
-			IF @Id IS NOT NULL
-				BEGIN
-					SELECT DISTINCT 
-					CAST(inb.Inbound_id AS INT) AS Id, inb.descripcion AS Name,isnull( CAST(graph.graphic_id AS INT),1) AS Frame, CAST(0 AS SMALLINT) AS Type, CAST(inb.STATUS AS BIT) IsStarted, 
-					ISNULL(a.AreaName, '''') AS Area, 
-							CAST(ISNULL(inb.IDArea, 0) AS INT) as AreaId, inb.chat AS InboundType, 0 as OutboundType,
-							a.ToolsTransfer
-					FROM ccInbound inb
-							LEFT JOIN ccRIAInboundGraph graph ON inb.Inbound_id = graph.Inbound_id
-							LEFT JOIN ccRIACat_Areas a ON a.IDArea = inb.IDArea
-					WHERE inb.Inbound_id = @Id
-							ORDER BY inb.descripcion ASC;
-			END;
-			ELSE
-				BEGIN
-					RAISERROR(''ERROR. No existe campañas de entrada con el id especificado'', 18, 1);
-			END;
-	END;
-	RETURN 0;
+    IF @CampType = 1 BEGIN-- Campaigns Out      
+        IF @Id IS NOT NULL BEGIN
+            DECLARE @HasWorkingRowsForCampaign BIT = 0, @HasTemplatePaused   bit = 0,
+        @HasTemplateDisabled bit = 0;
+
+            IF EXISTS (
+                SELECT 1
+                FROM dbo.ccoWAWorkingTable AS cwwt
+                WHERE cwwt.camId = @Id
+            )
+            BEGIN
+                SET @HasWorkingRowsForCampaign = 1;
+            END
+
+            IF EXISTS (
+                SELECT 1
+                FROM dbo.ccoWAWorkingTable cwwt
+                JOIN dbo.ccWhatsAppOutSource cwaos  ON cwaos.WAOut_Id = cwwt.WAOut_id
+                JOIN dbo.ccMetaWAOutboundTemplates cmwot ON cmwot.Id = cwaos.TemplateId
+                WHERE cwaos.camId = @Id AND cmwot.Status = ''PAUSED''
+            ) SET @HasTemplatePaused = 1;
+
+            IF EXISTS(
+               SELECT 1 FROM dbo.ccMetaWAOutboundTemplates AS cmwot 
+                INNER JOIN dbo.ccMetaWhatsAppNumbers AS cmwan 
+                ON cmwan.MetaId = cmwot.MetaId
+                WHERE cmwan.Cam_Id = @Id AND cmwot.Status = ''DISABLED''
+				AND cmwot.StatusCW = 1
+            )
+            BEGIN
+                SET @HasTemplateDisabled = 1;
+            END
+
+            SELECT DISTINCT 
+            CAST(camps.cam_id AS INT) AS Id, camps.cam_descripcion AS Name,
+            isnull(CAST(graph.graphic_id AS INT),1) AS Frame, CAST(1 AS SMALLINT) AS Type,
+            camps.cam_procesando IsStarted, 
+            ISNULL(a.AreaName, '''') AS Area, 
+            CAST(ISNULL(camps.IDArea, 0) AS INT) as AreaId,
+            CAST(CASE WHEN camps.progDial = 3 THEN 6 ELSE 0 END as [tinyint]) as InboundType,
+            CASE WHEN ivrScript <> 0 AND callsBySurvey <> 0 THEN 8 when camps.CampType = 9 then 10  ELSE isnull(camps.CampType,0) END as OutboundType,
+            ISNULL(extended.zipCodeSchedule, 0) AS ZipCodeSchedule,
+            a.ToolsTransfer,
+            @HasTemplatePaused AS HasTemplatePaused,
+            @HasTemplateDisabled AS HasTemplateDisabled,
+			@HasWorkingRowsForCampaign AS HasWorkingRowsForCampaign
+            FROM ccCamps camps
+            LEFT JOIN ccRIACampsGraph graph ON camps.cam_id = graph.cam_id
+            LEFT JOIN ccRIACat_Areas a ON a.IDArea = camps.IDArea
+            LEFT JOIN ccCampsExtend extended ON camps.cam_id = extended.cam_id
+            WHERE camps.cam_id = @Id
+            ORDER BY camps.cam_descripcion ASC;
+        END;
+        ELSE BEGIN
+            RAISERROR(''ERROR. No existe campañas de salida con el id especificado'', 18, 1);
+        END;
+    END;
+    ELSE IF @CampType = 0 -- Campaigns In (ACD)
+        BEGIN
+            IF @Id IS NOT NULL
+                BEGIN
+                    SELECT DISTINCT 
+                    CAST(inb.Inbound_id AS INT) AS Id, inb.descripcion AS Name,isnull( CAST(graph.graphic_id AS INT),1) AS Frame, CAST(0 AS SMALLINT) AS Type, CAST(inb.STATUS AS BIT) IsStarted, 
+                    ISNULL(a.AreaName, '''') AS Area, 
+                            CAST(ISNULL(inb.IDArea, 0) AS INT) as AreaId, inb.chat AS InboundType, 0 as OutboundType,
+                            a.ToolsTransfer
+                    FROM ccInbound inb
+                            LEFT JOIN ccRIAInboundGraph graph ON inb.Inbound_id = graph.Inbound_id
+                            LEFT JOIN ccRIACat_Areas a ON a.IDArea = inb.IDArea
+                    WHERE inb.Inbound_id = @Id
+                            ORDER BY inb.descripcion ASC;
+            END;
+            ELSE
+                BEGIN
+                    RAISERROR(''ERROR. No existe campañas de entrada con el id especificado'', 18, 1);
+            END;
+    END;
+    RETURN 0;
 END;
 ELSE IF @Option = 3  BEGIN -- Update OverallTotalNew By Campaign
 
@@ -2729,34 +2763,52 @@ ELSE IF @Option = 11 BEGIN -- Get Campaigns Ids List Per Workgroup and Campaign 
 END;
 
 ELSE IF @Option = 12 BEGIN-- Get All Campaigns complete information per Campaign Type and Campaign Id
-	IF @CampType = 1 -- Campaigns Out
-	BEGIN
-					SELECT DISTINCT 
-					CAST(camps.cam_id AS INT) AS Id, camps.cam_descripcion AS Name, 
-					isnull(CAST(graph.graphic_id AS INT),1) AS Frame, CAST(1 AS SMALLINT) AS Type,
-					camps.cam_procesando IsStarted, a.AreaName AS Area, CAST(a.IDArea as INT) AS AreaId,
-					CAST(CASE WHEN camps.progDial = 3 THEN 6 ELSE 0 END as [tinyint]) as InboundType, 
-					CASE WHEN ivrScript <> 0 AND callsBySurvey <> 0 THEN 8 when camps.CampType = 9 then 10 ELSE isnull(camps.CampType,0) END as OutboundType,
-					ISNULL(extended.zipCodeSchedule, 0) AS ZipCodeSchedule
-		FROM ccCamps camps(NOLOCK)
-		INNER JOIN ccRIACampsGraph graph(NOLOCK) ON camps.cam_id = graph.cam_id
-		INNER JOIN ccRIACat_Areas a(NOLOCK) ON a.IDArea = camps.IDArea
-		LEFT JOIN ccCampsExtend extended(NOLOCK) ON camps.cam_id = extended.cam_id
-		ORDER BY camps.cam_descripcion ASC;
-	END;
-	ELSE
-	BEGIN
-		SELECT DISTINCT CAST(inb.Inbound_id AS INT) AS Id, inb.descripcion AS Name, isnull
-			(CAST(graph.graphic_id AS INT), 1) AS Frame, CAST(0 AS SMALLINT) AS Type, CAST(
-				inb.STATUS AS BIT) IsStarted, a.AreaName AS Area, CAST(a.IDArea AS INT) AS 
-			AreaId, inb.chat AS InboundType, 0 AS OutboundType
-		FROM ccInbound inb(NOLOCK)
-							INNER JOIN ccRIAInboundGraph graph (NOLOCK) ON inb.Inbound_id = graph.Inbound_id
-		INNER JOIN ccRIACat_Areas a(NOLOCK) ON a.IDArea = inb.IDArea
-		ORDER BY inb.descripcion ASC;
-	END;
+    IF @CampType = 1 -- Campaigns Out
+    BEGIN
+        ;WITH StopByCamp AS (
+          SELECT 
+              cwaos.camId,
+              IsStopDueTemplateStatusChange = CAST(
+                  CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END AS BIT
+              )
+          FROM dbo.ccoWAWorkingTable AS cwwt
+          INNER JOIN dbo.ccWhatsAppOutSource AS cwaos
+              ON cwaos.WAOut_Id = cwwt.WAOut_id
+          INNER JOIN dbo.ccMetaWAOutboundTemplates AS cmwot
+              ON cmwot.Id = cwaos.TemplateId
+          WHERE cmwot.Status IN (''PAUSED'', ''DISABLED'')
+          GROUP BY cwaos.camId
+        )
+        
 
-	RETURN 0;
+        SELECT DISTINCT 
+        CAST(camps.cam_id AS INT) AS Id, camps.cam_descripcion AS Name, 
+        isnull(CAST(graph.graphic_id AS INT),1) AS Frame, CAST(1 AS SMALLINT) AS Type,
+        camps.cam_procesando IsStarted, a.AreaName AS Area, CAST(a.IDArea as INT) AS AreaId,
+        CAST(CASE WHEN camps.progDial = 3 THEN 6 ELSE 0 END as [tinyint]) as InboundType, 
+        CASE WHEN ivrScript <> 0 AND callsBySurvey <> 0 THEN 8 when camps.CampType = 9 then 10 ELSE isnull(camps.CampType,0) END as OutboundType,
+        ISNULL(extended.zipCodeSchedule, 0) AS ZipCodeSchedule,
+        ISNULL(sbc.IsStopDueTemplateStatusChange, 0) AS IsStopDueTemplateStatusChange
+        FROM ccCamps camps(NOLOCK)
+        INNER JOIN ccRIACampsGraph graph(NOLOCK) ON camps.cam_id = graph.cam_id
+        INNER JOIN ccRIACat_Areas a(NOLOCK) ON a.IDArea = camps.IDArea
+        LEFT JOIN ccCampsExtend extended(NOLOCK) ON camps.cam_id = extended.cam_id
+        LEFT  JOIN StopByCamp       sbc                   ON sbc.camId = camps.cam_id
+        ORDER BY camps.cam_descripcion ASC;
+    END;
+    ELSE
+    BEGIN
+        SELECT DISTINCT CAST(inb.Inbound_id AS INT) AS Id, inb.descripcion AS Name, isnull
+            (CAST(graph.graphic_id AS INT), 1) AS Frame, CAST(0 AS SMALLINT) AS Type, CAST(
+                inb.STATUS AS BIT) IsStarted, a.AreaName AS Area, CAST(a.IDArea AS INT) AS 
+            AreaId, inb.chat AS InboundType, 0 AS OutboundType
+        FROM ccInbound inb(NOLOCK)
+                            INNER JOIN ccRIAInboundGraph graph (NOLOCK) ON inb.Inbound_id = graph.Inbound_id
+        INNER JOIN ccRIACat_Areas a(NOLOCK) ON a.IDArea = inb.IDArea
+        ORDER BY inb.descripcion ASC;
+    END;
+
+    RETURN 0;
 END;
 
 ELSE IF @Option = 13
@@ -11444,6 +11496,466 @@ IF OBJECT_ID(''tempdb..#ins'') IS NOT NULL
 	IF OBJECT_ID(N''tempdb..#helpTempWhatsApp]'') IS NOT NULL drop table #helpTempWhatsApp
 	'
 	EXEC(@sql)
+
+
+
+	set @process = 'K020035 - Detener envío de plantillas que se pausen o desactiven insert messageStatus'
+        set @sql = 'if not exists (select * from messageStatus where messageStatusId in(22))
+        begin
+			SET IDENTITY_INSERT messageStatus ON
+
+            insert into messageStatus (messageStatusId,name, description,isFinished) values (22,''Canceled by system (status change)'', ''Canceled by system due to template status change.'',1)
+
+			SET IDENTITY_INSERT messageStatus OFF
+
+			DBCC CHECKIDENT (''messageStatus'', RESEED, 22)
+        end'
+        EXEC(@sql)
+
+
+
+		  
+	SET @process = 'K020035 Se elimina SP ccsp_MetaWAOutboundTemplates'
+	SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_MetaWAOutboundTemplates'')
+		begin
+			DROP PROCEDURE ccsp_MetaWAOutboundTemplates;
+		end'
+	EXEC(@sql)
+
+	SET @process = 'K020035 create SP ccsp_MetaWAOutboundTemplates'
+	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_MetaWAOutboundTemplates]
+@action TINYINT = NULL,
+@whatsAppTemplateID BIGINT = 0,
+@id varchar(200) = NULL,
+@Category varchar(50) = NULL,
+@TemplateName varchar(512) = NULL,
+@AllowCategoryChange tinyint = NULL,
+@LanguageCode varchar(10)= NULL,
+@Status varchar(200)= NULL,
+@header nvarchar(max)= null,
+@body nvarchar(max) = null,
+@footer nvarchar(max) = null,
+@buttons nvarchar(max) = null,
+@metaStatus varchar(30) = NULL,
+@FilePath varchar(1024) = null,
+@HistoryLog varchar(max) = null,
+@campId SMALLINT = NULL,
+@UserId SMALLINT = 0,
+@MetaId INT = 0,
+@CreationDate DATETIME = NULL,
+@headerLink nvarchar(max)= null
+AS
+BEGIN
+    IF(@action = 1) -- get template by id
+    BEGIN
+        SELECT 
+        cmwot.Id 
+        ,cmwot.TemplateName AS Name
+        ,cmwot.Status AS Status
+        ,Category AS Category
+        ,ISNULL(cmwot.notes, '''' ) AS Notes
+        ,cmwot.header AS Header
+        ,Body
+        ,cmwot.footer AS Footer
+        ,cmwot.buttons AS Buttons
+        ,cmwot.LanguageCode
+        ,ISNULL(cmwot.quality,0) AS Quality
+        ,cmwot.IsPendingQuality
+        ,cmwot.FilePath
+        ,cmwot.Status AS Status
+        ,cmwot.headerLink AS HeaderLink
+        ,cmwan.Cam_Id AS CamId
+        FROM  dbo.ccMetaWAOutboundTemplates AS cmwot
+        INNER JOIN dbo.ccMetaWhatsAppNumbers AS cmwan
+        ON cmwan.MetaId = cmwot.MetaId
+        WHERE cmwot.Id = @whatsAppTemplateID
+    END
+    ELSE IF(@action = 2)
+    BEGIN
+        SELECT cmwan.MetaId AS Id, cmwan.Number FROM dbo.ccMetaWhatsAppNumbers AS cmwan
+        Left JOIN dbo.ccMetaWhatsAppConfigurations AS cmwac
+        ON cmwan.MetaId = cmwac.Id
+        WHERE cmwan.Status = 1
+    END
+    ELSE IF(@action = 3)
+    BEGIN
+        UPDATE ccMetaWAOutboundTemplates SET StatusCW = 0 WHERE Id = @whatsAppTemplateID
+        SELECT @@ROWCOUNT;
+        RETURN 0;
+    END
+    ELSE IF(@action = 4) --create
+    BEGIN
+        insert into ccMetaWAOutboundTemplates (Id, Category,TemplateName,AllowCategoryChange,LanguageCode,Status,header,body,footer,buttons,FilePath,MetaId,StatusCW,CreationDate,headerLink)
+        values (@Id, @Category,@TemplateName,@AllowCategoryChange,@LanguageCode,@Status,@header,@body,@footer,@buttons,@FilePath,@MetaId,1,@CreationDate,@headerLink)
+    END
+    ELSE IF(@action = 5) -- Get Template Config By Id
+    BEGIN
+        SELECT n.WAAccountId, n.Token, c.Url as [Url], t.TemplateName 
+        FROM ccMetaWAOutboundTemplates t
+        INNER JOIN ccMetaWhatsAppNumbers n on t.MetaId = n.MetaId
+        left JOIN ccMetaWhatsAppConfigurations c on c.Id = 2
+        WHERE t.Id = @whatsAppTemplateID
+        RETURN 0;
+    END
+    ELSE IF(@action = 6) -- update status to delete
+    BEGIN
+        DECLARE @newStatus bit = 1;
+        IF(@metaStatus = ''DELETED'')
+        BEGIN
+            SET @newStatus = 0
+        END
+        UPDATE ccMetaWAOutboundTemplates SET 
+        [Status] = @metaStatus, 
+        StatusCW = @newStatus,
+        RemovalDate = ISNULL(RemovalDate, GETDATE())
+        WHERE Id = @whatsAppTemplateID
+        AND [StatusCW] = 1;
+        SELECT @@ROWCOUNT;
+        RETURN 0;
+    END
+    ELSE IF(@action = 7) -- Get template campaigns associated
+    BEGIN
+        SELECT ISNULL(n.Cam_Id,0) as Cam_Id, ISNULL(n.Inbound_Id,0) AS Inbound_Id FROM ccMetaWAOutboundTemplates t
+        INNER JOIN ccMetaWhatsAppNumbers n on t.MetaId = n.MetaId
+        left JOIN ccMetaWhatsAppConfigurations c on n.MetaId = c.Id
+        WHERE t.Id = @whatsAppTemplateID
+        RETURN 0;
+    END
+    ELSE IF (@action = 8) -- update template
+    BEGIN
+        DECLARE @tableHistoryLog TABLE (Id INT, Value VARCHAR(MAX))
+        DECLARE @areaName VARCHAR(50),
+                @login VARCHAR(50)
+
+        SELECT
+            @areaName = ca.AreaName,
+            @login = cu.Login
+        FROM ccUsers cu
+        INNER JOIN ccRIACat_Areas ca with(nolock) ON cu.IDArea = ca.IDArea
+        WHERE cu.User_id = @UserId
+
+        INSERT INTO @tableHistoryLog 
+        SELECT tb.Id, tb.Value
+        FROM dbo.fn_RIASplitDelimited(@HistoryLog, ''|'') tb
+
+
+        -- insert into activity log table and update template data
+        IF (@header IS NULL OR LEN(@header) = 0) AND (SELECT LEN(ISNULL(header,'''')) FROM ccMetaWAOutboundTemplates WHERE Id = @Id) > 0 -- when header is null or '''' and before update header contains data
+        BEGIN
+            INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+            VALUES (@areaName, GETDATE(), @login, 122, 20, ''T&EDIT_TEMPLATE_HEADER'',''COMMON_NONE_O'',@TemplateName)
+        END
+        ELSE IF (@header IS NOT NULL OR LEN(@header) <> 0) AND (SELECT header FROM ccMetaWAOutboundTemplates WHERE Id = @Id) IS NULL -- when header isnt null or '''' and before update header is null
+        BEGIN
+            INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+            SELECT
+                @areaName, GETDATE(), @login, 122, 20, ''T&EDIT_TEMPLATE_HEADER'', Value, @TemplateName
+            FROM @tableHistoryLog
+            WHERE Id = 2 
+        END
+
+        IF (@footer IS NULL OR LEN(@footer) = 0) AND (SELECT LEN(ISNULL(footer,'''')) FROM ccMetaWAOutboundTemplates WHERE Id = @Id) > 0 -- when footer is null or '''' and before update footer contains data
+        BEGIN
+            INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+            VALUES (@areaName, GETDATE(), @login, 122, 20, ''T&EDIT_TEMPLATE_FOOTER'',''COMMON_NONE_O'',@TemplateName)
+        END
+        ELSE IF (@footer IS NOT NULL OR LEN(@footer) <> 0) AND (SELECT footer FROM ccMetaWAOutboundTemplates WHERE Id = @Id) IS NULL -- when footer isnt null or '''' and before update footer is null
+        BEGIN
+            INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+            SELECT
+                @areaName, GETDATE(), @login, 122, 20, ''T&EDIT_TEMPLATE_FOOTER'', Value, @TemplateName
+            FROM @tableHistoryLog
+            WHERE Id = 4 
+        END
+
+        IF (@buttons IS NULL OR LEN(@buttons) = 0) AND (SELECT LEN(ISNULL(buttons,'''')) FROM ccMetaWAOutboundTemplates WHERE Id = @Id) > 0 -- when buttons is null or '''' and before update buttons contains data
+        BEGIN
+            INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+            VALUES (@areaName, GETDATE(), @login, 122, 20, ''T&EDIT_TEMPLATE_BUTTONS'',''COMMON_NONE_O'',@TemplateName)
+        END
+        ELSE IF (@buttons IS NOT NULL OR LEN(@buttons) <> 0) AND (SELECT buttons FROM ccMetaWAOutboundTemplates WHERE Id = @Id) IS NULL -- when buttons isnt null or '''' and before update buttons is null
+        BEGIN
+            INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+            SELECT
+                @areaName, GETDATE(), @login, 122, 20, ''T&EDIT_TEMPLATE_BUTTONS'', Value, @TemplateName
+            FROM @tableHistoryLog
+            WHERE Id = 5
+        END
+        
+        EXEC InsertLogAdminGalatea @action=1, @tableName=''ccMetaWAOutboundTemplates'', @columnNameId=''Id'', @valueId= @Id, @userId= 1
+        Create table #ccMetaWAOutboundTemplates 
+        (
+            columnInfo VARCHAR(MAX),
+            dataInfo VARCHAR(MAX),
+            identifierInfo VARCHAR(MAX)
+        )
+
+        UPDATE ccMetaWAOutboundTemplates
+        SET Category = @Category,
+            header = @header,
+            body = @body,
+            footer = @footer,
+            buttons = @buttons,
+            FilePath = @FilePath,
+            Status = ''PENDING'',
+            headerLink = @headerLink
+        WHERE Id = @Id
+
+        EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccMetaWAOutboundTemplates'', @columnNameId = ''Id'', @valueId = @Id, @userId = 1,  @tableTemp=''#ccMetaWAOutboundTemplates'';
+
+        INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+        SELECT
+            @areaName,
+            GETDATE(),
+            @login,
+            122,
+            20,
+            cc.identifierInfo,
+            tb1.Value,
+            @TemplateName
+        FROM #ccMetaWAOutboundTemplates cc
+        INNER JOIN  @tableHistoryLog  tb1 ON cc.columnInfo = (CASE 
+                                                                WHEN tb1.Id = 1 THEN ''Category''
+                                                                WHEN tb1.Id = 2 THEN ''header'' 
+                                                                WHEN tb1.Id = 3 THEN ''body'' 
+                                                                WHEN tb1.Id = 4 THEN ''footer''
+                                                                WHEN tb1.Id > 4 THEN ''buttons''
+                                                                END)
+        WHERE cc.identifierInfo is not null
+
+        EXEC InsertLogAdminGalatea @action=3, @tableName = ''ccMetaWAOutboundTemplates'', @columnNameId = ''Id'', @valueId = @Id, @userId = 1,  @tableTemp=''#ccMetaWAOutboundTemplates'';
+    END
+    else IF(@action = 9) -- get templates by phone number
+    BEGIN
+        ;WITH tb1 as(
+            SELECT
+                gal.Target AS TemplateName,
+                MAX(gal.ActivityDate) AS Date
+            FROM ccGalateaActivityLog gal 
+            WHERE gal.OperationId = 122 
+            AND gal.ModuleId = 20 
+            AND CAST(gal.ActivityDate AS DATE) >= DATEADD(DD,-30, CAST(GETDATE() AS DATE))
+            GROUP BY gal.Target, CAST(gal.ActivityDate AS DATE)
+        )
+        ,TemplateIsEditable AS (
+            SELECT
+                tb1.TemplateName,
+                CASE WHEN COUNT(*) >= 10 THEN 2 WHEN MAX(tb1.Date) >= DATEADD(HOUR, -24, GETDATE()) THEN 1 ELSE 0 END AS IsEditable
+            FROM tb1
+            GROUP BY tb1.TemplateName
+        )
+        SELECT 
+        cmwot.Id 
+        ,cmwot.TemplateName AS Name
+        ,cmwot.Status AS Status
+        ,Category AS Category
+        ,ISNULL(cmwot.notes, '''' ) AS Notes
+        ,cmwot.header AS Header
+        ,Body
+        ,cmwot.footer AS Footer
+        ,cmwot.buttons AS Buttons
+        ,cmwot.LanguageCode
+        ,ISNULL(cmwot.quality,0) AS Quality
+        ,cmwot.IsPendingQuality
+        ,ISNULL(tie.IsEditable, 0) AS IsEditable
+        ,cmwot.FilePath
+        ,cmwot.CreationDate
+        FROM  dbo.ccMetaWAOutboundTemplates cmwot
+        LEFT JOIN TemplateIsEditable tie ON tie.TemplateName = CAST(cmwot.TemplateName AS VARCHAR(MAX))
+        WHERE cmwot.MetaId = @whatsAppTemplateID
+        AND (cmwot.StatusCW = 1 OR cmwot.Status <> ''DELETED'')
+    END
+    ELSE IF(@action = 10) -- Check if an other load is executing for the campaign
+    BEGIN
+        SELECT CASE WHEN COUNT(crl.load_id) > 0 THEN CONVERT(BIT , 1) ELSE CONVERT(BIT, 0) END AS IsProcessExecuting FROM dbo.ccRIALoading AS crl
+        WHERE crl.cam_id = @campId AND crl.state IN (0,2) AND crl.loadType = 3;
+    END
+    ELSE IF(@action = 11) --Check if the campaign was eliminated or desasigned
+    BEGIN
+        DECLARE @campaignIsEliminateDesasigned BIT = 0;
+        DECLARE @idAreaNull SMALLINT = 0;
+
+        SELECT  @idAreaNull = cc.IDArea FROM dbo.ccCamps AS cc WHERE cc.cam_id = @campId
+
+        IF(@idAreaNull IS NULL)
+        BEGIN
+            SET @campaignIsEliminateDesasigned = 1; --La campaña fue eliminada
+        END
+
+        IF NOT EXISTS(SELECT TOP 1 crcew.IdCampEsp FROM dbo.ccRIACampEspWG AS crcew INNER JOIN dbo.ccRIAWorkGroupUsers AS crwgu
+        ON crwgu.IDWG = crcew.IDWG
+        WHERE crwgu.User_id = @UserId AND crcew.Tipo = 1 AND crcew.IdCampEsp = @campId)
+        BEGIN 
+            SET @campaignIsEliminateDesasigned = 1; --La campaña fue desasignada del grupo de trabajo
+        END
+
+        SELECT @campaignIsEliminateDesasigned;
+    END
+    ELSE IF(@action = 12) --Get new numbers loaded in  ccWhatsAppOutSource 
+    BEGIN
+        SELECT cwt.Callkey, cwt.WAOut_id FROM dbo.ccoWAWorkingTable AS cwt with(nolock)
+        WHERE cwt.CamId = @campId AND cwt.WaStatus = 0
+        UNION
+        SELECT cwaos.CallKey, cwaos.WAOut_Id FROM dbo.ccWhatsAppOutSource AS cwaos with(nolock,index(IX_WASource_1))
+        WHERE cwaos.camId = @campId AND cwaos.Status = 0
+    END
+    IF(@action = 13) -- Get templates by campaign number assigned
+    BEGIN
+        SELECT 
+        cmwot.Id 
+        ,cmwot.TemplateName AS Name
+        ,cmwot.Status AS Status
+        ,Category AS Category
+        ,ISNULL(cmwot.notes, '''' ) AS Notes
+        ,cmwot.header AS Header
+        ,Body
+        ,cmwot.footer AS Footer
+        ,cmwot.buttons AS Buttons
+        ,cmwot.LanguageCode
+        ,ISNULL(cmwot.quality,0) AS Quality
+        ,cmwot.IsPendingQuality
+        ,cmwot.FilePath
+        ,cmwot.CreationDate
+        FROM  dbo.ccMetaWAOutboundTemplates AS cmwot
+        INNER JOIN dbo.ccMetaWhatsAppNumbers AS cmwan ON 
+        cmwot.MetaId = cmwan.MetaId
+        WHERE cmwot.StatusCW = 1 AND cmwan.Cam_Id = @campId AND cmwot.Status = ''APPROVED''
+    END
+    ELSE IF (@action = 14) -- check if campaing exists
+    BEGIN
+        IF EXISTS(SELECT 1 FROM dbo.ccMetaWAOutboundTemplates cmwot WHERE cmwot.Id = @whatsAppTemplateID)
+            SELECT 1
+        ELSE
+            SELECT 0
+    END
+END'
+	EXEC(@sql)
+
+			  
+	SET @process = 'K020035 Se elimina SP ccspOutboundWhatsApp'
+	SET @sql = 'if exists (select * from sys.procedures where name = N''ccspOutboundWhatsApp'')
+		begin
+			DROP PROCEDURE ccspOutboundWhatsApp;
+		end'
+	EXEC(@sql)
+
+	SET @process = 'K020035 create SP ccspOutboundWhatsApp'
+	SET @sql = 'CREATE procedure [dbo].[ccspOutboundWhatsApp]
+@action int,
+@camId int = null,
+@campType int = null,
+@templateName varchar(512)=null,
+@waMsgIds varchar(max)=null
+as
+if @action=1 begin
+declare @Url as varchar(50)
+set @Url = (select Url from ccMetaWhatsAppConfigurations where Id=1)
+
+IF @camId IS NULL AND @campType IS NULL
+BEGIN
+    select 
+        distinct 
+        cast(c. cam_id as int) as CamId,
+        cam_descripcion as [Name],
+        1 AS CampType,
+        cam_procesando as [Start],
+        Number as PhoneNumber, 
+        REPLACE(@Url, ''phoneId'', PhoneNumberId) as Url, 
+        Token,
+        CAST(c.IDArea AS int) as AreaId
+    from ccCamps c with(nolock)
+    left join ccCampsNvosCB w with(nolock) on c.cam_id = w.id
+    left join  ccCampsHorarios s ON s.cam_id = c.cam_id
+    left join ccMetaWhatsAppNumbers wn on wn.cam_id = c.cam_id
+    WHERE CampType=5 AND c.IDArea IS NOT NULL
+    UNION
+    SELECT -- load acd
+        DISTINCT 
+        CAST(ci.Inbound_id AS INT) AS CamId,
+        ci.descripcion AS [Name],
+        0 AS CampType,
+        CAST(ci.Status AS BIT) AS [Start],
+        cmw.Number AS PhoneNumber,
+        REPLACE(@Url, ''phoneId'', cmw.PhoneNumberId) AS Url,
+        cmw.Token AS Token,
+        CAST(ci.IDArea AS int) as AreaId
+    FROM ccInbound ci WITH(NOLOCK)
+    LEFT JOIN ccInboundHorarios cih ON cih.Inbound_id = ci.Inbound_id
+    LEFT JOIN ccMetaWhatsAppNumbers cmw ON cmw.Inbound_Id = ci.Inbound_id
+    WHERE ci.chat = 5  AND ci.IDArea IS NOT NULL
+END
+ELSE IF @campType IS NOT NULL
+BEGIN
+    IF @campType = 0
+    BEGIN
+        SELECT -- load acd
+            DISTINCT 
+            CAST(ci.Inbound_id AS INT) AS CamId,
+            ci.descripcion AS [Name],
+            0 AS CampType,
+            CAST(ci.Status AS BIT) AS [Start],
+            cmw.Number AS PhoneNumber,
+            REPLACE(@Url, ''phoneId'', cmw.PhoneNumberId) AS Url,
+            cmw.Token AS Token,
+            CAST(ci.IDArea AS int) as AreaId
+        FROM ccInbound ci WITH(NOLOCK)
+        LEFT JOIN ccInboundHorarios cih ON cih.Inbound_id = ci.Inbound_id
+        LEFT JOIN ccMetaWhatsAppNumbers cmw ON cmw.Inbound_Id = ci.Inbound_id
+        WHERE ci.chat = 5  AND ci.IDArea IS NOT NULL AND (@camId IS NULL or @camId=0 OR ci.Inbound_id = @camId)
+    END
+    ELSE
+    BEGIN
+        select 
+            distinct 
+            cast(c. cam_id as int) as CamId,
+            cam_descripcion as [Name],
+            1 AS CampType,
+            cam_procesando as [Start],
+            Number as PhoneNumber, 
+            REPLACE(@Url, ''phoneId'', PhoneNumberId) as Url, 
+            Token,
+            CAST(c.IDArea AS int) as AreaId
+        from ccCamps c with(nolock)
+        left join ccCampsNvosCB w with(nolock) on c.cam_id = w.id
+        left join  ccCampsHorarios s ON s.cam_id = c.cam_id
+        left join ccMetaWhatsAppNumbers wn on wn.cam_id = c.cam_id
+        WHERE CampType=5 AND c.IDArea IS NOT NULL AND(@camId IS NULL or @camId=0 OR c.cam_id = @camId)
+    END
+END
+
+end
+else if @action=2 begin -- cargar valores del template para envio manual
+    SELECT TOP 1
+        A.id AS Id
+       ,A.LanguageCode AS LanguageCode
+       ,B.Number AS Number
+       ,ISNULL(A.header, '''') AS Header
+       ,ISNULL(A.body, '''') AS Body
+       ,ISNULL(A.footer, '''') AS Footer
+       ,ISNULL(A.buttons, '''') AS Buttons
+       ,ISNULL(A.headerLink, '''') AS HeaderLink
+    FROM ccMetaWAOutboundTemplates A
+    INNER JOIN ccMetawhatsAppNumbers B ON B.MetaId = A.MetaId
+    WHERE A.TemplateName = @templateName
+    AND B.Cam_Id = @camId
+
+end
+else if @action=3 begin 
+declare @sql varchar(max)
+    set @sql=''delete from ccoWAWorkingTable with(rowlock) where WAOut_id in(''+@waMsgIds+'')''
+    exec (@sql)
+END
+ELSE IF @action = 4 BEGIN
+    SELECT cmwot.Id AS Message_Template_Id, cmwot.Status AS Event  FROM dbo.ccMetaWAOutboundTemplates AS cmwot
+    INNER JOIN dbo.ccMetaWhatsAppNumbers AS cmwan
+    ON cmwan.MetaId = cmwot.MetaId
+    WHERE cmwot.Status IN (''PAUSED'', ''DISABLED'') AND cmwan.Cam_Id = @camId
+END
+'
+	EXEC(@sql)
+
+
+
 
 ------------------------------------------ END MAGV 20250905.0.2   ------------------------------
 

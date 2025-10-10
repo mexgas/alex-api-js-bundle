@@ -11959,8 +11959,164 @@ END
 
 ------------------------------------------ END MAGV 20250905.0.2   ------------------------------
 
-	SET @process = ''
-	SET @sql = ''
+	SET @process = 'Alter SP ccsp_GalateaMenuReporte Correcion agregar submenu del submenu'
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaMenuReporte]
+    @action SMALLINT,
+    @Rol_id VARCHAR(MAX) = NULL,
+    @id_User VARCHAR(MAX) = NULL,   
+    @menu_id VARCHAR(MAX) = NULL,
+    @ids_list VARCHAR(MAX) = NULL,
+    @IsAdminsIds BIT = NULL,
+    @RowsAffected INT = @@ROWCOUNT
+AS
+
+BEGIN
+    DECLARE @userId TABLE (userId INT PRIMARY KEY);
+    DECLARE @menuIds TABLE (menu_id INT, type INT, PRIMARY KEY(menu_id,type));
+    DECLARE @ccmenusAndUserId TABLE (menu_id INT, userId INT, type INT);
+    SET NOCOUNT ON;
+
+    IF @action in (3,4) begin
+     -- Poblar los IDs de usuario
+        INSERT INTO @userId
+        SELECT Value 
+        FROM dbo.fn_RIASplitDelimited(@ids_list, '','');
+
+        -- Poblar los IDs de menú
+        INSERT INTO @menuIds
+        SELECT Value, 3 
+        FROM dbo.fn_RIASplitDelimited(@menu_id, '','');
+
+        ;WITH menusWithSubMenu AS (
+                SELECT A.menu_id, A.type 
+                FROM ccMenus A
+                INNER JOIN @menuIds B ON A.parent = B.menu_id AND A.type = B.type
+                UNION
+                SELECT A.menu_id, A.type 
+                FROM ccMenus A
+                INNER JOIN @menuIds B ON A.menu_id = B.menu_id AND A.type = B.type
+            )
+
+        insert into @ccmenusAndUserId
+        SELECT M.menu_id, U.userId,  M.type
+        FROM @userId U
+        CROSS JOIN menusWithSubMenu M       
+
+    end
+        
+    IF @action = 1
+    --Busca el id rol y regresa todos los menu id que tenga relacionados
+    BEGIN
+        IF @IsAdminsIds = 0
+        BEGIN
+            SELECT distinct CAST(menu_id as int) as MenuID --0 as RolID, 0 as type
+            FROM ccMenuRol
+            WHERE (Rol_id IN(Select Value from dbo.fn_RIASplitDelimited(@Rol_id, '','')))
+        END
+        ELSE
+        BEGIN
+            SELECT DISTINCT CAST(id_Menu AS INT) as MenuID
+            FROM ccMenuUser 
+            WHERE (id_User = @id_User) and type = 3 and id_Menu not in (1000, 1010);
+        END
+    END;
+
+    IF @action = 2
+    --Manda la información faltante para que el Front sepa todos los menus
+    BEGIN
+       
+        SELECT CAST(menu_id as int) as MenuID, menu_descrip as MenuDesc, CAST(parent as int) as Parent
+        FROM ccMenus 
+        WHERE parent IN (
+            2000, 3000, 3140, 4000, 3130, 10000, 11000, 12000, 
+            6000, 8000, 8050, 8060, 8080, 7000, 13000, 14000
+        )
+        AND type = 3
+        AND menu_id NOT IN (2130, 12015, 12017, 8083, 7230, 13030)
+    END;
+
+    ELSE IF @action = 3
+    --Guarda información ya sea en la tabla ccMenuUser o ccMenuRol
+    BEGIN        
+        IF @IsAdminsIds  = 0
+        BEGIN          
+            INSERT INTO ccMenuRol(menu_id, Rol_id, type)
+            select A.menu_id,A.userId as Rol_id,A.type  from @ccmenusAndUserId A
+            left join ccMenuRol M on A.menu_id=M.menu_id and A.type=M.type and A.userId=M.Rol_id
+            where M.Rol_id is null
+
+            -- Determinar el resultado directamente con @@ROWCOUNT
+            SELECT CASE 
+                WHEN @@ROWCOUNT > 0 THEN 1 -- Se insertaron filas
+                WHEN (LEN(@ids_list) - LEN(REPLACE(@ids_list, '','', ''''))) = 0 THEN -1 -- Solo un id en la lista, pero sin cambios
+                ELSE -2 -- Múltiples ids, pero sin cambios
+            END AS Result;
+        END
+        ELSE
+        BEGIN
+                     
+            insert into ccMenuUser(id_User,id_Menu,type)
+            select A.userId,A.menu_id,A.type  from @ccmenusAndUserId A
+            left join ccMenuUser M on A.menu_id=M.id_Menu and A.type=M.type and A.userId=M.id_User
+            where M.id_Menu is null
+
+
+            -- Determinar el resultado directamente con @@ROWCOUNT
+            SELECT CASE 
+                WHEN @@ROWCOUNT > 0 THEN 1 -- Se insertaron filas
+                WHEN (LEN(@ids_list) - LEN(REPLACE(@ids_list, '','', ''''))) = 0 THEN -1 -- Solo un id en la lista, pero sin cambios
+                ELSE -2 -- Múltiples ids, pero sin cambios
+            END AS Result;
+        END
+    END;
+
+
+ELSE IF @action = 4
+    --Elimina información ya sea en la tabla ccMenuUser o ccMenuRol
+    BEGIN
+        IF @IsAdminsIds = 0
+        BEGIN
+            Delete M from @ccmenusAndUserId A
+            left join ccMenuRol M on A.menu_id=M.menu_id and A.type=M.type and A.userId=M.Rol_id                     
+
+            -- Determinar el resultado directamente con @@ROWCOUNT
+            SELECT CASE 
+                WHEN @@ROWCOUNT > 0 THEN 1 -- Se eliminaron filas
+                WHEN (LEN(@ids_list) - LEN(REPLACE(@ids_list, '','', ''''))) = 0 THEN -1 -- Solo un id en la lista, pero sin cambios
+                ELSE -2 -- Múltiples ids, pero sin cambios
+            END AS Result;
+        END
+        ELSE
+        BEGIN
+            delete M from @ccmenusAndUserId A
+            left join ccMenuUser M on A.menu_id=M.id_Menu and A.type=M.type and A.userId=M.id_User            
+         
+            -- Determinar el resultado directamente con @@ROWCOUNT
+            SELECT CASE 
+                WHEN @@ROWCOUNT > 0 THEN 1 -- Se eliminaron filas
+                WHEN (LEN(@ids_list) - LEN(REPLACE(@ids_list, '','', ''''))) = 0 THEN -1 -- Solo un id en la lista, pero sin cambios
+                ELSE -2 -- Múltiples ids, pero sin cambios
+            END AS Result;
+        END
+    END;
+    IF @action = 5
+    --Busca el id rol y regresa todos los menu id que tenga relacionados
+    BEGIN
+        IF @IsAdminsIds = 0
+        BEGIN
+            SELECT distinct CAST(menu_id as int) as MenuID --0 as RolID, 0 as type
+            FROM ccMenuRol
+            WHERE (Rol_id IN(Select Value from dbo.fn_RIASplitDelimited(@ids_list, '','')))
+        END
+        ELSE
+        BEGIN
+            SELECT DISTINCT CAST(id_Menu AS INT) as MenuID
+            FROM ccMenuUser 
+            WHERE (id_User = @ids_list) and type = 3 and id_Menu not in (1000, 1010);
+        END
+    END;
+END;
+'
 	EXEC(@sql)
 
 	SET @process = ''

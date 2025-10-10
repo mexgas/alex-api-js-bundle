@@ -6,7 +6,7 @@ Author: Carlos Eduardo Muñoz Carbajal
 Date: 2025/10/08
 Description: Sprint 4 - Agente Luis
 Database: CCenterRia
-Required version: 127.20251008.0.0
+Required version: 127.2
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
 SET NOCOUNT ON
@@ -134,7 +134,7 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 
     SET @process = 'Adding new permissions to manage and view virtual agents modules'
     SET @sql = '
-		IF NOT EXISTS(SELECT * FROM ccPermissions WHERE PermissionId = 10044)
+		IF NOT EXISTS(SELECT * FROM ccPermissions WHERE Permissions_Id = 10044)
         BEGIN
             INSERT INTO ccPermissions VALUES (
                 10044,
@@ -147,7 +147,7 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
                 1)
         END
 
-        IF NOT EXISTS(SELECT * FROM ccPermissions WHERE PermissionId = 10045)
+        IF NOT EXISTS(SELECT * FROM ccPermissions WHERE Permissions_Id = 10045)
         BEGIN
             INSERT INTO ccPermissions VALUES (
                 10045,
@@ -202,7 +202,7 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 	 '
     EXEC(@sql)
 
-    	SET @process = 'Modules and operations are added for the virtual agent''s activity history.'
+    SET @process = 'Modules and operations are added for the virtual agent''s activity history.'
 
     SET @sql = '
 		IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 169)
@@ -494,25 +494,19 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 	 '
     EXEC(@sql)
 
-    SET @process = 'Drop function fn_translatePermissionsIds_TVF if exists'
+   SET @process = 'Drop function fn_translatePermissionsIds_TVF if exists'
 
 	SET @sql = '
-		IF EXISTS (SELECT * FROM sys.objects 
-				   WHERE type IN (''IF'', ''TF'') 
-				   AND name = N''fn_translatePermissionsIds_TVF'')
+		IF EXISTS (SELECT * FROM sys.objects WHERE name = N''fn_translatePermissionsIds_TVF'')
 		BEGIN
 			DROP FUNCTION dbo.fn_translatePermissionsIds_TVF;
-		END';
+		END;
+		';
 	EXEC(@sql);
 
 	SET @process = 'Added function fn_translatePermissionsIds_TVF for reading permissions in activity history'
 
     SET @sql = '
-		GO
-		SET ANSI_NULLS ON
-		GO
-		SET QUOTED_IDENTIFIER ON
-		GO
 		-- =============================================
 		-- Author:      Juan J. Medina
 		-- Create date: 02/10/2025
@@ -525,7 +519,7 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 		--   @lang: 0=Spanish, 1=English, 2=Portuguese (default 1)
 		-- Return: table with a single row and column [Message]
 		-- =============================================
-		CREATE FUNCTION [dbo].[fn_translatePermissionsIds_TVF]
+		CREATE FUNCTION [fn_translatePermissionsIds_TVF]
 		(
 			@Ids NVARCHAR(MAX),
 			@lang int
@@ -961,16 +955,16 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
     SET @process = 'Drop Procedure [ccsp_ManageQuantumDispositions] '
 
 	SET @sql = '
-		IF EXISTS (SELECT * from sys.procedures WHERE name = N''[ccsp_ManageQuantumDispositions]'')
+		IF EXISTS (SELECT * from sys.procedures WHERE name = N''ccsp_ManageQuantumDispositions'')
 		BEGIN
-			DROP PROCEDURE dbo.[ccsp_ManageQuantumDispositions];
+			DROP PROCEDURE ccsp_ManageQuantumDispositions;
 		END'
 	EXEC(@sql);
 
 	SET @process = 'Actions are added for quantum endpoints.'
 
     SET @sql = '
-		CREATE PROCEDURE [dbo].[ccsp_ManageQuantumDispositions]
+		CREATE PROCEDURE ccsp_ManageQuantumDispositions
 				@Action INT,
 				@CampId INT = NULL,
 				@AgentId INT = NULL,
@@ -1048,19 +1042,19 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 	 '
     EXEC(@sql)
 
-    SET @process = 'Drop Procedure [ccsp_VirtualAgents] '
+   	 SET @process = 'Drop Procedure [ccsp_VirtualAgents] '
 
 	SET @sql = '
-		IF EXISTS (SELECT * from sys.procedures WHERE name = N''[ccsp_VirtualAgents]'')
+		IF EXISTS (SELECT * from sys.procedures WHERE name = N''ccsp_VirtualAgents'')
 		BEGIN
-			DROP PROCEDURE dbo.ccsp_VirtualAgents;
+			DROP PROCEDURE ccsp_VirtualAgents;
 		END'
 	EXEC(@sql);
 
 	SET @process = 'Actions are added for the creation, viewing, and editing flow of virtual agent models.'
 
     SET @sql = '
-		CREATE PROCEDURE [dbo].[ccsp_VirtualAgents]
+		CREATE PROCEDURE ccsp_VirtualAgents
 		@action INT = 0,
 
 		@idVirtualAgent INT = 0,
@@ -1525,7 +1519,7 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 					ISNULL(ReplyNoUnderstanding,'''') As ReplyNoUnderstanding,
 					ISNULL(language,0) As language,
 					ISNULL(responseTone,0) As responseTone,
-					ISNULL(roleName,'''') As RoleName,
+					ISNULL(roleName,'''') As RolName,
 					ISNULL(responseLength,0) As responseLength,
 					ISNULL(quantumRoleId,0) As quantumRolId,
 					ISNULL(objective,'''') As objective,
@@ -1759,6 +1753,7 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 		END	
 	 '
     EXEC(@sql)
+
     ------------------------------------- END JUAN MEDINA -------------------------------------
 
 	

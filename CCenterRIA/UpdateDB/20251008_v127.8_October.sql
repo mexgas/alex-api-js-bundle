@@ -232,16 +232,24 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 	 '
     EXEC(@sql)
 
-    SET @process = 'Voices are added for the virtual agent in English and Portuguese.'
+    SET @process = 'Add column Language'
     SET @sql = '
         IF COL_LENGTH(''ccVirtualAgentVoices'', ''Language'') IS NULL
         BEGIN
             ALTER TABLE ccVirtualAgentVoices
             ADD Language INT NULL;
         END;
+		'
+	EXEC(@sql);
 
-        UPDATE ccVirtualAgentVoices SET Language = 0
+	SET @process = 'Update Language in Alma and Luis'
+	SET @sql = '
+        UPDATE ccVirtualAgentVoices SET Language = 0 WHERE name = ''Alma'' OR name = ''Luis''
+		'
+	EXEC(@sql);
 
+	SET @process = 'Voices are added for the virtual agent in English and Portuguese.'
+	SET @sql = '
 		IF NOT EXISTS(SELECT * FROM ccVirtualAgentVoices WHERE name = ''Emma'')
         BEGIN
             INSERT INTO ccVirtualAgentVoices (name, gender, filename, isDefault, createdAt, quantumVoiceId, language)
@@ -266,7 +274,7 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
             VALUES (''Luiz'', ''Male'', ''Luiz.mp3'', 0, GETDATE(), ''Hmn4B9B77pf6ttydteJ8'', 2);
         END
 	 '
-    EXEC(@sql)
+    EXEC(@sql);
 
     SET @process = 'Added operation and identifiers for editing virtual agents and their relationship with tables and columns.'
     SET @sql = '

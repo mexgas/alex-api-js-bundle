@@ -2766,19 +2766,23 @@ ELSE IF @Option = 12 BEGIN-- Get All Campaigns complete information per Campaign
     IF @CampType = 1 -- Campaigns Out
     BEGIN
         ;WITH StopByCamp AS (
-          SELECT 
-              cwaos.camId,
-              IsStopDueTemplateStatusChange = CAST(
-                  CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END AS BIT
-              )
-          FROM dbo.ccoWAWorkingTable AS cwwt
-          INNER JOIN dbo.ccWhatsAppOutSource AS cwaos
-              ON cwaos.WAOut_Id = cwwt.WAOut_id
-          INNER JOIN dbo.ccMetaWAOutboundTemplates AS cmwot
-              ON cmwot.Id = cwaos.TemplateId
-          WHERE cmwot.Status IN (''PAUSED'', ''DISABLED'')
-          GROUP BY cwaos.camId
-        )
+			SELECT DISTINCT
+				cwaos.camId,
+				IsStopDueTemplateStatusChange = CAST(1 AS BIT)
+			FROM dbo.ccWhatsAppOutSource AS cwaos WITH (NOLOCK)
+			WHERE 
+				EXISTS (
+					SELECT 1
+					FROM dbo.ccoWAWorkingTable AS cwwt WITH (NOLOCK)
+					WHERE cwwt.WAOut_id = cwaos.WAOut_Id
+				)
+				AND EXISTS (
+					SELECT 1
+					FROM dbo.ccMetaWAOutboundTemplates AS cmwot WITH (NOLOCK)
+					WHERE cmwot.Id = cwaos.TemplateId
+					  AND cmwot.Status IN (''PAUSED'',''DISABLED'')
+				)
+		)
         
 
         SELECT DISTINCT 
@@ -11996,7 +12000,7 @@ BEGIN
     FROM ccCamps a1
     JOIN ccRIACampsGraph a2 ON a1.cam_id = a2.cam_id
     JOIN ccRIAGraphics a3 ON a2.graphic_id = a3.graphic_id
-    WHERE a3.type_id = 1 AND isnull(IDArea, 0) = isnull(@AreaId, 0) and a1.IDArea is not null
+    WHERE a3.type_id = 1 AND isnull(IDArea, 0) = isnull(@AreaId, 0)
     ORDER BY cam_descripcion
 
     RETURN (0)
@@ -12164,7 +12168,7 @@ BEGIN
 		FROM ccSkills
 		GROUP BY inbound_id
 		) S ON S.Inbound_id = a1.inbound_id
-	WHERE a3.type_id = 1 AND isnull(IDArea, 0) = isnull(@AreaId, 0) AND a1.IDArea is not null
+	WHERE a3.type_id = 1 AND isnull(IDArea, 0) = isnull(@AreaId, 0)
 	ORDER BY descripcion
 
 	RETURN (0)

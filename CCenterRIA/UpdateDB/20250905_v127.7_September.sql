@@ -11996,7 +11996,7 @@ BEGIN
     FROM ccCamps a1
     JOIN ccRIACampsGraph a2 ON a1.cam_id = a2.cam_id
     JOIN ccRIAGraphics a3 ON a2.graphic_id = a3.graphic_id
-    WHERE a3.type_id = 1 AND isnull(IDArea, 0) = isnull(@AreaId, 0) and a1.IDArea is not null
+    WHERE a3.type_id = 1 AND isnull(IDArea, 0) = isnull(@AreaId, 0)
     ORDER BY cam_descripcion
 
     RETURN (0)
@@ -12164,7 +12164,7 @@ BEGIN
 		FROM ccSkills
 		GROUP BY inbound_id
 		) S ON S.Inbound_id = a1.inbound_id
-	WHERE a3.type_id = 1 AND isnull(IDArea, 0) = isnull(@AreaId, 0) AND a1.IDArea is not null
+	WHERE a3.type_id = 1 AND isnull(IDArea, 0) = isnull(@AreaId, 0)
 	ORDER BY descripcion
 
 	RETURN (0)

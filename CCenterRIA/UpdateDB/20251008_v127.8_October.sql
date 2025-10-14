@@ -242,6 +242,18 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 		'
 	EXEC(@sql);
 
+	SET @process = 'Adding permission 10044 to root'
+    SET @sql = '
+        insert into ccRoles_Permissions values (1, 10044)
+		'
+	EXEC(@sql);
+
+	SET @process = 'Adding permission 10045 to root'
+    SET @sql = '
+        insert into ccRoles_Permissions values (1, 10045)
+		'
+	EXEC(@sql);
+
 	SET @process = 'Update Language in Alma and Luis'
 	SET @sql = '
         UPDATE ccVirtualAgentVoices SET Language = 0 WHERE name = ''Alma'' OR name = ''Luis''

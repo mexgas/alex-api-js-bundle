@@ -10806,12 +10806,6 @@ END
 		    update  ccTipoResultadoDial set descTranslate=''systemTranslated_Cancelled'' where tipoResDial_id=13
     end'
     EXEC(@sql)
-    SET @process = 'Drop procedure ccsp_CreateNodeMultimedia'
-    SET @sql = 'IF EXISTS (SELECT * FROM sysobjects WHERE name=''ccsp_CreateNodeMultimedia'')
-        BEGIN
-            DROP PROCEDURE dbo.ccsp_CreateNodeMultimedia
-        END'
-    EXEC(@sql);
 -------------------------------------------------------------- End Ulises ----------------------------------------------------------------
 
 

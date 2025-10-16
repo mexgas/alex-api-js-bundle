@@ -244,13 +244,19 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 
 	SET @process = 'Adding permission 10044 to root'
     SET @sql = '
-        insert into ccRoles_Permissions values (1, 10044)
+		IF NOT EXISTS (SELECT 1 FROM ccRoles_Permissions WHERE Rol_Id = 1 AND Permissions_Id = 10044)
+		BEGIN
+		 insert into ccRoles_Permissions values (1, 10044)
+		END
 		'
 	EXEC(@sql);
 
 	SET @process = 'Adding permission 10045 to root'
     SET @sql = '
-        insert into ccRoles_Permissions values (1, 10045)
+        IF NOT EXISTS (SELECT 1 FROM ccRoles_Permissions WHERE Rol_Id = 1 AND Permissions_Id = 10045)
+		BEGIN
+		 insert into ccRoles_Permissions values (1, 10045)
+		END
 		'
 	EXEC(@sql);
 

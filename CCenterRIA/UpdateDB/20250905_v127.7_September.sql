@@ -2784,7 +2784,6 @@ ELSE IF @Option = 12 BEGIN-- Get All Campaigns complete information per Campaign
 				)
 		)
         
-
         SELECT DISTINCT 
         CAST(camps.cam_id AS INT) AS Id, camps.cam_descripcion AS Name, 
         isnull(CAST(graph.graphic_id AS INT),1) AS Frame, CAST(1 AS SMALLINT) AS Type,

@@ -9789,7 +9789,7 @@ END;'
 	EXEC(@sql)
 	-------------------------------------END MACL------------------------------------------------
     -------------------------------------begin dmm------------------------------------------------
-    SET @process = 'Drop procedure ccsp_WhatsAppInformationOut'
+SET @process = 'Drop procedure ccsp_WhatsAppInformationOut'
 SET @sql = 'IF EXISTS (SELECT * FROM sysobjects WHERE name=''ccsp_WhatsAppInformationOut'')
     BEGIN
         DROP PROCEDURE dbo.ccsp_WhatsAppInformationOut
@@ -10274,6 +10274,14 @@ SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_VerifyCampaignRelationships]
                 END
             END'
     EXEC(@sql);
+
+    SET @process = 'Se crea índice faltante IX_ccLogAgentesDia_6'
+    SET @sql = 'IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes WHERE name = ''IX_ccLogAgentesDia_6'' AND object_id = OBJECT_ID(''dbo.ccLogAgentesDia''))
+    BEGIN
+        CREATE NONCLUSTERED INDEX IX_ccLogAgentesDia_6 ON ccLogAgentesDia (User_id, TipoStatusAge_id, fecha, tStatus);
+    END'
+    EXEC(@sql)
     -------------------------------------END dmm------------------------------------------------
 
     ------------------------------------- BEGIN GASJ 20250905.0.1 ------------------------------------------------

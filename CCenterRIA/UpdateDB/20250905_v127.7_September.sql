@@ -2768,23 +2768,19 @@ ELSE IF @Option = 12 BEGIN-- Get All Campaigns complete information per Campaign
     IF @CampType = 1 -- Campaigns Out
     BEGIN
         ;WITH StopByCamp AS (
-			SELECT DISTINCT
-				cwaos.camId,
-				IsStopDueTemplateStatusChange = CAST(1 AS BIT)
-			FROM dbo.ccWhatsAppOutSource AS cwaos WITH (NOLOCK)
-			WHERE 
-				EXISTS (
-					SELECT 1
-					FROM dbo.ccoWAWorkingTable AS cwwt WITH (NOLOCK)
-					WHERE cwwt.WAOut_id = cwaos.WAOut_Id
-				)
-				AND EXISTS (
-					SELECT 1
-					FROM dbo.ccMetaWAOutboundTemplates AS cmwot WITH (NOLOCK)
-					WHERE cmwot.Id = cwaos.TemplateId
-					  AND cmwot.Status IN (''PAUSED'',''DISABLED'')
-				)
-		)
+          SELECT 
+              cwaos.camId,
+              IsStopDueTemplateStatusChange = CAST(
+                  CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END AS BIT
+              )
+          FROM dbo.ccoWAWorkingTable AS cwwt
+          INNER JOIN dbo.ccWhatsAppOutSource AS cwaos
+              ON cwaos.WAOut_Id = cwwt.WAOut_id
+          INNER JOIN dbo.ccMetaWAOutboundTemplates AS cmwot
+              ON cmwot.Id = cwaos.TemplateId
+          WHERE cmwot.Status IN (''PAUSED'', ''DISABLED'')
+          GROUP BY cwaos.camId
+        )
         
 
         SELECT DISTINCT 
@@ -2837,17 +2833,17 @@ BEGIN
 								SELECT DISTINCT 
 									CAST(IdCampEsp AS INT) AS CampId,
 									cam_descripcion AS Description,
-									isnull(IDArea, -1) AS AreaID,
+									isnull(ccc.IDArea, -1) AS AreaID,
 									CAST(-1 AS SMALLINT) AS CampaignType,
-									CAST(-1 AS INT) AS RelatedCampId,
+									CAST(isnull(cci.cam_id,-1) AS INT) AS RelatedCampId,
 									CAST(CASE WHEN (ccc.ivrScript = 0 AND ccc.callsBySurvey = 0) THEN isnull(CampType,0) ELSE 8 END AS INT) AS Channel,
 									CAST(ISNULL(ccRCG.graphic_id, 1) AS INT) As Frame,
 									CAST(1 AS INT) As CampType
 				FROM ccRIACampEspWG A
-				INNER JOIN wgId ON wgId.IDWG = A.IDWG
-					AND A.Tipo = 1
-									INNER JOIN ccCamps ccc (NOLOCK) ON A.IdCampEsp = ccc.cam_id
-									LEFT JOIN ccRIACampsGraph ccRCG ON (ccc.cam_id = ccRCG.cam_id)
+				INNER JOIN wgId ON wgId.IDWG = A.IDWG AND A.Tipo = 1
+				INNER JOIN ccCamps ccc (NOLOCK) ON A.IdCampEsp = ccc.cam_id
+				LEFT JOIN ccInbound cci(NOLOCK) ON ccc.cam_id = cci.cam_id
+				LEFT JOIN ccRIACampsGraph ccRCG ON (ccc.cam_id = ccRCG.cam_id)
 			END
 			ELSE
 			BEGIN
@@ -2890,7 +2886,7 @@ BEGIN
 								CAST(1 AS INT) As CampType
 						FROM ccCamps AS ccc (NOLOCK) 
 							LEFT JOIN ccRIACampsGraph ccRCG ON (ccc.cam_id = ccRCG.cam_id)
-                            LEFT JOIN ccInbound i ON i.cam_id = ccc.cam_id
+							left join ccInbound i on i.cam_id = ccc.cam_id
 						where ccc.IDArea = @AreaId
 			END
 			ELSE
@@ -2920,7 +2916,7 @@ END;
 ELSE IF @Option = 14
 BEGIN
 	IF NOT EXISTS (
-			SELECT *
+			SELECT 1
 			FROM ccUsers_Roles NOLOCK
 			WHERE User_id = @AdminId
 				AND Rol_id = 7
@@ -2932,11 +2928,15 @@ BEGIN
 			FROM ccRIAWorkGroupUsers NOLOCK
 								WHERE user_id = @AdminId)
 							SELECT DISTINCT 
-								CAST(IdCampEsp AS INT) AS CampId,descripcion AS Description,isnull(IDArea, -1) AS AreaID,CAST(chat AS SMALLINT) AS CampaignType,CAST(isnull(cam_id,-1) AS INT) AS RelatedCampId
+								CAST(IdCampEsp AS INT) AS CampId,
+								descripcion AS Description,
+								isnull(IDArea, -1) AS AreaID,
+								CAST(chat AS SMALLINT) AS CampaignType,
+								CAST(isnull(cam_id,-1) AS INT) AS RelatedCampId
 		FROM ccRIACampEspWG A(NOLOCK)
 		INNER JOIN wgId ON wgId.IDWG = A.IDWG 
 			AND A.Tipo = 0
-		INNER JOIN ccInbound cci (NOLOCK) ON A.IdCampEsp = cci.Inbound_id
+		INNER JOIN ccInbound cci (NOLOCK) ON A.IdCampEsp = cci.Inbound_id 
 			AND ((@multi_type is null AND cci.chat = @InboundType) OR (@multi_type is not null AND cci.chat in (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,'',''))))
 
 	END
@@ -2948,7 +2948,7 @@ BEGIN
 					isnull(IDArea, -1) AS AreaID,
 					CAST(chat AS SMALLINT) AS CampaignType,
 					CAST(isnull(cam_id,-1) AS INT) AS RelatedCampId
-					FROM ccInbound cci (NOLOCK) where IDArea = @AreaId
+					FROM ccInbound cci (NOLOCK) where IDArea = @AreaId 
 					AND ((@multi_type is null AND cci.chat = @InboundType)
 						OR (@multi_type is not null AND cci.chat in (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,'',''))))
 
@@ -2957,9 +2957,22 @@ END
 
 ELSE IF @Option = 15
 BEGIN
-			SELECT DISTINCT 
-			CAST(Inbound_id AS INT) AS CampId,descripcion AS Description,isnull(IDArea, -1) AS AreaID,CAST(chat AS SMALLINT) AS CampaignType,CAST(isnull(cam_id,-1) AS INT) AS RelatedCampId
-			FROM ccInbound NOLOCK where cam_id = @Id and chat IN (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,'',''))
+			--SELECT DISTINCT 
+			--CAST(Inbound_id AS INT) AS CampId,descripcion AS Description,isnull(IDArea, -1) AS AreaID,CAST(chat AS SMALLINT) AS CampaignType,CAST(isnull(cam_id,-1) AS INT) AS RelatedCampId
+			--FROM ccInbound NOLOCK where cam_id = @Id and chat IN (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,'',''))
+
+	select
+		CAST(Inbound_id AS INT) AS CampId,
+		cci.descripcion AS Description,
+		isnull(cci.IDArea, -1) AS AreaID,
+		CAST(chat AS SMALLINT) AS CampaignType,
+		CAST(isnull(cci.cam_id,-1) AS INT) AS RelatedCampId
+	from ccCamps ccc
+	INNER JOIN ccInbound cci ON cci.IDArea = ccc.IDArea
+	where ccc.cam_id = @Id
+		and chat IN (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,'',''))
+		and isnull(cci.cam_id,-1) > 0
+
 END
 ELSE IF  @Option=16
 begin
@@ -3112,9 +3125,7 @@ ELSE IF @Option = 19
 		  ON m.CampId = r.CampId
 		WHERE r.CampId IS NULL;
 	END;
-END;
-    
-    '    
+END;'    
 	EXEC(@sql)
 
 

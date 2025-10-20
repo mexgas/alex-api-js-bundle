@@ -2140,7 +2140,8 @@ END;
     SET @process = 'SEARS optimización de SP ccsp_GalateaAdminBlackListPhones'
         SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminBlackListPhones]
 @type TINYINT,
-@idBlackList INT
+@idBlackList INT,
+@generateCsv bit = 0
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -2160,8 +2161,11 @@ BEGIN
         )
         SELECT telefono FROM ccListaNegra 
         WHERE idtipolista = @idBlackList
-        GROUP BY telefono
+        GROUP BY telefono, 
+		CASE WHEN @generateCsv = 1 THEN calKey END
         HAVING COUNT(*)>1;
+
+
 
         /*Save phone numbers that are not repeated*/
         INSERT INTO @numbersWithoutrepeatedNumbers
@@ -2173,8 +2177,6 @@ BEGIN
             SELECT cln.telefono, cln.calKey, MAX(chln.fecha) AS fecha FROM dbo.ccListaNegra AS cln with(nolock)
             INNER JOIN dbo.ccHistorialListaNegra AS chln with(nolock) ON chln.telefono = cln.telefono AND chln.idtipolista = cln.idtipolista
             LEFT JOIN @repeatedPhoneNumbers rpn ON cln.telefono = rpn.telefono
-            
-
             WHERE rpn.telefono IS NULL AND chln.idtipolista = @idBlackList  AND chln.idtipomov IN (1,7)
             GROUP BY cln.telefono, cln.calKey
 
@@ -2190,7 +2192,7 @@ BEGIN
                 MIN(t.fecha) AS fecha FROM  ( SELECT cln.telefono, cln.calKey, MAX(chln.fecha) AS fecha FROM dbo.ccListaNegra AS cln with(nolock)
             INNER JOIN dbo.ccHistorialListaNegra AS chln with(nolock) ON chln.telefono = cln.telefono AND chln.idtipolista = cln.idtipolista
             LEFT JOIN @repeatedPhoneNumbers rpn ON cln.telefono = rpn.telefono
-            WHERE rpn.telefono IS NULL AND chln.idtipolista = @idBlackList  AND chln.idtipomov IN (1,7)
+            WHERE rpn.telefono IS NOT NULL AND chln.idtipolista = @idBlackList  AND chln.idtipomov IN (1,7)
             GROUP BY cln.telefono, cln.calKey) t
             GROUP BY t.telefono,
                     t.calKey
@@ -9789,7 +9791,7 @@ END;'
 	EXEC(@sql)
 	-------------------------------------END MACL------------------------------------------------
     -------------------------------------begin dmm------------------------------------------------
-    SET @process = 'Drop procedure ccsp_WhatsAppInformationOut'
+SET @process = 'Drop procedure ccsp_WhatsAppInformationOut'
 SET @sql = 'IF EXISTS (SELECT * FROM sysobjects WHERE name=''ccsp_WhatsAppInformationOut'')
     BEGIN
         DROP PROCEDURE dbo.ccsp_WhatsAppInformationOut
@@ -10274,6 +10276,14 @@ SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_VerifyCampaignRelationships]
                 END
             END'
     EXEC(@sql);
+
+    SET @process = 'Se crea índice faltante IX_ccLogAgentesDia_6'
+    SET @sql = 'IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes WHERE name = ''IX_ccLogAgentesDia_6'' AND object_id = OBJECT_ID(''dbo.ccLogAgentesDia''))
+    BEGIN
+        CREATE NONCLUSTERED INDEX IX_ccLogAgentesDia_6 ON ccLogAgentesDia (User_id, TipoStatusAge_id, fecha, tStatus);
+    END'
+    EXEC(@sql)
     -------------------------------------END dmm------------------------------------------------
 
     ------------------------------------- BEGIN GASJ 20250905.0.1 ------------------------------------------------
@@ -12440,6 +12450,214 @@ ELSE IF @action = 4
 END;
 '
 	EXEC(@sql)
+
+
+	------------------------------- BEGIN MAGV 20250905.0.5---------------------------------------------------------------------------------
+	SET @process = 'Listas negras historial Add dd values in GalateaIdentifiersTable and GalateaModules'
+	SET @sql = '
+
+		IF NOT EXISTS (SELECT 1 FROM dbo.ccGalateaIdentifiers AS cgm WHERE cgm.Description = ''DNC_EDIT_NAME_LIST'')
+		BEGIN
+			INSERT INTO dbo.ccGalateaIdentifiers(Description, TagEs, TagEn, TagPt)
+			VALUES(''DNC_EDIT_NAME_LIST'', ''Nombre'', ''Name'', ''Nome'');
+		END
+
+		IF NOT EXISTS (SELECT 1 FROM dbo.ccGalateaModules AS cgm WHERE cgm.ModuleId = 26)
+		BEGIN
+		INSERT INTO dbo.ccGalateaModules
+		(
+			ModuleId,
+			MTagEs,
+			MTagEn,
+			MTagPt
+		)
+		VALUES
+		(   26,  -- ModuleId - int
+			''Listas negras'', -- MTagEs - varchar(250)
+			''DNC lists'', -- MTagEn - varchar(250)
+			''Listas negras''  -- MTagPt - varchar(250)
+			);
+		END
+
+
+		IF NOT EXISTS (SELECT 1 FROM dbo.ccGalateaOperations WHERE OperationId = 147)
+		BEGIN   
+			INSERT INTO dbo.ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
+			VALUES (147, N''Crear lista negra'', N''Create DNC list'', N''Criar lista negra'');
+		END
+		ELSE
+		BEGIN
+			update ccGalateaOperations set OpTagES = N''Crear lista negra'', OpTagEn = N''Create DNC list'', OpTagPt = N''Criar lista negra'' where OperationId = 147
+		END
+
+		IF NOT EXISTS (SELECT 1 FROM dbo.ccGalateaOperations WHERE OperationId = 148)
+		BEGIN   
+			INSERT INTO dbo.ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
+			VALUES (148, N''Editar lista negra'', N''Edit DNC list'', N''Editar lista negra'');
+		END
+		ELSE
+		BEGIN
+			update ccGalateaOperations set OpTagES = N''Editar lista negra'', OpTagEn = N''Edit DNC list'', OpTagPt = N''Editar lista negra'' where OperationId = 148
+		END
+
+		IF NOT EXISTS (SELECT 1 FROM dbo.ccGalateaOperations WHERE OperationId = 149)
+		BEGIN   
+			INSERT INTO dbo.ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
+			VALUES (149, N''Eliminar lista negra'', N''Delete DNC list'', N''Excluir lista negra'');
+		END
+		ELSE
+		BEGIN
+			update ccGalateaOperations set OpTagES = N''Eliminar lista negra'', OpTagEn = N''Delete DNC list'', OpTagPt = N''Excluir lista negra'' where OperationId = 149
+		END
+
+		IF NOT EXISTS (SELECT 1 FROM dbo.ccGalateaOperations WHERE OperationId = 150)
+		BEGIN   
+			INSERT INTO dbo.ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
+			VALUES (150, N''Cargar lista de teléfonos'', N''Load list of phone numbers'', N''Carregar lista de telefones'');
+		END
+		ELSE
+		BEGIN
+			update ccGalateaOperations set OpTagES = N''Cargar lista de teléfonos'', OpTagEn = N''Load list of phone numbers'', OpTagPt = N''lista de telefones'' where OperationId = 150
+		END
+
+		IF NOT EXISTS (SELECT 1 FROM dbo.ccGalateaOperations WHERE OperationId = 151)
+		BEGIN   
+			INSERT INTO dbo.ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
+			VALUES (151, N''Asignar lista negra a campaña'', N''Assign DNC list to campaign'', N''Atribuir lista negra a campanha'');
+		END
+		ELSE
+		BEGIN
+			update ccGalateaOperations set OpTagES = N''Asignar lista negra a campaña'', OpTagEn = N''Assign DNC list to campaign'', OpTagPt = N''Atribuir lista negra a campanha'' where OperationId = 151
+		END
+
+		IF NOT EXISTS (SELECT 1 FROM dbo.ccGalateaOperations WHERE OperationId = 152)
+		BEGIN   
+			INSERT INTO dbo.ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
+			VALUES (152, N''Desasignar lista negra de campaña'', N''Unassign DNC list from campaign'', N''Cancelar atribuição de lista de campanha'');
+		END
+		ELSE
+		BEGIN
+			update ccGalateaOperations set OpTagES = N''Desasignar lista negra de campaña'', OpTagEn = N''Unassign DNC list from campaign'', OpTagPt = N''Cancelar atribuição de lista de campanha'' where OperationId = 152
+		END
+
+		IF NOT EXISTS (SELECT 1 FROM dbo.ccGalateaOperations WHERE OperationId = 153)
+		BEGIN   
+			INSERT INTO dbo.ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
+			VALUES (153, N''Asignar lista negra a calificación'', N''Assign DNC list to disposition'', N''Atribuir lista negra a classificação'');
+		END
+		ELSE
+		BEGIN
+			update ccGalateaOperations set OpTagES = N''Asignar lista negra a calificación'', OpTagEn = N''Assign DNC list to disposition'', OpTagPt = N''Atribuir lista negra a classificação'' where OperationId = 153
+		END
+
+		IF NOT EXISTS (SELECT 1 FROM dbo.ccGalateaOperations WHERE OperationId = 154)
+		BEGIN   
+			INSERT INTO dbo.ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
+			VALUES (154, N''Cargar teléfono individual'', N''Load single phone number'', N''Carregar telefone individual'');
+		END
+		ELSE
+		BEGIN
+			update ccGalateaOperations set OpTagES = N''Cargar teléfono individual'', OpTagEn = N''Load single phone number'', OpTagPt = N''Carregar telefone individual'' where OperationId = 154
+		END
+
+		IF NOT EXISTS (SELECT 1 FROM dbo.ccGalateaOperations WHERE OperationId = 155)
+		BEGIN   
+			INSERT INTO dbo.ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
+			VALUES (155, N''Eliminar teléfono individual'', N''Remove single phone number'', N''Remover telefone individual'');
+		END
+		ELSE
+		BEGIN
+			update ccGalateaOperations set OpTagES = N''Eliminar teléfono individual'', OpTagEn = N''Remove single phone number'', OpTagPt = N''Remover telefone individual'' where OperationId = 155
+		END
+
+		IF NOT EXISTS (SELECT 1 FROM dbo.ccGalateaOperations WHERE OperationId = 156)
+		BEGIN   
+			INSERT INTO dbo.ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
+			VALUES (156, N''Desasignar lista negra de calificación'', N''Unassign DNC list from disposition'', N''Cancelar atribuição de lista de classificação'');
+		END
+		BEGIN
+			update ccGalateaOperations set OpTagES = N''Desasignar lista negra de calificación'', OpTagEn = N''Unassign DNC list from disposition'', OpTagPt = N''Cancelar atribuição de lista de classificação'' where OperationId = 156
+		END
+
+		IF NOT EXISTS (SELECT 1 FROM dbo.ccGalateaOperations WHERE OperationId = 171)
+		BEGIN   
+			INSERT INTO dbo.ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
+			VALUES (171, N''Actualizar lista de teléfonos'', N''Update list of phone numbers'', N''Atualizar lista de telefones'');
+		END
+
+		IF NOT EXISTS (SELECT 1 FROM dbo.ccGalateaOperations WHERE OperationId = 172)
+		BEGIN   
+			INSERT INTO dbo.ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
+			VALUES (172, N''Eliminar lista de teléfonos'', N''Remove list of phone numbers'', N''Remover lista de telefones'');
+		END
+
+		  IF NOT EXISTS(SELECT OperationId FROM ccGalateaModOpRelation WHERE OperationId=147)
+		BEGIN
+			INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId)
+			VALUES (26, 147)
+		END
+
+		IF NOT EXISTS(SELECT OperationId FROM ccGalateaModOpRelation WHERE OperationId=148)
+		BEGIN
+			INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId)
+			VALUES (26, 148)
+		END
+		IF NOT EXISTS(SELECT OperationId FROM ccGalateaModOpRelation WHERE OperationId=149)
+		BEGIN
+			INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId)
+			VALUES (26, 149)
+		END
+		IF NOT EXISTS(SELECT OperationId FROM ccGalateaModOpRelation WHERE OperationId=150)
+		BEGIN
+			INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId)
+			VALUES (26, 150)
+		END
+		IF NOT EXISTS(SELECT OperationId FROM ccGalateaModOpRelation WHERE OperationId=151)
+		BEGIN
+			INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId)
+			VALUES (26, 151)
+		END
+		IF NOT EXISTS(SELECT OperationId FROM ccGalateaModOpRelation WHERE OperationId=152)
+		BEGIN
+			INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId)
+			VALUES (26, 152)
+		END
+		IF NOT EXISTS(SELECT OperationId FROM ccGalateaModOpRelation WHERE OperationId=153)
+		BEGIN
+			INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId)
+			VALUES (26, 153)
+		END
+		IF NOT EXISTS(SELECT OperationId FROM ccGalateaModOpRelation WHERE OperationId=154)
+		BEGIN
+			INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId)
+			VALUES (26, 154)
+		END
+		IF NOT EXISTS(SELECT OperationId FROM ccGalateaModOpRelation WHERE OperationId=155)
+		BEGIN
+			INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId)
+			VALUES (26, 155)
+		END
+		IF NOT EXISTS(SELECT OperationId FROM ccGalateaModOpRelation WHERE OperationId=156)
+		BEGIN
+			INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId)
+			VALUES (26, 156)
+		END
+		IF NOT EXISTS(SELECT OperationId FROM ccGalateaModOpRelation WHERE OperationId=171)
+		BEGIN
+			INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId)
+			VALUES (26, 171)
+		END
+		IF NOT EXISTS(SELECT OperationId FROM ccGalateaModOpRelation WHERE OperationId=172)
+		BEGIN
+			INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId)
+			VALUES (26, 172)
+		END
+	'
+    EXEC(@sql)
+
+
+
+	--------------------------------- END MAGV 20250905.0.5 -----------------------------------
 
 	SET @process = ''
 	SET @sql = ''

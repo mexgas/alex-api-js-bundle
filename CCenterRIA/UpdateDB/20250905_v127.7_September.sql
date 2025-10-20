@@ -12590,16 +12590,16 @@ END;
 			update ccGalateaOperations set OpTagES = N''Desasignar lista negra de calificación'', OpTagEn = N''Unassign DNC list from disposition'', OpTagPt = N''Cancelar atribuição de lista de classificação'' where OperationId = 156
 		END
 
-		IF NOT EXISTS (SELECT 1 FROM dbo.ccGalateaOperations WHERE OperationId = 171)
-		BEGIN   
-			INSERT INTO dbo.ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
-			VALUES (171, N''Actualizar lista de teléfonos'', N''Update list of phone numbers'', N''Atualizar lista de telefones'');
-		END
-
 		IF NOT EXISTS (SELECT 1 FROM dbo.ccGalateaOperations WHERE OperationId = 172)
 		BEGIN   
 			INSERT INTO dbo.ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
-			VALUES (172, N''Eliminar lista de teléfonos'', N''Remove list of phone numbers'', N''Remover lista de telefones'');
+			VALUES (172, N''Actualizar lista de teléfonos'', N''Update list of phone numbers'', N''Atualizar lista de telefones'');
+		END
+
+		IF NOT EXISTS (SELECT 1 FROM dbo.ccGalateaOperations WHERE OperationId = 173)
+		BEGIN   
+			INSERT INTO dbo.ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
+			VALUES (173, N''Eliminar lista de teléfonos'', N''Remove list of phone numbers'', N''Remover lista de telefones'');
 		END
 
 		  IF NOT EXISTS(SELECT OperationId FROM ccGalateaModOpRelation WHERE OperationId=147)
@@ -12656,12 +12656,12 @@ END;
 		IF NOT EXISTS(SELECT OperationId FROM ccGalateaModOpRelation WHERE OperationId=171)
 		BEGIN
 			INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId)
-			VALUES (26, 171)
+			VALUES (26, 172)
 		END
 		IF NOT EXISTS(SELECT OperationId FROM ccGalateaModOpRelation WHERE OperationId=172)
 		BEGIN
 			INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId)
-			VALUES (26, 172)
+			VALUES (26, 173)
 		END
 	'
     EXEC(@sql)

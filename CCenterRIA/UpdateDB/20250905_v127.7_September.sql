@@ -12653,12 +12653,12 @@ END;
 			INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId)
 			VALUES (26, 156)
 		END
-		IF NOT EXISTS(SELECT OperationId FROM ccGalateaModOpRelation WHERE OperationId=171)
+		IF NOT EXISTS(SELECT OperationId FROM ccGalateaModOpRelation WHERE OperationId=172)
 		BEGIN
 			INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId)
 			VALUES (26, 172)
 		END
-		IF NOT EXISTS(SELECT OperationId FROM ccGalateaModOpRelation WHERE OperationId=172)
+		IF NOT EXISTS(SELECT OperationId FROM ccGalateaModOpRelation WHERE OperationId=173)
 		BEGIN
 			INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId)
 			VALUES (26, 173)

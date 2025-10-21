@@ -12670,9 +12670,12 @@ END;
 
 	--------------------------------- END MAGV 20250905.0.5 -----------------------------------
     --------------------------------- BEGIN HCR 20250905.0.6-----------------------------------
-	SET @process = 'Z3500 Constraint a la tabla ccCamps con valor default en 0  '
-	SET @sql = 'ALTER TABLE [dbo].[ccCampsExtend]
-                ADD CONSTRAINT DF_ccCampsExtend_zipCodeSchedule DEFAULT (0) FOR [zipCodeSchedule];
+	SET @process = 'Z3500 Constraint a la tabla ccCampsExtend con valor default en 0  '
+	SET @sql = 'if not exists (select * from sysobjects where xtype in (N''C'', N''D'', N''F'', N''PK'', N''R'', N''UQ'') and name = N''DF_ccCampsExtend_zipCodeSchedule'')
+                begin
+                    ALTER TABLE dbo.ccCampsExtend ADD CONSTRAINT 
+                    DF_ccCampsExtend_zipCodeSchedule DEFAULT 0 FOR [zipCodeSchedule]
+                end
                 '
 	EXEC(@sql)
 	--------------------------------- END HCR 20250905.0.6 ------------------------------------------------

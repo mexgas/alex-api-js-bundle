@@ -12669,26 +12669,13 @@ END;
 
 
 	--------------------------------- END MAGV 20250905.0.5 -----------------------------------
-
-	SET @process = ''
-	SET @sql = ''
+    --------------------------------- BEGIN HCR 20250905.0.6-----------------------------------
+	SET @process = 'Z3500 Constraint a la tabla ccCamps con valor default en 0  '
+	SET @sql = 'ALTER TABLE [dbo].[ccCampsExtend]
+                ADD CONSTRAINT DF_ccCampsExtend_zipCodeSchedule DEFAULT (0) FOR [zipCodeSchedule];
+                '
 	EXEC(@sql)
-
-	SET @process = ''
-	SET @sql = ''
-	EXEC(@sql)
-
-	SET @process = ''
-	SET @sql = ''
-	EXEC(@sql)
-
-	SET @process = ''
-	SET @sql = ''
-	EXEC(@sql)
-
-    --------------------------------- END 20250905.0.1 ------------------------------------------------
-
-	--------------------------------- END 20250905.0.0 ------------------------------------------------
+	--------------------------------- END HCR 20250905.0.6 ------------------------------------------------
 	
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

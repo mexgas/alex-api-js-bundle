@@ -12669,26 +12669,16 @@ END;
 
 
 	--------------------------------- END MAGV 20250905.0.5 -----------------------------------
-
-	SET @process = ''
-	SET @sql = ''
+    --------------------------------- BEGIN HCR 20250905.0.6-----------------------------------
+	SET @process = 'Z3500 Constraint a la tabla ccCampsExtend con valor default en 0  '
+	SET @sql = 'if not exists (select * from sysobjects where xtype in (N''C'', N''D'', N''F'', N''PK'', N''R'', N''UQ'') and name = N''DF_ccCampsExtend_zipCodeSchedule'')
+                begin
+                    ALTER TABLE dbo.ccCampsExtend ADD CONSTRAINT 
+                    DF_ccCampsExtend_zipCodeSchedule DEFAULT 0 FOR [zipCodeSchedule]
+                end
+                '
 	EXEC(@sql)
-
-	SET @process = ''
-	SET @sql = ''
-	EXEC(@sql)
-
-	SET @process = ''
-	SET @sql = ''
-	EXEC(@sql)
-
-	SET @process = ''
-	SET @sql = ''
-	EXEC(@sql)
-
-    --------------------------------- END 20250905.0.1 ------------------------------------------------
-
-	--------------------------------- END 20250905.0.0 ------------------------------------------------
+	--------------------------------- END HCR 20250905.0.6 ------------------------------------------------
 	
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

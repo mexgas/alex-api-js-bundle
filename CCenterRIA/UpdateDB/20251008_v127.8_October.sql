@@ -1181,14 +1181,14 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 				DECLARE @TotalOfConcurrentAgents INT, 
 						@UsedConcurrentAgents INT
 
-				IF EXISTS(SELECT 1 FROM ccVirtualAgent WHERE nameAgent = @nameAgent)
+				IF EXISTS(SELECT 1 FROM ccVirtualAgent WHERE nameAgent = @nameAgent and wasDeleted = 0)
 				BEGIN
 					SELECT ''A virtual agent with the same name already exists'' as Result, 1 as ErrorCode
 					RETURN
 				END
 
 				SELECT @TotalOfConcurrentAgents = CAST(valor AS int) FROM ccSettings2 WHERE setting_id = 281
-				SELECT @UsedConcurrentAgents = ISNULL(SUM(concurrentSessionsLimit), 0) FROM ccVirtualAgent
+				SELECT @UsedConcurrentAgents = ISNULL(SUM(concurrentSessionsLimit), 0) FROM ccVirtualAgent WHERE wasDeleted = 0
 
 				IF((@UsedConcurrentAgents + @numberOfAgents) <= @TotalOfConcurrentAgents)
 				BEGIN
@@ -1280,6 +1280,7 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 				SET
 					idCampaign = 0,
 					mediaType = 0,
+					concurrentSessionsLimit = 0,
 					campType = 0,
 					wasDeleted = 1
 				OUTPUT deleted.idAgent, deleted.nameAgent, deleted.quantumAgentId INTO #deletedVirtualAgents

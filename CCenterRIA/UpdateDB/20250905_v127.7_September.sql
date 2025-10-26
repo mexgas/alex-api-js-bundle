@@ -12679,6 +12679,39 @@ END;
                 '
 	EXEC(@sql)
 	--------------------------------- END HCR 20250905.0.6 ------------------------------------------------
+
+       --------------------------------- BEGIN Gallardo 20250905.0.6-----------------------------------
+    SET @process = 'ALTER PROCEDURE [dbo].[ccspCCserverLoadCamp] se agerga ccVirtualAgent camtype=1 para solo campañas de salida'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccspCCserverLoadCamp]
+@Type as smallint
+AS
+BEGIN
+    DECLARE @sql NVARCHAR(max)
+
+    SET @sql = ''SELECT
+                    c.cam_id
+                   ,ISNULL(g.graphic_id, 1) graphic_id
+                   ,c.cam_descripcion
+                   ,c.cam_tnotas
+                   ,c.cam_maxqueue
+                   ,c.cam_procesando
+                   ,c.CampType
+                   ,ISNULL(v.idAgent, 0) AS IdAgentVirtual
+                   ,ISNULL(v.nameAgent, '''''''') AS NameAgentVirtual
+                   ,ISNULL(v.concurrentSessionsLimit, 0) AS AgtVirtual
+                FROM ccCamps c (NOLOCK)
+                LEFT JOIN ccRIACampsGraph g (NOLOCK) ON g.cam_id = c.cam_id
+                LEFT JOIN ccVirtualAgent v (NOLOCK) ON v.idCampaign = c.cam_id and v.campType=1
+                WHERE cam_activo = 1''
+
+    IF @Type<>1 BEGIN
+        SET @sql = @sql + '' AND cam_bNew=2''
+    END
+    EXEC (@sql)
+END
+                '
+    EXEC(@sql)
+    --------------------------------- END HCR 20250905.0.6 ------------------------------------------------
 	
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

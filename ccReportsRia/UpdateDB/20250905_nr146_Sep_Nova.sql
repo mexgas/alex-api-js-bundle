@@ -271,7 +271,7 @@ BEGIN
     LEFT JOIN tmpCallout co ON A.DATE = co.DATE AND A.userId = co.userId
     LEFT JOIN tmpCallIn ci  ON A.DATE = ci.DATE AND A.userId = ci.userId
     LEFT JOIN RepDetail r   ON r.daygroup = A.DATE AND A.userId = r.userId
-    inner join notReadyDay notReady on notReady.userId=A.userId and notReady.daygroup=A.date
+    LEFT JOIN notReadyDay notReady on notReady.userId=A.userId and notReady.daygroup=A.date
     LEFT join #AuxiliarReadyDetail auxiliarReady on auxiliarReady.userId=A.userId and auxiliarReady.timegroup=A.date
     left join RepAgentGIGroup AgtGI on AgtGI.date=A.date and AgtGI.userId=A.userId
     order by A.[date],A.userId

@@ -12711,7 +12711,32 @@ BEGIN
 END
                 '
     EXEC(@sql)
-    --------------------------------- END HCR 20250905.0.6 ------------------------------------------------
+
+
+     SET @process = '#3138 ALTER PROCEDURE [dbo].[ccsp_RIAACDCallParams] valor default'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAACDCallParams]
+@option int,
+@campId int = 0
+AS
+BEGIN
+    SET NOCOUNT ON;
+declare @RecordCalls tinyint
+set @RecordCalls=0
+if(@option = 1)
+begin
+    select @RecordCalls= RecordCalls from ccInboundExtend where Inbound_id = @campId                
+end
+
+else if(@option = 2)
+begin
+    select @RecordCalls= RecordCalls from ccCampsExtend where cam_id = @campId              
+end
+select isnull(@RecordCalls,1) RecordCalls
+
+    SET NOCOUNT OFF;
+END'
+    EXEC(@sql)
+    --------------------------------- END Gallardo 20250905.0.6 ------------------------------------------------
 	
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

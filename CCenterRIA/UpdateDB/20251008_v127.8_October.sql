@@ -128,6 +128,68 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 
     EXEC(@sql)
 
+	SET @process = 'Reintegration of sp'
+	SET @sql = '
+	IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_OUTUpdateDialJobCommon'')
+	BEGIN
+		DROP PROCEDURE ccsp_OUTUpdateDialJobCommon;
+	END
+	'
+	EXEC(@sql);
+
+	SET @sql = '
+		CREATE PROCEDURE ccsp_OUTUpdateDialJobCommon
+		@action int,
+		@callout_id     INT,
+		@cam_id INT=0,
+		@prioridadLlamada CHAR(8) OUTPUT,
+		@Telefono VARCHAR(15)='''' OUTPUT
+
+		AS
+		SET NOCOUNT ON
+		if @action=1 begin
+			DECLARE @ExistePriorityOrder TINYINT
+			SELECT 
+				@prioridadLlamada = priorityCall,
+				@ExistePriorityOrder = CASE WHEN callout_id IS NOT NULL THEN 1 ELSE 0 END
+			FROM ccoCallPriorityOrder WITH (NOLOCK)
+			WHERE callout_id = @callout_id
+
+			IF @ExistePriorityOrder IS NULL
+			BEGIN
+				SELECT @prioridadLlamada = Prioridad
+				FROM ccCampsPrioridadTel WITH (NOLOCK)
+				WHERE cam_id = @cam_id
+
+				INSERT INTO ccoCallPriorityOrder 
+				VALUES (@callout_id, @prioridadLlamada)
+			END
+		end
+		if @action=2 begin
+			-- Cambiar la prioridad
+			SET @prioridadLlamada = dbo.ChangePriorityCall(@prioridadLlamada)
+
+			-- Actualizar la prioridad
+			UPDATE ccoCallPriorityOrder WITH (rowlock)
+			SET priorityCall = @prioridadLlamada
+			WHERE callout_id = @callout_id
+
+			-- Seleccionar el pr�ximo tel�fono
+			DECLARE @sSQL NVARCHAR(MAX)
+			SET @sSQL = ''SELECT @outA = RTRIM(LEFT(LTRIM(cal_telefono'' 
+				+ CASE SUBSTRING(@prioridadLlamada, 1, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 1, 1) END
+				+ ''+''''         ''''+cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 2, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 2, 1) END
+				+ ''+''''         ''''+cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 3, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 3, 1) END
+				+ ''+''''         ''''+cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 4, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 4, 1) END
+				+ ''+''''         ''''+cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 5, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 5, 1) END
+				+ ''+''''         ''''),13)) FROM ccoCallsOutSource WITH (NOLOCK) WHERE callout_id=''
+				+ CAST(@callout_id AS VARCHAR(15))
+
+			EXEC sp_executesql @sSQL, N''@outA VARCHAR(15) OUTPUT'', @outA = @Telefono OUTPUT
+		end
+		SET NOCOUNT OFF
+		'
+	EXEC(@sql);
     ------------------------------------- END CARLOS MUÑOZ -------------------------------------
 
     ------------------------------------ BEGIN JUAN MEDINA ------------------------------------

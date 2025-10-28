@@ -1138,7 +1138,7 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 	SET @process = 'Actions are added for the creation, viewing, and editing flow of virtual agent models.'
 
     SET @sql = '
-		CREATE PROCEDURE ccsp_VirtualAgents
+		CREATE PROCEDURE [dbo].[ccsp_VirtualAgents]
 		@action INT = 0,
 
 		@idVirtualAgent INT = 0,
@@ -1367,11 +1367,25 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 					DECLARE @campaignArea AS SMALLINT
 
 					IF @campType = 0
-						SELECT @campaignArea = IDArea FROM ccInbound WHERE Inbound_id = @campaignId
+					BEGIN
+						SELECT @campaignArea =
+							CASE
+								WHEN EXISTS (SELECT 1 FROM ccInbound_Consulta WHERE Inbound_id = @campaignId)
+									THEN 1
+								ELSE 0
+							END;
+					END
 					ELSE IF @campType = 1
-						SELECT @campaignArea = IDArea FROM ccCamps WHERE cam_id = @campaignId
+					BEGIN
+						SELECT @campaignArea =
+							CASE
+								WHEN EXISTS (SELECT 1 FROM ccCamps_Consulta WHERE cam_id = @campaignId)
+									THEN 1
+								ELSE 0
+							END;
+					END
 
-					IF @campaignArea IS NULL
+					IF @campaignArea <> 0
 					BEGIN
 						SELECT ''Campaign was deleted'' AS Result, 3 AS ErrorCode , 0 AS idAgent, '''' as nameAgent, 0 AS idCampaign, '''' AS nameCampaign
 						RETURN

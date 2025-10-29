@@ -12738,6 +12738,34 @@ END'
     EXEC(@sql)
     --------------------------------- END Gallardo 20250905.0.6 ------------------------------------------------
 	
+	------------------------------------------ Daniel Hernandez ------------------------------------------------
+	SET @process = '#3271-KM24001 Setting for record load marking restriction'
+    SET @sql = 'IF NOT EXISTS (SELECT 1 FROM [dbo].[ccSettings2] WHERE [setting_id] = 291)
+	BEGIN
+		INSERT INTO [dbo].[ccSettings2]
+			   ([setting_id]
+			   ,[valor]
+			   ,[descripcion]
+			   ,[Status]
+			   ,[Tipo]
+			   ,[detalle]
+			   ,[description]
+			   ,[bLoadSettings]
+			   ,[validate])
+		 VALUES
+			   (291
+			   ,''0''
+			   ,''Restricción de carga de registros en campañas de voz estándar''
+			   ,1
+			   ,''ADM''
+			   ,''0:(Default)No se deberá poder cargar bases de datos a campañas al menos que la campaña se encuentre apagada. |1:Se deberá permitir la carga de bases de datos a las campañas iniciadas desde los botones o secciones ya disponibles en el sitio.''
+			   ,''0:(Default) Database uploads should not be allowed to campaigns unless the campaign is turned off |1: Database uploads should be allowed to campaigns started from buttons or sections already available on the site''
+			   ,1
+			   ,''.*'')
+	END'
+    EXEC(@sql)
+	------------------------------------------------------------------------------------------------------------
+	
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
         EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)

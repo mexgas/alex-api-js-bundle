@@ -12668,26 +12668,102 @@ END;
 
 
 	--------------------------------- END MAGV 20250905.0.5 -----------------------------------
-
-	SET @process = ''
-	SET @sql = ''
+    --------------------------------- BEGIN HCR 20250905.0.6-----------------------------------
+	SET @process = 'Z3500 Constraint a la tabla ccCampsExtend con valor default en 0  '
+	SET @sql = 'if not exists (select * from sysobjects where xtype in (N''C'', N''D'', N''F'', N''PK'', N''R'', N''UQ'') and name = N''DF_ccCampsExtend_zipCodeSchedule'')
+                begin
+                    ALTER TABLE dbo.ccCampsExtend ADD CONSTRAINT 
+                    DF_ccCampsExtend_zipCodeSchedule DEFAULT 0 FOR [zipCodeSchedule]
+                end
+                '
 	EXEC(@sql)
+	--------------------------------- END HCR 20250905.0.6 ------------------------------------------------
 
-	SET @process = ''
-	SET @sql = ''
-	EXEC(@sql)
+       --------------------------------- BEGIN Gallardo 20250905.0.6-----------------------------------
+    SET @process = 'ALTER PROCEDURE [dbo].[ccspCCserverLoadCamp] se agerga ccVirtualAgent camtype=1 para solo campañas de salida'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccspCCserverLoadCamp]
+@Type as smallint
+AS
+BEGIN
+    DECLARE @sql NVARCHAR(max)
 
-	SET @process = ''
-	SET @sql = ''
-	EXEC(@sql)
+    SET @sql = ''SELECT
+                    c.cam_id
+                   ,ISNULL(g.graphic_id, 1) graphic_id
+                   ,c.cam_descripcion
+                   ,c.cam_tnotas
+                   ,c.cam_maxqueue
+                   ,c.cam_procesando
+                   ,c.CampType
+                   ,ISNULL(v.idAgent, 0) AS IdAgentVirtual
+                   ,ISNULL(v.nameAgent, '''''''') AS NameAgentVirtual
+                   ,ISNULL(v.concurrentSessionsLimit, 0) AS AgtVirtual
+                FROM ccCamps c (NOLOCK)
+                LEFT JOIN ccRIACampsGraph g (NOLOCK) ON g.cam_id = c.cam_id
+                LEFT JOIN ccVirtualAgent v (NOLOCK) ON v.idCampaign = c.cam_id and v.campType=1
+                WHERE cam_activo = 1''
 
-	SET @process = ''
-	SET @sql = ''
-	EXEC(@sql)
+    IF @Type<>1 BEGIN
+        SET @sql = @sql + '' AND cam_bNew=2''
+    END
+    EXEC (@sql)
+END
+                '
+    EXEC(@sql)
 
-    --------------------------------- END 20250905.0.1 ------------------------------------------------
 
-	--------------------------------- END 20250905.0.0 ------------------------------------------------
+     SET @process = '#3138 ALTER PROCEDURE [dbo].[ccsp_RIAACDCallParams] valor default'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAACDCallParams]
+@option int,
+@campId int = 0
+AS
+BEGIN
+    SET NOCOUNT ON;
+declare @RecordCalls tinyint
+set @RecordCalls=0
+if(@option = 1)
+begin
+    select @RecordCalls= RecordCalls from ccInboundExtend where Inbound_id = @campId                
+end
+
+else if(@option = 2)
+begin
+    select @RecordCalls= RecordCalls from ccCampsExtend where cam_id = @campId              
+end
+select isnull(@RecordCalls,1) RecordCalls
+
+    SET NOCOUNT OFF;
+END'
+    EXEC(@sql)
+    --------------------------------- END Gallardo 20250905.0.6 ------------------------------------------------
+	
+	------------------------------------------ Daniel Hernandez ------------------------------------------------
+	SET @process = '#3271-KM24001 Setting for record load marking restriction'
+    SET @sql = 'IF NOT EXISTS (SELECT 1 FROM [dbo].[ccSettings2] WHERE [setting_id] = 291)
+	BEGIN
+		INSERT INTO [dbo].[ccSettings2]
+			   ([setting_id]
+			   ,[valor]
+			   ,[descripcion]
+			   ,[Status]
+			   ,[Tipo]
+			   ,[detalle]
+			   ,[description]
+			   ,[bLoadSettings]
+			   ,[validate])
+		 VALUES
+			   (291
+			   ,''0''
+			   ,''Restricción de carga de registros en campañas de voz estándar''
+			   ,1
+			   ,''ADM''
+			   ,''0:(Default)No se deberá poder cargar bases de datos a campañas al menos que la campaña se encuentre apagada. |1:Se deberá permitir la carga de bases de datos a las campañas iniciadas desde los botones o secciones ya disponibles en el sitio.''
+			   ,''0:(Default) Database uploads should not be allowed to campaigns unless the campaign is turned off |1: Database uploads should be allowed to campaigns started from buttons or sections already available on the site''
+			   ,1
+			   ,''.*'')
+	END'
+    EXEC(@sql)
+	------------------------------------------------------------------------------------------------------------
 	
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

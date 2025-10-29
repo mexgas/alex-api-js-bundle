@@ -27,7 +27,7 @@ DECLARE @versionALL VARCHAR(max);
 Importante:la variable @version puede tener 2 valores dependiendo la necesidad que se tenga el primer ejemplo
 set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a 118 en caso de que se tenga la version 119 y se vaya a agragar un fix
 sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
-SET @version = 146 --**********actualizar a 124 sin fix
+SET @version = 147 --**********actualizar a 124 sin fix
 
 /* Actual version (use your own script to do it) */
 EXEC @actualVersion = ccsp_getVersion 'BD'
@@ -37,70 +37,8 @@ BEGIN
 	BEGIN TRAN
 
 	BEGIN TRY
---------------------------------------------------------BEGIN 127.20250905.0.0 Jesus Gallardo----------------------------------------------------------------------
-    
-        set @process = '#3306 DROP INDEX IX_RepOutAnswAndXferCalls_1'
-set @sql='IF EXISTS (
-    SELECT 1
-    FROM sys.indexes
-    WHERE name = ''IX_RepOutAnswAndXferCalls_1''
-      AND object_id = OBJECT_ID(''dbo.RepOutAnswAndXferCalls'')
-)
-BEGIN
-    DROP INDEX IX_RepOutAnswAndXferCalls_1
-    ON dbo.RepOutAnswAndXferCalls;    
-END
-'
-EXEC(@sql)
-
-
-set @process = '#3306 CREATE NONCLUSTERED INDEX [IX_RepOutAnswAndXferCalls_2]'
-set @sql='IF NOT EXISTS (
-    SELECT 1
-    FROM sys.indexes
-    WHERE name = ''IX_RepOutAnswAndXferCalls_2''
-      AND object_id = OBJECT_ID(''dbo.RepOutAnswAndXferCalls'')
-)
-BEGIN
-    CREATE NONCLUSTERED INDEX [IX_RepOutAnswAndXferCalls_2] 
-    ON [dbo].[RepOutAnswAndXferCalls] ([date])
-    INCLUDE ([dialog],[ncost],[total]);
-       
-END'
-EXEC(@sql)
-
-set @process = '#3306 DROP INDEX IX_RepOutCallBilling'
-set @sql='IF EXISTS (
-    SELECT 1
-    FROM sys.indexes
-    WHERE name = ''IX_RepOutCallBilling''
-      AND object_id = OBJECT_ID(''dbo.RepOutCallBilling'')
-)
-BEGIN
-    DROP INDEX IX_RepOutCallBilling
-    ON dbo.RepOutCallBilling;
-
-END'
-EXEC(@sql)
-
-
-set @process = '#3306 CREATE NONCLUSTERED INDEX [IX_RepOutCallBilling_1]'
-set @sql='IF NOT EXISTS (
-    SELECT 1
-    FROM sys.indexes
-    WHERE name = ''IX_RepOutCallBilling_1''
-      AND object_id = OBJECT_ID(''dbo.RepOutCallBilling'')
-)
-BEGIN
-    CREATE NONCLUSTERED INDEX [IX_RepOutCallBilling_1]
-ON [dbo].[RepOutCallBilling] ([date])
-INCLUDE ([tipoLlamada_count])
-    
-   
-END'
-EXEC(@sql)
-
- --------------------------------  BEING GASJ --------------------------------
+------------------------------------ BEGIN UNION 127.20250905.0.6 -- 127.20251008.0.1 ------------------------------------
+    --------------------------------  BEING GASJ --------------------------------
     set @process = 'ALTER PROCEDURE [dbo].[ccspRepAgentSummary]'
     set @sql='ALTER PROCEDURE [dbo].[ccspRepAgentSummary] @action AS TINYINT, @from AS DATETIME = NULL, @to AS DATETIME = NULL
 AS
@@ -289,14 +227,10 @@ END'
     EXEC(@sql)
     
     --------------------------------  END GASJ -------------------------------- 
+          
+------------------------------------ END UNION 127.20250905.0.6 -- 127.20251008.0.1 ------------------------------------
 
-set @process = ''
-set @sql=''
-EXEC(@sql)
 
-set @process = ''
-set @sql=''
-EXEC(@sql)
 
     	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version
 

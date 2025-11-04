@@ -11803,6 +11803,11 @@ BEGIN
     BEGIN
         DECLARE @campaignIsEliminateDesasigned BIT = 0;
         DECLARE @idAreaNull SMALLINT = 0;
+		DECLARE @isRoot BIT = 0; --Fix
+		IF EXISTS(SELECT 1 FROM ccUsers_Roles where [User_id] = @UserId and Rol_id = 1)
+		BEGIN
+			SET @isRoot = 1;
+		END
 
         SELECT  @idAreaNull = cc.IDArea FROM dbo.ccCamps AS cc WHERE cc.cam_id = @campId
 
@@ -11813,7 +11818,7 @@ BEGIN
 
         IF NOT EXISTS(SELECT TOP 1 crcew.IdCampEsp FROM dbo.ccRIACampEspWG AS crcew INNER JOIN dbo.ccRIAWorkGroupUsers AS crwgu
         ON crwgu.IDWG = crcew.IDWG
-        WHERE crwgu.User_id = @UserId AND crcew.Tipo = 1 AND crcew.IdCampEsp = @campId)
+        WHERE  (crwgu.User_id = @UserId OR @isRoot = 1 ) AND crcew.Tipo = 1 AND crcew.IdCampEsp = @campId)
         BEGIN 
             SET @campaignIsEliminateDesasigned = 1; --La campaña fue desasignada del grupo de trabajo
         END

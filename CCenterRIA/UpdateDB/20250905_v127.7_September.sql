@@ -11131,7 +11131,7 @@ SET @process = 'CW-10215 Drop procedure SaveDispositionsAI'
 		END'
 	EXEC(@sql);
 
-	SET @process = 'CW-10215 CREATE STORE PROCEDURE SaveDispositionsAI'
+	SET @process = '#4656 CW-10215 CREATE STORE PROCEDURE SaveDispositionsAI'
 	SET @sql = 'CREATE PROCEDURE [dbo].[SaveDispositionsAI]
 @action        smallint    = NULL,
 @call_Id       int         = NULL,
@@ -13011,16 +13011,16 @@ END;
 '
     EXEC(@sql)
 
-    SET @process = '#2970 - Reports - RepInCallsDetail columna grab_ID en cero'
+    SET @process = '#'
     SET @sql = ''
     EXEC(@sql)
 
 
-    SET @process = '#2970 - Reports - RepInCallsDetail columna grab_ID en cero'
+    SET @process = '#'
     SET @sql = ''
     EXEC(@sql)
 
-    SET @process = '#2970 - Reports - RepInCallsDetail columna grab_ID en cero'
+    SET @process = '#'
     SET @sql = ''
     EXEC(@sql)
 

@@ -11132,147 +11132,167 @@ SET @process = 'CW-10215 Drop procedure SaveDispositionsAI'
 
 	SET @process = 'CW-10215 CREATE STORE PROCEDURE SaveDispositionsAI'
 	SET @sql = 'CREATE PROCEDURE [dbo].[SaveDispositionsAI]
-    @action        smallint    = NULL,
-    @call_Id       int         = NULL,
-    @Qualification varchar(MAX)= NULL,
-    @result        varchar(MAX)= NULL,
-    @Observations  varchar(MAX)= NULL,
-	@CallbackAT    DATETIME = NULL,
-    @Transcription varchar(MAX)= NULL,
-    @CamType       bit         = 0,
-	@disposition_Id SMALLINT = null
-	AS
+@action        smallint    = NULL,
+@call_Id       int         = NULL,
+@Qualification varchar(MAX)= NULL,
+@result        varchar(MAX)= NULL,
+@Observations  varchar(MAX)= NULL,
+@CallbackAT    DATETIME = NULL,
+@Transcription varchar(MAX)= NULL,
+@CamType       bit         = 0,
+@disposition_Id SMALLINT = null
+AS
+BEGIN
+	SET NOCOUNT ON;
+	--Variables para devolución de llamada 
+	DECLARE @cal_key varchar(40) ='''';
+	DECLARE @cam_id smallint;
+	DECLARE @cal_telefono varchar(19);
+	DECLARE @inbound_id smallint = NULL;
+	DECLARE @CanReprogram smallint  = null
+
+	-- Validacion del Status del Setting 289
+	DECLARE @trans_status BIT = NULL;
+	
+	DECLARE @valor  NVARCHAR(15) = NULL;
+
+	SELECT @valor = TRY_CAST(valor AS NVARCHAR(15))	
+	FROM ccSettings2
+	WHERE setting_id = 289;
+
+	DECLARE @status NVARCHAR(5);
+	DECLARE @sep    INT;
+
+	SET @sep = CHARINDEX(''|'', ISNULL(@valor, ''''));
+	SET @status = CASE
+					WHEN @sep > 0 THEN SUBSTRING(@valor, 1, @sep - 1)
+					ELSE ISNULL(@valor, '''')
+				  END;
+
+	IF @action = 1  -- Outbound
 	BEGIN
-		SET NOCOUNT ON;
-		--Variables para devolución de llamada 
-		DECLARE @cal_key varchar(40) ='''';
-		DECLARE @cam_id smallint;
-		DECLARE @cal_telefono varchar(19);
-		DECLARE @inbound_id smallint = NULL;
-		DECLARE @CanReprogram smallint  = null
+		IF EXISTS (SELECT 1 FROM ccoCallsOutDispositionIA WHERE call_id = @call_Id)
+        BEGIN
+            UPDATE ccoCallsOutDispositionIA
+            SET Qualification = @Qualification,
+                result = @result,
+                Observations = @Observations
+            WHERE call_id = @call_Id;
+        END
+        ELSE
+        BEGIN
+            INSERT INTO ccoCallsOutDispositionIA (call_id, Qualification, result, Observations)
+            VALUES (@call_Id, @Qualification, @result, @Observations);
+        END
 
-		-- Validacion del Status del Setting 289
-		DECLARE @trans_status BIT = NULL;
-		
-		DECLARE @valor  NVARCHAR(15) = NULL;
-
-		SELECT @valor = TRY_CAST(valor AS NVARCHAR(15))	
-		FROM ccSettings2
-		WHERE setting_id = 289;
-
-		DECLARE @status NVARCHAR(5);
-		DECLARE @sep    INT;
-
-		SET @sep = CHARINDEX(''|'', ISNULL(@valor, ''''));
-		SET @status = CASE
-						WHEN @sep > 0 THEN SUBSTRING(@valor, 1, @sep - 1)
-						ELSE ISNULL(@valor, '''')
-					  END;
-
-		IF @action = 1  -- Outbound
+		IF EXISTS (SELECT 1 FROM ccTipoCalif WHERE calif_id = @disposition_Id)
 		BEGIN
-			INSERT INTO ccoCallsOutDispositionIA (call_id, Qualification, result, Observations,disposition_id)
-			VALUES (@call_Id, @Qualification, @result, @Observations,@disposition_Id);
+			UPDATE dbo.ccoCallsOut 
+			SET calif_id = @disposition_Id
+			WHERE cal_id = @call_Id;
+		END
+	END
+
+	ELSE IF @action = 2 AND @status = ''1''   -- Outbound
+	BEGIN
+		--Se deja pendiente para el siguiente Sprint 
+		--DECLARE @cam_id smallint = NULL;
+
+		--Select @cam_id = cam_id 
+		--From ccoCallsOut
+		--Where cal_id = @call_Id
+
+		--Select @trans_status = IsCallTranscriptionEnabled
+		--From ccCampsExtend
+		--Where cam_id  = @cam_id
+
+		--IF @trans_status = 1
+		--BEGIN
+		--	INSERT INTO ccoCallsOutTranscriptionIA (call_id, Transcription)
+		--	VALUES (@call_Id, @Transcription);
+		--END
+
+		IF EXISTS (SELECT 1 FROM ccoCallsOutTranscriptionIA WHERE call_id = @call_Id)
+        BEGIN
+            UPDATE ccoCallsOutTranscriptionIA
+            SET Transcription = @Transcription
+            WHERE call_id = @call_Id;
+        END
+        ELSE
+        BEGIN
+            INSERT INTO ccoCallsOutTranscriptionIA (call_id, Transcription)
+            VALUES (@call_Id, @Transcription);
+        END
+	END
+
+	ELSE IF @action = 3  -- Inbound
+	BEGIN
+		Select @CanReprogram = CanReprogram from ccTipoCalif where calif_id = @disposition_Id
+		
+		IF (@CallbackAT IS NOT NULL  
+			AND CONVERT(datetime, @CallbackAT, 120) IS NOT NULL 
+			AND CONVERT(datetime, @CallbackAT, 120) > GETDATE()  
+			AND @CanReprogram <> 0)
+		BEGIN
+			INSERT INTO ccCallsInDispositionIA (call_id, Qualification, result, Observations, CallbackAT,disposition_id)
+			VALUES (@call_Id, @Qualification, @result, @Observations,@CallbackAT,@disposition_Id);
+
+			SELECT @inbound_id = Inbound_id, @cal_telefono = cal_ANI
+				FROM ccCallsIn 
+				WHERE cal_id = @call_Id;
+
+			SELECT @cam_id = cam_id
+				FROM ccInbound
+				WHERE Inbound_id  = @inbound_id
+
+			EXEC ccsp_INInsertaCallBack
+				@cal_key = @call_Id,
+				@cam_id = @cam_id,
+				@cal_telefono = @cal_telefono,
+				@fechadial = @CallbackAT,
+				@dato4 = @result,
+				@dato5 = @Observations
 
 			IF EXISTS (SELECT 1 FROM ccTipoCalif WHERE calif_id = @disposition_Id)
 			BEGIN
-				UPDATE dbo.ccoCallsOut 
+				UPDATE ccCallsIn
 				SET calif_id = @disposition_Id
 				WHERE cal_id = @call_Id;
 			END
 		END
 
-		IF @action = 2 AND @status = ''1''   -- Outbound
-		BEGIN
-			--Se deja pendiente para el siguiente Sprint 
-			--DECLARE @cam_id smallint = NULL;
+		ELSE BEGIN
+			INSERT INTO ccCallsInDispositionIA (call_id, Qualification, result, Observations,disposition_id)
+			VALUES (@call_Id, @Qualification, @result, @Observations,@disposition_Id);
 
-			--Select @cam_id = cam_id 
-			--From ccoCallsOut
-			--Where cal_id = @call_Id
-
-			--Select @trans_status = IsCallTranscriptionEnabled
-			--From ccCampsExtend
-			--Where cam_id  = @cam_id
-
-			--IF @trans_status = 1
-			--BEGIN
-			--	INSERT INTO ccoCallsOutTranscriptionIA (call_id, Transcription)
-			--	VALUES (@call_Id, @Transcription);
-			--END
-
-			INSERT INTO ccoCallsOutTranscriptionIA (call_id, Transcription)
-				VALUES (@call_Id, @Transcription);
-		END
-
-		IF @action = 3  -- Inbound
-		BEGIN
-			Select @CanReprogram = CanReprogram from ccTipoCalif where calif_id = @disposition_Id
-			
-			IF (@CallbackAT IS NOT NULL  
-				AND CONVERT(datetime, @CallbackAT, 120) IS NOT NULL 
-				AND CONVERT(datetime, @CallbackAT, 120) > GETDATE()  
-				AND @CanReprogram <> 0)
+			IF EXISTS (SELECT 1 FROM ccTipoCalif WHERE calif_id = @disposition_Id)
 			BEGIN
-				INSERT INTO ccCallsInDispositionIA (call_id, Qualification, result, Observations, CallbackAT,disposition_id)
-				VALUES (@call_Id, @Qualification, @result, @Observations,@CallbackAT,@disposition_Id);
-
-				SELECT @inbound_id = Inbound_id, @cal_telefono = cal_ANI
-					FROM ccCallsIn 
-					WHERE cal_id = @call_Id;
-
-				SELECT @cam_id = cam_id
-					FROM ccInbound
-					WHERE Inbound_id  = @inbound_id
-
-				EXEC ccsp_INInsertaCallBack
-					@cal_key = @call_Id,
-					@cam_id = @cam_id,
-					@cal_telefono = @cal_telefono,
-					@fechadial = @CallbackAT,
-					@dato4 = @result,
-					@dato5 = @Observations
-
-				IF EXISTS (SELECT 1 FROM ccTipoCalif WHERE calif_id = @disposition_Id)
-				BEGIN
-					UPDATE ccCallsIn
-					SET calif_id = @disposition_Id
-					WHERE cal_id = @call_Id;
-				END
+				UPDATE ccCallsIn
+				SET calif_id = @disposition_Id
+				WHERE cal_id = @call_Id;
 			END
-
-			ELSE BEGIN
-				INSERT INTO ccCallsInDispositionIA (call_id, Qualification, result, Observations,disposition_id)
-				VALUES (@call_Id, @Qualification, @result, @Observations,@disposition_Id);
-
-				IF EXISTS (SELECT 1 FROM ccTipoCalif WHERE calif_id = @disposition_Id)
-				BEGIN
-					UPDATE ccCallsIn
-					SET calif_id = @disposition_Id
-					WHERE cal_id = @call_Id;
-				END
-			END
-
 		END
 
-		IF @action = 4 AND @status = ''1''   -- Inbound
+	END
+
+	ELSE IF @action = 4 AND @status = ''1''   -- Inbound
+	BEGIN
+		
+		Select @inbound_id = Inbound_id 
+			From ccCallsIn 
+			Where cal_id = @call_Id
+		
+		Select @trans_status = IsCallTranscriptionEnabled
+			From ccInboundExtend
+			Where Inbound_id  = @inbound_id
+
+		IF @trans_status = 1
 		BEGIN
-			
-			Select @inbound_id = Inbound_id 
-				From ccCallsIn 
-				Where cal_id = @call_Id
-			
-			Select @trans_status = IsCallTranscriptionEnabled
-				From ccInboundExtend
-				Where Inbound_id  = @inbound_id
-
-			IF @trans_status = 1
-			BEGIN
-				INSERT INTO ccCallsInTranscriptionIA (call_id, Transcription)
-				VALUES (@call_Id, @Transcription);
-			END
+			INSERT INTO ccCallsInTranscriptionIA (call_id, Transcription)
+			VALUES (@call_Id, @Transcription);
 		END
-	END'
+	END
+END'
 	EXEC(@sql)
 
 	SET @process = 'CW-10215 query para insertar las calificaciones de llamadas ia, las cuales si tienen calificación pero se realizaron antes del cambio'

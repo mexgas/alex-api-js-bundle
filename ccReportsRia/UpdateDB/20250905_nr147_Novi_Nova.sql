@@ -2,14 +2,14 @@
 /***** NUXIBA TECHNOLOGIES *****/
 /*******************************/
 /*
-Author:
+Author: Octavio Arturo Ortiz Diaz
 
 
-Date: 2025/03/25
-Description: Fix muñoz
+Date: 2025/11/24
+Description: Adicion de areas para HU's KR201001-KR201001
 
 Database: CCReportsRIA
-Required version: 144
+Required version: 147
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */

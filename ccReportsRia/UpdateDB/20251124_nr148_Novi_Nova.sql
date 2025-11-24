@@ -42,53 +42,90 @@ BEGIN
 
 ---Alter Table--
 
--- RepAgentSummary
-IF COL_LENGTH(''RepAgentSummary'', ''areaId'') IS NULL
-    ALTER TABLE RepAgentSummary 
-    ADD areaId INT NOT NULL DEFAULT(0);
+    -- RepAgentSummary
+    SET @process = 'AlterTable RepAgentSummary';
+    SET @sql = '
+    IF COL_LENGTH(''RepAgentSummary'', ''areaId'') IS NULL
+    BEGIN
+        ALTER TABLE RepAgentSummary 
+            ADD areaId INT NOT NULL DEFAULT(0);
+    END
 
-IF COL_LENGTH(''RepAgentSummary'', ''area'') IS NULL
-    ALTER TABLE RepAgentSummary 
-    ADD area VARCHAR(100) NULL;
-GO
+    IF COL_LENGTH(''RepAgentSummary'', ''area'') IS NULL
+    BEGIN
+        ALTER TABLE RepAgentSummary 
+            ADD area VARCHAR(100) NULL;
+    END
+    ';
+    EXEC(@sql);
 
--- RepInCallsDetail
-IF COL_LENGTH(''RepInCallsDetail'', ''areaId'') IS NULL
-    ALTER TABLE RepInCallsDetail 
-    ADD areaId INT NOT NULL DEFAULT(0);
+    -- RepInCallsDetail
+    SET @process = 'AlterTable RepInCallsDetail';
+    SET @sql = '
+    IF COL_LENGTH(''RepInCallsDetail'', ''areaId'') IS NULL
+    BEGIN
+        ALTER TABLE RepInCallsDetail 
+            ADD areaId INT NOT NULL DEFAULT(0);
+    END
 
-IF COL_LENGTH(''RepInCallsDetail'', ''area'') IS NULL
-    ALTER TABLE RepInCallsDetail 
-    ADD area VARCHAR(100) NULL;
-GO
+    IF COL_LENGTH(''RepInCallsDetail'', ''area'') IS NULL
+    BEGIN
+        ALTER TABLE RepInCallsDetail 
+            ADD area VARCHAR(100) NULL;
+    END
+    ';
+    EXEC(@sql);
 
--- RepOutCallsDetail
-IF COL_LENGTH(''RepOutCallsDetail'', ''areaId'') IS NULL
-    ALTER TABLE RepOutCallsDetail 
-    ADD areaId INT NOT NULL DEFAULT(0);
+    -- RepOutCallsDetail
+    SET @process = 'AlterTable RepOutCallsDetail';
+    SET @sql = '
+    IF COL_LENGTH(''RepOutCallsDetail'', ''areaId'') IS NULL
+    BEGIN
+        ALTER TABLE RepOutCallsDetail 
+            ADD areaId INT NOT NULL DEFAULT(0);
+    END
 
-IF COL_LENGTH(''RepOutCallsDetail'', ''area'') IS NULL
-    ALTER TABLE RepOutCallsDetail 
-    ADD area VARCHAR(100) NULL;
-GO
--- RepOutDialDetail
-IF COL_LENGTH(''RepOutDialDetail'', ''areaId'') IS NULL
-    ALTER TABLE RepOutDialDetail 
-    ADD areaId INT NOT NULL DEFAULT(0);
+    IF COL_LENGTH(''RepOutCallsDetail'', ''area'') IS NULL
+    BEGIN
+        ALTER TABLE RepOutCallsDetail 
+            ADD area VARCHAR(100) NULL;
+    END
+    ';
+    EXEC(@sql);
 
-IF COL_LENGTH(''RepOutDialDetail'', ''area'') IS NULL
-    ALTER TABLE RepOutDialDetail 
-    ADD area VARCHAR(100) NULL;
-GO
--- RepSpecialAbndCamp
-IF COL_LENGTH(''RepSpecialAbndCamp'', ''areaId'') IS NULL
-    ALTER TABLE RepSpecialAbndCamp 
-    ADD areaId INT NOT NULL DEFAULT(0);
+    -- RepOutDialDetail
+    SET @process = 'AlterTable RepOutDialDetail';
+    SET @sql = '
+    IF COL_LENGTH(''RepOutDialDetail'', ''areaId'') IS NULL
+    BEGIN
+        ALTER TABLE RepOutDialDetail 
+            ADD areaId INT NOT NULL DEFAULT(0);
+    END
 
-IF COL_LENGTH(''RepSpecialAbndCamp'', ''area'') IS NULL
-    ALTER TABLE RepSpecialAbndCamp 
-    ADD area VARCHAR(100) NULL;
-GO
+    IF COL_LENGTH(''RepOutDialDetail'', ''area'') IS NULL
+    BEGIN
+        ALTER TABLE RepOutDialDetail 
+            ADD area VARCHAR(100) NULL;
+    END
+    ';
+    EXEC(@sql);
+
+    -- RepSpecialAbndCamp
+    SET @process = 'AlterTable RepSpecialAbndCamp';
+    SET @sql = '
+    IF COL_LENGTH(''RepSpecialAbndCamp'', ''areaId'') IS NULL
+    BEGIN
+        ALTER TABLE RepSpecialAbndCamp 
+            ADD areaId INT NOT NULL DEFAULT(0);
+    END
+
+    IF COL_LENGTH(''RepSpecialAbndCamp'', ''area'') IS NULL
+    BEGIN
+        ALTER TABLE RepSpecialAbndCamp 
+            ADD area VARCHAR(100) NULL;
+    END
+    ';
+    EXEC(@sql);
 
 -------Inserts-------
     SET @process = 'Insert into ReportsFilters - KR201001';

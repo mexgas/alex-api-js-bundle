@@ -2782,7 +2782,6 @@ ELSE IF @Option = 12 BEGIN-- Get All Campaigns complete information per Campaign
           GROUP BY cwaos.camId
         )
         
-
         SELECT DISTINCT 
         CAST(camps.cam_id AS INT) AS Id, camps.cam_descripcion AS Name, 
         isnull(CAST(graph.graphic_id AS INT),1) AS Frame, CAST(1 AS SMALLINT) AS Type,
@@ -11823,6 +11822,11 @@ BEGIN
     BEGIN
         DECLARE @campaignIsEliminateDesasigned BIT = 0;
         DECLARE @idAreaNull SMALLINT = 0;
+		DECLARE @isRoot BIT = 0; --Fix
+		IF EXISTS(SELECT 1 FROM ccUsers_Roles where [User_id] = @UserId and Rol_id = 1)
+		BEGIN
+			SET @isRoot = 1;
+		END
 
         SELECT  @idAreaNull = cc.IDArea FROM dbo.ccCamps AS cc WHERE cc.cam_id = @campId
 
@@ -11833,7 +11837,7 @@ BEGIN
 
         IF NOT EXISTS(SELECT TOP 1 crcew.IdCampEsp FROM dbo.ccRIACampEspWG AS crcew INNER JOIN dbo.ccRIAWorkGroupUsers AS crwgu
         ON crwgu.IDWG = crcew.IDWG
-        WHERE crwgu.User_id = @UserId AND crcew.Tipo = 1 AND crcew.IdCampEsp = @campId)
+        WHERE  (crwgu.User_id = @UserId OR @isRoot = 1 ) AND crcew.Tipo = 1 AND crcew.IdCampEsp = @campId)
         BEGIN 
             SET @campaignIsEliminateDesasigned = 1; --La campaña fue desasignada del grupo de trabajo
         END
@@ -12785,248 +12789,422 @@ END'
 	END'
     EXEC(@sql)
 	------------------------------------------------------------------------------------------------------------
+		
+	------------------------------------------ Daniel Hernandez ------------------------------------------------
+	SET @process = '#3823-Agentes no reciben llamadas en Vista Previa'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaGetPreviewData]
+		@option     INT        = NULL,
+		@callout_id INT        = NULL,
+		@user_id    SMALLINT   = NULL
+	AS
+	BEGIN
+		SET NOCOUNT ON;
 
+		IF (@option = 1 OR @option IS NULL)
+		BEGIN
+			SELECT
+				previewData =
+					CONCAT(
+						CASE WHEN U.AllowDeleteRecord = 1 THEN ''true'' ELSE ''false'' END, ''~'',
+						COALESCE(P.Headers, ''Data1|Data2|Data3|Data4|Data5|Data6|Data7|Data8|Data9|Data10|Data11|Data12|Data13|Data14|Data15''), ''~'',
+						O.Dato1,  ''~'',
+						O.Dato2,  ''~'',
+						O.Dato3,  ''~'',
+						O.Dato4,  ''~'',
+						O.Dato5,  ''~'',
+						P.Dato6,  ''~'',
+						P.Dato7,  ''~'',
+						P.Dato8,  ''~'',
+						P.Dato9,  ''~'',
+						P.Dato10, ''~'',
+						P.Dato11, ''~'',
+						P.Dato12, ''~'',
+						P.Dato13, ''~'',
+						P.Dato14, ''~'',
+						P.Dato15, ''~'',
+						O.cal_telefono2, ''~'',
+						O.cal_telefono3, ''~'',
+						O.cal_telefono4, ''~'',
+						O.cal_telefono5, ''~'',
+						CONVERT(VARCHAR(50), O.cal_Key),      ''~'',
+						CONVERT(VARCHAR(50), O.cal_telefono), ''~'',
+						S.typePreview, ''~''
+					),
+				previewDiscard = C.previewDiscard,
+				previewUpdate  = CE.EditableContactData
+			FROM ccoCallsOutSource AS O WITH (NOLOCK)
+			INNER JOIN ccCamps        AS C  WITH (NOLOCK) ON O.cam_id = C.cam_id
+			INNER JOIN ccCampsExtend  AS CE WITH (NOLOCK) ON C.cam_id  = CE.cam_id
+			LEFT JOIN  ccoCallsPreviewData AS P WITH (NOLOCK)
+				   ON  P.Cal_key = O.cal_Key
+				   AND P.cam_id  = O.cam_id
+			OUTER APPLY (
+				SELECT TOP (1) U.AllowDeleteRecord
+				FROM ccUsers AS U WITH (NOLOCK)
+				WHERE U.User_id = @user_id
+				  AND U.TipoUser_id = 1
+			) AS U
+			OUTER APPLY (
+				SELECT TOP (1) S.valor AS typePreview
+				FROM ccSettings AS S WITH (NOLOCK)
+				WHERE S.setting_id = 248
+				  AND S.Status = 1
+				ORDER BY S.setting_id
+			) AS S
+			WHERE O.callout_id = @callout_id;
+		END
+		ELSE IF (@option = 2)
+		BEGIN
+			SELECT COUNT(*)
+			FROM ccoCallsOutSource WITH (NOLOCK)
+			WHERE callout_id = @callout_id;
+		END
 
-  --------------------------------- BEGIN Gallardo 20250905.0.8 ------------------------------------------------
-    SET @process = '#2970 - Reports - RepInCallsDetail Se elimina los datos para revisar las replicas'
-    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_AvrsSyncronization]
-@action SMALLINT,
-@maxRecordsToTransfer INT = 10,
-@ids varchar(max)= 0
-AS
-BEGIN
-SET NOCOUNT ON;
-
-IF @action = 1
-BEGIN
-    DECLARE @countrId INT;
-    SET @countrId = 1;
-
-    SELECT @countrId = valor
-    FROM ccSettings
-    WHERE setting_id = 104;
-
-          -- Declarar la variable tipo tabla
-        declare @tempCalls table(
-        cal_id INT,
-        user_id INT,
-        Inbound_id INT,
-        calif_id int,
-        cal_extension INT,
-        cal_inicio DATETIME,
-        phone VARCHAR(50),
-        duration INT,
-        cal_key VARCHAR(50),
-        cal_manual int,
-        cal_puerto INT,
-        dni_id INT,
-        fvalida datetime,
-        cal_whohung int,
-        califSub_id int,
-        cal_tMoh INT,
-        dateEnd DATETIME,
-        callType INT,
-        avrsId INT,
-        prefijo VARCHAR(20),
-        isCallRecord BIT,
-        DNIS VARCHAR(50),
-        IDWG VARCHAR(1000),
-        IsVoicemail BIT,
-        VirtualAgentId int
-    );
-
-        declare @deleteRow table(id int primary key);
-        declare @relationCallIdUser table(cal_id int, user_id int);
-
-    WITH callsIn AS (
-        SELECT TOP (@maxRecordsToTransfer) 
-            calls.cal_id as CallId,
-            CASE WHEN ccInbound.chat = 11 THEN 0 ELSE calls.[User_id] END AS [user_id],
-            calls.Inbound_id,
-            calls.calif_id,
-            CAST(cal_extension AS INT) AS cal_extension,
-            cal_inicio,
-            cal_ANI AS phone,
-            ISNULL(cal_tDialog - CASE WHEN ccInbound.recordHold = 1 THEN 0 ELSE cal_tMoh END, 0) 
-            + CASE WHEN stopRecording = 0 THEN ISNULL(trans.tDespuesXfer, 0) ELSE 0 END AS duration,
-            cal_key,
-            0 AS cal_manual,
-            cal_puerto,
-            calls.dni_id,
-            fvalida,
-            cal_whohung,
-            ISNULL(CAST(califSub_id AS SMALLINT), 0) AS califSub_id,
-            CASE 
-                WHEN trans.tAntesXfer IS NULL THEN cal_tMoh 
-                WHEN cal_tMoh - trans.tAntesXfer < 0 THEN 0 
-                ELSE cal_tMoh - trans.tAntesXfer 
-            END AS cal_tMoh,
-            DATEADD(ss, ISNULL(cal_tDialog, 0), cal_inicio) AS dateEnd,
-            avrs.tipo + 1 AS callType,
-            avrs.id AS avrsId,
-            ccInbound.prefijo,
-            CONVERT(BIT, CASE WHEN ISNULL(calls.file_moved, 1) = 2 THEN 0 ELSE 1 END) AS isCallRecord,
-            ISNULL(dni.dni_numero, '''') AS DNIS,
-            dbo.AsignaIDWS(calls.cal_id, avrs.tipo) AS IDWG,
-            0 AS IsVoicemail,
-            CASE WHEN ccInbound.chat = 11 THEN calls.[User_id] ELSE 0 END AS VirtualAgentId
-        FROM ccCallsIn AS calls WITH (NOLOCK)
-        INNER JOIN ccInbound ON ccInbound.Inbound_id = calls.Inbound_id
-        INNER JOIN ccAVRSTransfer avrs ON calls.cal_id = avrs.cal_id AND avrs.tipo = 0
-        LEFT JOIN ccDNIS dni ON dni.dni_id = calls.dni_id
-        LEFT JOIN ccInboundExtend inbExt ON inbExt.Inbound_id = calls.Inbound_id
-        LEFT JOIN (
-            SELECT cal_id, tipo, SUM(tAntesXfer) AS tAntesXfer, SUM(tDespuesXfer) AS tDespuesXfer
-            FROM ccLogTransfers  with(nolock)
-            WHERE tipo = 1 AND modo != 7
-            GROUP BY cal_id, tipo
-        ) trans ON calls.cal_id = trans.cal_id    
-    ),
-    callsOut AS (
-        SELECT TOP (@maxRecordsToTransfer) 
-            calls.cal_id AS CallId,
-            user_id AS UserId,
-            calls.cam_id AS camAcdId,
-            CAST(calls.calif_id AS SMALLINT) AS califId,
-            CAST(cal_extension AS INT) AS extension,
-            cal_inicio,
-            cal_telefono,
-            ISNULL(cal_tDialog - CASE WHEN camps.recordHold = 1 THEN 0 ELSE cal_tMoh END, 0) 
-            + CASE WHEN stopRecording = 0 THEN ISNULL(trans.tDespuesXfer, 0) ELSE 0 END AS duration,
-            cal_key,
-            cal_manual,
-            cal_puerto,
-            0 AS dni_id,
-            fvalida,
-            cal_whohung,
-            ISNULL(CAST(califSub_id AS SMALLINT), 0) AS califSub_id,
-            CASE 
-                WHEN trans.tAntesXfer IS NULL THEN cal_tMoh 
-                WHEN cal_tMoh - trans.tAntesXfer < 0 THEN 0 
-                ELSE cal_tMoh - trans.tAntesXfer 
-            END AS cal_tMoh,
-            DATEADD(ss, ISNULL(cal_tDialog, 0), cal_inicio) AS dateEnd,
-            avrs.tipo + 1 AS callType,
-            avrs.id AS avrsId,
-            camps.prefijo,
-            CONVERT(BIT, CASE WHEN ISNULL(calls.file_moved, 1) = 2 THEN 0 ELSE 1 END) AS isCallRecord,
-            '''' AS DNIS,
-            dbo.AsignaIDWS(calls.cal_id, avrs.tipo) AS IDWG,
-            CASE WHEN calls.statusCall_id = 19 THEN 1 ELSE 0 END AS IsVoicemail,
-            calls.virtualAgentId as VirtualAgentId
-        FROM ccoCallsOut AS calls WITH (NOLOCK)
-        INNER JOIN ccCamps camps ON camps.cam_id = calls.cam_id
-        INNER JOIN ccAVRSTransfer avrs ON calls.cal_id = avrs.cal_id AND avrs.tipo = 1
-        LEFT JOIN (
-            SELECT cal_id, tipo, SUM(tAntesXfer) AS tAntesXfer, SUM(tDespuesXfer) AS tDespuesXfer
-            FROM ccLogTransfers with(nolock)
-            WHERE tipo = 2
-            GROUP BY cal_id, tipo
-        ) trans ON calls.cal_id = trans.cal_id      
-    )
-
-    INSERT INTO @tempCalls                
-    SELECT * FROM callsIn
-    UNION 
-    SELECT * FROM callsOut;
-
-
-    insert into @deleteRow
-    select min(avrsId) id
-    from @tempCalls
-    group by cal_id,callType 
-    having count(*)>1
-    
-    delete from @tempCalls where avrsId in( select id from @deleteRow )
-        delete from ccAVRSTransfer where id in( select id from @deleteRow )
-
-        IF EXISTS (SELECT 1 FROM @tempCalls WHERE user_id=0 and callType=0)
-    BEGIN   
-                insert into @relationCallIdUser
-                select A.cal_id,aglog.User_id from @tempCalls A
-                inner join ccCallsIn B with(nolock) on A.cal_id=B.cal_id and A.callType=0
-                inner join ccLogAgentesDia aglog with(nolock) on aglog.callID=B.cal_id and aglog.Tipo=A.callType and aglog.TipoStatusAge_id=4
-
-                update B set B.User_id=A.User_id
-                from @relationCallIdUser A
-                inner join ccCallsIn B with(nolock) on A.cal_id=B.cal_id 
-
-                update B set B.User_id=A.User_id
-                from @relationCallIdUser A
-                inner join @tempCalls B on A.cal_id=B.cal_id and B.callType=0
-                
-                delete from @relationCallIdUser
-        END
-
-        IF EXISTS (SELECT 1 FROM @tempCalls WHERE user_id=0 and callType=1 and IsVoicemail =0)
-    BEGIN   
-                insert into @relationCallIdUser
-                select A.cal_id,aglog.User_id from @tempCalls A
-                inner join ccoCallsOut B with(nolock) on A.cal_id=B.cal_id and A.callType=1
-                inner join ccLogAgentesDia aglog with(nolock) on aglog.callID=B.cal_id and aglog.Tipo=A.callType and aglog.TipoStatusAge_id=4
-
-                update B set B.User_id=A.User_id
-                from @relationCallIdUser A
-                inner join ccoCallsOut B with(nolock) on A.cal_id=B.cal_id 
-
-                update B set B.User_id=A.User_id
-                from @relationCallIdUser A
-                inner join @tempCalls B on A.cal_id=B.cal_id and B.callType=1
-        END
-
-     -- Revisar si hay registros con IsVoicemail = 1
-    IF EXISTS (SELECT 1 FROM @tempCalls WHERE IsVoicemail = 1)
-    BEGIN            
-                update A
-                set A.duration=B.tDialing
-                FROM @tempCalls A
-                Inner JOIN ccoLogDials B with(nolock) ON A.cal_id=B.cal_id
-        WHERE A.IsVoicemail = 1;
-    END
-
-    --elimina los registros y se agrega tabla temporal para revision
-    if exists(SELECT 1 FROM @tempCalls WHERE user_id=0 and IsVoicemail=0)
-    begin       
-        delete FROM @tempCalls WHERE user_id=0 and IsVoicemail=0 and  datediff(hh,cal_inicio,getdate())<8
-    end
-        IF EXISTS (SELECT 1 FROM @tempCalls WHERE user_id=0 and IsVoicemail=0)
-    BEGIN
-                delete A from ccAVRSTransfer A
-                inner join @tempCalls t on A.id=t.avrsId 
-                where t.user_id=0 and t.IsVoicemail=0
-        END
-        
-    -- Si no hay registros con IsVoicemail, simplemente devolver los resultados de la variable tipo tabla
-    SELECT * FROM @tempCalls;
-        
-END
-ELSE IF @action = 2
-BEGIN
-    Delete A
-    from ccAVRSTransfer A
-    inner join dbo.fn_RIASplitDelimited(@ids,'','') t on A.id=t.Value
-    
-END
-END;
-'
+		SET NOCOUNT OFF;
+	END'
     EXEC(@sql)
+	----------------------------------------------------------------------------
+	SET @process = '#3823-Agentes no reciben llamadas en Vista Previa'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_UpdateCallsOutFromTempAction]
+		@action INT,
+		@tableName NVARCHAR(255),
+		@cal_status int = 0,
+		@idLoad int=0,
+		@motivo varchar(50)=null,
+		@cam_id int=null,
+		@isIAQuantumCamp bit =0,
+		@internationalRecords int=0
 
-    SET @process = '#2970 - Reports - RepInCallsDetail columna grab_ID en cero'
-    SET @sql = ''
+	AS
+	BEGIN
+		SET NOCOUNT ON;
+
+		DECLARE @sql NVARCHAR(MAX);
+		DECLARE @paramDef NVARCHAR(300);    
+		DECLARE @count INT;
+		declare @emtpy varchar(1)='''',@zipCodeSchedule bit 
+		declare @columnsIAQuntum varchar(max)=''''   
+
+		IF @action = 1
+		BEGIN
+			SET @sql = ''
+			UPDATE '' + QUOTENAME(@tableName) + ''
+			SET international = 1'';
+		   
+			EXEC sp_executesql @sql;
+		END
+		ELSE IF @action = 2
+		BEGIN
+				
+			if @isIAQuantumCamp =1 begin
+				set @columnsIAQuntum='', data_api_quantum, data_overflow_variables_quantum''
+			end
+
+			SET @sql = ''
+			INSERT INTO dbo.ccoCallsOutSource (
+				cal_Key, cal_telefono, cal_telefono2, cal_telefono3, cal_telefono4, cal_telefono5,
+				Dato1, Dato2, Dato3, Dato4, Dato5,
+				dialPrefix, list_id, cam_id, Region, Localidad, cal_status, cal_fechaDial
+				,iZonaHoraria,iZonaHoraria_verano
+				,iZonaHoraria2,iZonaHoraria_verano2
+				,iZonaHoraria3,iZonaHoraria_verano3
+				,iZonaHoraria4,iZonaHoraria_verano4
+				,iZonaHoraria5,iZonaHoraria_verano5
+				'' + @columnsIAQuntum + ''
+			)
+			SELECT
+				cal_Key, cal_telefono, cal_telefono2, cal_telefono3, cal_telefono4, cal_telefono5,
+				Dato1, Dato2, Dato3, Dato4, Dato5,
+				dialPrefix, list_id, cam_id, Region, Localidad, cal_status, cal_fechaDial
+				,iZonaHoraria,iZonaHoraria_verano
+				,iZonaHoraria2,iZonaHoraria_verano2
+				,iZonaHoraria3,iZonaHoraria_verano3
+				,iZonaHoraria4,iZonaHoraria_verano4
+				,iZonaHoraria5,iZonaHoraria_verano5
+				'' + @columnsIAQuntum + ''
+			FROM '' + QUOTENAME(@tableName) + ''
+			WHERE callout_id = 0'';
+
+			EXEC sp_executesql @sql;
+		END
+		
+		ELSE IF @action = 3
+		BEGIN
+			SET @sql = ''
+			INSERT INTO dbo.ccoCallsPreviewData (
+				cal_Key, cam_id, TotalData, Headers,
+				Dato6, Dato7, Dato8, Dato9, Dato10,
+				Dato11, Dato12, Dato13, Dato14, Dato15
+			)
+			SELECT 
+				A.cal_Key, A.cam_id, A.TotalData, A.Headers,
+				A.Dato6, A.Dato7, A.Dato8, A.Dato9, A.Dato10,
+				A.Dato11, A.Dato12, A.Dato13, A.Dato14, A.Dato15
+			FROM '' + QUOTENAME(@tableName) + '' A
+			left join ccoCallsPreviewData B on A.cal_Key=B.cal_Key and A.cam_id=B.cam_id
+			WHERE B.cam_id is null;
+			'';
+		
+			EXEC sp_executesql @sql;
+		END
+		ELSE IF @action = 4
+		BEGIN
+			SET @sql = ''
+			UPDATE C SET
+				C.Headers = A.Headers,
+				C.TotalData = A.TotalData,
+				C.Dato6 = A.Dato6, C.Dato7 = A.Dato7, C.Dato8 = A.Dato8, C.Dato9 = A.Dato9, C.Dato10 = A.Dato10,
+				C.Dato11 = A.Dato11, C.Dato12 = A.Dato12, C.Dato13 = A.Dato13, C.Dato14 = A.Dato14, C.Dato15 = A.Dato15
+			FROM '' + QUOTENAME(@tableName) + '' A
+			INNER JOIN dbo.ccoCallsPreviewData C WITH (ROWLOCK, UPDLOCK)
+				ON A.cal_Key = C.cal_Key AND A.cam_id = C.cam_id;
+			'';
+		
+			EXEC sp_executesql @sql;
+		END
+		ELSE IF @action =5
+		BEGIN
+			if @isIAQuantumCamp =1 begin
+				set @columnsIAQuntum='', C.data_api_quantum = A.data_api_quantum, C.data_overflow_variables_quantum = A.data_overflow_variables_quantum''
+			end
+
+			SET @sql = ''
+			UPDATE C SET
+				C.cal_status = CASE WHEN B.callout_id IS NULL THEN @cal_status_param ELSE C.cal_status END,
+				C.cal_telefono = A.cal_telefono,
+				C.cal_telefono2 = A.cal_telefono2,
+				C.cal_telefono3 = A.cal_telefono3,
+				C.cal_telefono4 = A.cal_telefono4,
+				C.cal_telefono5 = A.cal_telefono5,
+				C.Dato1 = A.Dato1,
+				C.Dato2 = A.Dato2,
+				C.Dato3 = A.Dato3,
+				C.Dato4 = A.Dato4,
+				C.Dato5 = A.Dato5,
+				C.dialPrefix = A.dialPrefix,
+				C.list_id = A.list_id,
+				C.cal_fechaDial = CASE WHEN A.callout_id = 0 THEN A.cal_fechaDial ELSE C.cal_fechaDial END,
+				C.Region = A.Region,
+				C.Localidad = A.Localidad,
+				C.international = A.international,
+				C.recycledByResult = @emtpy,
+				C.recycledByDisposition = 0,
+				C.recyclePhone = 0,
+				C.recycleType = 1
+				,C.iZonaHoraria=A.iZonaHoraria,C.iZonaHoraria_verano=A.iZonaHoraria_verano
+				,C.iZonaHoraria2=A.iZonaHoraria2,C.iZonaHoraria_verano2=A.iZonaHoraria_verano2
+				,C.iZonaHoraria3=A.iZonaHoraria3,C.iZonaHoraria_verano3=A.iZonaHoraria_verano3
+				,C.iZonaHoraria4=A.iZonaHoraria4,C.iZonaHoraria_verano4=A.iZonaHoraria_verano4
+				,C.iZonaHoraria5=A.iZonaHoraria5,C.iZonaHoraria_verano5=A.iZonaHoraria_verano5
+				'' + @columnsIAQuntum + ''
+			FROM '' + QUOTENAME(@tableName) + '' A
+			LEFT JOIN dbo.ccoWorkingTable B WITH (ROWLOCK, UPDLOCK, READPAST) ON A.callout_id = B.callout_id AND B.cal_status <= 2
+			INNER JOIN dbo.ccoCallsOutSource C WITH (ROWLOCK, UPDLOCK) ON A.callout_id = C.callout_id'';
+			
+			SET @paramDef = N''@cal_status_param TINYINT, @emtpy varchar(1)'';
+			EXEC sp_executesql @sql, @paramDef, @cal_status_param = @cal_status, @emtpy= @emtpy;
+		END
+		ELSE IF @action = 6
+		BEGIN
+			DECLARE @today DATE = CONVERT(DATE, GETDATE());
+
+			SET @sql = ''
+		UPDATE B
+		SET B.list_id = A.list_id
+		FROM '' + QUOTENAME(@tableName) + '' A
+		INNER JOIN ccoCallsOutSource C WITH (NOLOCK)  ON A.callout_id = C.callout_id
+		INNER JOIN ccoWorkingTable B WITH (NOLOCK)    ON A.callout_id = B.callout_id AND A.cam_id = B.cam_id
+		WHERE B.list_id <> A.list_id;
+
+
+		  UPDATE ld WITH (ROWLOCK) SET ld.canBeRecycled = 0
+		  FROM '' + QUOTENAME(@tableName) + '' t
+		  LEFT JOIN ccoWorkingTable wt WITH (ROWLOCK, UPDLOCK, READPAST) ON t.cam_id = wt.cam_id AND t.callout_id = wt.callout_id AND wt.cal_status < 2
+		  INNER JOIN ccoLogDials ld WITH (ROWLOCK, UPDLOCK, INDEX(IX_LogDials_cam_tipo_fecha_callout)) ON ld.cam_id = t.cam_id and ld.callout_id = t.callout_id
+		  WHERE wt.callout_id IS NULL AND ld.fecha >= @today AND (ld.canBeRecycled=1 or ld.canBeRecycled is null);
+	 
+		  UPDATE co WITH (ROWLOCK) SET co.canBeRecycled = 0
+		  FROM '' + QUOTENAME(@tableName) + '' t
+		  LEFT JOIN ccoWorkingTable wt WITH (ROWLOCK, UPDLOCK, READPAST) ON t.cam_id = wt.cam_id AND t.callout_id = wt.callout_id AND wt.cal_status < 2
+		  INNER JOIN ccoCallsOut co WITH (ROWLOCK, UPDLOCK) ON co.callout_id = t.callout_id
+		  WHERE wt.callout_id IS NULL AND co.cal_Inicio >= @today AND (co.canBeRecycled=1 or co.canBeRecycled is null);
+		  '';
+			--print(@sql)
+			EXEC sp_executesql @sql, N''@today DATE'', @today=@today;
+		END
+		ELSE IF @action = 7
+		BEGIN       
+
+			-- Contar registros inválidos
+			SET @sql = ''
+			SELECT @cnt = COUNT(*)
+			FROM '' + QUOTENAME(@tableName) + '' A
+			LEFT JOIN ccoWorkingTable B WITH (NOLOCK)
+				ON A.callout_id = B.callout_id AND A.cam_id = B.cam_id AND B.cal_status <= 2
+			WHERE B.callout_id IS NULL and A.callout_id > 0;'';
+
+			EXEC sp_executesql @sql, N''@cnt INT OUTPUT'', @cnt = @count OUTPUT;
+
+			-- Insertar en ccRIALogPhones los registros sin match
+			SET @sql = ''
+			INSERT INTO ccRIALogPhones(load_id, cal_key, telefono, tipoMov, motivo,internationalRecords)
+			SELECT @idLoad, A.cal_Key, @emtpy, 2, @motivo,@internationalRecords
+			FROM '' + QUOTENAME(@tableName) + '' A
+			LEFT JOIN ccoWorkingTable B WITH (NOLOCK)
+				ON A.callout_id = B.callout_id AND A.cam_id = B.cam_id AND B.cal_status <= 2
+			WHERE B.callout_id IS NULL;'';
+
+			EXEC sp_executesql @sql,
+				N''@idLoad INT, @motivo NVARCHAR(200),@emtpy varchar(1),@internationalRecords int'',
+				@idLoad = @idLoad,
+				@motivo = @motivo,
+				@internationalRecords =@internationalRecords,
+				@emtpy=@emtpy;
+
+			-- Eliminar los registros sin match
+			SET @sql = ''
+			DELETE A
+			FROM '' + QUOTENAME(@tableName) + '' A
+			LEFT JOIN ccoWorkingTable B WITH (NOLOCK)
+				ON A.callout_id = B.callout_id AND A.cam_id = B.cam_id AND B.cal_status <= 2
+			WHERE B.callout_id IS NULL;'';
+
+			EXEC(@sql);
+
+			-- Retornar el count como resultado
+			SELECT @count AS RegistrosEliminados;
+		END
+		ELSE IF @action = 8
+		BEGIN
+			
+
+			-- Contar total de registros antes del borrado
+			SET @sql = ''
+			SELECT @cnt = COUNT(*) FROM '' + QUOTENAME(@tableName) + '';'';
+		
+			EXEC sp_executesql @sql, N''@cnt INT OUTPUT'', @cnt = @count OUTPUT;
+
+			-- Log en ccRIALogPhones todos los registros de la tabla temporal
+			SET @sql = ''
+			INSERT INTO ccRIALogPhones(load_id, cal_key, telefono, tipoMov, motivo,internationalRecords)
+			SELECT @idLoad, cal_Key, @emtpy, 2, @motivo,@internationalRecords FROM '' + QUOTENAME(@tableName) + '';'';
+
+			EXEC sp_executesql @sql,
+					N''@idLoad INT, @motivo NVARCHAR(200),@emtpy varchar(1),@internationalRecords int'',
+				@idLoad = @idLoad,
+				@motivo = @motivo,
+				@internationalRecords =@internationalRecords,
+				@emtpy=@emtpy;
+
+			-- Eliminar todos los registros de la tabla temporal
+			SET @sql = ''DELETE FROM '' + QUOTENAME(@tableName) + '';'';
+			EXEC(@sql);
+
+			-- Retornar el número de registros eliminados
+			SELECT @count AS RegistrosEliminados;
+		END
+		ELSE IF @action = 9 BEGIN
+			
+			DECLARE @country TINYINT;
+			SELECT @country = CONVERT(TINYINT, valor) FROM ccSettings WITH (NOLOCK) WHERE setting_id = 104;
+			if @country =1 begin
+				select @zipCodeSchedule=zipCodeSchedule from ccCampsExtend where cam_id =@cam_id
+			end
+			if @zipCodeSchedule is null begin
+				set @zipCodeSchedule=0
+			end
+
+			SET @sql = ''
+		UPDATE T SET 
+			iZonaHoraria = CASE 
+				WHEN (cal_telefono IS NULL OR LTRIM(RTRIM(cal_telefono)) = @emtpy) THEN 0
+				WHEN  @country=1 AND @zipCodeSchedule= 1 THEN ISNULL(Z.tz_id_invierno,0)            
+				ELSE dbo.fnGetTimeZone(T.cal_telefono,  0) END,
+	 
+			iZonaHoraria_verano = CASE 
+			  WHEN (cal_telefono IS NULL OR LTRIM(RTRIM(cal_telefono)) = @emtpy) THEN 0
+				WHEN  @country=1 AND @zipCodeSchedule= 1 THEN ISNULL(Z.tz_id_verano,0)          
+				ELSE dbo.fnGetTimeZone(T.cal_telefono,  1) END,
+	 
+			iZonaHoraria2 = CASE 
+				WHEN (cal_telefono2 IS NULL OR LTRIM(RTRIM(cal_telefono2)) = @emtpy) THEN 0
+				WHEN  @country=1 AND @zipCodeSchedule= 1 THEN ISNULL(Z.tz_id_invierno,0)            
+				ELSE dbo.fnGetTimeZone(T.cal_telefono2,  0) END,
+	 
+			iZonaHoraria_verano2 = CASE 
+			  WHEN (cal_telefono2 IS NULL OR LTRIM(RTRIM(cal_telefono2)) = @emtpy) THEN 0
+				WHEN  @country=1 AND @zipCodeSchedule= 1 THEN ISNULL(Z.tz_id_verano,0)          
+				ELSE dbo.fnGetTimeZone(T.cal_telefono2,  1) END,
+
+			iZonaHoraria3 = CASE 
+				WHEN (cal_telefono3 IS NULL OR LTRIM(RTRIM(cal_telefono3)) = @emtpy) THEN 0
+				WHEN  @country=1 AND @zipCodeSchedule= 1 THEN ISNULL(Z.tz_id_invierno,0)            
+				ELSE dbo.fnGetTimeZone(T.cal_telefono3,  0) END,
+	 
+			iZonaHoraria_verano3 = CASE 
+			  WHEN (cal_telefono3 IS NULL OR LTRIM(RTRIM(cal_telefono3)) = @emtpy) THEN 0
+				WHEN  @country=1 AND @zipCodeSchedule= 1 THEN ISNULL(Z.tz_id_verano,0)          
+				ELSE dbo.fnGetTimeZone(T.cal_telefono3,  1) END,
+
+			iZonaHoraria4 = CASE 
+				WHEN (cal_telefono4 IS NULL OR LTRIM(RTRIM(cal_telefono4)) = @emtpy) THEN 0
+				WHEN  @country=1 AND @zipCodeSchedule= 1 THEN ISNULL(Z.tz_id_invierno,0)            
+				ELSE dbo.fnGetTimeZone(T.cal_telefono4,  0) END,
+	 
+			iZonaHoraria_verano4 = CASE 
+			  WHEN (cal_telefono4 IS NULL OR LTRIM(RTRIM(cal_telefono4)) = @emtpy) THEN 0
+				WHEN  @country=1 AND @zipCodeSchedule= 1 THEN ISNULL(Z.tz_id_verano,0)          
+				ELSE dbo.fnGetTimeZone(T.cal_telefono4,  1) END,
+
+			iZonaHoraria5 = CASE 
+				WHEN (cal_telefono5 IS NULL OR LTRIM(RTRIM(cal_telefono5)) = @emtpy) THEN 0
+				WHEN  @country=1 AND @zipCodeSchedule= 1 THEN ISNULL(Z.tz_id_invierno,0)            
+				ELSE dbo.fnGetTimeZone(T.cal_telefono5,  0) END,
+	 
+			iZonaHoraria_verano5 = CASE 
+			  WHEN (cal_telefono5 IS NULL OR LTRIM(RTRIM(cal_telefono5)) = @emtpy) THEN 0
+				WHEN  @country=1 AND @zipCodeSchedule= 1 THEN ISNULL(Z.tz_id_verano,0)          
+				ELSE dbo.fnGetTimeZone(T.cal_telefono5,  1) END
+
+		FROM '' + QUOTENAME(@tableName) + '' T
+		OUTER APPLY dbo.fnGetTimeZoneByZip(T.Dato1) AS Z
+		''
+		EXEC sp_executesql @sql,
+				N''@zipCodeSchedule bit,@country TINYINT,@emtpy varchar(1)'',
+				@zipCodeSchedule = @zipCodeSchedule,
+				@country = @country,
+				@emtpy = @emtpy
+
+		--print(@sql)
+		END
+		ELSE IF @action = 10
+		BEGIN
+			SET @sql = ''DELETE FROM '' + QUOTENAME(@tableName) + '' WHERE callout_id = 0;'';    
+			EXEC sp_executesql @sql;
+		END
+		 ELSE IF @action = 11 BEGIN
+					
+			SET @sql = ''
+		UPDATE T SET 
+			international=@internationalRecords
+		FROM '' + QUOTENAME(@tableName) + '' T
+		''
+		EXEC sp_executesql @sql,
+				N''@internationalRecords int'',         
+				@emtpy = @emtpy
+
+		END
+		
+
+		ELSE
+		BEGIN
+			RAISERROR(''Acción inválida: %d. Use 1 = UpdateOutSource, 2 = UpdateLogDials, 3 = UpdateCallsOut, 4 = UpdateInternational'', 16, 1, @action);
+			RETURN;
+		END
+	END'
     EXEC(@sql)
-
-
-    SET @process = '#2970 - Reports - RepInCallsDetail columna grab_ID en cero'
-    SET @sql = ''
-    EXEC(@sql)
-
-    SET @process = '#2970 - Reports - RepInCallsDetail columna grab_ID en cero'
-    SET @sql = ''
-    EXEC(@sql)
-
-
-  --------------------------------- END Gallardo 20250905.0.8 ------------------------------------------------
-
+	
+	------------------------------------------------------------------------------------------------------------
 	
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

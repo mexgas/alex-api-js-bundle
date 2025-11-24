@@ -39,6 +39,57 @@ BEGIN
 	BEGIN TRY
 
 --------------------------------------------------------BEGIN Octavio Ortiz----------------------------------------------------------------------------------------
+
+---Alter Table--
+
+-- RepAgentSummary
+IF COL_LENGTH('RepAgentSummary', 'areaId') IS NULL
+    ALTER TABLE RepAgentSummary 
+    ADD areaId INT NOT NULL DEFAULT(0);
+
+IF COL_LENGTH('RepAgentSummary', 'area') IS NULL
+    ALTER TABLE RepAgentSummary 
+    ADD area VARCHAR(100) NULL;
+GO
+
+-- RepInCallsDetail
+IF COL_LENGTH('RepInCallsDetail', 'areaId') IS NULL
+    ALTER TABLE RepInCallsDetail 
+    ADD areaId INT NOT NULL DEFAULT(0);
+
+IF COL_LENGTH('RepInCallsDetail', 'area') IS NULL
+    ALTER TABLE RepInCallsDetail 
+    ADD area VARCHAR(100) NULL;
+GO
+
+-- RepOutCallsDetail
+IF COL_LENGTH('RepOutCallsDetail', 'areaId') IS NULL
+    ALTER TABLE RepOutCallsDetail 
+    ADD areaId INT NOT NULL DEFAULT(0);
+
+IF COL_LENGTH('RepOutCallsDetail', 'area') IS NULL
+    ALTER TABLE RepOutCallsDetail 
+    ADD area VARCHAR(100) NULL;
+GO
+-- RepOutDialDetail
+IF COL_LENGTH('RepOutDialDetail', 'areaId') IS NULL
+    ALTER TABLE RepOutDialDetail 
+    ADD areaId INT NOT NULL DEFAULT(0);
+
+IF COL_LENGTH('RepOutDialDetail', 'area') IS NULL
+    ALTER TABLE RepOutDialDetail 
+    ADD area VARCHAR(100) NULL;
+GO
+-- RepSpecialAbndCamp
+IF COL_LENGTH('RepSpecialAbndCamp', 'areaId') IS NULL
+    ALTER TABLE RepSpecialAbndCamp 
+    ADD areaId INT NOT NULL DEFAULT(0);
+
+IF COL_LENGTH('RepSpecialAbndCamp', 'area') IS NULL
+    ALTER TABLE RepSpecialAbndCamp 
+    ADD area VARCHAR(100) NULL;
+GO
+
 -------Inserts-------
     SET @process = 'Insert into ReportsFilters - KR201001';
 

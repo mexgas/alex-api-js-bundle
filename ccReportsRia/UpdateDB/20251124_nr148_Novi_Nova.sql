@@ -1618,11 +1618,69 @@ END'
     
     --------------------------------  END GASJ -------------------------------- 
 
-    -------------------------------- BEGIN LMZN 127.20250905.0.8-------------------------------------------------------
+-------------------------------- BEGIN LMZN 127.20250905.0.8-------------------------------------------------------
 
+SET @process = 'Create Column source';
+SET @sql = '
+-- source
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.columns 
+    WHERE Name = ''source''
+      AND Object_ID = Object_ID(''dbo.RepInCallsDetail'')
+)
+BEGIN
+    ALTER TABLE dbo.RepInCallsDetail 
+        ADD source VARCHAR(20);
+END';
+EXEC(@sql);
 
---ccspRepInCallsDetail
-SET @process = 'Drop Procedure [ccspRepInCallsDetail]';
+SET @process = 'Create Column destinationNumber';
+SET @sql = '
+-- destinationNumber
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.columns 
+    WHERE Name = ''destinationNumber''
+      AND Object_ID = Object_ID(''dbo.RepInCallsDetail'')
+)
+BEGIN
+    ALTER TABLE dbo.RepInCallsDetail 
+        ADD destinationNumber VARCHAR(20);
+END';
+EXEC(@sql);
+
+SET @process = 'Create Column queueTime';
+SET @sql = '
+-- cal_tWait
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.columns 
+    WHERE Name = ''cal_tWait''
+      AND Object_ID = Object_ID(''dbo.RepInCallsDetail'')
+)
+BEGIN
+    ALTER TABLE dbo.RepInCallsDetail 
+        ADD cal_tWait INT;
+END';
+EXEC(@sql);
+
+SET @process = 'Create Column callbackDate';
+SET @sql = '
+-- callbackDate
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.columns 
+    WHERE Name = ''callbackDate''
+      AND Object_ID = Object_ID(''dbo.RepInCallsDetail'')
+)
+BEGIN
+    ALTER TABLE dbo.RepInCallsDetail 
+        ADD callbackDate DATETIME;
+END';
+EXEC(@sql);
+
+SET @process = 'Object drop: PROCEDURE [dbo].[ccspRepInCallsDetail]';
 SET @sql = '
 IF OBJECT_ID(N''dbo.ccspRepInCallsDetail'', ''P'') IS NOT NULL
 BEGIN
@@ -1631,7 +1689,7 @@ END';
 EXEC(@sql);
 
 
-SET @process = 'CreateProcedure ccspRepInCallsDetail --KR187000 (Se agregan columnas para fecha callback, source, destination y queueTime)';
+SET @process = 'Object create: PROCEDURE [dbo].[ccspRepInCallsDetail] --KR187000 (Se agregan columnas para fecha callback, source, destination y queueTime)';
 SET @sql = '
 CREATE PROCEDURE [dbo].[ccspRepInCallsDetail] 
     @action AS TINYINT, 
@@ -1875,12 +1933,10 @@ BEGIN
 
         EXEC SupportReportCallInIVR 1, @from, @to;
     END
-END
-';
+END';
 EXEC(@sql);
 
---RepViewInCallsDetail
-SET @process = 'Drop View [RepViewInCallsDetail]';
+SET @process = 'Object drop: VIEW [dbo].[RepViewInCallsDetail]';
 SET @sql = '
 IF OBJECT_ID(N''dbo.RepViewInCallsDetail'', ''V'') IS NOT NULL
 BEGIN
@@ -1952,62 +2008,10 @@ SELECT
 FROM RepInCallsDetail WITH (NOLOCK)';
 EXEC(@sql);
 
-SET @process = 'Create Columns source,callback,destinationNumber';
-SET @sql = '
--- source
-IF NOT EXISTS (
-    SELECT 1
-    FROM sys.columns 
-    WHERE Name = ''source''
-      AND Object_ID = Object_ID(''dbo.RepInCallsDetail'')
-)
-BEGIN
-    ALTER TABLE dbo.RepInCallsDetail 
-        ADD source VARCHAR(20);
-END
-GO
-
--- destinationNumber
-IF NOT EXISTS (
-    SELECT 1
-    FROM sys.columns 
-    WHERE Name = ''destinationNumber''
-      AND Object_ID = Object_ID(''dbo.RepInCallsDetail'')
-)
-BEGIN
-    ALTER TABLE dbo.RepInCallsDetail 
-        ADD destinationNumber VARCHAR(20);
-END
-GO
-
--- cal_tWait
-IF NOT EXISTS (
-    SELECT 1
-    FROM sys.columns 
-    WHERE Name = ''cal_tWait''
-      AND Object_ID = Object_ID(''dbo.RepInCallsDetail'')
-)
-BEGIN
-    ALTER TABLE dbo.RepInCallsDetail 
-        ADD cal_tWait INT;
-END
-GO
-
--- callbackDate
-IF NOT EXISTS (
-    SELECT 1
-    FROM sys.columns 
-    WHERE Name = ''callbackDate''
-      AND Object_ID = Object_ID(''dbo.RepInCallsDetail'')
-)
-BEGIN
-    ALTER TABLE dbo.RepInCallsDetail 
-        ADD callbackDate DATETIME;
-END
-GO
-
-UPDATE ReportsTotals SET totalColumns = ''sum:queue_Time|sum:xferTime|sum:ringingTime|sum:dialog_Time|sum:hold_Time|sum:twrapup|sum:queueTime'' where id=3010';
-    -------------------------------- END LMZN -------------------------------------------------------------------------
+SET @process = 'ALTER ReportsTotals queueTime';
+SET @sql = 'UPDATE ReportsTotals SET totalColumns = ''sum:queue_Time|sum:xferTime|sum:ringingTime|sum:dialog_Time|sum:hold_Time|sum:twrapup|sum:queueTime'' where id=3010';
+EXEC(@sql);
+-------------------------------- END LMZN -------------------------------------------------------------------------
           
 ------------------------------------ END UNION 127.20250905.0.6 -- 127.20251008.0.1 ------------------------------------
 

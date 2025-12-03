@@ -10294,6 +10294,145 @@ SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_VerifyCampaignRelationships]
         CREATE NONCLUSTERED INDEX IX_ccLogAgentesDia_6 ON ccLogAgentesDia (User_id, TipoStatusAge_id, fecha, tStatus);
     END'
     EXEC(@sql)
+
+    SET @process = 'Creación de tabla CampaignLoad para guardar datos de cargas'
+    SET @sql= 'IF NOT EXISTS (SELECT * 
+                     FROM INFORMATION_SCHEMA.TABLES 
+                     WHERE TABLE_SCHEMA = ''dbo'' 
+                     AND  TABLE_NAME = ''CampaignLoad'')
+    BEGIN
+        CREATE TABLE CampaignLoad ( 
+            [Key] NVARCHAR(255) PRIMARY KEY,        
+            AdminID NVARCHAR(50) NOT NULL,
+            FileName NVARCHAR(255) NULL,
+            ListName NVARCHAR(255) NULL,
+            HasHeader NVARCHAR(10) NULL, 
+            CallKey NVARCHAR(100) NULL,
+            Phones NVARCHAR(MAX) NULL, 
+            DataField NVARCHAR(MAX) NULL,
+            CallBackDate NVARCHAR(50) NULL,
+            InternationalRecords BIT NOT NULL DEFAULT 0,
+            FilterId NVARCHAR(50) NULL,
+            ArrayBlackListId NVARCHAR(MAX) NULL,
+            ArrayDeletedBlackListId NVARCHAR(MAX) NULL,
+            DataWhere NVARCHAR(MAX) NULL
+        );
+    END'
+    EXEC(@sql);
+
+    SET @process = 'DROP PROCEDURE ccsp_CampaignLoad'
+    SET @sql = '
+        if exists (select * from sys.procedures where name = N''ccsp_CampaignLoad'')
+        begin
+            DROP PROCEDURE ccsp_CampaignLoad
+        end'
+    EXEC(@sql)
+
+    SET @process = 'KR152004 - Se crea SP ccsp_CampaignLoad para guardar, eliminar  y actualizar cargas hidratadas en admin'
+    SET @sql = '
+    CREATE PROCEDURE [dbo].[ccsp_CampaignLoad]   
+        @action                  SMALLINT,     
+        @Key                     NVARCHAR(255) = NULL,
+        @AdminID                 NVARCHAR(50)  = NULL,
+        @FileName                NVARCHAR(255) = NULL,
+        @ListName                NVARCHAR(255) = NULL,
+        @HasHeader               NVARCHAR(10)  = NULL,
+        @CallKey                 NVARCHAR(100) = NULL,
+        @Phones                  NVARCHAR(MAX) = NULL,
+        @DataField               NVARCHAR(MAX) = NULL,
+        @CallBackDate            NVARCHAR(50)  = NULL,  
+        @InternationalRecords    BIT           = 0,
+        @FilterId                NVARCHAR(50)  = NULL,
+        @ArrayBlackListId        NVARCHAR(MAX) = NULL,
+        @ArrayDeletedBlackListId NVARCHAR(MAX) = NULL,
+        @DataWhere               NVARCHAR(MAX) = NULL
+    AS
+    BEGIN
+        IF (@action = 1)
+        BEGIN
+            SELECT [Key],
+                   AdminID,
+                   FileName,
+                   ListName,
+                   HasHeader,
+                   CallKey,
+                   Phones,
+                   DataField,
+                   CallBackDate,
+                   InternationalRecords,
+                   FilterId,
+                   ArrayBlackListId as ArrayBlackListIdString,
+                   ArrayDeletedBlackListId as ArrayDeletedBlackListIdString,
+                   DataWhere
+               FROM dbo.CampaignLoad
+               RETURN;
+        END
+        ELSE IF (@action = 2)
+        BEGIN
+            IF EXISTS (SELECT 1
+                       FROM dbo.CampaignLoad WITH (UPDLOCK, HOLDLOCK)
+                       WHERE [Key] = @Key)
+            BEGIN
+                UPDATE dbo.CampaignLoad
+                   SET AdminID                     = @AdminID,
+                       FileName                    = @FileName,
+                       ListName                    = @ListName,
+                       HasHeader                   = @HasHeader,
+                       CallKey                     = @CallKey,
+                       Phones                      = @Phones,
+                       DataField                   = @DataField,
+                       CallBackDate                = @CallBackDate,
+                       InternationalRecords        = @InternationalRecords,
+                       FilterId                    = @FilterId,
+                       ArrayBlackListId            = @ArrayBlackListId,
+                       ArrayDeletedBlackListId     = @ArrayDeletedBlackListId,
+                       DataWhere                   = @DataWhere
+                 WHERE [Key]                       = @Key;
+            END                                    
+            ELSE
+            BEGIN
+                INSERT INTO dbo.CampaignLoad (
+                    [Key],
+                    AdminID,
+                    FileName,
+                    ListName,
+                    HasHeader,
+                    CallKey,
+                    Phones,
+                    DataField,
+                    CallBackDate,
+                    InternationalRecords,
+                    FilterId,
+                    ArrayBlackListId,
+                    ArrayDeletedBlackListId,
+                    DataWhere
+                )
+                VALUES (
+                    @Key,
+                    @AdminID,
+                    @FileName,
+                    @ListName,
+                    @HasHeader,
+                    @CallKey,
+                    @Phones,
+                    @DataField,
+                    @CallBackDate,
+                    @InternationalRecords,
+                    @FilterId,
+                    @ArrayBlackListId,
+                    @ArrayDeletedBlackListId,
+                    @DataWhere
+                );
+            END
+
+            RETURN;
+        END
+        ELSE IF (@action = 3)
+        BEGIN
+            DELETE FROM dbo.CampaignLoad
+        END
+    END'
+    EXEC(@sql)
     -------------------------------------END dmm------------------------------------------------
 
     ------------------------------------- BEGIN GASJ 20250905.0.1 ------------------------------------------------

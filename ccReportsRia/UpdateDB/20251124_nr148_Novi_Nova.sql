@@ -890,6 +890,15 @@ SELECT
     area
 FROM RepAgentSummary';
 EXEC(@sql);
+
+-------Pitov AgentSummaryReport------
+SET @process = 'UpdatePivotReportsComplementColumns';
+SET @sql = '
+    UPDATE PivotReports 
+    SET complementColumns = ''date|login|user|loginMktTime|logoutMktTime|sessionTime|unknownStatus|otherStatus|Available|ndTime|transferStatus|ringingTime|callTengaged|twrapup|failureStatus|chatTengaged|dialingStatus|undefinedTime|NCallsOut|NCallsIn|NCallsCorta|NAtend|NNoCalif|avgCallTengaged|area''
+    WHERE id = 2100;
+';
+EXEC(@sql);
 ----------------------------------------------------------END Octavio Ortiz------------------------------------------------------------------------------------------
 
 ------------------------------------ BEGIN UNION 127.20250905.0.6 -- 127.20251008.0.1 ------------------------------------

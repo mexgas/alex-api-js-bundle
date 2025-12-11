@@ -11802,7 +11802,7 @@ BEGIN
     END
     ELSE IF(@action = 7) -- Get template campaigns associated
     BEGIN
-        SELECT ISNULL(n.Cam_Id,0) as Cam_Id, ISNULL(n.Inbound_Id,0) AS Inbound_Id FROM ccMetaWAOutboundTemplates t
+        SELECT ISNULL(n.Cam_Id,0) as Cam_Id FROM ccMetaWAOutboundTemplates t 
         INNER JOIN ccMetaWhatsAppNumbers n on t.MetaId = n.MetaId
         left JOIN ccMetaWhatsAppConfigurations c on n.MetaId = c.Id
         WHERE t.Id = @whatsAppTemplateID

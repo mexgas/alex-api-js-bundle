@@ -217,11 +217,12 @@ BEGIN
 --ccspRepOutCallsDetail
 SET @process = 'Drop Procedure [ccspRepOutCallsDetail]';
 SET @sql = '
-IF OBJECT_ID(N''dbo.ccspRepOutCallsDetail'', ''P'') IS NOT NULL
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccspRepOutCallsDetail'')
 BEGIN
     DROP PROCEDURE [dbo].[ccspRepOutCallsDetail];
 END';
 EXEC(@sql);
+
 
 
 SET @process = 'CreateProcedure ccspRepOutCallsDetail';
@@ -368,11 +369,12 @@ EXEC(@sql);
 --ccspRepOutDialDetail
 SET @process = 'Drop Procedure [ccspRepOutDialDetail]';
 SET @sql = '
-IF OBJECT_ID(N''dbo.ccspRepOutDialDetail'', ''P'') IS NOT NULL
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccspRepOutDialDetail'')
 BEGIN
     DROP PROCEDURE [dbo].[ccspRepOutDialDetail];
 END';
 EXEC(@sql);
+
 
 SET @process = 'CreateProcedure ccspRepOutDialDetail';
 SET @sql = '
@@ -580,11 +582,12 @@ EXEC(@sql);
 --ccspRepSpecialAbndCamp
 SET @process = 'Drop Procedure [ccspRepSpecialAbndCamp]';
 SET @sql = '
-IF OBJECT_ID(N''dbo.ccspRepSpecialAbndCamp'', ''P'') IS NOT NULL
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccspRepSpecialAbndCamp'')
 BEGIN
     DROP PROCEDURE [dbo].[ccspRepSpecialAbndCamp];
 END';
 EXEC(@sql);
+
 
 
 SET @process = 'CreateProcedure ccspRepSpecialAbndCamp';
@@ -803,12 +806,19 @@ FROM RepSpecialAbndCamp WITH (NOLOCK)';
 EXEC(@sql);
 
 --RepViewSummary
+
 SET @process = 'Drop View [RepViewSummary]';
 SET @sql = '
-IF OBJECT_ID(N''dbo.RepViewSummary'', ''V'') IS NOT NULL
+IF EXISTS (
+    SELECT 1
+    FROM sys.views
+    WHERE name = ''RepViewSummary''
+      AND schema_id = SCHEMA_ID(''dbo'')
+)
 BEGIN
     DROP VIEW [dbo].[RepViewSummary];
-END';
+END
+';
 EXEC(@sql);
 
 SET @process = 'CreateView RepViewSummary';
@@ -834,7 +844,6 @@ SELECT
     userId,
     0 AS TypeNotReady,
     '''' AS descripcion,
-    ''_Time'' AS descripcion_time,
     0 AS [time],
     0 AS transferStatus,
     0 AS ringingTime,
@@ -846,12 +855,13 @@ SELECT
     0 AS dialingStatus,
     NULL AS TipoReadyAuxiliarId,
     '''' AS auxiliarRedy_descripcion,
-    ''_TimeAux'' AS descripcion_auxiliarRedyTime_time,
     0 AS auxiliarRedyTime,
     1 AS areaId,
     ''Default'' AS area
 FROM RepAgentSummary_VersionAmatech
+
 UNION
+
 SELECT 
     [date],
     [login],
@@ -872,7 +882,6 @@ SELECT
     userId,
     TypeNotReady,
     descripcion,
-    descripcion_time,
     [time],
     transferStatus,
     ringingTime,
@@ -884,12 +893,13 @@ SELECT
     dialingStatus,
     TipoReadyAuxiliarId,
     auxiliarRedy_descripcion,
-    ISNULL(descripcion_auxiliarRedyTime_time, ''_TimeAux'') AS descripcion_auxiliarRedyTime_time,
     auxiliarRedyTime,
     areaId,
     area
-FROM RepAgentSummary';
+FROM RepAgentSummary
+';
 EXEC(@sql);
+
 
 -------Pitov AgentSummaryReport------
 SET @process = 'UpdatePivotReportsComplementColumns';
@@ -1160,11 +1170,12 @@ EXEC(@sql);
 
 SET @process = 'Object drop: PROCEDURE [dbo].[ccspRepInCallsDetail]';
 SET @sql = '
-IF OBJECT_ID(N''dbo.ccspRepInCallsDetail'', ''P'') IS NOT NULL
-BEGIN
-    DROP PROCEDURE [dbo].[ccspRepInCallsDetail];
-END';
+    IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccspRepInCallsDetail'')
+    BEGIN
+        DROP PROCEDURE [dbo].[ccspRepInCallsDetail];
+    END';
 EXEC(@sql);
+
 
 
 SET @process = 'Object create: PROCEDURE [dbo].[ccspRepInCallsDetail] --KR187000 (Se agregan columnas para fecha callback, source, destination y queueTime)';

@@ -10294,6 +10294,145 @@ SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_VerifyCampaignRelationships]
         CREATE NONCLUSTERED INDEX IX_ccLogAgentesDia_6 ON ccLogAgentesDia (User_id, TipoStatusAge_id, fecha, tStatus);
     END'
     EXEC(@sql)
+
+    SET @process = 'Creación de tabla CampaignLoad para guardar datos de cargas'
+    SET @sql= 'IF NOT EXISTS (SELECT * 
+                     FROM INFORMATION_SCHEMA.TABLES 
+                     WHERE TABLE_SCHEMA = ''dbo'' 
+                     AND  TABLE_NAME = ''CampaignLoad'')
+    BEGIN
+        CREATE TABLE CampaignLoad ( 
+            [Key] NVARCHAR(255) PRIMARY KEY,        
+            AdminID NVARCHAR(50) NOT NULL,
+            FileName NVARCHAR(255) NULL,
+            ListName NVARCHAR(255) NULL,
+            HasHeader NVARCHAR(10) NULL, 
+            CallKey NVARCHAR(100) NULL,
+            Phones NVARCHAR(MAX) NULL, 
+            DataField NVARCHAR(MAX) NULL,
+            CallBackDate NVARCHAR(50) NULL,
+            InternationalRecords BIT NOT NULL DEFAULT 0,
+            FilterId NVARCHAR(50) NULL,
+            ArrayBlackListId NVARCHAR(MAX) NULL,
+            ArrayDeletedBlackListId NVARCHAR(MAX) NULL,
+            DataWhere NVARCHAR(MAX) NULL
+        );
+    END'
+    EXEC(@sql);
+
+    SET @process = 'DROP PROCEDURE ccsp_CampaignLoad'
+    SET @sql = '
+        if exists (select * from sys.procedures where name = N''ccsp_CampaignLoad'')
+        begin
+            DROP PROCEDURE ccsp_CampaignLoad
+        end'
+    EXEC(@sql)
+
+    SET @process = 'KR152004 - Se crea SP ccsp_CampaignLoad para guardar, eliminar  y actualizar cargas hidratadas en admin'
+    SET @sql = '
+    CREATE PROCEDURE [dbo].[ccsp_CampaignLoad]   
+        @action                  SMALLINT,     
+        @Key                     NVARCHAR(255) = NULL,
+        @AdminID                 NVARCHAR(50)  = NULL,
+        @FileName                NVARCHAR(255) = NULL,
+        @ListName                NVARCHAR(255) = NULL,
+        @HasHeader               NVARCHAR(10)  = NULL,
+        @CallKey                 NVARCHAR(100) = NULL,
+        @Phones                  NVARCHAR(MAX) = NULL,
+        @DataField               NVARCHAR(MAX) = NULL,
+        @CallBackDate            NVARCHAR(50)  = NULL,  
+        @InternationalRecords    BIT           = 0,
+        @FilterId                NVARCHAR(50)  = NULL,
+        @ArrayBlackListId        NVARCHAR(MAX) = NULL,
+        @ArrayDeletedBlackListId NVARCHAR(MAX) = NULL,
+        @DataWhere               NVARCHAR(MAX) = NULL
+    AS
+    BEGIN
+        IF (@action = 1)
+        BEGIN
+            SELECT [Key],
+                   AdminID,
+                   FileName,
+                   ListName,
+                   HasHeader,
+                   CallKey,
+                   Phones,
+                   DataField,
+                   CallBackDate,
+                   InternationalRecords,
+                   FilterId,
+                   ArrayBlackListId as ArrayBlackListIdString,
+                   ArrayDeletedBlackListId as ArrayDeletedBlackListIdString,
+                   DataWhere
+               FROM dbo.CampaignLoad
+               RETURN;
+        END
+        ELSE IF (@action = 2)
+        BEGIN
+            IF EXISTS (SELECT 1
+                       FROM dbo.CampaignLoad WITH (UPDLOCK, HOLDLOCK)
+                       WHERE [Key] = @Key)
+            BEGIN
+                UPDATE dbo.CampaignLoad
+                   SET AdminID                     = @AdminID,
+                       FileName                    = @FileName,
+                       ListName                    = @ListName,
+                       HasHeader                   = @HasHeader,
+                       CallKey                     = @CallKey,
+                       Phones                      = @Phones,
+                       DataField                   = @DataField,
+                       CallBackDate                = @CallBackDate,
+                       InternationalRecords        = @InternationalRecords,
+                       FilterId                    = @FilterId,
+                       ArrayBlackListId            = @ArrayBlackListId,
+                       ArrayDeletedBlackListId     = @ArrayDeletedBlackListId,
+                       DataWhere                   = @DataWhere
+                 WHERE [Key]                       = @Key;
+            END                                    
+            ELSE
+            BEGIN
+                INSERT INTO dbo.CampaignLoad (
+                    [Key],
+                    AdminID,
+                    FileName,
+                    ListName,
+                    HasHeader,
+                    CallKey,
+                    Phones,
+                    DataField,
+                    CallBackDate,
+                    InternationalRecords,
+                    FilterId,
+                    ArrayBlackListId,
+                    ArrayDeletedBlackListId,
+                    DataWhere
+                )
+                VALUES (
+                    @Key,
+                    @AdminID,
+                    @FileName,
+                    @ListName,
+                    @HasHeader,
+                    @CallKey,
+                    @Phones,
+                    @DataField,
+                    @CallBackDate,
+                    @InternationalRecords,
+                    @FilterId,
+                    @ArrayBlackListId,
+                    @ArrayDeletedBlackListId,
+                    @DataWhere
+                );
+            END
+
+            RETURN;
+        END
+        ELSE IF (@action = 3)
+        BEGIN
+            DELETE FROM dbo.CampaignLoad
+        END
+    END'
+    EXEC(@sql)
     -------------------------------------END dmm------------------------------------------------
 
     ------------------------------------- BEGIN GASJ 20250905.0.1 ------------------------------------------------
@@ -11132,147 +11271,167 @@ SET @process = 'CW-10215 Drop procedure SaveDispositionsAI'
 
 	SET @process = 'CW-10215 CREATE STORE PROCEDURE SaveDispositionsAI'
 	SET @sql = 'CREATE PROCEDURE [dbo].[SaveDispositionsAI]
-    @action        smallint    = NULL,
-    @call_Id       int         = NULL,
-    @Qualification varchar(MAX)= NULL,
-    @result        varchar(MAX)= NULL,
-    @Observations  varchar(MAX)= NULL,
-	@CallbackAT    DATETIME = NULL,
-    @Transcription varchar(MAX)= NULL,
-    @CamType       bit         = 0,
-	@disposition_Id SMALLINT = null
-	AS
+@action        smallint    = NULL,
+@call_Id       int         = NULL,
+@Qualification varchar(MAX)= NULL,
+@result        varchar(MAX)= NULL,
+@Observations  varchar(MAX)= NULL,
+@CallbackAT    DATETIME = NULL,
+@Transcription varchar(MAX)= NULL,
+@CamType       bit         = 0,
+@disposition_Id SMALLINT = null
+AS
+BEGIN
+	SET NOCOUNT ON;
+	--Variables para devolución de llamada 
+	DECLARE @cal_key varchar(40) ='''';
+	DECLARE @cam_id smallint;
+	DECLARE @cal_telefono varchar(19);
+	DECLARE @inbound_id smallint = NULL;
+	DECLARE @CanReprogram smallint  = null
+
+	-- Validacion del Status del Setting 289
+	DECLARE @trans_status BIT = NULL;
+	
+	DECLARE @valor  NVARCHAR(15) = NULL;
+
+	SELECT @valor = TRY_CAST(valor AS NVARCHAR(15))	
+	FROM ccSettings2
+	WHERE setting_id = 289;
+
+	DECLARE @status NVARCHAR(5);
+	DECLARE @sep    INT;
+
+	SET @sep = CHARINDEX(''|'', ISNULL(@valor, ''''));
+	SET @status = CASE
+					WHEN @sep > 0 THEN SUBSTRING(@valor, 1, @sep - 1)
+					ELSE ISNULL(@valor, '''')
+				  END;
+
+	IF @action = 1  -- Outbound
 	BEGIN
-		SET NOCOUNT ON;
-		--Variables para devolución de llamada 
-		DECLARE @cal_key varchar(40) ='''';
-		DECLARE @cam_id smallint;
-		DECLARE @cal_telefono varchar(19);
-		DECLARE @inbound_id smallint = NULL;
-		DECLARE @CanReprogram smallint  = null
+		IF EXISTS (SELECT 1 FROM ccoCallsOutDispositionIA WHERE call_id = @call_Id)
+        BEGIN
+            UPDATE ccoCallsOutDispositionIA
+            SET Qualification = @Qualification,
+                result = @result,
+                Observations = @Observations
+            WHERE call_id = @call_Id;
+        END
+        ELSE
+        BEGIN
+            INSERT INTO ccoCallsOutDispositionIA (call_id, Qualification, result, Observations)
+            VALUES (@call_Id, @Qualification, @result, @Observations);
+        END
 
-		-- Validacion del Status del Setting 289
-		DECLARE @trans_status BIT = NULL;
-		
-		DECLARE @valor  NVARCHAR(15) = NULL;
-
-		SELECT @valor = TRY_CAST(valor AS NVARCHAR(15))	
-		FROM ccSettings2
-		WHERE setting_id = 289;
-
-		DECLARE @status NVARCHAR(5);
-		DECLARE @sep    INT;
-
-		SET @sep = CHARINDEX(''|'', ISNULL(@valor, ''''));
-		SET @status = CASE
-						WHEN @sep > 0 THEN SUBSTRING(@valor, 1, @sep - 1)
-						ELSE ISNULL(@valor, '''')
-					  END;
-
-		IF @action = 1  -- Outbound
+		IF EXISTS (SELECT 1 FROM ccTipoCalif WHERE calif_id = @disposition_Id)
 		BEGIN
-			INSERT INTO ccoCallsOutDispositionIA (call_id, Qualification, result, Observations,disposition_id)
-			VALUES (@call_Id, @Qualification, @result, @Observations,@disposition_Id);
+			UPDATE dbo.ccoCallsOut 
+			SET calif_id = @disposition_Id
+			WHERE cal_id = @call_Id;
+		END
+	END
+
+	ELSE IF @action = 2 AND @status = ''1''   -- Outbound
+	BEGIN
+		--Se deja pendiente para el siguiente Sprint 
+		--DECLARE @cam_id smallint = NULL;
+
+		--Select @cam_id = cam_id 
+		--From ccoCallsOut
+		--Where cal_id = @call_Id
+
+		--Select @trans_status = IsCallTranscriptionEnabled
+		--From ccCampsExtend
+		--Where cam_id  = @cam_id
+
+		--IF @trans_status = 1
+		--BEGIN
+		--	INSERT INTO ccoCallsOutTranscriptionIA (call_id, Transcription)
+		--	VALUES (@call_Id, @Transcription);
+		--END
+
+		IF EXISTS (SELECT 1 FROM ccoCallsOutTranscriptionIA WHERE call_id = @call_Id)
+        BEGIN
+            UPDATE ccoCallsOutTranscriptionIA
+            SET Transcription = @Transcription
+            WHERE call_id = @call_Id;
+        END
+        ELSE
+        BEGIN
+            INSERT INTO ccoCallsOutTranscriptionIA (call_id, Transcription)
+            VALUES (@call_Id, @Transcription);
+        END
+	END
+
+	ELSE IF @action = 3  -- Inbound
+	BEGIN
+		Select @CanReprogram = CanReprogram from ccTipoCalif where calif_id = @disposition_Id
+		
+		IF (@CallbackAT IS NOT NULL  
+			AND CONVERT(datetime, @CallbackAT, 120) IS NOT NULL 
+			AND CONVERT(datetime, @CallbackAT, 120) > GETDATE()  
+			AND @CanReprogram <> 0)
+		BEGIN
+			INSERT INTO ccCallsInDispositionIA (call_id, Qualification, result, Observations, CallbackAT,disposition_id)
+			VALUES (@call_Id, @Qualification, @result, @Observations,@CallbackAT,@disposition_Id);
+
+			SELECT @inbound_id = Inbound_id, @cal_telefono = cal_ANI
+				FROM ccCallsIn 
+				WHERE cal_id = @call_Id;
+
+			SELECT @cam_id = cam_id
+				FROM ccInbound
+				WHERE Inbound_id  = @inbound_id
+
+			EXEC ccsp_INInsertaCallBack
+				@cal_key = @call_Id,
+				@cam_id = @cam_id,
+				@cal_telefono = @cal_telefono,
+				@fechadial = @CallbackAT,
+				@dato4 = @result,
+				@dato5 = @Observations
 
 			IF EXISTS (SELECT 1 FROM ccTipoCalif WHERE calif_id = @disposition_Id)
 			BEGIN
-				UPDATE dbo.ccoCallsOut 
+				UPDATE ccCallsIn
 				SET calif_id = @disposition_Id
 				WHERE cal_id = @call_Id;
 			END
 		END
 
-		IF @action = 2 AND @status = ''1''   -- Outbound
-		BEGIN
-			--Se deja pendiente para el siguiente Sprint 
-			--DECLARE @cam_id smallint = NULL;
+		ELSE BEGIN
+			INSERT INTO ccCallsInDispositionIA (call_id, Qualification, result, Observations,disposition_id)
+			VALUES (@call_Id, @Qualification, @result, @Observations,@disposition_Id);
 
-			--Select @cam_id = cam_id 
-			--From ccoCallsOut
-			--Where cal_id = @call_Id
-
-			--Select @trans_status = IsCallTranscriptionEnabled
-			--From ccCampsExtend
-			--Where cam_id  = @cam_id
-
-			--IF @trans_status = 1
-			--BEGIN
-			--	INSERT INTO ccoCallsOutTranscriptionIA (call_id, Transcription)
-			--	VALUES (@call_Id, @Transcription);
-			--END
-
-			INSERT INTO ccoCallsOutTranscriptionIA (call_id, Transcription)
-				VALUES (@call_Id, @Transcription);
-		END
-
-		IF @action = 3  -- Inbound
-		BEGIN
-			Select @CanReprogram = CanReprogram from ccTipoCalif where calif_id = @disposition_Id
-			
-			IF (@CallbackAT IS NOT NULL  
-				AND CONVERT(datetime, @CallbackAT, 120) IS NOT NULL 
-				AND CONVERT(datetime, @CallbackAT, 120) > GETDATE()  
-				AND @CanReprogram <> 0)
+			IF EXISTS (SELECT 1 FROM ccTipoCalif WHERE calif_id = @disposition_Id)
 			BEGIN
-				INSERT INTO ccCallsInDispositionIA (call_id, Qualification, result, Observations, CallbackAT,disposition_id)
-				VALUES (@call_Id, @Qualification, @result, @Observations,@CallbackAT,@disposition_Id);
-
-				SELECT @inbound_id = Inbound_id, @cal_telefono = cal_ANI
-					FROM ccCallsIn 
-					WHERE cal_id = @call_Id;
-
-				SELECT @cam_id = cam_id
-					FROM ccInbound
-					WHERE Inbound_id  = @inbound_id
-
-				EXEC ccsp_INInsertaCallBack
-					@cal_key = @call_Id,
-					@cam_id = @cam_id,
-					@cal_telefono = @cal_telefono,
-					@fechadial = @CallbackAT,
-					@dato4 = @result,
-					@dato5 = @Observations
-
-				IF EXISTS (SELECT 1 FROM ccTipoCalif WHERE calif_id = @disposition_Id)
-				BEGIN
-					UPDATE ccCallsIn
-					SET calif_id = @disposition_Id
-					WHERE cal_id = @call_Id;
-				END
+				UPDATE ccCallsIn
+				SET calif_id = @disposition_Id
+				WHERE cal_id = @call_Id;
 			END
-
-			ELSE BEGIN
-				INSERT INTO ccCallsInDispositionIA (call_id, Qualification, result, Observations,disposition_id)
-				VALUES (@call_Id, @Qualification, @result, @Observations,@disposition_Id);
-
-				IF EXISTS (SELECT 1 FROM ccTipoCalif WHERE calif_id = @disposition_Id)
-				BEGIN
-					UPDATE ccCallsIn
-					SET calif_id = @disposition_Id
-					WHERE cal_id = @call_Id;
-				END
-			END
-
 		END
 
-		IF @action = 4 AND @status = ''1''   -- Inbound
+	END
+
+	ELSE IF @action = 4 AND @status = ''1''   -- Inbound
+	BEGIN
+		
+		Select @inbound_id = Inbound_id 
+			From ccCallsIn 
+			Where cal_id = @call_Id
+		
+		Select @trans_status = IsCallTranscriptionEnabled
+			From ccInboundExtend
+			Where Inbound_id  = @inbound_id
+
+		IF @trans_status = 1
 		BEGIN
-			
-			Select @inbound_id = Inbound_id 
-				From ccCallsIn 
-				Where cal_id = @call_Id
-			
-			Select @trans_status = IsCallTranscriptionEnabled
-				From ccInboundExtend
-				Where Inbound_id  = @inbound_id
-
-			IF @trans_status = 1
-			BEGIN
-				INSERT INTO ccCallsInTranscriptionIA (call_id, Transcription)
-				VALUES (@call_Id, @Transcription);
-			END
+			INSERT INTO ccCallsInTranscriptionIA (call_id, Transcription)
+			VALUES (@call_Id, @Transcription);
 		END
-	END'
+	END
+END'
 	EXEC(@sql)
 
 	SET @process = 'CW-10215 query para insertar las calificaciones de llamadas ia, las cuales si tienen calificación pero se realizaron antes del cambio'
@@ -13185,6 +13344,438 @@ END'
     EXEC(@sql)
 	
 	------------------------------------------------------------------------------------------------------------
+
+    ------------------------------------- BEGIN JUAN MEDINA -----------------------------------------
+
+   	SET @process = 'Drop procedure ccsp_Limpia'
+	SET @sql = '
+		IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_Limpia'')
+		BEGIN
+			DROP PROCEDURE ccsp_Limpia;
+		END
+	'
+	EXEC(@sql);
+
+	SET @process = 'Create procedure ccsp_Limpia'
+
+	SET @sql = '
+
+		CREATE PROCEDURE ccsp_Limpia @tel VARCHAR(50), @Camp INT = 0, @calKey VARCHAR(20) = '''', @dato1 VARCHAR(10) = ''''
+		AS
+		SET NOCOUNT ON
+
+		DECLARE @lon TINYINT, @cldLocal VARCHAR(7), @pais VARCHAR(3), @extLen SMALLINT, @specialDialPlan SMALLINT, @validateTel SMALLINT, @ld VARCHAR(7)
+		DECLARE @checkLd_In_ANILst SMALLINT = 0
+		/***
+		 4  as res lista Negra
+		 2 as res Digitos incorrectos Prefijo Marcacion 01,044,045,001
+		 3 as res Number notExists
+		 1 as res Longitud invalida
+		 0 as res Numero correcto
+ 
+		***/
+		SELECT @tel = dbo.limpia(@tel)
+
+		SELECT @lon = len(@tel)
+
+		SELECT @pais = valor
+		FROM ccSettings WITH (NOLOCK)
+		WHERE setting_id = 104
+
+		SELECT @cldLocal = valor
+		FROM ccSettings WITH (NOLOCK)
+		WHERE setting_id = 17
+
+		SELECT @extLen = valor
+		FROM ccsettings WITH (NOLOCK)
+		WHERE setting_id = 108
+
+		SELECT @validateTel = valor
+		FROM ccsettings WITH (NOLOCK)
+		WHERE setting_id = 206
+
+		SELECT @checkLd_In_ANILst = valor FROM ccsettings WITH (NOLOCK) WHERE setting_id = 213
+
+
+		IF @lon > 1
+		BEGIN
+
+			IF @validateTel = 2
+				BEGIN --Setting 206 only validates blacklist
+		
+					IF (SELECT dbo.ValidateBlackListPhone(@tel, @Camp, @calKey)) = 1
+					BEGIN
+						SELECT 4 AS res, @tel AS tel --blackList
+						RETURN (0)
+					END
+					SELECT 0 AS res, @tel AS tel
+
+					RETURN (0)
+	
+			END
+			IF @validateTel = 1
+			BEGIN --Setting 206 para no validar longitud ni listas negras
+				SELECT 0 AS res, @tel AS tel
+
+				RETURN (0)
+			END
+
+			IF @extLen = @lon
+			BEGIN -- Setting 108 validar el tamaño longitud del telefono
+				IF (
+						SELECT dbo.ValidateBlackListPhone(@tel, @Camp, @calKey)
+						) = 1
+				BEGIN
+					SELECT 4 AS res, @tel AS tel --blackList
+
+					RETURN (0)
+				END
+
+				SELECT 0 AS res, @tel AS tel -- Extension
+
+				RETURN (0)
+			END
+		END
+
+		DECLARE @telTemp AS VARCHAR(15)
+
+		SELECT @telTemp = @tel
+
+		IF @pais = 1
+		BEGIN ---Mexico
+			IF @lon = 3 AND @tel = ''911''
+			BEGIN
+				SELECT 4 AS res, @tel AS tel --Lista Negra
+
+				RETURN (0)
+			END
+
+			IF (@lon < 10)
+			BEGIN
+				SELECT 1 AS res, @tel AS tel --Longitud invalida
+
+				RETURN (0)
+			END
+
+				IF EXISTS (
+				SELECT 1
+				FROM ccCampsExtend
+				WHERE cam_id = @Camp
+				  AND ZipCodeSchedule = 1
+			)
+			BEGIN
+				IF (@dato1 = '''' OR NOT EXISTS (SELECT 1 FROM ccTimeZoneAreaCP WHERE ZipCode = LTRIM(RTRIM(@dato1))))
+				BEGIN
+					SELECT 6 AS res, @tel AS tel; -- No tiene codigo postal 
+					RETURN (0);
+				END
+			END
+
+			IF @lon = 12 AND left(@tel, 2) <> ''01'' OR @lon = 13 AND left(@tel, 3) NOT IN (''044'', ''045'') AND left(@tel, 3) <> ''001''
+			BEGIN
+				SELECT 2 AS res, @tel AS tel --Digitos incorrectos
+
+				RETURN (0)
+			END
+
+			IF left(@tel, 3) = ''001''
+			BEGIN
+				SELECT 0 AS res, @tel AS tel
+
+				RETURN (0)
+			END
+
+			SELECT @tel = right(@tel, 10)
+
+			IF (
+					SELECT dbo.ValidateBlackListPhone(@tel, @Camp, @calKey)
+					) = 1
+			BEGIN
+				SELECT 4 AS res, @tel AS tel --blackList
+
+				RETURN (0)
+			END
+	
+			If (@Camp > 0 AND @checkLd_In_ANILst = 1)
+			BEGIN
+				If(SELECT len(ani) FROM ccCamps WHERE cam_id = @Camp) > 0  --Permitir todos los telefonos a 10 digitos cuando existe un ani configurado en la campana.	
+				BEGIN
+					SELECT 0 AS res, @tel AS tel	
+					RETURN (0)
+				END
+
+				IF exists (SELECT TOP 1 area FROM ccCamps c WITH (NOLOCK) inner join ccEdoAniList l WITH (NOLOCK) on c.id_anilist = l.id_AniList
+						  inner join ccEstadosAni e WITH (NOLOCK) on l.id_AniList = e.id_AniList
+						  WHERE cam_id = @Camp and telAni <> '''' and area = left(@tel, 3))
+				BEGIN
+					SELECT 0 AS res, @tel AS tel
+					RETURN (0)
+				END
+				ELSE IF exists (SELECT TOP 1 area FROM ccCamps c WITH (NOLOCK) inner join ccEdoAniList l WITH (NOLOCK) on c.id_anilist = l.id_AniList
+						  inner join ccEstadosAni e WITH (NOLOCK) on l.id_AniList = e.id_AniList
+						  WHERE cam_id = @Camp and telAni <> '''' and area = left(@tel, 2))
+				BEGIN
+					SELECT 0 AS res, @tel AS tel
+					RETURN (0)
+				END
+			END
+
+
+			SELECT @tel = dbo.Verifica2(@tel, 1, @cldLocal, DEFAULT, DEFAULT)
+
+			IF LEFT(@tel, 1) = ''E''
+			BEGIN
+				SELECT 3 AS res, @telTemp AS tel --No encontrado
+
+				RETURN (0)
+			END
+
+			SELECT 0 AS res, @tel AS tel
+
+			RETURN (0)
+		END
+		ELSE IF @pais = 2
+		BEGIN --Argentina 
+			SET @tel = dbo.completa(@tel, @pais, @cldLocal)
+
+			IF left(@tel, 1) = ''E''
+			BEGIN
+				SELECT 1 AS res, @telTemp AS tel --Longitud Invalida
+
+				RETURN (0)
+			END
+
+			SELECT @tel = dbo.fnClearPhoneArg(@tel)
+
+			IF (len(@tel) = 10 OR len(@cldLocal + @tel) = 10) AND left(@tel, 1) <> ''E''
+			BEGIN
+				IF (
+						SELECT dbo.ValidateBlackListPhone(@tel, @Camp, @calKey)
+						) = 1
+				BEGIN
+					SELECT 4 AS res, @tel AS tel --blackList      
+				END
+				ELSE
+				BEGIN
+					SELECT @tel = dbo.verifica2(@tel, @pais, @cldLocal, DEFAULT, DEFAULT)
+
+					IF left(@tel, 1) = ''E''
+					BEGIN
+						SELECT 3 AS res, @telTemp --Not existsFound
+					END
+
+					SELECT 0 AS res, @tel AS tel
+				END
+			END
+			ELSE
+			BEGIN
+				SELECT 2 AS res, @telTemp AS tel --Digitos incorrectos      
+			END
+
+			RETURN (0)
+		END
+		ELSE IF @pais = 3
+		BEGIN --Colombia  
+			IF @lon < 7 OR @lon = 9 OR (@lon = 10 AND left(@telTemp, 1) <> ''3'') OR (@lon = 11 AND left(@telTemp, 2) <> ''03'')
+			BEGIN
+				SELECT 1 AS res, @telTemp AS tel --Longitud Invalida
+
+				RETURN (0)
+			END
+
+			SELECT @tel = dbo.Completa_ListaNegra(@tel)
+
+			IF (len(@tel) IN (8, 10)) AND left(@tel, 1) <> ''E''
+			BEGIN
+				IF (
+						SELECT dbo.ValidateBlackListPhone(@tel, @Camp, @calKey)
+						) = 1
+				BEGIN
+					SELECT 4 AS res, @tel AS tel --blackList      
+				END
+				ELSE
+				BEGIN
+					SELECT @tel = dbo.verifica2(@tel, @pais, @cldLocal, DEFAULT, DEFAULT)
+
+					IF left(@tel, 1) = ''E''
+					BEGIN
+						SELECT 3 AS res, @telTemp --Not existsFound
+					END
+
+					SELECT 0 AS res, @tel AS tel
+				END
+			END
+			ELSE
+			BEGIN
+				SELECT 2 AS res, @telTemp AS tel --Digitos incorrectos
+			END
+
+			RETURN (0)
+		END
+		ELSE IF @pais = 4
+		BEGIN --USA 
+			EXEC ccsp_LimpiaUsa @tel, @Camp, @calKey
+
+			RETURN (0)
+		END
+		ELSE IF @pais = 5
+		BEGIN --Chile  
+			SELECT @tel = dbo.Completa_ListaNegra(@tel)
+
+			IF len(@tel) IN (8, 9) AND left(@tel, 1) <> ''E''
+			BEGIN
+				IF (
+						SELECT dbo.ValidateBlackListPhone(@tel, @Camp, @calKey)
+						) = 1
+				BEGIN
+					SELECT 4 AS res, @tel AS tel --blackList      
+				END
+				ELSE
+				BEGIN
+					SELECT @tel = dbo.verifica2(@tel, @pais, @cldLocal, DEFAULT, DEFAULT)
+
+					IF left(@tel, 1) = ''E''
+					BEGIN
+						SELECT 3 AS res, @telTemp --Not existsFound
+					END
+
+					SELECT 0 AS res, @tel AS tel
+				END
+			END
+			ELSE
+			BEGIN
+				SELECT 2 AS res, @telTemp AS tel --Digitos incorrectos
+			END
+
+			RETURN (0)
+		END
+		ELSE IF @pais = 6
+		BEGIN --Venezuela    
+			SELECT @tel = dbo.Completa_ListaNegra(@tel)
+
+			IF len(@tel) = 10 AND left(@tel, 1) <> ''E''
+			BEGIN
+				IF (
+						SELECT dbo.ValidateBlackListPhone(@tel, @Camp, @calKey)
+						) = 1
+				BEGIN
+					SELECT 4 AS res, @tel AS tel --blackList      
+				END
+				ELSE
+				BEGIN
+					SELECT @tel = dbo.verifica2(@tel, @pais, @cldLocal, DEFAULT, DEFAULT)
+
+					IF left(@tel, 1) = ''E''
+					BEGIN
+						SELECT 3 AS res, @telTemp --Not existsFound
+					END
+
+					SELECT 0 AS res, @tel AS tel
+				END
+			END
+			ELSE
+			BEGIN
+				SELECT 2 AS res, @telTemp AS tel --Digitos incorrectos
+			END
+
+			RETURN (0)
+		END
+		ELSE IF @pais = 7
+		BEGIN --Reino Unido
+			SELECT @tel = dbo.Completa_ListaNegra(@tel)
+
+			IF (len(@tel) IN (9, 10)) AND left(@tel, 1) <> ''E''
+			BEGIN
+				IF (
+						SELECT dbo.ValidateBlackListPhone(@tel, @Camp, @calKey)
+						) = 1
+				BEGIN
+					SELECT 4 AS res, @tel AS tel --blackList      
+				END
+				ELSE
+				BEGIN
+					SELECT @tel = dbo.verifica2(@tel, @pais, @cldLocal, DEFAULT, DEFAULT)
+
+					IF left(@tel, 1) = ''E''
+					BEGIN
+						SELECT 3 AS res, @telTemp --Not existsFound
+					END
+
+					SELECT 0 AS res, @tel AS tel
+				END
+			END
+			ELSE
+			BEGIN
+				SELECT 2 AS res, @telTemp AS tel --Digitos incorrectos
+			END
+
+			RETURN (0)
+		END
+		ELSE IF @pais = 8
+		BEGIN --Arabia saudita   
+			SELECT @tel = dbo.Completa_ListaNegra(@tel)
+
+			IF (len(@tel) IN (9, 10, 11))
+			BEGIN
+				IF (
+						SELECT dbo.ValidateBlackListPhone(@tel, @Camp, @calKey)
+						) = 1
+				BEGIN
+					SELECT 4 AS res, @tel AS tel --blackList      
+				END
+				ELSE
+				BEGIN
+					SELECT @tel = dbo.verifica2(@tel, @pais, @cldLocal, DEFAULT, DEFAULT)
+
+					IF left(@tel, 1) = ''E''
+					BEGIN
+						SELECT 3 AS res, @telTemp --Not existsFound
+					END
+
+					SELECT 0 AS res, @tel AS tel
+				END
+			END
+			ELSE
+			BEGIN
+				SELECT 2 AS res, @telTemp AS tel --Digitos incorrectos
+			END
+
+			RETURN (0)
+		END
+		ELSE IF @pais IN (9, 10, 11, 12, 13, 14, 15, 16)
+		BEGIN --9: Australia, 10:Brasil, 11:Guatemala, 12:Costa Rica, 13:Salvador, 14:España 15:Peru, 16: Panama 
+			SELECT @tel = dbo.Completa_ListaNegra(@tel)
+
+			IF left(@tel, 1) = ''E''
+			BEGIN
+				SELECT 1 AS res, @telTemp --Longitud Invalida   
+			END
+			ELSE IF (
+					SELECT dbo.ValidateBlackListPhone(@tel, @Camp, @calKey)
+					) = 1
+			BEGIN
+				SELECT 4 AS res, @tel AS tel --blackList      
+			END
+			ELSE
+			BEGIN
+				SELECT @tel = dbo.verifica2(@tel, @pais, @cldLocal, DEFAULT, DEFAULT)
+
+				IF left(@tel, 1) = ''E''
+				BEGIN
+					SELECT 2 AS res, @telTemp --Digitos Incorrectos ??? debe ser numero no existe
+				END
+
+				SELECT 0 AS res, @tel AS tel
+			END
+
+			RETURN (0)
+		END
+	'
+	EXEC(@sql);
+
+   ------------------------------------- END JUAN MEDINA -------------------------------------------
+
+
 	
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

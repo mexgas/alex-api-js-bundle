@@ -46,6 +46,102 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 
     ------------------------------------ BEGIN UNION 127.20250905.0.6 -- 127.20251008.0.1 ------------------------------------
 
+	------------------------------------------------ BEGIN JUAN MEDINA ------------------------------------------------
+	SET @process = 'Sprint 5 - DELETE PERMISSIONS CENTER SCRIPT '
+    SET @sql = '
+        IF EXISTS (Select 1 From ccRoles_Permissions where Permissions_Id = 100003)
+		BEGIN
+			DELETE ccRoles_Permissions  where Permissions_Id = 100003
+		END
+
+		IF EXISTS (Select 1 From ccPermissions where Permissions_Id = 100003)
+		BEGIN
+			DELETE ccPermissions  where Permissions_Id = 100003
+		END 
+	'
+    EXEC(@sql)
+
+		SET @process = 'Sprint 5 - DROP PROCEDURE GetReportMenus'
+    SET @sql = '
+        If Exists (Select 1 From sys.procedures Where name = N''GetReportMenus'')
+        Begin
+            DROP PROCEDURE GetReportMenus
+        End
+	'
+    EXEC(@sql)
+
+	SET @process = 'Sprint 5 - CREATE PROCEDURE GetReportMenus - Delete View Menu Email'
+    SET @sql = '
+		CREATE PROCEDURE [dbo].[GetReportMenus]
+		@userId int,
+		@activeChat tinyint,
+		@activeAVRS tinyint,
+		@activeCRM tinyint=0,
+		@activeEmail tinyint=0,
+		@activeTwitter tinyint=0
+		AS
+		BEGIN
+
+		select menu_id,
+			substring(menu_descrip, charindex(''|'', menu_descrip) + 1, len(menu_descrip)) as menu_descrip,
+			nullif(parent,menu_id) as parent,Nivel,ordengral,release
+			into #tempCCMenus
+			from ccMenus with(nolock)
+			where type = 3 
+			and menu_id >= 2000 
+			and menu_id NOT IN (10010,10020,10030,10040)--Stop showing email menu in reports
+			and(
+				(menu_id not in (
+				3130,3131,3132,3133,3134,3135,3136,
+				8050,8060,8061,8062,8063,8070,8071,8072,8080,
+				9000,9010,
+				10000,10010,10020,10030,10040,
+				11000,11010,11020,11030,11040
+				))
+				or  (@activeChat = 1 and menu_id in (3130,3131,3132,3133,3134,3135,3136))
+				or  (@activeAVRS = 1 and menu_id in (8050,8060,8061,8062,8063,8070,8071,8072,8080) )
+				or  (@activeCRM = 1 and menu_id in (9000,9010) )
+				or  (@activeEmail = 1 and menu_id in (10000,10010,10020,10030,10040) )
+				or (@activeTwitter = 1 and menu_id in (11000,11010,11020,11030,11040))
+				)
+				order by menu_id
+
+
+		;WITH ccMenusUserRec(Nivel, menu_descrip, menu_id, ordengral, parent,release)
+		AS
+		(
+			select
+				distinct b.Nivel as Nivel,
+				b.menu_descrip as menu_descrip,
+				b.menu_id as menu_id,
+				b.ordengral as ordengral,
+				b.parent as parent,b.release
+				from #tempCCMenus as b
+				inner join ccMenuUser as a with(nolock) on a.id_menu = b.menu_id and a.id_User = @userId and b.menu_id<>b.parent and a.type = 3
+			UNION ALL
+
+
+		--RECURSIViDAD
+			select a.Nivel, a.menu_descrip, a.menu_id, a.ordengral, a.parent,a.release
+				from #tempCCMenus a inner join ccMenusUserRec b on a.menu_id=b.parent
+		)
+
+		select distinct Nivel,menu_descrip,menu_id,ordengral,parent,release into #tempCCMenusUser from ccMenusUserRec order by ordengral,menu_id
+
+		select distinct A.Nivel, A.menu_descrip, A.menu_id, A.ordengral,5 filtersType,A.release,parent from #tempCCMenusUser A
+		where  menu_id not in
+			(select distinct parent from  #tempCCMenus where Nivel=''C'' and parent not in (select distinct  A.parent from  #tempCCMenusUser A where A.Nivel=''C''))
+		order by ordengral,menu_id
+
+		drop table #tempCCMenus
+		drop table #tempCCMenusUser
+
+		END
+	'
+    EXEC(@sql)
+
+	------------------------------------------------ END JUAN MEDINA ------------------------------------------------
+
 	------------------------------------ BEGIN Octavio Ortiz ------------------------------------
 	-- ccVirtualAgent
 	SET @process = 'AlterTable ccVirtualAgent';
@@ -76,6 +172,7 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 	EXEC(@sql);
 
 	---------------------------------------END Octavio Ortiz-------------------------------------
+
     ------------------------------------ BEGIN Carlos Muñoz ------------------------------------
 
     SET @process = 'Sprint 5 - Added validation of elimination for virtual agent while editing, also, is included a new option for duplication'

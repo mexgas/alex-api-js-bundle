@@ -1785,152 +1785,6 @@ drop table #mycamps
 '
     EXEC(@sql)
 
-    SET @process = '#2453 Se crea el sp ccsp_DLRGetDialInfo, se agrega la columna data_api_quantum, para poder consultarla al 
-    obtener los datos de la llamada'
-    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_DLRGetDialInfo]
-    @callout_id int,
-    @cam_id smallint=0,
-    @iPortNumber smallint = 0
-    AS
-    set nocount on
-    declare @message_name as varchar(8000), @messageDNCL_name as varchar(max), @messageDNCLConfirm_name as varchar(max)    
-    declare @prefix as varchar(15)
-    declare @prefixCalKey as varchar(30)
-    declare @tNoContesta as tinyint
-    declare @ani as varchar(32)
-    declare @iTipoDial tinyint, @detectAnswerMachine as smallint, @detectVoiceMail as tinyint, @rotativeAlgo tinyint
-    declare @cam_tnotas as smallint, @keepDial as bit, @lista_id smallint
-    declare @ivr_script smallint, @surveycamid int
-    declare @call_record_cam as tinyint
-    declare @pais as tinyint 
-    declare @sipHdrFormat varchar(255)
-    declare @PrefixRec varchar(40)
-    declare @recordHold bit, @recordIvr bit
-
-    set @prefix =''''
-    set @tNoContesta = 25
-    set @ani=''''
-    set @iTipoDial = 0
-    set @detectAnswerMachine = 0
-    set @detectVoiceMail =1
-    set @cam_tnotas = 30
-    set @keepDial = 0
-
-    select @pais = valor from ccsettings with(nolock) where setting_id = 104
-    select @PrefixRec=ISNULL(prefijo,'''') from ccCamps nolock where cam_id = @cam_id
-
-    -- Mensajes
-    select @message_name=msg_mostrar, @messageDNCL_name=msg_mostrar_dnc, @messageDNCLConfirm_name = msg_mostrar_dnc_confirm
-    from dbo.fn_ccCamps_SelMessage(@cam_id)
-
-    -- Prefijo por puerto
-    select @prefix = prefix from cstoProvedor with(nolock) where provedor_id = (
-        select provedor_id from ccodialers with(nolock) where puerto = @iPortNumber )
-    -- Prefijo por campa?a
-    if @prefix =''''
-        select @prefix = dialPrefix from ccCamps with(nolock) where cam_id = @cam_id
-    -- Prefijo general, si es que esta habilitado
-    if @prefix ='''' and ((select cast(valor as int) from ccsettings nolock where setting_id =102) & 1 = 1)
-        select @prefix = valor from ccsettings with(nolock) where setting_id =101
-
-    select @iPortNumber = 0, @surveycamid = 0, @ivr_script = 0
-
-    -- Propiedades de campa?a
-    select @sipHdrFormat=isnull(sipHdrFormat,''''),@tNoContesta=cam_tNoContesta, @ani=ani, @iTipoDial=iTipoDial, @detectAnswerMachine=detectAnswerMachine,
-    @detectVoiceMail=detectVoiceMail, @cam_tnotas=cam_tnotas, @keepDial=keepDial,@lista_id =id_anilist,
-    @call_record_cam = isnull(call_record,1), @surveycamid = isnull(surveycamid,0), @rotativeAlgo=isnull(rotativeAlgo,0), @recordHold=ISNULL(recordHold,0)
-    ,@PrefixRec=ISNULL(prefijo,''''), @recordIvr=ISNULL(recordIvr,0)
-    from ccCamps C with(nolock) where C.cam_id=@cam_id
-
-    if @surveycamid > 0
-        select @ivr_script = isnull(ivrscript,0) from cccamps with(nolock) where cam_id = @surveycamid
-
-    --Custom MOH Files
-    DECLARE @MohFiles VARCHAR(8000), @sipheader varchar(500)
-    SELECT @MohFiles = COALESCE(@MohFiles + '','', '''') + V.msgfile 
-    FROM ccCampsMsgs VE with(nolock) join ccMsgfiles V (nolock) ON VE.Msg_id = V.Msg_id WHERE cam_id = @cam_id and TYPE = 15 ORDER BY orden
-
-    --Agrega prefijo Marcacion con directo
-    declare @mainPrefix varchar(1), @phones varchar(max), @apikeyQuantum VARCHAR(300);
-    set @prefixCalKey=''''
-    select @mainPrefix = valor from ccSettings where setting_id=202
-    select @apikeyQuantum = ISNULL(valor, '''') from dbo.ccSettings2 where setting_id=284
-    declare @tmpccoCallsOutSource table(callout_id int primary key,dialPrefix   varchar(30) null
-    ,cal_Key    varchar(40)
-    ,cal_telefono   varchar(30),cal_telefono2   varchar(30),cal_telefono3   varchar(30),cal_telefono4   varchar(30),cal_telefono5   varchar(30)
-    ,Dato1  varchar(255),Dato2  varchar(255),Dato3  varchar(255),Dato4  varchar(255),Dato5  varchar(255)
-    ,recyclePhone   SMALLINT
-    ,recycleType BIT
-    ,data_api_quantum VARCHAR(MAX)
-    )
-    insert into @tmpccoCallsOutSource
-    select callout_id,dialPrefix,cal_Key,
-    cal_telefono,cal_telefono2,cal_telefono3,cal_telefono4,cal_telefono5,
-    Dato1,Dato2,Dato3,Dato4,Dato5,
-    recyclePhone,recycleType, data_api_quantum
-    FROM ccoCallsOutSource with(nolock) WHERE callout_id=@callout_id 
-
-
-    SELECT @prefixCalKey=CASE WHEN @mainPrefix=''1'' THEN isnull(dialPrefix,'''') ELSE '''' END,
-        @phones=cal_telefono+'';''+cal_telefono2+'';''+cal_telefono3+'';''+cal_telefono4+'';''+cal_telefono5
-    FROM @tmpccoCallsOutSource
-
-    if @iPortNumber >= 0 
-    begin
-        declare @Anis table(id int, pid varchar(2), phone varchar(32), ani varchar(32))
-
-        insert @Anis
-        exec ccsp_DLRGetRotativeANI @callout_id=@callout_id,@phones=@phones,@aniList=@lista_id,@algo=@rotativeAlgo
-
-        SELECT @sipheader = dbo.fn_getSIPHeaderCfg(@callout_id,@sipHdrFormat)
-    
-        SELECT c.callout_id, ''cal_key''=c.cal_key+''~''+rtrim(dato1)+''~''+rtrim(dato2)+''~''+rtrim(dato3)+''~''+rtrim(dato4)+''~''+rtrim(dato5)
-        , ISNULL(cpt.Prioridad,''12345NNN'') dial_tels
-        , CASE WHEN (NOT(ISNULL(recyclePhone, 0) = 1) AND ISNULL(recycleType, 1) = 0) THEN '''' ELSE C.cal_telefono  END cal_telefono
-        , CASE WHEN (NOT(ISNULL(recyclePhone, 0) = 2) AND ISNULL(recycleType, 1) = 0) THEN '''' ELSE c.cal_telefono2 END cal_telefono2
-        , CASE WHEN (NOT(ISNULL(recyclePhone, 0) = 3) AND ISNULL(recycleType, 1) = 0) THEN '''' ELSE c.cal_telefono3 END cal_telefono3
-        , CASE WHEN (NOT(ISNULL(recyclePhone, 0) = 4) AND ISNULL(recycleType, 1) = 0) THEN '''' ELSE c.cal_telefono4 END cal_telefono4
-        , CASE WHEN (NOT(ISNULL(recyclePhone, 0) = 5) AND ISNULL(recycleType, 1) = 0) THEN '''' Else c.cal_telefono5 END cal_telefono5
-        , isnull(@message_name, '''') as message_name
-        , @tNoContesta as tNoContesta, @prefix+@prefixCalKey as sDialPrefix    
-        , case when anis.p1 <> '''' then anis.p1 else @ani end ani
-        , case when anis.p2 <> '''' then anis.p2 else @ani end ani2
-        , case when anis.p3 <> '''' then anis.p3 else @ani end ani3
-        , case when anis.p4 <> '''' then anis.p4 else @ani end ani4
-        , case when anis.p5 <> '''' then anis.p5 else @ani end ani5
-        , @iTipoDial iTipoDial, @detectAnswerMachine detectAnswerMachine, @detectVoiceMail detectVoiceMail
-        , @cam_tnotas cam_tnotas, @keepDial keepDial
-        , isnull(@messageDNCL_name, '''') as messageDNCL_name
-        ,dbo.EnableCallRecord(@call_record_cam,@pais,c.cal_telefono) as call_record
-        ,dbo.EnableCallRecord(@call_record_cam,@pais,c.cal_telefono2) as call_record2
-        ,dbo.EnableCallRecord(@call_record_cam,@pais,c.cal_telefono3) as call_record3
-        ,dbo.EnableCallRecord(@call_record_cam,@pais,c.cal_telefono4) as call_record4
-        ,dbo.EnableCallRecord(@call_record_cam,@pais,c.cal_telefono5) as call_record5
-        , isnull(@messageDNCLConfirm_name, '''') as messageDNCLConfirm_name
-        , isnull(@MohFiles,'''') as mohFiles
-        ,@ivr_script ivrScript
-        ,@sipheader data
-        ,@PrefixRec as Prefijo,
-        dbo.GetCarrierByTel(C.cal_telefono) carrier1, 
-        dbo.GetCarrierByTel(cal_telefono2) carrier2, 
-        dbo.GetCarrierByTel(cal_telefono3) carrier3, 
-        dbo.GetCarrierByTel(cal_telefono4) carrier4, 
-        dbo.GetCarrierByTel(cal_telefono5) carrier5,
-        @recordHold as recordHold,
-        @recordIvr as recordIvr,
-        isnull(C.data_api_quantum, '''') AS data_api_quantum,
-        @apikeyQuantum AS key_api_quantum
-        FROM @tmpccoCallsOutSource C
-        left join ccoCallPriorityOrder cpo with(nolock) on cpo.callout_id = c.callout_id
-        left join ccCampsPrioridadTel cpt on cpt.cam_id = @cam_id
-        left join (SELECT * FROM (SELECT pid,ani FROM @Anis)a PIVOT(MAX(ani) FOR pid IN(p1,p2,p3,p4,p5)) AS pt) anis on 0=0
-        WHERE C.callout_id = @callout_id
-        OPTION (RECOMPILE);
-        return
-    end 
-    set nocount off'
-    EXEC(@sql)
-
     SET @process = '#2543 ALTER PROCEDURE [dbo].[ccsp_DLRGetRotativeANI]'
        SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_DLRGetRotativeANI]
 @callout_id int,
@@ -2041,101 +1895,6 @@ SELECT * FROM @Tels
 
 set nocount off'
        EXEC(@sql)
-
-    SET @process = 'Sears Alter SP ccsp_DLRSaveDialResult'
-        SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_DLRSaveDialResult] 
-@callout_id INT, @cam_id SMALLINT, @tipoResDial_id TINYINT, @Telefono VARCHAR(30), @Puerto SMALLINT,
-@tDialing TINYINT= 0, @tBusy SMALLINT= 0, @call_id INT= 0, @answerbit BIT= NULL, @tAnswerBit SMALLINT= 0,
-@canceledNoAgents BIT= 0, @disconnectCause VARCHAR(250)= '''', @cal_key VARCHAR(40)= '''', @call_TS VARCHAR(15)='''',
-@ani varchar(32)=''''
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @tNow AS DATETIME, @RecicleSIC TINYINT;
-    DECLARE @logDial_id INT;
-    DECLARE @tAnswerBitFinal AS DATETIME;
-    DECLARE @MaxCal_id INT;
-    DECLARE @tTotal SMALLINT;
-
-    SELECT @RecicleSIC = ISNULL(valor, 0)
-    FROM ccSettings
-    WHERE setting_id = 60;
-
-    SELECT @tTotal = @tDialing + @tAnswerBit;
-
-    SELECT @tNow = GETDATE();
-
-    SELECT @tAnswerBitFinal = DATEADD(ss, -@tAnswerBit, @tNow);
-
-
--- para marcaciones manuales, actualiza puerto de marcacion y costo de la llamada. Solo llamadas contestadas
-IF @call_id > 0 AND @tipoResDial_id = 1 and @cal_key = ''''
-    BEGIN
-    SELECT @cal_key = cal_key
-    FROM ccoCallsOutSource WITH(NOLOCK)
-    WHERE @callout_id = callout_id;         
-END;
-
-declare @TipoLlamada int
-select @TipoLlamada=dbo.fnGetTipoLlamada(@Telefono)
-
-IF @call_id > 0 AND @tipoResDial_id = 1
-BEGIN
-        INSERT INTO ccoLogDials WITH (ROWLOCK)( callout_id, cam_id, tipoResDial_id, Telefono, Puerto, tDialing, fecha, answerbit, tbusy,
-        TipoDialingMode, cal_id, tAnswerBit, canceledNoAgents, disconnectCause, cal_key, call_TS, tipoLlamada_id, ani )
-               SELECT @callout_id, @cam_id, @tipoResDial_id, @Telefono, @Puerto, @tTotal, @tNow, @answerbit, @tBusy,
-               ''000000000'', @call_id, @tAnswerBitFinal, @canceledNoAgents, @disconnectCause, @cal_key, @call_TS, 
-               @TipoLlamada, @ani;
-    END;
-         ELSE
-    BEGIN
-        INSERT INTO ccoLogDials WITH (ROWLOCK)( callout_id, cam_id, tipoResDial_id, Telefono, Puerto, tDialing, fecha, answerbit, tbusy,
-        TipoDialingMode, cal_id, tAnswerBit, canceledNoAgents, disconnectCause, cal_key, call_TS, tipoLlamada_id, ani )
-               SELECT @callout_id, @cam_id, @tipoResDial_id, @Telefono, @Puerto, @tTotal, @tNow, @answerbit, @tBusy,
-               ''000000000'', @call_id, @tAnswerBitFinal, @canceledNoAgents, @disconnectCause, @cal_key, @call_TS,
-               @TipoLlamada, @ani;
-    END;
-
-    SELECT @logDial_id = SCOPE_IDENTITY();
-    INSERT INTO ccoLogDialsData(logDial_id, callout_id, Data1, Data2, Data3, Data4, Data5, callDate)  
-    SELECT @logDial_id, @callout_id, ISNULL(Dato1, ''''), ISNULL(Dato2, ''''), ISNULL(Dato3, ''''), ISNULL(Dato4, ''''), ISNULL(Dato5, ''''), @tNow
-    FROM ccoCallsOutSource WITH (NOLOCK) where callout_id = @callout_id
-
-    IF @RecicleSIC = 1
-    BEGIN
-        UPDATE ccoWorkingTable WITH(ROWLOCK)
-          SET tipoResDial_id = @tipoResDial_id
-        WHERE callout_id = @callout_id;
-    END;
-
-    -- para marcaciones manuales, actualiza puerto de marcacion y costo de la llamada. Solo llamadas contestadas
-IF @call_id > 0 AND @tipoResDial_id = 1
-    BEGIN
-        UPDATE ccoCallsOut WITH(ROWLOCK)
-    SET cal_puerto = @Puerto, cal_manual = CASE WHEN cal_manual = 1 THEN 2 ELSE cal_manual END
-    WHERE cal_id = @call_id AND cal_puerto = 0;
-
-        EXEC ccsp_CstoCalculaCosto @call_id;
-    END;
-else IF @call_id > 0 AND @tipoResDial_id = 11
-BEGIN
-        UPDATE ccoCallsOut WITH(ROWLOCK)
-    SET cal_puerto = @Puerto
-    WHERE cal_id = @call_id AND cal_puerto = 0;
-
-end
-
-
-    -- Guarda configuracion de TipoDialingMode
-    UPDATE ccoLogDials WITH(ROWLOCK)
-      SET TipoDialingMode = dbo.fn_getDialingMode( @call_id, 0, @logDial_id, @cam_id )
-    WHERE logDial_id = @logDial_id;
-    SET NOCOUNT OFF;
-END;
-
-    SELECT @logDial_id as LogDialId'
-        EXEC(@sql); 
 
     SET @process = 'SEARS optimización de SP ccsp_GalateaAdminBlackListPhones'
         SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminBlackListPhones]
@@ -7408,80 +7167,6 @@ END'
 	EXEC(@sql)
 
     -- END CW-9896 Vladimir --
-
-    -------------------------------------------------------------------- Begin CW-9905 HEL --------------------------------------------------------------------
-
-    SET @process = 'CW-9905 drop sp ccsp_DLRgetXferInfo'
-SET @sql = '
-	IF EXISTS (SELECT * FROM sysobjects WHERE name=''ccsp_DLRgetXferInfo'')
-	BEGIN
-		DROP PROCEDURE dbo.ccsp_DLRgetXferInfo
-	END'
-
-EXEC(@sql)
-
-SET @process = 'CW-9905 create sp ccsp_DLRgetXferInfo'
-SET @sql = '
-	CREATE procedure [dbo].[ccsp_DLRgetXferInfo]
-	@camEspecId smallint=0,
-	@iPortNumber smallint = 0,
-	@type smallint,
-	@typeTransfer smallint = 0,
-	@phone varchar(50) = ''''
-	as
-	-- @type: 1 transferencia entrada, 2 transferencia salida, 3 desborde (siempre es entrada, con o sin especialidad)
-	declare @prefix as varchar(15)
-	declare @timeout int
-	declare @ani as varchar(32)
-	declare @stop int
-    declare @ivr_script smallint, @surveycamid int
-
-	set @prefix =''''
-	set @timeout = 20
-	set @ani = ''''
-	set @stop = 0
-
-	-- Prefijo por puerto
-	select @prefix = prefix from cstoProvedor where provedor_id = (select provedor_id from ccodialers where puerto = @iPortNumber )
-	-- Prefijo por campaña o especialidad
-	if @prefix =''''
-		if @type = 2
-			select @prefix = dialPrefixXfe from ccCamps where cam_id = @camEspecId
-		else
-			select @prefix = dialPrefixOverflow from ccInbound where inbound_id= @camEspecId
-	-- Prefijo general
-	if @prefix ='''' and (@type =1 or @type=2) and ((select cast(valor as int) from ccsettings where setting_id =102) & 4 = 4)
-		select @prefix = valor from ccsettings where setting_id =101
-	if @prefix ='''' and (@type =3) and ((select cast(valor as int) from ccsettings where setting_id =102) & 8 = 8)
-		select @prefix = valor from ccsettings where setting_id =101
-
-	-- Tiempo de marcado
-	select @timeout = cast(valor as int) from ccSettings where setting_id = 109
-
-	-- Ani y stopRecord
-	if @type = 2
-		select @ani = callerIdDesc, @stop = isnull(stopRecording, 0) from ccCamps nolock where cam_id = @camEspecId
-    else
-	begin
-        select @ani = callerIdDesc, @stop = stopRecording, @surveycamid = isnull(extend.SurveyCamId,0) 
-        from ccInbound i (nolock) 
-        left join ccInboundExtend extend on extend.Inbound_id = i.Inbound_id
-        where i.inbound_id= @camEspecId
-
-        if @surveycamid > 0
-            select @ivr_script = isnull(ivrscript,0) from cccamps nolock where cam_id = @surveycamid
-    end
-
-	if (@typeTransfer in (0,4) and @type = 2 and @phone is not null and @phone <> '''')
-	begin	
-		select @stop = case when @typeTransfer = 0 then isnull(stopRecording, 1) else ISNULL(stopRecordingAssisted, 1) end from telefonosTransferencia where tel = @phone		   
-	end
-
-	select @prefix as sDialPrefix, @timeout as tNoContesta, @ani as ani, @stop as stopRecording, @ivr_script as ivrScript'
-
-    EXEC(@sql)
-
-    -------------------------------------------------------------------- End CW-9905 HEL --------------------------------------------------------------------
 
 	-------------------------------------------------------------------- Begin K020039 MAGV ------------------------------------------------------------------
 		SET @process = 'K020039 drop function fn_GetMessagesByConversationOrMessageId'
@@ -14445,6 +14130,583 @@ SET NOCOUNT OFF
 	-------------------- END Ulises Espinosa ------------------------
 
 
+	-------------------- BEGIN Hugo Longoria ------------------------
+
+	SET @process = 'Setting 293 ruteo dinamico de troncales KR237000'
+    SET @sql = '
+		if not exists(select top 1 1 from ccsettings2 where setting_id=293)
+        insert ccSettings2 (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) values (293,''1'', ''Usar ruteo dinamico de troncales'', 1, ''GRL'', ''Habilita el enrutamiento dinamico de troncales'', ''Enable dynamic trunk routing'', 0, ''^[0-1]$'')'
+	EXEC(@sql)
+
+	SET @process = 'Nuevas columnas KR237000'
+    SET @sql = 'IF not EXISTS(SELECT 1 FROM sys.columns WHERE Name = N''route_id''
+          AND Object_ID = Object_ID(N''dbo.ccTrunkConfiguration''))
+        BEGIN
+            alter table ccoLogdials add destination varchar(50), destination_name varchar(50)
+			alter table ccLogTransfers add destination varchar(50), destination_name varchar(50)
+			alter table ccTrunkConfiguration add route_id int
+        END'
+	EXEC(@sql)
+
+	SET @process = 'Crear tabla ccTrunkRouting KR237000'
+    SET @sql = 'IF not EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES
+			WHERE TABLE_SCHEMA = ''dbo'' AND TABLE_NAME = ''ccTrunkRouting'')
+		BEGIN
+			CREATE TABLE [dbo].[ccTrunkRouting](
+				[route_id] [int] IDENTITY(1,1) NOT NULL,
+				[provider_name] [varchar](50) NOT NULL,
+				[destination] [varchar](50) NOT NULL,
+				[hash] [varchar](32) NOT NULL,
+				[dest_length] [tinyint] NOT NULL,
+				[priority] [tinyint] NOT NULL
+			) ON [PRIMARY]
+		END'
+	EXEC(@sql)
+
+	SET @process = 'Eliminar function GetRoute KR237000'
+    SET @sql = 'IF OBJECT_ID(''dbo.GetRoute'', ''FN'') IS NOT NULL
+		BEGIN
+			DROP FUNCTION dbo.GetRoute
+		END'
+	EXEC(@sql)
+
+	SET @process = 'Crear funcion GetRoute KR237000'
+    SET @sql = 'CREATE FUNCTION [dbo].[GetRoute] (@phone varchar(50), @croute varchar(32), @trunkid int)  
+		RETURNS varchar(50)
+		AS  
+		BEGIN 
+			declare @route varchar(50)
+
+			if exists(select valor from ccSettings2 nolock where setting_id=293 and valor=''1'')
+			select top 1 @route=destination+'|'+provider_name from (
+			select destination,provider_name,(case when dest_length=len(@phone) then 3 else 0 end + case when hash=@croute then 2 else 0 end) as rate, priority 
+			from ccTrunkRouting nolock
+			union
+			select destination,provider_name,1 rate,priority from ccTrunkRouting nolock where route_id=(select route_id from ccTrunkConfiguration nolock where TrunkId=@trunkid)
+			)r order by rate desc, priority desc
+
+			return isnull(@route,'')
+		END'
+	EXEC(@sql)
+
+	SET @process = '#2453 Se crea el sp ccsp_DLRGetDialInfo, se agrega la columna data_api_quantum, para poder consultarla al 
+    obtener los datos de la llamada + obtener ruta dinamica KR237000'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_DLRGetDialInfo]
+    @callout_id int,
+    @cam_id smallint=0,
+    @iPortNumber smallint = 0,
+	@trunkId int=0
+    AS
+    set nocount on
+    declare @message_name as varchar(8000), @messageDNCL_name as varchar(max), @messageDNCLConfirm_name as varchar(max)    
+    declare @prefix as varchar(15)
+    declare @prefixCalKey as varchar(30)
+    declare @tNoContesta as tinyint
+    declare @ani as varchar(32)
+    declare @iTipoDial tinyint, @detectAnswerMachine as smallint, @detectVoiceMail as tinyint, @rotativeAlgo tinyint
+    declare @cam_tnotas as smallint, @keepDial as bit, @lista_id smallint
+    declare @ivr_script smallint, @surveycamid int
+    declare @call_record_cam as tinyint
+    declare @pais as tinyint 
+    declare @sipHdrFormat varchar(255)
+    declare @PrefixRec varchar(40)
+    declare @recordHold bit, @recordIvr bit
+	declare @croute varchar(32)
+
+    set @prefix =''''
+    set @tNoContesta = 25
+    set @ani=''''
+    set @iTipoDial = 0
+    set @detectAnswerMachine = 0
+    set @detectVoiceMail =1
+    set @cam_tnotas = 30
+    set @keepDial = 0
+
+    select @pais = valor from ccsettings with(nolock) where setting_id = 104
+    select @PrefixRec=ISNULL(prefijo,'''') from ccCamps nolock where cam_id = @cam_id
+
+    -- Mensajes
+    select @message_name=msg_mostrar, @messageDNCL_name=msg_mostrar_dnc, @messageDNCLConfirm_name = msg_mostrar_dnc_confirm
+    from dbo.fn_ccCamps_SelMessage(@cam_id)
+
+    -- Prefijo por puerto
+    select @prefix = prefix from cstoProvedor with(nolock) where provedor_id = (
+        select provedor_id from ccodialers with(nolock) where puerto = @iPortNumber )
+    -- Prefijo por campa?a
+    if @prefix =''''
+        select @prefix = dialPrefix from ccCamps with(nolock) where cam_id = @cam_id
+    -- Prefijo general, si es que esta habilitado
+    if @prefix ='''' and ((select cast(valor as int) from ccsettings nolock where setting_id =102) & 1 = 1)
+        select @prefix = valor from ccsettings with(nolock) where setting_id =101
+
+    select @iPortNumber = 0, @surveycamid = 0, @ivr_script = 0
+
+    -- Propiedades de campa?a
+    select @sipHdrFormat=isnull(sipHdrFormat,''''),@tNoContesta=cam_tNoContesta, @ani=ani, @iTipoDial=iTipoDial, @detectAnswerMachine=detectAnswerMachine,
+    @detectVoiceMail=detectVoiceMail, @cam_tnotas=cam_tnotas, @keepDial=keepDial,@lista_id =id_anilist,
+    @call_record_cam = isnull(call_record,1), @surveycamid = isnull(surveycamid,0), @rotativeAlgo=isnull(rotativeAlgo,0), @recordHold=ISNULL(recordHold,0)
+    ,@PrefixRec=ISNULL(prefijo,''''), @recordIvr=ISNULL(recordIvr,0)
+    from ccCamps C with(nolock) where C.cam_id=@cam_id
+
+    if @surveycamid > 0
+        select @ivr_script = isnull(ivrscript,0) from cccamps with(nolock) where cam_id = @surveycamid
+
+    --Custom MOH Files
+    DECLARE @MohFiles VARCHAR(8000), @sipheader varchar(500)
+    SELECT @MohFiles = COALESCE(@MohFiles + '','', '''') + V.msgfile 
+    FROM ccCampsMsgs VE with(nolock) join ccMsgfiles V (nolock) ON VE.Msg_id = V.Msg_id WHERE cam_id = @cam_id and TYPE = 15 ORDER BY orden
+
+    --Agrega prefijo Marcacion con directo
+    declare @mainPrefix varchar(1), @phones varchar(max), @apikeyQuantum VARCHAR(300);
+    set @prefixCalKey=''''
+    select @mainPrefix = valor from ccSettings where setting_id=202
+    select @apikeyQuantum = ISNULL(valor, '''') from dbo.ccSettings2 where setting_id=284
+    declare @tmpccoCallsOutSource table(callout_id int primary key,dialPrefix   varchar(30) null
+    ,cal_Key    varchar(40)
+    ,cal_telefono   varchar(30),cal_telefono2   varchar(30),cal_telefono3   varchar(30),cal_telefono4   varchar(30),cal_telefono5   varchar(30)
+    ,Dato1  varchar(255),Dato2  varchar(255),Dato3  varchar(255),Dato4  varchar(255),Dato5  varchar(255)
+    ,recyclePhone   SMALLINT
+    ,recycleType BIT
+    ,data_api_quantum VARCHAR(MAX)
+    )
+    insert into @tmpccoCallsOutSource
+    select callout_id,dialPrefix,cal_Key,
+    cal_telefono,cal_telefono2,cal_telefono3,cal_telefono4,cal_telefono5,
+    Dato1,Dato2,Dato3,Dato4,Dato5,
+    recyclePhone,recycleType, data_api_quantum
+    FROM ccoCallsOutSource with(nolock) WHERE callout_id=@callout_id 
+
+
+    SELECT @prefixCalKey=CASE WHEN @mainPrefix=''1'' THEN isnull(dialPrefix,'''') ELSE '''' END,
+        @phones=cal_telefono+'';''+cal_telefono2+'';''+cal_telefono3+'';''+cal_telefono4+'';''+cal_telefono5
+    FROM @tmpccoCallsOutSource
+
+    if @iPortNumber >= 0 
+    begin
+        declare @Anis table(id int, pid varchar(2), phone varchar(32), ani varchar(32))
+
+        insert @Anis
+        exec ccsp_DLRGetRotativeANI @callout_id=@callout_id,@phones=@phones,@aniList=@lista_id,@algo=@rotativeAlgo
+
+        SELECT @sipheader = dbo.fn_getSIPHeaderCfg(@callout_id,@sipHdrFormat)
+		if len(@sipheader)>32 and left(@sipheader,1)=''@''
+			select @croute=substring(@sipheader, 2, 32)
+    
+        SELECT c.callout_id, ''cal_key''=c.cal_key+''~''+rtrim(dato1)+''~''+rtrim(dato2)+''~''+rtrim(dato3)+''~''+rtrim(dato4)+''~''+rtrim(dato5)
+        , ISNULL(cpt.Prioridad,''12345NNN'') dial_tels
+        , CASE WHEN (NOT(ISNULL(recyclePhone, 0) = 1) AND ISNULL(recycleType, 1) = 0) THEN '''' ELSE C.cal_telefono  END cal_telefono
+        , CASE WHEN (NOT(ISNULL(recyclePhone, 0) = 2) AND ISNULL(recycleType, 1) = 0) THEN '''' ELSE c.cal_telefono2 END cal_telefono2
+        , CASE WHEN (NOT(ISNULL(recyclePhone, 0) = 3) AND ISNULL(recycleType, 1) = 0) THEN '''' ELSE c.cal_telefono3 END cal_telefono3
+        , CASE WHEN (NOT(ISNULL(recyclePhone, 0) = 4) AND ISNULL(recycleType, 1) = 0) THEN '''' ELSE c.cal_telefono4 END cal_telefono4
+        , CASE WHEN (NOT(ISNULL(recyclePhone, 0) = 5) AND ISNULL(recycleType, 1) = 0) THEN '''' Else c.cal_telefono5 END cal_telefono5
+        , isnull(@message_name, '''') as message_name
+        , @tNoContesta as tNoContesta, @prefix+@prefixCalKey as sDialPrefix    
+        , case when anis.p1 <> '''' then anis.p1 else @ani end ani
+        , case when anis.p2 <> '''' then anis.p2 else @ani end ani2
+        , case when anis.p3 <> '''' then anis.p3 else @ani end ani3
+        , case when anis.p4 <> '''' then anis.p4 else @ani end ani4
+        , case when anis.p5 <> '''' then anis.p5 else @ani end ani5
+        , @iTipoDial iTipoDial, @detectAnswerMachine detectAnswerMachine, @detectVoiceMail detectVoiceMail
+        , @cam_tnotas cam_tnotas, @keepDial keepDial
+        , isnull(@messageDNCL_name, '''') as messageDNCL_name
+        ,dbo.EnableCallRecord(@call_record_cam,@pais,c.cal_telefono) as call_record
+        ,dbo.EnableCallRecord(@call_record_cam,@pais,c.cal_telefono2) as call_record2
+        ,dbo.EnableCallRecord(@call_record_cam,@pais,c.cal_telefono3) as call_record3
+        ,dbo.EnableCallRecord(@call_record_cam,@pais,c.cal_telefono4) as call_record4
+        ,dbo.EnableCallRecord(@call_record_cam,@pais,c.cal_telefono5) as call_record5
+        , isnull(@messageDNCLConfirm_name, '''') as messageDNCLConfirm_name
+        , isnull(@MohFiles,'''') as mohFiles
+        ,@ivr_script ivrScript
+        ,@sipheader data
+        ,@PrefixRec as Prefijo,
+        dbo.GetCarrierByTel(C.cal_telefono) carrier1, 
+        dbo.GetCarrierByTel(cal_telefono2) carrier2, 
+        dbo.GetCarrierByTel(cal_telefono3) carrier3, 
+        dbo.GetCarrierByTel(cal_telefono4) carrier4, 
+        dbo.GetCarrierByTel(cal_telefono5) carrier5,
+        @recordHold as recordHold,
+        @recordIvr as recordIvr,
+        isnull(C.data_api_quantum, '''') AS data_api_quantum,
+        @apikeyQuantum AS key_api_quantum,
+		dbo.GetRoute(C.cal_telefono,isnull(@croute,''''),@trunkId) destination
+        FROM @tmpccoCallsOutSource C
+        left join ccoCallPriorityOrder cpo with(nolock) on cpo.callout_id = c.callout_id
+        left join ccCampsPrioridadTel cpt on cpt.cam_id = @cam_id
+        left join (SELECT * FROM (SELECT pid,ani FROM @Anis)a PIVOT(MAX(ani) FOR pid IN(p1,p2,p3,p4,p5)) AS pt) anis on 0=0
+        WHERE C.callout_id = @callout_id
+        OPTION (RECOMPILE);
+        return
+    end 
+    set nocount off'
+    EXEC(@sql)
+
+	SET @process = 'Obtener ruta dinamica KR237000'
+    SET @sql = 'ALTER procedure [dbo].[ccsp_DLRgetDialPrefix]
+                    @cam_id smallint=0,
+                    @iPortNumber smallint = 0,
+                    @phone varchar(30) = '''',
+                    @callout_id int = 0,
+					@trunkId int=0
+                    as
+                    declare @prefix as varchar(15), @sipheader varchar(500)
+                    declare @ani as varchar(32)
+                    declare @pais as tinyint 
+                    declare @aniglobal varchar(32), @sipHdrFormat varchar(255)
+                    declare @ivr_script smallint, @surveycamid int
+                    declare @call_record tinyint, @tNoContesta tinyint, @detectAnswerMachine smallint, @detectVoiceMail tinyint
+                    declare @PrefixRec varchar(40)
+                    declare @carrier varchar(255)
+                    declare @recordHold bit, @recordIvr bit
+                    declare @RotativeAlgo int ,@aniList smallint 
+					declare @croute varchar(32)
+
+                    select @pais = valor from ccsettings with(nolock) where setting_id = 104
+                    select @aniglobal = valor from ccsettings with(nolock) where setting_id = 177
+
+                    set @prefix =''''
+                    -- Prefijo por puerto
+                    select @prefix = prefix from cstoProvedor where provedor_id = (select provedor_id from ccodialers where puerto = @iPortNumber )
+
+                    -- Prefijo por campa?a,
+                    if @prefix =''''
+                        select @prefix = dialPrefixMan from ccCamps where cam_id = @cam_id
+
+                    -- Prefijo general
+                    if @prefix ='''' and ((select cast(valor as int) from ccsettings where setting_id =102) & 2 = 2)
+                        select @prefix = valor from ccsettings with(nolock) where setting_id =101
+
+                    -- Ani
+                    select @RotativeAlgo = RotativeAlgo from ccCamps where cam_id = @cam_id
+                    select @aniList = id_anilist from ccCamps where cam_id =@cam_id
+
+                    if @RotativeAlgo=0 and @aniList>0  begin
+                    set @ani = dbo.TelAni(@phone, @aniList )
+                    end
+                    else begin
+                        set @ani=''''
+                    end
+                    set @ani = dbo.TelAni(@phone, (select id_anilist from ccCamps where cam_id =@cam_id) )
+
+                    --AnswerMachine Message Files
+                    DECLARE @MsgFiles VARCHAR(8000) 
+                    SELECT @MsgFiles = COALESCE(@MsgFiles + '','', '''') + V.msgfile 
+                    FROM ccCampsMsgs VE (nolock) join ccMsgfiles V (nolock) ON VE.Msg_id = V.Msg_id WHERE cam_id = @cam_id and TYPE = 8 ORDER BY orden
+
+                    IF EXISTS (select 1 from ccCampsMsgs where Type = 20 and cam_id = @cam_id)
+                    BEGIN
+                        select @MsgFiles = @MsgFiles + '',TTS/message.wav''
+                    END
+
+                    --Custom MOH Files
+                    DECLARE @MohFiles VARCHAR(8000) 
+                    SELECT @MohFiles = COALESCE(@MohFiles + '','', '''') + V.msgfile 
+                    FROM ccCampsMsgs VE (nolock) join ccMsgfiles V (nolock) ON VE.Msg_id = V.Msg_id WHERE cam_id = @cam_id and TYPE = 15 ORDER BY orden
+
+                    select @surveycamid = 0, @ivr_script = 0
+
+                    select @sipHdrFormat=isnull(sipHdrFormat,''''),@tNoContesta = cam_tNoContesta, @ani = case when @ani = '''' then ani else @ani end
+                    ,@detectAnswerMachine = detectAnswerMachine, @detectVoiceMail = detectVoiceMail
+                    ,@call_record = dbo.EnableCallRecord(call_record, @pais, @phone), @surveycamid = isnull(surveycamid,0), @recordHold=ISNULL(recordHold,0)
+                    ,@recordIvr=ISNULL(recordIvr,0), @PrefixRec = ISNULL(prefijo,'''')
+                    from ccCamps NOLOCK where cam_id = @cam_id
+
+                    SELECT @sipheader = dbo.fn_getSIPHeaderCfg(@callout_id,@sipHdrFormat)
+					if len(@sipheader)>32 and left(@sipheader,1)=''@''
+						select @croute=substring(@sipheader, 2, 32)
+
+                    if @surveycamid > 0
+                        select @ivr_script = isnull(ivrscript,0) from cccamps nolock where cam_id = @surveycamid
+
+
+                    if @ani = '''' begin 
+                    set @ani = @aniglobal 
+                    end 
+
+                     set @carrier = ''''
+                     select @carrier = dbo.GetCarrierByTel(@phone)
+
+                    select @prefix as sDialPrefix, @tNoContesta as tNoContesta,@ani as ani, @detectAnswerMachine detectAnswerMachine, @detectVoiceMail detectVoiceMail,
+                    @call_record as call_record, isnull(@MsgFiles,'''') as messageFiles, isnull(@MohFiles,'''') as mohFiles, @ivr_script ivrScript, @sipheader data
+                    ,@PrefixRec PrefijoRec, @carrier Carrier, @recordHold recordHold, @recordIvr recordIvr, 
+					dbo.GetRoute(@phone,isnull(@croute,''''),@trunkId) destination'
+	EXEC(@sql)
+
+	SET @process = 'CW-9905 + Obtener ruta dinamica KR237000'
+	SET @sql = '
+		ALTER procedure [dbo].[ccsp_DLRgetXferInfo]
+		@camEspecId smallint=0,
+		@iPortNumber smallint = 0,
+		@type smallint,
+		@typeTransfer smallint = 0,
+		@phone varchar(50) = '''',
+		@trunkId int=0
+		as
+		-- @type: 1 transferencia entrada, 2 transferencia salida, 3 desborde (siempre es entrada, con o sin especialidad)
+		declare @prefix as varchar(15)
+		declare @timeout int
+		declare @ani as varchar(32)
+		declare @stop int
+		declare @ivr_script smallint, @surveycamid int
+
+		set @prefix =''''
+		set @timeout = 20
+		set @ani = ''''
+		set @stop = 0
+
+		-- Prefijo por puerto
+		select @prefix = prefix from cstoProvedor where provedor_id = (select provedor_id from ccodialers where puerto = @iPortNumber )
+		-- Prefijo por campaña o especialidad
+		if @prefix =''''
+			if @type = 2
+				select @prefix = dialPrefixXfe from ccCamps where cam_id = @camEspecId
+			else
+				select @prefix = dialPrefixOverflow from ccInbound where inbound_id= @camEspecId
+		-- Prefijo general
+		if @prefix ='''' and (@type =1 or @type=2) and ((select cast(valor as int) from ccsettings where setting_id =102) & 4 = 4)
+			select @prefix = valor from ccsettings where setting_id =101
+		if @prefix ='''' and (@type =3) and ((select cast(valor as int) from ccsettings where setting_id =102) & 8 = 8)
+			select @prefix = valor from ccsettings where setting_id =101
+
+		-- Tiempo de marcado
+		select @timeout = cast(valor as int) from ccSettings where setting_id = 109
+
+		-- Ani y stopRecord
+		if @type = 2
+			select @ani = callerIdDesc, @stop = isnull(stopRecording, 0) from ccCamps nolock where cam_id = @camEspecId
+		else
+		begin
+			select @ani = callerIdDesc, @stop = stopRecording, @surveycamid = isnull(extend.SurveyCamId,0) 
+			from ccInbound i (nolock) 
+			left join ccInboundExtend extend on extend.Inbound_id = i.Inbound_id
+			where i.inbound_id= @camEspecId
+
+			if @surveycamid > 0
+				select @ivr_script = isnull(ivrscript,0) from cccamps nolock where cam_id = @surveycamid
+		end
+
+		if (@typeTransfer in (0,4) and @type = 2 and @phone is not null and @phone <> '''')
+		begin	
+			select @stop = case when @typeTransfer = 0 then isnull(stopRecording, 1) else ISNULL(stopRecordingAssisted, 1) end from telefonosTransferencia where tel = @phone		   
+		end
+
+		select @prefix as sDialPrefix, @timeout as tNoContesta, @ani as ani, @stop as stopRecording, @ivr_script as ivrScript,
+		dbo.GetRoute(@phone,'''',@trunkId) destination'
+    EXEC(@sql)
+
+	SET @process = 'Sears + Guardar ruta dinamica KR237000 Alter SP ccsp_DLRSaveDialResult'
+        SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_DLRSaveDialResult] 
+		@callout_id INT, @cam_id SMALLINT, @tipoResDial_id TINYINT, @Telefono VARCHAR(30), @Puerto SMALLINT,
+		@tDialing TINYINT= 0, @tBusy SMALLINT= 0, @call_id INT= 0, @answerbit BIT= NULL, @tAnswerBit SMALLINT= 0,
+		@canceledNoAgents BIT= 0, @disconnectCause VARCHAR(250)= '''', @cal_key VARCHAR(40)= '''', @call_TS VARCHAR(15)='''',
+		@ani varchar(32)='''', @destination varchar(50)='''', @destination_name varchar(50)=''''
+		AS
+		BEGIN
+			SET NOCOUNT ON;
+
+			DECLARE @tNow AS DATETIME, @RecicleSIC TINYINT;
+			DECLARE @logDial_id INT;
+			DECLARE @tAnswerBitFinal AS DATETIME;
+			DECLARE @MaxCal_id INT;
+			DECLARE @tTotal SMALLINT;
+
+			SELECT @RecicleSIC = ISNULL(valor, 0)
+			FROM ccSettings
+			WHERE setting_id = 60;
+
+			SELECT @tTotal = @tDialing + @tAnswerBit;
+
+			SELECT @tNow = GETDATE();
+
+			SELECT @tAnswerBitFinal = DATEADD(ss, -@tAnswerBit, @tNow);
+
+
+		-- para marcaciones manuales, actualiza puerto de marcacion y costo de la llamada. Solo llamadas contestadas
+		IF @call_id > 0 AND @tipoResDial_id = 1 and @cal_key = ''''
+			BEGIN
+			SELECT @cal_key = cal_key
+			FROM ccoCallsOutSource WITH(NOLOCK)
+			WHERE @callout_id = callout_id;         
+		END;
+
+		declare @TipoLlamada int
+		select @TipoLlamada=dbo.fnGetTipoLlamada(@Telefono)
+
+		IF @call_id > 0 AND @tipoResDial_id = 1
+		BEGIN
+				INSERT INTO ccoLogDials WITH (ROWLOCK)( callout_id, cam_id, tipoResDial_id, Telefono, Puerto, tDialing, fecha, answerbit, tbusy,
+				TipoDialingMode, cal_id, tAnswerBit, canceledNoAgents, disconnectCause, cal_key, call_TS, tipoLlamada_id, ani,
+				destination, destination_name)
+					   SELECT @callout_id, @cam_id, @tipoResDial_id, @Telefono, @Puerto, @tTotal, @tNow, @answerbit, @tBusy,
+					   ''000000000'', @call_id, @tAnswerBitFinal, @canceledNoAgents, @disconnectCause, @cal_key, @call_TS, 
+					   @TipoLlamada, @ani, @destination, @destination_name;
+			END;
+				 ELSE
+			BEGIN
+				INSERT INTO ccoLogDials WITH (ROWLOCK)( callout_id, cam_id, tipoResDial_id, Telefono, Puerto, tDialing, fecha, answerbit, tbusy,
+				TipoDialingMode, cal_id, tAnswerBit, canceledNoAgents, disconnectCause, cal_key, call_TS, tipoLlamada_id, ani,
+				destination, destination_name)
+					   SELECT @callout_id, @cam_id, @tipoResDial_id, @Telefono, @Puerto, @tTotal, @tNow, @answerbit, @tBusy,
+					   ''000000000'', @call_id, @tAnswerBitFinal, @canceledNoAgents, @disconnectCause, @cal_key, @call_TS,
+					   @TipoLlamada, @ani, @destination, @destination_name;
+			END;
+
+			SELECT @logDial_id = SCOPE_IDENTITY();
+			INSERT INTO ccoLogDialsData(logDial_id, callout_id, Data1, Data2, Data3, Data4, Data5, callDate)  
+			SELECT @logDial_id, @callout_id, ISNULL(Dato1, ''''), ISNULL(Dato2, ''''), ISNULL(Dato3, ''''), ISNULL(Dato4, ''''), ISNULL(Dato5, ''''), @tNow
+			FROM ccoCallsOutSource WITH (NOLOCK) where callout_id = @callout_id
+
+			IF @RecicleSIC = 1
+			BEGIN
+				UPDATE ccoWorkingTable WITH(ROWLOCK)
+				  SET tipoResDial_id = @tipoResDial_id
+				WHERE callout_id = @callout_id;
+			END;
+
+			-- para marcaciones manuales, actualiza puerto de marcacion y costo de la llamada. Solo llamadas contestadas
+		IF @call_id > 0 AND @tipoResDial_id = 1
+			BEGIN
+				UPDATE ccoCallsOut WITH(ROWLOCK)
+			SET cal_puerto = @Puerto, cal_manual = CASE WHEN cal_manual = 1 THEN 2 ELSE cal_manual END
+			WHERE cal_id = @call_id AND cal_puerto = 0;
+
+				EXEC ccsp_CstoCalculaCosto @call_id;
+			END;
+		else IF @call_id > 0 AND @tipoResDial_id = 11
+		BEGIN
+				UPDATE ccoCallsOut WITH(ROWLOCK)
+			SET cal_puerto = @Puerto
+			WHERE cal_id = @call_id AND cal_puerto = 0;
+
+		end
+
+
+			-- Guarda configuracion de TipoDialingMode
+			UPDATE ccoLogDials WITH(ROWLOCK)
+			  SET TipoDialingMode = dbo.fn_getDialingMode( @call_id, 0, @logDial_id, @cam_id )
+			WHERE logDial_id = @logDial_id;
+			SET NOCOUNT OFF;
+		END;
+
+			SELECT @logDial_id as LogDialId'
+    EXEC(@sql); 
+
+	SET @process = 'Guardar ruta dinamica KR237000'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_EngineLogTransfers]
+		@action as tinyint,
+		@cal_id as integer,
+		@tipo as tinyint,
+		@modo as tinyint,
+		@destino as varchar(50),
+		@tantes integer = 0,
+		@tdespues integer = 0,
+		@pbxId tinyint =0,
+		@channel int =0,
+		@callerAni as varchar(50) = null,
+		@destination varchar(50)='''', 
+		@destination_name varchar(50)=''''
+		as
+		-- tipo: 1 inbound, 2 outbound
+		-- modo: 0 externa ciega, 1 agente, 2 acd, 3 confer, 4 externa supervisada, 5 desborde, 6 supervisada acd, 7 in callback
+		 
+		declare @totalCall_Time integer
+		declare @callout_id int
+		declare @xferDate datetime = getdate()
+
+		declare @calloutId int
+		 
+		if @action = 1 begin
+			if @modo = 4 begin
+				insert into ccLogTransfers(cal_id,tipo,modo,destino,tAntesXfer,tDespuesXfer,fechaFin,pbxId,channel, tipoLlamada_id, callerAni, destination, destination_name)
+				values ( @cal_id, @tipo, @modo, @destino, @tantes, @tdespues, @xferDate, @pbxId, @channel, dbo.fnGetTipoLlamada(@destino), @callerAni, @destination, @destination_name)
+				if @tdespues > 0 begin
+						select @totalCall_Time = ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0) + @tdespues
+						update ccoCallsOut set totalCall_Time = @totalCall_Time where cal_id = @cal_id
+				end
+			end
+			else begin
+				if @modo = 5 and @tipo = 1 and @cal_id = 0 
+				begin
+					insert into ccLogTransfers(cal_id,tipo,modo,destino,tAntesXfer,tDespuesXfer,fechaFin,pbxId,channel, tipoLlamada_id, callerAni, destination, destination_name)
+					values ( @cal_id, @tipo, @modo, @destino, @tantes, @tdespues, @xferDate, @pbxId, @channel, dbo.fnGetTipoLlamada(@destino), @callerAni, @destination, @destination_name)
+					return;
+				end
+
+				if not exists (select 1 from ccLogTransfers where cal_id = @cal_id and tipo = @tipo)
+				begin
+					insert into ccLogTransfers(cal_id,tipo,modo,destino,tAntesXfer,tDespuesXfer,fechaFin,pbxId,channel, tipoLlamada_id, callerAni, destination, destination_name)
+					values ( @cal_id, @tipo, @modo, @destino, 0, @tantes, @xferDate, @pbxId, @channel, dbo.fnGetTipoLlamada(@destino), @callerAni, @destination, @destination_name)
+				end
+		 
+				if @tipo = 2 begin
+					if @modo = 5 begin
+						select @cal_id = (select callout_id from ccCallsIn where cal_id = @cal_id)
+						update ccLogTransfers set tDespuesXfer = @tantes + (select tDespuesXfer from ccLogTransfers where cal_id = @cal_id and tipo = 2), tAntesXfer = @tdespues + (select tAntesXfer from ccLogTransfers where cal_id = @cal_id and tipo = 2)  where cal_id = @cal_id and tipo = 2
+					end
+		         
+					if @modo in (0,1,2) begin
+						select @totalCall_Time = ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0) + @tantes
+						update ccoCallsOut set totalCall_Time = @totalCall_Time, tipoLlamada_id = dbo.fnGetTipoLlamada(@destino) where cal_id = @cal_id
+					end
+				end
+				else begin
+					if @modo = 7 begin
+					select @xferDate XferDate
+					return(0)
+					end
+					select @calloutId = callout_id from ccCallsIn where cal_id = @cal_id
+					if @calloutId <> 0 
+					begin
+						select @cal_id = @calloutId
+						select @totalCall_Time = ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0) + @tantes
+						update ccoCallsOut set totalCall_Time = @totalCall_Time, tipoLlamada_id = dbo.fnGetTipoLlamada(@destino) where cal_id = @cal_id
+					end
+				end
+			end
+			--Valida que no existe y que el tiempo minimo de la grabacion se mayor al establecido para que lo tome el detector de gritos
+			if not exists(select * from ccAVRSTransfer where cal_id=@cal_id and tipo= @tipo-1) begin
+			declare @tMinAVRS smallint,@cal_tDialog int,@cal_manual int
+			set @tMinAVRS=5
+			set @cal_manual=0
+			select @tMinAVRS=valor from ccSettings where setting_id=65
+			if @tipo=2 begin
+				select @cal_tDialog=cal_tDialog,@cal_manual=cal_manual from ccoCallsOut where cal_id=@cal_id
+			end
+			else begin
+				select @cal_tDialog=cal_tDialog from ccCallsIn where cal_id=@cal_id
+			end
+		 
+			if @cal_tDialog >= @tMinAVRS and @cal_manual<>1 begin
+				insert into ccAVRSTransfer (cal_id,tipo) values(@cal_id,@tipo-1)
+			end
+			end
+		end
+		 
+		else if @action = 2 
+		begin 
+			select @calloutId = callout_id from ccCallsIn where cal_id = @cal_id
+			if @calloutId <> 0 
+			begin
+				select @cal_id = @calloutId
+				update ccLogTransfers set tDespuesXfer = @tdespues + @tantes + (select tDespuesXfer from ccLogTransfers where cal_id = @cal_id and tipo = 2)  where cal_id = @cal_id and tipo = 2
+				select @totalCall_Time = ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0) + @tantes + @tdespues
+				update ccoCallsOut set totalCall_Time = @totalCall_Time where cal_id = @cal_id
+			end
+		end
+		 
+		else if @action = 4 begin
+			select @totalCall_Time = ISNULL((select sum(tincall) from IVRCallsIn where callout_id = @cal_id), 0) + ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0)
+			update ccoCallsOut set totalCall_Time = @totalCall_Time, tipoLlamada_id = dbo.fnGetTipoLlamada(@destino) where cal_id = @cal_id
+		end'
+	EXEC(@sql)
+
+
+	-------------------- END Hugo Longoria ------------------------
+
+	
+
+    
+
+    
 
 	
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */

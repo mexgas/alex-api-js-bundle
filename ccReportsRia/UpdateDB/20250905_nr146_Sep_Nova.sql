@@ -290,6 +290,57 @@ END'
     
     --------------------------------  END GASJ -------------------------------- 
 
+
+	------------------------------------- BEGIN MAGV ticket #5325 -----------------------------------------
+	SET @process = 'Se realiza modificación en la vista RepViewOutCallsDetail, se cambia el alias del login
+	de [userName] por fullName para que el reports tome bien la etiqueta y el valor que corresponde a la columna'
+	SET @sql = 'ALTER VIEW [dbo].[RepViewOutCallsDetail] AS 
+	SELECT
+	date,
+	callKey,
+	telephone,
+	transfer,
+	dialog,
+	nque,
+	wrapup,
+	CallDisposition,
+	subDisposition,
+	extension,
+	userId,
+	[login] fullName,
+	username [login],
+	campaignId,
+	campaign,
+	duration,
+	ncost,
+	iva,
+	total as totalRow,
+	ByCarrier,
+	Calltypes,
+	dialType,
+	whoHangUp,
+	dialResult as callStatus,
+	calId,
+	year,
+	month,
+	day,
+	hour,
+	minutes,
+	trunk,
+	data1 [Dato1],
+	data2 [Dato2],
+	data3 [Dato3],
+	data4 [Dato4],
+	data5 [Dato5],
+	MessageTime,
+	grabId  
+	FROM RepOutCallsDetail nolock'
+
+	EXEC(@sql)
+
+
+	------------------------------------- END MAGV --------------------------------------
+
 set @process = ''
 set @sql=''
 EXEC(@sql)

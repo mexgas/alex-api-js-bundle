@@ -49,14 +49,14 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 	------------------------------------------------ BEGIN JUAN MEDINA ------------------------------------------------
 	SET @process = 'Sprint 5 - DELETE PERMISSIONS CENTER SCRIPT '
     SET @sql = '
-        IF EXISTS (Select 1 From ccRoles_Permissions where Permissions_Id = 100003)
+        IF EXISTS (Select 1 From ccRoles_Permissions where Permissions_Id = 10003)
 		BEGIN
-			DELETE ccRoles_Permissions  where Permissions_Id = 100003
+			DELETE ccRoles_Permissions  where Permissions_Id = 10003
 		END
 
-		IF EXISTS (Select 1 From ccPermissions where Permissions_Id = 100003)
+		IF EXISTS (Select 1 From ccPermissions where Permissions_Id = 10003)
 		BEGIN
-			DELETE ccPermissions  where Permissions_Id = 100003
+			DELETE ccPermissions  where Permissions_Id = 10003
 		END 
 	'
     EXEC(@sql)

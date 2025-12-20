@@ -844,6 +844,7 @@ SELECT
     userId,
     0 AS TypeNotReady,
     '''' AS descripcion,
+    ''_Time'' AS descripcion_time,
     0 AS [time],
     0 AS transferStatus,
     0 AS ringingTime,
@@ -855,6 +856,7 @@ SELECT
     0 AS dialingStatus,
     NULL AS TipoReadyAuxiliarId,
     '''' AS auxiliarRedy_descripcion,
+    ''_TimeAux'' AS descripcion_auxiliarRedyTime_time,
     0 AS auxiliarRedyTime,
     1 AS areaId,
     ''Default'' AS area
@@ -882,6 +884,7 @@ SELECT
     userId,
     TypeNotReady,
     descripcion,
+    descripcion_time,
     [time],
     transferStatus,
     ringingTime,
@@ -893,12 +896,14 @@ SELECT
     dialingStatus,
     TipoReadyAuxiliarId,
     auxiliarRedy_descripcion,
+    ISNULL(descripcion_auxiliarRedyTime_time, ''_TimeAux'') AS descripcion_auxiliarRedyTime_time,
     auxiliarRedyTime,
     areaId,
     area
 FROM RepAgentSummary
-';
+'
 EXEC(@sql);
+
 
 
 -------Pitov AgentSummaryReport------
@@ -1063,10 +1068,10 @@ BEGIN
         , 0) AS avgCallTengaged
         
         ,ISNULL(co.tNotesOut, 0) + ISNULL(ci.tNotesIn, 0) AS twrapup, A.userId AS userId
-        , notReady.TipoNotReadyId
-        , notReady.descripcion
-        , notReady.descripcion_time
-        , notReady.timeSeconds
+        ,ISNULL(notReady.TipoNotReadyId, 0) AS TipoNotReadyId
+        ,ISNULL(notReady.descripcion, 0) AS descripcion
+       ,ISNULL(notReady.descripcion_time, 0) AS descripcion_time
+       ,ISNULL(notReady.timeSeconds, 0) AS timeSeconds
         , ISNULL(co.txferOut, 0) + ISNULL(ci.txferIn, 0) AS transferStatus
         , ISNULL(co.tringOut, 0) + ISNULL(ci.tringIn, 0) AS ringingTime
         , ISNULL(AgtGI.tunknown, 0) unknownStatus

@@ -54,10 +54,10 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 
 SET @process = 'Drop Procedure [dbo].[ccsp_GalateaDeleteCampaignAndACD]';
 SET @sql = N'
-IF OBJECT_ID(N''dbo.ccsp_GalateaDeleteCampaignAndACD'', ''P'') IS NOT NULL
-BEGIN
-    DROP PROCEDURE [dbo].[ccsp_GalateaDeleteCampaignAndACD];
-END';
+    If Exists (Select 1 From sys.procedures Where name = N''ccsp_GalateaDeleteCampaignAndACD'')
+        Begin
+            DROP PROCEDURE ccsp_GalateaDeleteCampaignAndACD
+        End';
 EXEC(@sql);
 
 SET @process = 'Create Procedure [dbo].[ccsp_GalateaDeleteCampaignAndACD]';

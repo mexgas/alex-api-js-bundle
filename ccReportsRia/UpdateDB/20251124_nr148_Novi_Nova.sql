@@ -45,85 +45,75 @@ BEGIN
     -- RepAgentSummary
     SET @process = 'AlterTable RepAgentSummary';
     SET @sql = '
-    IF COL_LENGTH(''RepAgentSummary'', ''areaId'') IS NULL
-    BEGIN
-        ALTER TABLE RepAgentSummary 
-            ADD areaId INT NOT NULL DEFAULT(0);
-    END
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''RepAgentSummary'' AND Object_ID = Object_ID(N''areaId''))
+		BEGIN
+			ALTER TABLE RepAgentSummary ADD areaId INT NOT NULL DEFAULT(0)
+		END
 
-    IF COL_LENGTH(''RepAgentSummary'', ''area'') IS NULL
-    BEGIN
-        ALTER TABLE RepAgentSummary 
-            ADD area VARCHAR(100) NULL;
-    END
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''RepAgentSummary'' AND Object_ID = Object_ID(N''area''))
+		BEGIN
+			ALTER TABLE RepAgentSummary ADD area VARCHAR(100) NULL
+		END
     ';
     EXEC(@sql);
 
     -- RepInCallsDetail
     SET @process = 'AlterTable RepInCallsDetail';
     SET @sql = '
-    IF COL_LENGTH(''RepInCallsDetail'', ''areaId'') IS NULL
-    BEGIN
-        ALTER TABLE RepInCallsDetail 
-            ADD areaId INT NOT NULL DEFAULT(0);
-    END
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''RepInCallsDetail'' AND Object_ID = Object_ID(N''areaId''))
+		BEGIN
+			ALTER TABLE RepInCallsDetail ADD areaId INT NOT NULL DEFAULT(0)
+		END
 
-    IF COL_LENGTH(''RepInCallsDetail'', ''area'') IS NULL
-    BEGIN
-        ALTER TABLE RepInCallsDetail 
-            ADD area VARCHAR(100) NULL;
-    END
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''RepInCallsDetail'' AND Object_ID = Object_ID(N''area''))
+		BEGIN
+			ALTER TABLE RepInCallsDetail ADD area VARCHAR(100) NULL
+		END
     ';
     EXEC(@sql);
 
     -- RepOutCallsDetail
     SET @process = 'AlterTable RepOutCallsDetail';
     SET @sql = '
-    IF COL_LENGTH(''RepOutCallsDetail'', ''areaId'') IS NULL
-    BEGIN
-        ALTER TABLE RepOutCallsDetail 
-            ADD areaId INT NOT NULL DEFAULT(0);
-    END
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''RepOutCallsDetail'' AND Object_ID = Object_ID(N''areaId''))
+		BEGIN
+			ALTER TABLE RepOutCallsDetail ADD areaId INT NOT NULL DEFAULT(0)
+		END
 
-    IF COL_LENGTH(''RepOutCallsDetail'', ''area'') IS NULL
-    BEGIN
-        ALTER TABLE RepOutCallsDetail 
-            ADD area VARCHAR(100) NULL;
-    END
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''RepOutCallsDetail'' AND Object_ID = Object_ID(N''area''))
+		BEGIN
+			ALTER TABLE RepOutCallsDetail ADD area VARCHAR(100) NULL
+		END
     ';
     EXEC(@sql);
 
     -- RepOutDialDetail
     SET @process = 'AlterTable RepOutDialDetail';
     SET @sql = '
-    IF COL_LENGTH(''RepOutDialDetail'', ''areaId'') IS NULL
-    BEGIN
-        ALTER TABLE RepOutDialDetail 
-            ADD areaId INT NOT NULL DEFAULT(0);
-    END
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''RepOutDialDetail'' AND Object_ID = Object_ID(N''areaId''))
+		BEGIN
+			ALTER TABLE RepOutDialDetail ADD areaId INT NOT NULL DEFAULT(0)
+		END
 
-    IF COL_LENGTH(''RepOutDialDetail'', ''area'') IS NULL
-    BEGIN
-        ALTER TABLE RepOutDialDetail 
-            ADD area VARCHAR(100) NULL;
-    END
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''RepOutDialDetail'' AND Object_ID = Object_ID(N''area''))
+		BEGIN
+			ALTER TABLE RepOutDialDetail ADD area VARCHAR(100) NULL
+		END
     ';
     EXEC(@sql);
 
     -- RepSpecialAbndCamp
     SET @process = 'AlterTable RepSpecialAbndCamp';
     SET @sql = '
-    IF COL_LENGTH(''RepSpecialAbndCamp'', ''areaId'') IS NULL
-    BEGIN
-        ALTER TABLE RepSpecialAbndCamp 
-            ADD areaId INT NOT NULL DEFAULT(0);
-    END
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''RepSpecialAbndCamp'' AND Object_ID = Object_ID(N''areaId''))
+		BEGIN
+			ALTER TABLE RepSpecialAbndCamp ADD areaId INT NOT NULL DEFAULT(0)
+		END
 
-    IF COL_LENGTH(''RepSpecialAbndCamp'', ''area'') IS NULL
-    BEGIN
-        ALTER TABLE RepSpecialAbndCamp 
-            ADD area VARCHAR(100) NULL;
-    END
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''RepSpecialAbndCamp'' AND Object_ID = Object_ID(N''area''))
+		BEGIN
+			ALTER TABLE RepSpecialAbndCamp ADD area VARCHAR(100) NULL
+		END
     ';
     EXEC(@sql);
 

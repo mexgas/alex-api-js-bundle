@@ -1295,10 +1295,10 @@ END
 
 SET @process = 'Drop Procedure [dbo].[ccsp_AgentUpdateCallCALIF]';
 SET @sql = N'
-IF OBJECT_ID(N''dbo.ccsp_AgentUpdateCallCALIF'', ''P'') IS NOT NULL
-BEGIN
-    DROP PROCEDURE [dbo].[ccsp_AgentUpdateCallCALIF];
-END';
+    If Exists (Select 1 From sys.procedures Where name = N''ccsp_AgentUpdateCallCALIF'')
+        Begin
+            DROP PROCEDURE ccsp_AgentUpdateCallCALIF
+        End';
 EXEC(@sql);
 
 SET @process = 'Create Procedure [dbo].[ccsp_AgentUpdateCallCALIF]';

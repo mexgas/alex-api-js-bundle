@@ -14402,14 +14402,14 @@ SET NOCOUNT OFF
 			declare @route varchar(50)
 
 			if exists(select valor from ccSettings2 nolock where setting_id=293 and valor=''1'')
-			select top 1 @route=destination+'|'+provider_name from (
+			select top 1 @route=destination+''|''+provider_name from (
 			select destination,provider_name,(case when dest_length=len(@phone) then 3 else 0 end + case when hash=@croute then 2 else 0 end) as rate, priority 
 			from ccTrunkRouting nolock
 			union
 			select destination,provider_name,1 rate,priority from ccTrunkRouting nolock where route_id=(select route_id from ccTrunkConfiguration nolock where TrunkId=@trunkid)
 			)r order by rate desc, priority desc
 
-			return isnull(@route,'')
+			return isnull(@route,'''')
 		END'
 	EXEC(@sql)
 

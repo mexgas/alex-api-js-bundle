@@ -100,7 +100,37 @@ INCLUDE ([tipoLlamada_count])
 END'
 EXEC(@sql)
 
- --------------------------------  BEING GASJ --------------------------------
+--------------------------------  BEING Octavio -------------------------------- 
+SET @process = 'AlterTable RepAgentSummary';
+SET @sql = '
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''RepAgentSummary'' AND Object_ID = Object_ID(N''areaId''))
+	BEGIN
+		ALTER TABLE RepAgentSummary ADD areaId INT NOT NULL DEFAULT(0)
+	END
+
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''RepAgentSummary'' AND Object_ID = Object_ID(N''area''))
+	BEGIN
+		ALTER TABLE RepAgentSummary ADD area VARCHAR(100) NULL
+	END
+';
+EXEC(@sql);
+
+SET @process = 'AlterTable RepOutCallsDetail';
+SET @sql = '
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''RepOutCallsDetail'' AND Object_ID = Object_ID(N''areaId''))
+	BEGIN
+		ALTER TABLE RepOutCallsDetail ADD areaId INT NOT NULL DEFAULT(0)
+	END
+
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''RepOutCallsDetail'' AND Object_ID = Object_ID(N''area''))
+	BEGIN
+		ALTER TABLE RepOutCallsDetail ADD area VARCHAR(100) NULL
+	END
+';
+EXEC(@sql);
+--------------------------------  END Octavio  --------------------------------
+--------------------------------  BEING GASJ --------------------------------
+
     set @process = 'ALTER PROCEDURE [dbo].[ccspRepAgentSummary]'
     set @sql='ALTER PROCEDURE [dbo].[ccspRepAgentSummary] @action AS TINYINT, @from AS DATETIME = NULL, @to AS DATETIME = NULL
 AS

@@ -102,32 +102,47 @@ EXEC(@sql)
 
 --------------------------------  BEING Octavio -------------------------------- 
 SET @process = 'AlterTable RepAgentSummary';
-SET @sql = '
-IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''RepAgentSummary'' AND Object_ID = Object_ID(N''areaId''))
-	BEGIN
-		ALTER TABLE RepAgentSummary ADD areaId INT NOT NULL DEFAULT(0)
-	END
+SET @sql = N'
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.columns
+    WHERE name = N''areaId''
+      AND object_id = OBJECT_ID(N''dbo.RepAgentSummary'')
+)
+BEGIN
+    ALTER TABLE dbo.RepAgentSummary ADD areaId INT NOT NULL CONSTRAINT DF_RepAgentSummary_areaId DEFAULT(0);
+END;
 
-IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''RepAgentSummary'' AND Object_ID = Object_ID(N''area''))
-	BEGIN
-		ALTER TABLE RepAgentSummary ADD area VARCHAR(100) NULL
-	END
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.columns
+    WHERE name = N''area''
+      AND object_id = OBJECT_ID(N''dbo.RepAgentSummary'')
+)
+BEGIN
+    ALTER TABLE dbo.RepAgentSummary ADD area VARCHAR(100) NULL;
+END;
 ';
-EXEC(@sql);
+EXEC (@sql);
 
 SET @process = 'AlterTable RepOutCallsDetail';
-SET @sql = '
-IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''RepOutCallsDetail'' AND Object_ID = Object_ID(N''areaId''))
-	BEGIN
-		ALTER TABLE RepOutCallsDetail ADD areaId INT NOT NULL DEFAULT(0)
-	END
+SET @sql = N'
+IF COL_LENGTH(N''dbo.RepOutCallsDetail'', N''areaId'') IS NULL
+BEGIN
+    ALTER TABLE dbo.RepOutCallsDetail
+      ADD areaId INT NOT NULL
+      CONSTRAINT DF_RepOutCallsDetail_areaId DEFAULT (0);
+END;
 
-IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''RepOutCallsDetail'' AND Object_ID = Object_ID(N''area''))
-	BEGIN
-		ALTER TABLE RepOutCallsDetail ADD area VARCHAR(100) NULL
-	END
+IF COL_LENGTH(N''dbo.RepOutCallsDetail'', N''area'') IS NULL
+BEGIN
+    ALTER TABLE dbo.RepOutCallsDetail
+      ADD area VARCHAR(100) NULL;
+END;
 ';
+
 EXEC(@sql);
+
 --------------------------------  END Octavio  --------------------------------
 --------------------------------  BEING GASJ --------------------------------
 
@@ -376,18 +391,23 @@ END'
 	------------------------------------- END MAGV --------------------------------------
     -------------------------------------------------------BEGIN Octavio Ortiz----------------------------------------------------------------------------------------
     SET @process = 'AlterTable RepInCallsDetail';
-    SET @sql = '
-    IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''RepInCallsDetail'' AND Object_ID = Object_ID(N''areaId''))
-		BEGIN
-			ALTER TABLE RepInCallsDetail ADD areaId INT NOT NULL DEFAULT(0)
-		END
+    SET @sql = N'
+    IF COL_LENGTH(N''dbo.RepInCallsDetail'', N''areaId'') IS NULL
+    BEGIN
+        ALTER TABLE dbo.RepInCallsDetail
+          ADD areaId INT NOT NULL
+          CONSTRAINT DF_RepInCallsDetail_areaId DEFAULT (0);
+    END;
 
-    IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''RepInCallsDetail'' AND Object_ID = Object_ID(N''area''))
-		BEGIN
-			ALTER TABLE RepInCallsDetail ADD area VARCHAR(100) NULL
-		END
+    IF COL_LENGTH(N''dbo.RepInCallsDetail'', N''area'') IS NULL
+    BEGIN
+        ALTER TABLE dbo.RepInCallsDetail
+          ADD area VARCHAR(100) NULL;
+    END;
     ';
+
     EXEC(@sql);
+
 
     SET @process = 'Create Column source';
     SET @sql = '
@@ -450,31 +470,40 @@ END'
     EXEC(@sql);
 
     SET @process = 'AlterTable RepOutDialDetail';
-    SET @sql = '
-    IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''RepOutDialDetail'' AND Object_ID = Object_ID(N''areaId''))
-		BEGIN
-			ALTER TABLE RepOutDialDetail ADD areaId INT NOT NULL DEFAULT(0)
-		END
+    SET @sql = N'
+    IF COL_LENGTH(N''dbo.RepOutDialDetail'', N''areaId'') IS NULL
+    BEGIN
+        ALTER TABLE dbo.RepOutDialDetail
+          ADD areaId INT NOT NULL
+          CONSTRAINT DF_RepOutDialDetail_areaId DEFAULT (0);
+    END;
 
-    IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''RepOutDialDetail'' AND Object_ID = Object_ID(N''area''))
-		BEGIN
-			ALTER TABLE RepOutDialDetail ADD area VARCHAR(100) NULL
-		END
+    IF COL_LENGTH(N''dbo.RepOutDialDetail'', N''area'') IS NULL
+    BEGIN
+        ALTER TABLE dbo.RepOutDialDetail
+          ADD area VARCHAR(100) NULL;
+    END;
     ';
+
     EXEC(@sql);
 
-    SET @process = 'AlterTable RepSpecialAbndCamp';
-    SET @sql = '
-    IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''RepSpecialAbndCamp'' AND Object_ID = Object_ID(N''areaId''))
-		BEGIN
-			ALTER TABLE RepSpecialAbndCamp ADD areaId INT NOT NULL DEFAULT(0)
-		END
 
-    IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''RepSpecialAbndCamp'' AND Object_ID = Object_ID(N''area''))
-		BEGIN
-			ALTER TABLE RepSpecialAbndCamp ADD area VARCHAR(100) NULL
-		END
+    SET @process = 'AlterTable RepSpecialAbndCamp';
+    SET @sql = N'
+    IF COL_LENGTH(N''dbo.RepSpecialAbndCamp'', N''areaId'') IS NULL
+    BEGIN
+        ALTER TABLE dbo.RepSpecialAbndCamp
+          ADD areaId INT NOT NULL
+          CONSTRAINT DF_RepSpecialAbndCamp_areaId DEFAULT (0);
+    END;
+
+    IF COL_LENGTH(N''dbo.RepSpecialAbndCamp'', N''area'') IS NULL
+    BEGIN
+        ALTER TABLE dbo.RepSpecialAbndCamp
+          ADD area VARCHAR(100) NULL;
+    END;
     ';
+
     EXEC(@sql);
 
     SET @process = 'Insert into ReportsFilters - KR201001';

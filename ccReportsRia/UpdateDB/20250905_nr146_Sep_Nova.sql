@@ -265,7 +265,7 @@ BEGIN
     
     INSERT INTO RepAgentSummary (date,login,[user],sessionTime,loginMktTime,logoutMktTime,callTengaged,ndTime,NCallsOut,NCallsIn,NCallsCorta,NAtend,NNoCalif
     ,Available,avgCallTengaged,twrapup,userId,TypeNotReady,descripcion,descripcion_time,time,transferStatus,ringingTime,unknownStatus,otherStatus,failureStatus
-    ,chatTengaged,undefinedTime,dialingStatus,TipoReadyAuxiliarId,auxiliarRedy_descripcion,descripcion_auxiliarRedyTime_time,auxiliarRedyTime)
+    ,chatTengaged,undefinedTime,dialingStatus,TipoReadyAuxiliarId,auxiliarRedy_descripcion,descripcion_auxiliarRedyTime_time,auxiliarRedyTime,areaId, area)
     SELECT A.[date], A.[login], A.[user], A.sessionTime, A.dateLogin AS loginMktTime
     , A.logout AS logoutMktTime
     , isnull(co.tDialogOut, 0) + isnull(ci.tDialogIn, 0) callTengaged
@@ -281,10 +281,10 @@ BEGIN
         , 0) AS avgCallTengaged
         
         ,ISNULL(co.tNotesOut, 0) + ISNULL(ci.tNotesIn, 0) AS twrapup, A.userId AS userId
-        , notReady.TipoNotReadyId
-        , notReady.descripcion
-        , notReady.descripcion_time
-        , notReady.timeSeconds
+        ,ISNULL(notReady.TipoNotReadyId, 0) AS TipoNotReadyId
+        ,ISNULL(notReady.descripcion, 0) AS descripcion
+       ,ISNULL(notReady.descripcion_time, 0) AS descripcion_time
+       ,ISNULL(notReady.timeSeconds, 0) AS timeSeconds
         , ISNULL(co.txferOut, 0) + ISNULL(ci.txferIn, 0) AS transferStatus
         , ISNULL(co.tringOut, 0) + ISNULL(ci.tringIn, 0) AS ringingTime
         , ISNULL(AgtGI.tunknown, 0) unknownStatus
@@ -297,6 +297,8 @@ BEGIN
         , isnull(auxiliarReady.descripcion,'''') as auxiliarRedy_descripcion
         , isnull(auxiliarReady.descripcion_time,''_Time2'') as descripcion_auxiliarRedyTime_time
         , convert(int,isnull(auxiliarReady.timeSeconds,0)) as auxiliarRedyTime
+        , ISNULL(ar.IDArea, 1) AS areaId   
+        , ISNULL(ar.AreaName,''Default'') AS area 
     FROM AgentSession A
     LEFT JOIN tmpCallout co ON A.DATE = co.DATE AND A.userId = co.userId
     LEFT JOIN tmpCallIn ci  ON A.DATE = ci.DATE AND A.userId = ci.userId
@@ -304,18 +306,11 @@ BEGIN
     LEFT JOIN notReadyDay notReady on notReady.userId=A.userId and notReady.daygroup=A.date
     LEFT join #AuxiliarReadyDetail auxiliarReady on auxiliarReady.userId=A.userId and auxiliarReady.timegroup=A.date
     left join RepAgentGIGroup AgtGI on AgtGI.date=A.date and AgtGI.userId=A.userId
+    LEFT JOIN ccUsers us WITH (NOLOCK) ON us.User_id = A.userId      
+    LEFT JOIN ccRIACat_Areas ar WITH (NOLOCK) ON ar.IDArea = us.IDArea   
     order by A.[date],A.userId
 
 END'
-    EXEC(@sql)
-
-    set @process = ''
-    set @sql=''
-    EXEC(@sql)
-    
-
-    set @process = ''
-    set @sql=''
     EXEC(@sql)
     
     --------------------------------  END GASJ -------------------------------- 

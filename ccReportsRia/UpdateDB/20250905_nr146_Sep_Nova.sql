@@ -37,6 +37,17 @@ BEGIN
 	BEGIN TRAN
 
 	BEGIN TRY
+
+		--- BEGIN MAGV KR234004--
+
+		SET @process = 'KR234004 Add manualCRM  to ccoLogDials'
+	SET @sql = 'IF not exists (SELECT * FROM SYS.columns WHERE name=''manualCRM'' AND OBJECT_ID = OBJECT_ID(''ccoLogDials''))
+		begin
+			ALTER TABLE ccoLogDials
+			ADD manualCRM BIT NULL;
+		end'
+	exec (@sql)
+	--- END MAGV KR234004 ----
 --------------------------------------------------------BEGIN 127.20250905.0.0 Jesus Gallardo----------------------------------------------------------------------
     
         set @process = '#3306 DROP INDEX IX_RepOutAnswAndXferCalls_1'

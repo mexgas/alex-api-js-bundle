@@ -45,6 +45,17 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
     BEGIN TRY
 
 
+	--- BEGIN MAGV KR234004--
+
+		SET @process = 'KR234004 Add manualCRM  to ccoLogDials'
+	SET @sql = 'IF not exists (SELECT * FROM SYS.columns WHERE name=''manualCRM'' AND OBJECT_ID = OBJECT_ID(''ccoLogDials''))
+		begin
+			ALTER TABLE ccoLogDials
+			ADD manualCRM BIT NULL;
+		end'
+	exec (@sql)
+	--- END MAGV KR234004 ----
+
 ---------------------------BEGIN Octavio Ortiz Nova monti 8 fixes--------------------------------------------------
 
 
@@ -14043,10 +14054,15 @@ SET NOCOUNT OFF
 			DECLARE @tAnswerBitFinal AS DATETIME;
 			DECLARE @MaxCal_id INT;
 			DECLARE @tTotal SMALLINT;
+			DECLARE @setting292 TINYINT;
 
 			SELECT @RecicleSIC = ISNULL(valor, 0)
 			FROM ccSettings
 			WHERE setting_id = 60;
+
+			SELECT @setting292 = ISNULL(valor, 0)
+			FROM ccSettings2
+			WHERE setting_id = 292;
 
 			SELECT @tTotal = @tDialing + @tAnswerBit;
 
@@ -14063,7 +14079,7 @@ SET NOCOUNT OFF
 			WHERE @callout_id = callout_id;         
 		END;
 
-		declare @TipoLlamada int
+		declare @TipoLlamada int, @TipoDialingMode VARCHAR(9);
 		select @TipoLlamada=dbo.fnGetTipoLlamada(@Telefono)
 
 		IF @call_id > 0 AND @tipoResDial_id = 1
@@ -14114,10 +14130,12 @@ SET NOCOUNT OFF
 
 		end
 
+			SET @TipoDialingMode = dbo.fn_getDialingMode( @call_id, 0, @logDial_id, @cam_id );
 
 			-- Guarda configuracion de TipoDialingMode
 			UPDATE ccoLogDials WITH(ROWLOCK)
-			  SET TipoDialingMode = dbo.fn_getDialingMode( @call_id, 0, @logDial_id, @cam_id )
+			  SET  TipoDialingMode = @TipoDialingMode, 
+			  manualCRM = CASE WHEN @setting292 = 1 AND RIGHT(''00'' + RTRIM(COALESCE(@TipoDialingMode, '''')), 2) LIKE ''%1%'' THEN 1 ELSE 0 END
 			WHERE logDial_id = @logDial_id;
 			SET NOCOUNT OFF;
 		END;

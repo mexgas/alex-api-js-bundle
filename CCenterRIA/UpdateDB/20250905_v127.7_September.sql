@@ -13694,7 +13694,6 @@ SET NOCOUNT OFF
 		END'
 	EXEC(@sql)
 	-------------------- END KR234001-Marco Diaz Luna ------------------------
-
 	-------------------- BEGIN Hugo Longoria ------------------------
 
 	SET @process = 'Setting 293 ruteo dinamico de troncales KR237000'

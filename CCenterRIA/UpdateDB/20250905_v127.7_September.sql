@@ -13674,7 +13674,26 @@ SET NOCOUNT OFF
 
 
 	-------------------- END Ulises Espinosa ------------------------
-
+	-------------------- BEGIN KR234001-Marco Diaz Luna ------------------------
+	SET @process = 'Setting 292 KR234001 – Setting to disable manual dialing modal'
+	SET @sql = '
+		IF NOT EXISTS (SELECT 1 FROM ccSettings2 WHERE setting_id = 292)
+        BEGIN
+			INSERT INTO ccSettings2 (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate)
+			VALUES (
+				292,
+				''0'',
+				''Marcación manual vía integración externa (deshabilitado: 0, habilitado: 1)'',
+				1,
+				''AGT'',
+				''Controla la visibilidad y uso del modal de marcación manual. Cuando está en 0, el modal permanece oculto y no se permiten marcaciones manuales desde el agente. Solo se permiten marcaciones provenientes del CRM vía integración externa.'',
+				''Manual dialing via external integration (disabled: 0, enabled: 1). Controls visibility and behavior of the manual dialing modal. When disabled, manual dialing from Kolob Agent is not allowed, only CRM-originated requests.'',
+				1,
+				''*''
+			);
+		END'
+	EXEC(@sql)
+	-------------------- END KR234001-Marco Diaz Luna ------------------------
 
 	-------------------- BEGIN Hugo Longoria ------------------------
 

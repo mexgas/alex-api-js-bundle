@@ -387,7 +387,6 @@ END'
     FROM RepOutCallsDetail WITH (NOLOCK)';
     EXEC(@sql);
 
-
 	------------------------------------- END MAGV --------------------------------------
     -------------------------------------------------------BEGIN Octavio Ortiz----------------------------------------------------------------------------------------
     SET @process = 'AlterTable RepInCallsDetail';
@@ -676,9 +675,10 @@ END'
                 END AS [Calltypes],
                 CASE 
                     WHEN ld.TipoDialingMode = ''100000000''  THEN ''systemTranslated_Preview'' 
-                    WHEN ld.TipoDialingMode = ''10000000''   THEN ''systemTranslated_Assisted'' 
+                    WHEN SUBSTRING(ld.TipoDialingMode, 2, 1) = ''1'' AND Call.cal_manual = 0 THEN ''systemTranslated_Assisted''
                     WHEN ld.TipoDialingMode IN (''00001000'',''00010000'', ''000010000'') THEN ''systemTranslated_Callback'' 
                     WHEN RIGHT(ld.TipoDialingMode, 3) = ''100'' THEN ''systemTranslated_Auto'' 
+					WHEN RIGHT(ld.TipoDialingMode, 2) IN (''10'', ''01'') AND ISNULL(ld.manualCRM,0) = 1 THEN ''systemTranslated_Manual_Mode_Integration''
                     WHEN RIGHT(ld.TipoDialingMode, 2) IN (''10'', ''01'') THEN ''systemTranslated_Manual'' 
                     WHEN ld.TipoDialingMode = ''000000000'' THEN ''systemTranslated_Auto''
                     ELSE ''''
@@ -785,10 +785,11 @@ END'
             ,dial.fecha
             ,dial.tDialing
             ,CASE WHEN dial.TipoDialingMode = ''100000000'' THEN ''systemTranslated_Preview'' 
-                  WHEN dial.TipoDialingMode =  ''10000000'' THEN ''systemTranslated_Assisted'' 
+                  WHEN SUBSTRING(dial.TipoDialingMode, 2, 1) = ''1'' AND co.cal_manual = 0 THEN ''systemTranslated_Assisted'' 
                   WHEN RIGHT(dial.TipoDialingMode,5) IN (''01000'',''10000'') THEN ''systemTranslated_Callback''
                   WHEN RIGHT(dial.TipoDialingMode, 2) = ''00'' THEN ''systemTranslated_Auto'' 
-                  WHEN RIGHT(dial.TipoDialingMode, 2) IN (''10'', ''01'') THEN ''systemTranslated_Manual'' END AS dialType            
+				  WHEN RIGHT(dial.TipoDialingMode, 2) IN (''10'', ''01'') AND ISNULL(dial.manualCRM,0) = 1 THEN ''systemTranslated_Manual_Mode_Integration''
+                  WHEN RIGHT(dial.TipoDialingMode, 2) IN (''10'', ''01RepViewOutCallsDetail'') THEN ''systemTranslated_Manual'' END AS dialType            
             ,dial.tBusy
             ,dial.answerbit
             ,dial.canceledNoAgents
@@ -1550,6 +1551,8 @@ END'
     SET @sql = 'UPDATE ReportsTotals SET totalColumns = ''sum:queue_Time|sum:xferTime|sum:ringingTime|sum:dialog_Time|sum:hold_Time|sum:twrapup|sum:queueTime'' where id=3010';
     EXEC(@sql);
     -------------------------------- END LMZN 127.20250905.0.8-------------------------------------------------------
+
+
 
 set @process = ''
 set @sql=''

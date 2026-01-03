@@ -800,7 +800,7 @@ END'
                   WHEN RIGHT(dial.TipoDialingMode,5) IN (''01000'',''10000'') THEN ''systemTranslated_Callback''
                   WHEN RIGHT(dial.TipoDialingMode, 2) = ''00'' THEN ''systemTranslated_Auto'' 
 				  WHEN RIGHT(dial.TipoDialingMode, 2) IN (''10'', ''01'') AND ISNULL(dial.manualCRM,0) = 1 THEN ''systemTranslated_Manual_Mode_Integration''
-                  WHEN RIGHT(dial.TipoDialingMode, 2) IN (''10'', ''01RepViewOutCallsDetail'') THEN ''systemTranslated_Manual'' END AS dialType            
+                  WHEN RIGHT(dial.TipoDialingMode, 2) IN (''10'', ''01'') THEN ''systemTranslated_Manual'' END AS dialType            
             ,dial.tBusy
             ,dial.answerbit
             ,dial.canceledNoAgents

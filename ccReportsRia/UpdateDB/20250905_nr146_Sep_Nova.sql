@@ -604,11 +604,9 @@ END'
     END';
     EXEC(@sql);
 
-
-
     SET @process = 'CreateProcedure ccspRepOutCallsDetail';
     SET @sql = '
-    CREATE PROCEDURE [dbo].[ccspRepOutCallsDetail] 
+        CREATE PROCEDURE [dbo].[ccspRepOutCallsDetail] 
         @action AS TINYINT,
         @from  AS DATETIME = NULL,
         @to    AS DATETIME = NULL
@@ -644,7 +642,50 @@ END'
             WHERE DATE >= @from 
               AND DATE <  @to;
 
-            INSERT INTO RepOutCallsDetail
+            INSERT INTO dbo.RepOutCallsDetail
+            (
+                [date],
+                [callKey],
+                [telephone],
+                [transfer],
+                [dialog],
+                [nque],
+                [wrapup],
+                [CallDisposition],
+                [extension],
+                [userId],
+                [login],
+                [username],
+                [campaignId],
+                [campaign],
+                [duration],
+                [ncost],
+                [iva],
+                [total],
+                [ByCarrier],
+                [Calltypes],
+                [dialType],
+                [whoHangUp],
+                [subDisposition],
+                [dialResult],
+                [calId],
+                [year],
+                [month],
+                [day],
+                [hour],
+                [minutes],
+                [trunk],
+                [data1],
+                [data2],
+                [data3],
+                [data4],
+                [data5],
+                [MessageTime],
+                [grabId],
+                [recordingTime],
+                [areaId],
+                [area]
+            )
             SELECT 
                 Call.cal_inicio AS [date],
                 Call.cal_key AS [callKey],
@@ -718,6 +759,7 @@ END'
                 ISNULL(cod.Data5, ISNULL(cs.Dato5, '''')) AS [data5],
                 ISNULL(Call.cal_tMsg, 0) AS [MessageTime],
                 ISNULL(rc.grab_id, 0) AS grabId,
+                NULL AS [recordingTime],
                 camps.IDArea AS [areaId],
                 ar.AreaName AS [area]
             FROM ccoCallsOut Call (NOLOCK)

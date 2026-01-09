@@ -15109,7 +15109,7 @@ BEGIN
     END
 
     DECLARE @keepDial BIT
-    DECLARE @finishPreview SMALLINT
+    DECLARE @finishPreview BIT
 
     -- Toma como prioridad la configuración de la subcalificación (en caso de existir)
     SELECT @keepDial = keepDial

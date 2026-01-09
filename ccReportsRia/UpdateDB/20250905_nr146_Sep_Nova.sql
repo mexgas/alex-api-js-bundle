@@ -682,7 +682,6 @@ END'
                 [data5],
                 [MessageTime],
                 [grabId],
-                [recordingTime],
                 [areaId],
                 [area]
             )
@@ -759,7 +758,6 @@ END'
                 ISNULL(cod.Data5, ISNULL(cs.Dato5, '''')) AS [data5],
                 ISNULL(Call.cal_tMsg, 0) AS [MessageTime],
                 ISNULL(rc.grab_id, 0) AS grabId,
-                NULL AS [recordingTime],
                 camps.IDArea AS [areaId],
                 ar.AreaName AS [area]
             FROM ccoCallsOut Call (NOLOCK)

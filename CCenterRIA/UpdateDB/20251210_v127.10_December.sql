@@ -616,6 +616,13 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 		END
 		ELSE IF (@action = 13) --Register model definition (Objectives, instructions, rules and variables)
 		BEGIN
+
+			IF NOT EXISTS(SELECT 1 FROM ccVirtualAgent WHERE idAgent = @idVirtualAgent and wasDeleted = 0)
+			BEGIN
+				SELECT 2 AS ErrorCode -- Agent deleted before saving changes
+				RETURN
+			END
+			
 			DECLARE @modifiedModelName VARCHAR(255);
 
 			UPDATE ccVirtualAgent

@@ -194,14 +194,14 @@ BEGIN
     INSERT INTO #AuxiliarReadyDetail
     EXEC ccspGetAuxiliarReadyDetail @from = @from, @to = @to
         
-    DELETE RepAgentSummary WHERE DATE BETWEEN @from AND @to;
-    DELETE RepAgentSummary_VersionAmatech WHERE DATE BETWEEN @from  AND @to;
+    DELETE RepAgentSummary WHERE loginMktTime BETWEEN @from AND @to;
+    DELETE RepAgentSummary_VersionAmatech WHERE loginMktTime BETWEEN @from  AND @to;
     ;
     WITH AgentSession
     AS (
         SELECT dbo.getdaygroup(loginTime) AS [date], userId, min([login]) AS [login], [user] AS [user], MIN(loginTime) AS dateLogin, MAX(logoutTime) AS logout, SUM(sessionTimeSeconds) AS sessionTime
         FROM RepAgentSession
-        WHERE dbo.getdaygroup(loginTime) BETWEEN @from AND @to
+        WHERE loginTime BETWEEN @from AND @to
         GROUP BY dbo.getdaygroup(logintime), userId, [user]
         ),
         -------------OUT -------------------

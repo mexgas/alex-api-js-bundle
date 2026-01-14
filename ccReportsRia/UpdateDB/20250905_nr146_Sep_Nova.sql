@@ -743,7 +743,7 @@ END'
                     WHEN Call.califsub_id = 0 THEN ''systemTranslated_NoSubDisposition'' 
                     ELSE ISNULL(sub.califSubDesc, '''') 
                 END AS [subDisposition],
-                sta.descTranslated AS [dialResult], 
+                ISNULL(sta.descTranslated,'''') AS  [dialResult], 
                 Call.cal_id AS [calId],
                 DATEPART(yyyy, Call.cal_inicio) AS [year],
                 DATEPART(mm,   Call.cal_inicio) AS [month],

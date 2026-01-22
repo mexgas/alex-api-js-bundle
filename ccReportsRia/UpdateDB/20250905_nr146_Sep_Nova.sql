@@ -112,231 +112,339 @@ END'
 EXEC(@sql)
 
 --------------------------------  BEING Octavio -------------------------------- 
-SET @process = 'AlterTable RepAgentSummary';
-SET @sql = N'
-IF NOT EXISTS (
-    SELECT 1
-    FROM sys.columns
-    WHERE name = N''areaId''
-      AND object_id = OBJECT_ID(N''dbo.RepAgentSummary'')
-)
-BEGIN
-    ALTER TABLE dbo.RepAgentSummary ADD areaId INT NOT NULL CONSTRAINT DF_RepAgentSummary_areaId DEFAULT(0);
-END;
+    -- RepAgentSummary
+    SET @process = 'AlterTable RepAgentSummary';
+    SET @sql = '
+    IF COL_LENGTH(''RepAgentSummary'', ''areaId'') IS NULL
+    BEGIN
+        ALTER TABLE RepAgentSummary 
+            ADD areaId INT NOT NULL DEFAULT(0);
+    END
 
-IF NOT EXISTS (
-    SELECT 1
-    FROM sys.columns
-    WHERE name = N''area''
-      AND object_id = OBJECT_ID(N''dbo.RepAgentSummary'')
-)
-BEGIN
-    ALTER TABLE dbo.RepAgentSummary ADD area VARCHAR(100) NULL;
-END;
-';
-EXEC (@sql);
+    IF COL_LENGTH(''RepAgentSummary'', ''area'') IS NULL
+    BEGIN
+        ALTER TABLE RepAgentSummary 
+            ADD area VARCHAR(100) NULL;
+    END
+    ';
+    EXEC(@sql);
 
-SET @process = 'AlterTable RepOutCallsDetail';
-SET @sql = N'
-IF COL_LENGTH(N''dbo.RepOutCallsDetail'', N''areaId'') IS NULL
-BEGIN
-    ALTER TABLE dbo.RepOutCallsDetail
-      ADD areaId INT NOT NULL
-      CONSTRAINT DF_RepOutCallsDetail_areaId DEFAULT (0);
-END;
+    -- RepOutCallsDetail
+    SET @process = 'AlterTable RepOutCallsDetail';
+    SET @sql = '
+    IF COL_LENGTH(''RepOutCallsDetail'', ''areaId'') IS NULL
+    BEGIN
+        ALTER TABLE RepOutCallsDetail 
+            ADD areaId INT NOT NULL DEFAULT(0);
+    END
 
-IF COL_LENGTH(N''dbo.RepOutCallsDetail'', N''area'') IS NULL
-BEGIN
-    ALTER TABLE dbo.RepOutCallsDetail
-      ADD area VARCHAR(100) NULL;
-END;
-';
+    IF COL_LENGTH(''RepOutCallsDetail'', ''area'') IS NULL
+    BEGIN
+        ALTER TABLE RepOutCallsDetail 
+            ADD area VARCHAR(100) NULL;
+    END
+    ';
+    EXEC(@sql);
 
-EXEC(@sql);
+	-- RepInCallsDetail
+    SET @process = 'AlterTable RepInCallsDetail';
+    SET @sql = '
+    IF COL_LENGTH(''RepInCallsDetail'', ''areaId'') IS NULL
+    BEGIN
+        ALTER TABLE RepInCallsDetail 
+            ADD areaId INT NOT NULL DEFAULT(0);
+    END
+
+    IF COL_LENGTH(''RepInCallsDetail'', ''area'') IS NULL
+    BEGIN
+        ALTER TABLE RepInCallsDetail 
+            ADD area VARCHAR(100) NULL;
+    END
+    ';
+    EXEC(@sql);
+
+    -- RepOutDialDetail
+    SET @process = 'AlterTable RepOutDialDetail';
+    SET @sql = '
+    IF COL_LENGTH(''RepOutDialDetail'', ''areaId'') IS NULL
+    BEGIN
+        ALTER TABLE RepOutDialDetail 
+            ADD areaId INT NOT NULL DEFAULT(0);
+    END
+
+    IF COL_LENGTH(''RepOutDialDetail'', ''area'') IS NULL
+    BEGIN
+        ALTER TABLE RepOutDialDetail 
+            ADD area VARCHAR(100) NULL;
+    END
+    ';
+    EXEC(@sql);
+
+    -- RepSpecialAbndCamp
+    SET @process = 'AlterTable RepSpecialAbndCamp';
+    SET @sql = '
+    IF COL_LENGTH(''RepSpecialAbndCamp'', ''areaId'') IS NULL
+    BEGIN
+        ALTER TABLE RepSpecialAbndCamp 
+            ADD areaId INT NOT NULL DEFAULT(0);
+    END
+
+    IF COL_LENGTH(''RepSpecialAbndCamp'', ''area'') IS NULL
+    BEGIN
+        ALTER TABLE RepSpecialAbndCamp 
+            ADD area VARCHAR(100) NULL;
+    END
+    ';
+    EXEC(@sql);
+
+	
+
+    SET @process = 'Create Column source';
+    SET @sql = '
+    -- source
+    IF NOT EXISTS (
+        SELECT 1
+        FROM sys.columns 
+        WHERE Name = ''source''
+          AND Object_ID = Object_ID(''dbo.RepInCallsDetail'')
+    )
+    BEGIN
+        ALTER TABLE dbo.RepInCallsDetail 
+            ADD source VARCHAR(20);
+    END';
+    EXEC(@sql);
+
+    SET @process = 'Create Column destinationNumber';
+    SET @sql = '
+    -- destinationNumber
+    IF NOT EXISTS (
+        SELECT 1
+        FROM sys.columns 
+        WHERE Name = ''destinationNumber''
+          AND Object_ID = Object_ID(''dbo.RepInCallsDetail'')
+    )
+    BEGIN
+        ALTER TABLE dbo.RepInCallsDetail 
+            ADD destinationNumber VARCHAR(20);
+    END';
+    EXEC(@sql);
+
+    SET @process = 'Create Column queueTime';
+    SET @sql = '
+    -- cal_tWait
+    IF NOT EXISTS (
+        SELECT 1
+        FROM sys.columns 
+        WHERE Name = ''cal_tWait''
+          AND Object_ID = Object_ID(''dbo.RepInCallsDetail'')
+    )
+    BEGIN
+        ALTER TABLE dbo.RepInCallsDetail 
+            ADD cal_tWait INT;
+    END';
+    EXEC(@sql);
+
+    SET @process = 'Create Column callbackDate';
+    SET @sql = '
+    -- callbackDate
+    IF NOT EXISTS (
+        SELECT 1
+        FROM sys.columns 
+        WHERE Name = ''callbackDate''
+          AND Object_ID = Object_ID(''dbo.RepInCallsDetail'')
+    )
+    BEGIN
+        ALTER TABLE dbo.RepInCallsDetail 
+            ADD callbackDate DATETIME;
+    END';
+    EXEC(@sql);
 
 --------------------------------  END Octavio  --------------------------------
 --------------------------------  BEING GASJ --------------------------------
 
     set @process = 'ALTER PROCEDURE [dbo].[ccspRepAgentSummary]'
-    set @sql='ALTER PROCEDURE [dbo].[ccspRepAgentSummary] @action AS TINYINT, @from AS DATETIME = NULL, @to AS DATETIME = NULL
-AS
+		set @sql='ALTER PROCEDURE [dbo].[ccspRepAgentSummary] 
+		@action AS TINYINT, 
+		@from AS DATETIME = NULL, 
+		@to AS DATETIME = NULL
+		AS
 
-IF @from IS NULL
-    SELECT @from = CONVERT(DATETIME, CONVERT(VARCHAR(11), GETDATE()))
+		IF @from IS NULL
+			SELECT @from = CONVERT(DATETIME, CONVERT(VARCHAR(11), GETDATE()))
 
-IF @to IS NULL
-    SELECT @to = GETDATE()
+		IF @to IS NULL
+			SELECT @to = GETDATE()
 
-if(@to = convert(datetime,convert(varchar(11),getdate(),121)+''03:00:00'',121)) AND @from = DATEADD(dd,-1,@to)
-BEGIN   
-    select @from = convert(datetime,convert(varchar(11),@from))
-END
+		if(@to = convert(datetime,convert(varchar(11),getdate(),121)+''03:00:00'',121)) AND @from = DATEADD(dd,-1,@to)
+		BEGIN   
+			select @from = convert(datetime,convert(varchar(11),@from))
+		END
 
-IF @action = 1
-BEGIN
+		IF @action = 1
+		BEGIN
 
-    IF OBJECT_ID(''tempdb..#AuxiliarReadyDetail'') IS NOT NULL
-    DROP TABLE #AuxiliarReadyDetail
+			IF OBJECT_ID(''tempdb..#AuxiliarReadyDetail'') IS NOT NULL
+			DROP TABLE #AuxiliarReadyDetail
 
-    CREATE TABLE #AuxiliarReadyDetail
-    (
-        timegroup DATE,
-        userId INT,
-        [user] VARCHAR(50),
-        [sessionTime] INT,
-        TipoReadyAuxiliarId INT,
-        descripcion VARCHAR(50),
-        descripcion_time VARCHAR(50),
-        [time] DECIMAL(18, 3),
-        timeSeconds DECIMAL(18, 3)
-    )
+			CREATE TABLE #AuxiliarReadyDetail
+			(
+				timegroup DATE,
+				userId INT,
+				[user] VARCHAR(50),
+				[sessionTime] INT,
+				TipoReadyAuxiliarId INT,
+				descripcion VARCHAR(50),
+				descripcion_time VARCHAR(50),
+				[time] DECIMAL(18, 3),
+				timeSeconds DECIMAL(18, 3)
+			)
 
-    INSERT INTO #AuxiliarReadyDetail
-    EXEC ccspGetAuxiliarReadyDetail @from = @from, @to = @to
+			INSERT INTO #AuxiliarReadyDetail
+			EXEC ccspGetAuxiliarReadyDetail @from = @from, @to = @to
         
-    DELETE RepAgentSummary WHERE DATE BETWEEN @from AND @to;
-    DELETE RepAgentSummary_VersionAmatech WHERE DATE BETWEEN @from  AND @to;
-    ;
-    WITH AgentSession
-    AS (
-        SELECT dbo.getdaygroup(loginTime) AS [date], userId, min([login]) AS [login], [user] AS [user], MIN(loginTime) AS dateLogin, MAX(logoutTime) AS logout, SUM(sessionTimeSeconds) AS sessionTime
-        FROM RepAgentSession
-        WHERE dbo.getdaygroup(loginTime) BETWEEN @from AND @to
-        GROUP BY dbo.getdaygroup(logintime), userId, [user]
-        ),
-        -------------OUT -------------------
-    dataCallsOut
-    AS (
-        SELECT DISTINCT cal_id, max(calif_id) calif_id, statusCall_id
-        FROM tmpTimesOutboundData
-        where cal_manual in (0,2,3)
-        GROUP BY cal_id, statusCall_id
-        ), dataCallsOutByDay
-    AS (
-        SELECT dbo.getdaygroup(timegroup) AS [date], User_id, cal_id, SUM(tdialog) tDialogOut, SUM(tnotes) tNotesOut, sum(nabnd_xfer) nabnd_xfer
-        , sum(nabnd_ring) nabnd_ring, sum(nabnd_dialog) nabnd_dialog
-        , SUM(txfer)  txferOut, SUM(tring)  tringOut
-        FROM tmpTimesOutboundData
-        where cal_manual in (0,2,3)
-        GROUP BY dbo.getdaygroup(timegroup), User_id, cal_id
-        ), tmpCallout
-    AS (
-        SELECT A.User_id AS userId, sum(CASE WHEN B.calif_id = 0 THEN 1 ELSE NULL END) NoCalifOut
-        , isnull(sum(CASE WHEN B.statusCall_id = 11 THEN 1 ELSE NULL END), 0) NotAttendedCallOut
-        , isnull(sum(CASE WHEN B.statusCall_id = 13 THEN 1 ELSE NULL END), 0) AttendedCallOut
-        , sum(tDialogOut) AS tDialogOut, sum(tNotesOut) AS tNotesOut, sum(nabnd_xfer) abnd_xfer, sum(nabnd_ring) abnd_ring
-        , sum(nabnd_dialog) abnd_dialog, [date]
-        , SUM(txferOut)  txferOut, SUM(tringOut)  tringOut
-        FROM dataCallsOutByDay A
-        INNER JOIN dataCallsOut B
-            ON A.cal_id = B.cal_id
-        GROUP BY [date], User_id
-        ),
-        ------------- IN -------------------
-    dataCallsIn
-    AS (
-        SELECT DISTINCT cal_id, max(calif_id) calif_id, statusCall_id
-        FROM tmpTimesInboundData
-        GROUP BY cal_id, statusCall_id
-        ), dataCallsInByDay
-    AS (
-        SELECT dbo.getdaygroup(timegroup) AS [date], User_id, cal_id, SUM(tdialog) tDialogIn, SUM(tnotes) tNotesIn
-        , sum(nabnd_xfer) nabnd_xfer, sum(nabnd_ring) nabnd_ring, sum(nabnd_dialog) nabnd_dialog
-        , SUM(txfer)  txferIn, SUM(tring)  tringIn
-        FROM tmpTimesInboundData
-        GROUP BY dbo.getdaygroup(timegroup), User_id, cal_id
-        ), tmpCallIn
-    AS (
-        SELECT A.User_id AS userId, sum(CASE WHEN B.calif_id = 0 THEN 1 ELSE NULL END) NoCalifIn
-        , isnull(sum(CASE WHEN B.statusCall_id = 11 THEN 1 ELSE NULL END), 0) NotAttendedCallIn
-        , isnull(sum(CASE WHEN B.statusCall_id = 13 THEN 1 ELSE NULL END), 0) AttendedCallIn
-        , sum(tDialogIn) AS tDialogIn, sum(tNotesIn) AS tNotesIn, sum(nabnd_xfer) abnd_xfer
-        , sum(nabnd_ring) abnd_ring, sum(nabnd_dialog) abnd_dialog, [date]
-        , SUM(txferIn)  txferIn, SUM(tringIn)  tringIn
-        FROM dataCallsInByDay A
-        INNER JOIN dataCallsIn B
-            ON A.cal_id = B.cal_id
-        GROUP BY [date], User_id
-        ), RepDetail
-    AS (
-        SELECT r.userId, SUM(r.timeSeconds) AS notReady, dbo.getdaygroup(r.DATE) AS daygroup
-        FROM RepAgentNotReady r with(nolock)
-        WHERE r.DATE BETWEEN @from AND @to
-        GROUP BY dbo.getdaygroup(r.DATE), r.userId
-        )
-    ,notReadyDay as(
-    SELECT r.userId, SUM(r.timeSeconds) AS timeSeconds, dbo.getdaygroup(r.DATE) AS daygroup
-        ,descripcion_time,descripcion,tiponotreadyId
-        FROM RepAgentNotReady r with(nolock)
-        WHERE r.DATE BETWEEN @from AND @to
-        GROUP BY dbo.getdaygroup(r.DATE), r.userId,descripcion,descripcion_time,tiponotreadyId
-    ),auxiliarReadyDay as(
-        SELECT r.userId, SUM(r.timeSeconds) AS timeSeconds, dbo.getdaygroup(timegroup) AS daygroup
-        ,descripcion_time,descripcion,TipoReadyAuxiliarId
-        FROM #AuxiliarReadyDetail r with(nolock)
-        GROUP BY dbo.getdaygroup(timegroup), r.userId,descripcion,descripcion_time,TipoReadyAuxiliarId
-    ), RepAgentGIGroup as(
-        SELECT dbo.getdaygroup([date]) AS [date], userId, SUM(tav) AS tav
-        , SUM(tunknown) AS tunknown
-        , SUM(tother) AS tother
-        , SUM(tprob) AS tprob
-        , SUM(tChatting) AS tChatting       
-        , SUM(tundefined) AS tundefined
-        , SUM([tManual]) AS [tManual]
-        FROM RepAgentGI
-        WHERE [date] BETWEEN @from AND @to
-        GROUP BY dbo.getdaygroup([date]), userId
-    )
-    --select * from AgentSession
+			DELETE RepAgentSummary WHERE DATE BETWEEN @from AND @to;
+			DELETE RepAgentSummary_VersionAmatech WHERE DATE BETWEEN @from  AND @to;
+			;
+			WITH AgentSession
+			AS (
+				SELECT dbo.getdaygroup(loginTime) AS [date], userId, min([login]) AS [login], [user] AS [user], MIN(loginTime) AS dateLogin, MAX(logoutTime) AS logout, SUM(sessionTimeSeconds) AS sessionTime
+				FROM RepAgentSession
+				WHERE dbo.getdaygroup(loginTime) BETWEEN @from AND @to
+				GROUP BY dbo.getdaygroup(logintime), userId, [user]
+				),
+				-------------OUT -------------------
+			dataCallsOut
+			AS (
+				SELECT DISTINCT cal_id, max(calif_id) calif_id, statusCall_id
+				FROM tmpTimesOutboundData
+				where cal_manual in (0,2,3)
+				GROUP BY cal_id, statusCall_id
+				), dataCallsOutByDay
+			AS (
+				SELECT dbo.getdaygroup(timegroup) AS [date], User_id, cal_id, SUM(tdialog) tDialogOut, SUM(tnotes) tNotesOut, sum(nabnd_xfer) nabnd_xfer
+				, sum(nabnd_ring) nabnd_ring, sum(nabnd_dialog) nabnd_dialog
+				, SUM(txfer)  txferOut, SUM(tring)  tringOut
+				FROM tmpTimesOutboundData
+				where cal_manual in (0,2,3)
+				GROUP BY dbo.getdaygroup(timegroup), User_id, cal_id
+				), tmpCallout
+			AS (
+				SELECT A.User_id AS userId, sum(CASE WHEN B.calif_id = 0 THEN 1 ELSE NULL END) NoCalifOut
+				, isnull(sum(CASE WHEN B.statusCall_id = 11 THEN 1 ELSE NULL END), 0) NotAttendedCallOut
+				, isnull(sum(CASE WHEN B.statusCall_id = 13 THEN 1 ELSE NULL END), 0) AttendedCallOut
+				, sum(tDialogOut) AS tDialogOut, sum(tNotesOut) AS tNotesOut, sum(nabnd_xfer) abnd_xfer, sum(nabnd_ring) abnd_ring
+				, sum(nabnd_dialog) abnd_dialog, [date]
+				, SUM(txferOut)  txferOut, SUM(tringOut)  tringOut
+				FROM dataCallsOutByDay A
+				INNER JOIN dataCallsOut B
+					ON A.cal_id = B.cal_id
+				GROUP BY [date], User_id
+				),
+				------------- IN -------------------
+			dataCallsIn
+			AS (
+				SELECT DISTINCT cal_id, max(calif_id) calif_id, statusCall_id
+				FROM tmpTimesInboundData
+				GROUP BY cal_id, statusCall_id
+				), dataCallsInByDay
+			AS (
+				SELECT dbo.getdaygroup(timegroup) AS [date], User_id, cal_id, SUM(tdialog) tDialogIn, SUM(tnotes) tNotesIn
+				, sum(nabnd_xfer) nabnd_xfer, sum(nabnd_ring) nabnd_ring, sum(nabnd_dialog) nabnd_dialog
+				, SUM(txfer)  txferIn, SUM(tring)  tringIn
+				FROM tmpTimesInboundData
+				GROUP BY dbo.getdaygroup(timegroup), User_id, cal_id
+				), tmpCallIn
+			AS (
+				SELECT A.User_id AS userId, sum(CASE WHEN B.calif_id = 0 THEN 1 ELSE NULL END) NoCalifIn
+				, isnull(sum(CASE WHEN B.statusCall_id = 11 THEN 1 ELSE NULL END), 0) NotAttendedCallIn
+				, isnull(sum(CASE WHEN B.statusCall_id = 13 THEN 1 ELSE NULL END), 0) AttendedCallIn
+				, sum(tDialogIn) AS tDialogIn, sum(tNotesIn) AS tNotesIn, sum(nabnd_xfer) abnd_xfer
+				, sum(nabnd_ring) abnd_ring, sum(nabnd_dialog) abnd_dialog, [date]
+				, SUM(txferIn)  txferIn, SUM(tringIn)  tringIn
+				FROM dataCallsInByDay A
+				INNER JOIN dataCallsIn B
+					ON A.cal_id = B.cal_id
+				GROUP BY [date], User_id
+				), RepDetail
+			AS (
+				SELECT r.userId, SUM(r.timeSeconds) AS notReady, dbo.getdaygroup(r.DATE) AS daygroup
+				FROM RepAgentNotReady r with(nolock)
+				WHERE r.DATE BETWEEN @from AND @to
+				GROUP BY dbo.getdaygroup(r.DATE), r.userId
+				)
+			,notReadyDay as(
+			SELECT r.userId, SUM(r.timeSeconds) AS timeSeconds, dbo.getdaygroup(r.DATE) AS daygroup
+				,descripcion_time,descripcion,tiponotreadyId
+				FROM RepAgentNotReady r with(nolock)
+				WHERE r.DATE BETWEEN @from AND @to
+				GROUP BY dbo.getdaygroup(r.DATE), r.userId,descripcion,descripcion_time,tiponotreadyId
+			),auxiliarReadyDay as(
+				SELECT r.userId, SUM(r.timeSeconds) AS timeSeconds, dbo.getdaygroup(timegroup) AS daygroup
+				,descripcion_time,descripcion,TipoReadyAuxiliarId
+				FROM #AuxiliarReadyDetail r with(nolock)
+				GROUP BY dbo.getdaygroup(timegroup), r.userId,descripcion,descripcion_time,TipoReadyAuxiliarId
+			), RepAgentGIGroup as(
+				SELECT dbo.getdaygroup([date]) AS [date], userId, SUM(tav) AS tav
+				, SUM(tunknown) AS tunknown
+				, SUM(tother) AS tother
+				, SUM(tprob) AS tprob
+				, SUM(tChatting) AS tChatting       
+				, SUM(tundefined) AS tundefined
+				, SUM([tManual]) AS [tManual]
+				FROM RepAgentGI
+				WHERE [date] BETWEEN @from AND @to
+				GROUP BY dbo.getdaygroup([date]), userId
+			)
+			--select * from AgentSession
     
-    INSERT INTO RepAgentSummary (date,login,[user],sessionTime,loginMktTime,logoutMktTime,callTengaged,ndTime,NCallsOut,NCallsIn,NCallsCorta,NAtend,NNoCalif
-    ,Available,avgCallTengaged,twrapup,userId,TypeNotReady,descripcion,descripcion_time,time,transferStatus,ringingTime,unknownStatus,otherStatus,failureStatus
-    ,chatTengaged,undefinedTime,dialingStatus,TipoReadyAuxiliarId,auxiliarRedy_descripcion,descripcion_auxiliarRedyTime_time,auxiliarRedyTime,areaId, area)
-    SELECT A.[date], A.[login], A.[user], A.sessionTime, A.dateLogin AS loginMktTime
-    , A.logout AS logoutMktTime
-    , isnull(co.tDialogOut, 0) + isnull(ci.tDialogIn, 0) callTengaged
-    , ISNULL(r.notready, 0) AS ndTime, isnull(co.AttendedCallOut, 0) AS NCallsOut, isnull(ci.AttendedCallIn, 0) AS NCallsIn
-    , ISNULL(co.abnd_xfer, 0) + isnull(co.abnd_ring, 0) + isnull(co.abnd_ring, 0) + isnull(ci.abnd_xfer, 0) + isnull(ci.abnd_ring, 0) + isnull(ci.abnd_ring, 0) AS NCallsCorta
-    , ISNULL(co.NotAttendedCallOut, 0) + ISNULL(ci.NotAttendedCallIn, 0) AS NAtend
-    , ISNULL(ci.NoCalifIn, 0) + ISNULL(co.NoCalifOut, 0) AS NNoCalif    
-    , ISNULL(AgtGI.tav, 0) AS Available
-        ,ISNULL(    
-        (   ISNULL(co.tDialogOut, 0) + ISNULL(co.tNotesOut, 0) + ISNULL(ci.tDialogIn, 0) + ISNULL(ci.tNotesIn, 0) )
-            /
-         nullif(isnull(co.AttendedCallOut,0) + isnull(ci.AttendedCallIn,0),0)
-        , 0) AS avgCallTengaged
+			INSERT INTO RepAgentSummary (date,login,[user],sessionTime,loginMktTime,logoutMktTime,callTengaged,ndTime,NCallsOut,NCallsIn,NCallsCorta,NAtend,NNoCalif
+			,Available,avgCallTengaged,twrapup,userId,TypeNotReady,descripcion,descripcion_time,time,transferStatus,ringingTime,unknownStatus,otherStatus,failureStatus
+			,chatTengaged,undefinedTime,dialingStatus,TipoReadyAuxiliarId,auxiliarRedy_descripcion,descripcion_auxiliarRedyTime_time,auxiliarRedyTime,areaId, area)
+			SELECT A.[date], A.[login], A.[user], A.sessionTime, A.dateLogin AS loginMktTime
+			, A.logout AS logoutMktTime
+			, isnull(co.tDialogOut, 0) + isnull(ci.tDialogIn, 0) callTengaged
+			, ISNULL(r.notready, 0) AS ndTime, isnull(co.AttendedCallOut, 0) AS NCallsOut, isnull(ci.AttendedCallIn, 0) AS NCallsIn
+			, ISNULL(co.abnd_xfer, 0) + isnull(co.abnd_ring, 0) + isnull(co.abnd_ring, 0) + isnull(ci.abnd_xfer, 0) + isnull(ci.abnd_ring, 0) + isnull(ci.abnd_ring, 0) AS NCallsCorta
+			, ISNULL(co.NotAttendedCallOut, 0) + ISNULL(ci.NotAttendedCallIn, 0) AS NAtend
+			, ISNULL(ci.NoCalifIn, 0) + ISNULL(co.NoCalifOut, 0) AS NNoCalif    
+			, ISNULL(AgtGI.tav, 0) AS Available
+				,ISNULL(    
+				(   ISNULL(co.tDialogOut, 0) + ISNULL(co.tNotesOut, 0) + ISNULL(ci.tDialogIn, 0) + ISNULL(ci.tNotesIn, 0) )
+					/
+				 nullif(isnull(co.AttendedCallOut,0) + isnull(ci.AttendedCallIn,0),0)
+				, 0) AS avgCallTengaged
         
-        ,ISNULL(co.tNotesOut, 0) + ISNULL(ci.tNotesIn, 0) AS twrapup, A.userId AS userId
-        ,ISNULL(notReady.TipoNotReadyId, 0) AS TipoNotReadyId
-        ,ISNULL(notReady.descripcion, 0) AS descripcion
-       ,ISNULL(notReady.descripcion_time, 0) AS descripcion_time
-       ,ISNULL(notReady.timeSeconds, 0) AS timeSeconds
-        , ISNULL(co.txferOut, 0) + ISNULL(ci.txferIn, 0) AS transferStatus
-        , ISNULL(co.tringOut, 0) + ISNULL(ci.tringIn, 0) AS ringingTime
-        , ISNULL(AgtGI.tunknown, 0) unknownStatus
-        , ISNULL(AgtGI.tother, 0) otherStatus
-        , ISNULL(AgtGI.tprob, 0) failureStatus
-        , ISNULL(AgtGI.tChatting, 0) chatTengaged
-        , ISNULL(AgtGI.tundefined, 0) undefinedTime
-        , ISNULL(AgtGI.tManual, 0) dialingStatus
-        , isnull(auxiliarReady.TipoReadyAuxiliarId,0) as TipoReadyAuxiliarId
-        , isnull(auxiliarReady.descripcion,'''') as auxiliarRedy_descripcion
-        , isnull(auxiliarReady.descripcion_time,''_Time2'') as descripcion_auxiliarRedyTime_time
-        , convert(int,isnull(auxiliarReady.timeSeconds,0)) as auxiliarRedyTime
-        , ISNULL(ar.IDArea, 1) AS areaId   
-        , ISNULL(ar.AreaName,''Default'') AS area 
-    FROM AgentSession A
-    LEFT JOIN tmpCallout co ON A.DATE = co.DATE AND A.userId = co.userId
-    LEFT JOIN tmpCallIn ci  ON A.DATE = ci.DATE AND A.userId = ci.userId
-    LEFT JOIN RepDetail r   ON r.daygroup = A.DATE AND A.userId = r.userId
-    LEFT JOIN notReadyDay notReady on notReady.userId=A.userId and notReady.daygroup=A.date
-    LEFT join #AuxiliarReadyDetail auxiliarReady on auxiliarReady.userId=A.userId and auxiliarReady.timegroup=A.date
-    left join RepAgentGIGroup AgtGI on AgtGI.date=A.date and AgtGI.userId=A.userId
-    LEFT JOIN ccUsers us WITH (NOLOCK) ON us.User_id = A.userId      
-    LEFT JOIN ccRIACat_Areas ar WITH (NOLOCK) ON ar.IDArea = us.IDArea   
-    order by A.[date],A.userId
+				,ISNULL(co.tNotesOut, 0) + ISNULL(ci.tNotesIn, 0) AS twrapup, A.userId AS userId
+				,ISNULL(notReady.TipoNotReadyId, 0) AS TipoNotReadyId
+				,ISNULL(notReady.descripcion, 0) AS descripcion
+			   ,ISNULL(notReady.descripcion_time, 0) AS descripcion_time
+			   ,ISNULL(notReady.timeSeconds, 0) AS timeSeconds
+				, ISNULL(co.txferOut, 0) + ISNULL(ci.txferIn, 0) AS transferStatus
+				, ISNULL(co.tringOut, 0) + ISNULL(ci.tringIn, 0) AS ringingTime
+				, ISNULL(AgtGI.tunknown, 0) unknownStatus
+				, ISNULL(AgtGI.tother, 0) otherStatus
+				, ISNULL(AgtGI.tprob, 0) failureStatus
+				, ISNULL(AgtGI.tChatting, 0) chatTengaged
+				, ISNULL(AgtGI.tundefined, 0) undefinedTime
+				, ISNULL(AgtGI.tManual, 0) dialingStatus
+				, isnull(auxiliarReady.TipoReadyAuxiliarId,0) as TipoReadyAuxiliarId
+				, isnull(auxiliarReady.descripcion,'''') as auxiliarRedy_descripcion
+				, isnull(auxiliarReady.descripcion_time,''_Time2'') as descripcion_auxiliarRedyTime_time
+				, convert(int,isnull(auxiliarReady.timeSeconds,0)) as auxiliarRedyTime
+				, ISNULL(ar.IDArea, 1) AS areaId   
+				, ISNULL(ar.AreaName,''Default'') AS area 
+			FROM AgentSession A
+			LEFT JOIN tmpCallout co ON A.DATE = co.DATE AND A.userId = co.userId
+			LEFT JOIN tmpCallIn ci  ON A.DATE = ci.DATE AND A.userId = ci.userId
+			LEFT JOIN RepDetail r   ON r.daygroup = A.DATE AND A.userId = r.userId
+			LEFT JOIN notReadyDay notReady on notReady.userId=A.userId and notReady.daygroup=A.date
+			LEFT join #AuxiliarReadyDetail auxiliarReady on auxiliarReady.userId=A.userId and auxiliarReady.timegroup=A.date
+			left join RepAgentGIGroup AgtGI on AgtGI.date=A.date and AgtGI.userId=A.userId
+			LEFT JOIN ccUsers us WITH (NOLOCK) ON us.User_id = A.userId      
+			LEFT JOIN ccRIACat_Areas ar WITH (NOLOCK) ON ar.IDArea = us.IDArea   
+			order by A.[date],A.userId
 
-END'
+		END'
     EXEC(@sql)
     
     --------------------------------  END GASJ -------------------------------- 
@@ -400,122 +508,7 @@ END'
 
 	------------------------------------- END MAGV --------------------------------------
     -------------------------------------------------------BEGIN Octavio Ortiz----------------------------------------------------------------------------------------
-    SET @process = 'AlterTable RepInCallsDetail';
-    SET @sql = N'
-    IF COL_LENGTH(N''dbo.RepInCallsDetail'', N''areaId'') IS NULL
-    BEGIN
-        ALTER TABLE dbo.RepInCallsDetail
-          ADD areaId INT NOT NULL
-          CONSTRAINT DF_RepInCallsDetail_areaId DEFAULT (0);
-    END;
-
-    IF COL_LENGTH(N''dbo.RepInCallsDetail'', N''area'') IS NULL
-    BEGIN
-        ALTER TABLE dbo.RepInCallsDetail
-          ADD area VARCHAR(100) NULL;
-    END;
-    ';
-
-    EXEC(@sql);
-
-
-    SET @process = 'Create Column source';
-    SET @sql = '
-    -- source
-    IF NOT EXISTS (
-        SELECT 1
-        FROM sys.columns 
-        WHERE Name = ''source''
-          AND Object_ID = Object_ID(''dbo.RepInCallsDetail'')
-    )
-    BEGIN
-        ALTER TABLE dbo.RepInCallsDetail 
-            ADD source VARCHAR(20);
-    END';
-    EXEC(@sql);
-
-    SET @process = 'Create Column destinationNumber';
-    SET @sql = '
-    -- destinationNumber
-    IF NOT EXISTS (
-        SELECT 1
-        FROM sys.columns 
-        WHERE Name = ''destinationNumber''
-          AND Object_ID = Object_ID(''dbo.RepInCallsDetail'')
-    )
-    BEGIN
-        ALTER TABLE dbo.RepInCallsDetail 
-            ADD destinationNumber VARCHAR(20);
-    END';
-    EXEC(@sql);
-
-    SET @process = 'Create Column queueTime';
-    SET @sql = '
-    -- cal_tWait
-    IF NOT EXISTS (
-        SELECT 1
-        FROM sys.columns 
-        WHERE Name = ''cal_tWait''
-          AND Object_ID = Object_ID(''dbo.RepInCallsDetail'')
-    )
-    BEGIN
-        ALTER TABLE dbo.RepInCallsDetail 
-            ADD cal_tWait INT;
-    END';
-    EXEC(@sql);
-
-    SET @process = 'Create Column callbackDate';
-    SET @sql = '
-    -- callbackDate
-    IF NOT EXISTS (
-        SELECT 1
-        FROM sys.columns 
-        WHERE Name = ''callbackDate''
-          AND Object_ID = Object_ID(''dbo.RepInCallsDetail'')
-    )
-    BEGIN
-        ALTER TABLE dbo.RepInCallsDetail 
-            ADD callbackDate DATETIME;
-    END';
-    EXEC(@sql);
-
-    SET @process = 'AlterTable RepOutDialDetail';
-    SET @sql = N'
-    IF COL_LENGTH(N''dbo.RepOutDialDetail'', N''areaId'') IS NULL
-    BEGIN
-        ALTER TABLE dbo.RepOutDialDetail
-          ADD areaId INT NOT NULL
-          CONSTRAINT DF_RepOutDialDetail_areaId DEFAULT (0);
-    END;
-
-    IF COL_LENGTH(N''dbo.RepOutDialDetail'', N''area'') IS NULL
-    BEGIN
-        ALTER TABLE dbo.RepOutDialDetail
-          ADD area VARCHAR(100) NULL;
-    END;
-    ';
-
-    EXEC(@sql);
-
-
-    SET @process = 'AlterTable RepSpecialAbndCamp';
-    SET @sql = N'
-    IF COL_LENGTH(N''dbo.RepSpecialAbndCamp'', N''areaId'') IS NULL
-    BEGIN
-        ALTER TABLE dbo.RepSpecialAbndCamp
-          ADD areaId INT NOT NULL
-          CONSTRAINT DF_RepSpecialAbndCamp_areaId DEFAULT (0);
-    END;
-
-    IF COL_LENGTH(N''dbo.RepSpecialAbndCamp'', N''area'') IS NULL
-    BEGIN
-        ALTER TABLE dbo.RepSpecialAbndCamp
-          ADD area VARCHAR(100) NULL;
-    END;
-    ';
-
-    EXEC(@sql);
-
+ 
     SET @process = 'Insert into ReportsFilters - KR201001';
     SET @sql = '
     IF NOT EXISTS (
@@ -1563,15 +1556,6 @@ END'
     EXEC(@sql);
     -------------------------------- END LMZN 127.20250905.0.8-------------------------------------------------------
 
-
-
-set @process = ''
-set @sql=''
-EXEC(@sql)
-
-set @process = ''
-set @sql=''
-EXEC(@sql)
 
     	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version
 

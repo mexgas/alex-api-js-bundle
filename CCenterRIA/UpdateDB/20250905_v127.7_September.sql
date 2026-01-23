@@ -9032,6 +9032,21 @@ END;'
 	EXEC(@sql)
 	-------------------------------------END MACL------------------------------------------------
     -------------------------------------begin dmm------------------------------------------------
+
+SET @process = 'Se elimina setting 285'
+SET @sql = 'IF EXISTS(SELECT 1 FROM ccSettings2 WHERE setting_id = 285)
+	BEGIN
+		delete ccsettings2 where setting_id = 285
+	END'
+EXEC(@sql);
+
+SET @process = 'Se crea setting 285 con tiempo para reset en Outbound'
+SET @sql = 'IF NOT EXISTS(SELECT 1 FROM ccSettings2 WHERE setting_id = 285)
+	BEGIN
+		insert ccsettings2 (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) values (285,''0|5|3|03:01'',''Outbound Configuration'',1,''GRL'',''CheckProvider=>0:Any port,1:Cost-effective,2:Cost-effective-only|TimeTxCallsCampInfo|DefaultDialFactorIa'',''Outbound Configuration'',0,''.*'')
+	END'
+EXEC(@sql);
+
 SET @process = 'Drop procedure ccsp_WhatsAppInformationOut'
 SET @sql = 'IF EXISTS (SELECT * FROM sysobjects WHERE name=''ccsp_WhatsAppInformationOut'')
     BEGIN

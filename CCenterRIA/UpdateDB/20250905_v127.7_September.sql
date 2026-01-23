@@ -12353,7 +12353,7 @@ END'
 				C.Dato5 = A.Dato5,
 				C.dialPrefix = A.dialPrefix,
 				C.list_id = A.list_id,
-				C.cal_fechaDial = CASE WHEN A.callout_id = 0 THEN A.cal_fechaDial ELSE C.cal_fechaDial END,
+				C.cal_fechaDial = case when ISNULL(B.cal_status, 0) = 1 then C.cal_fechaDial else A.cal_fechaDial end,
 				C.Region = A.Region,
 				C.Localidad = A.Localidad,
 				C.international = A.international,

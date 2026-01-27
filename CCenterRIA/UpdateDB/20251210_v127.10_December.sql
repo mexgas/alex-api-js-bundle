@@ -173,18 +173,23 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 
 	---------------------------------------END Octavio Ortiz-------------------------------------
 
-    ------------------------------------ BEGIN Carlos Muñoz ------------------------------------
+    ------------------------------------ BEGIN Carlos Pavel ------------------------------------
 
-    SET @process = 'Sprint 5 - Added validation of elimination for virtual agent while editing, also, is included a new option for duplication'
+   
+	SET @process = 'Sprint 5 - DROP PROCEDURE ccsp_VirtualAgents'
+
     SET @sql = '
-        if exists (select * from sys.procedures where name = N''ccsp_VirtualAgents'')
-        begin
+        If Exists (Select 1 From sys.procedures Where name = N''ccsp_VirtualAgents'')
+        Begin
             DROP PROCEDURE ccsp_VirtualAgents
-        end'
+        End
+	'
     EXEC(@sql)
 
-    SET @sql = ' 
-	CREATE PROCEDURE [dbo].[ccsp_VirtualAgents]
+
+SET @process = 'Sprint 5 - CREATE PROCEDURE ccsp_VirtualAgents'
+    SET @sql = '
+    CREATE PROCEDURE ccsp_VirtualAgents
 	@action INT = 0,
 
 	@idVirtualAgent INT = 0,
@@ -616,14 +621,13 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 		END
 		ELSE IF (@action = 13) --Register model definition (Objectives, instructions, rules and variables)
 		BEGIN
+			DECLARE @modifiedModelName VARCHAR(255);
 
 			IF NOT EXISTS(SELECT 1 FROM ccVirtualAgent WHERE idAgent = @idVirtualAgent and wasDeleted = 0)
 			BEGIN
 				SELECT 2 AS ErrorCode -- Agent deleted before saving changes
 				RETURN
 			END
-			
-			DECLARE @modifiedModelName VARCHAR(255);
 
 			UPDATE ccVirtualAgent
 			SET
@@ -655,11 +659,11 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 						'''',
 						@modifiedModelName
 			
-				SELECT 0 AS ErrorCode
+				SELECT 0 AS ErrorCode -- Success
 			END
 			ELSE
 			BEGIN
-				SELECT 1 AS ErrorCode
+				SELECT 1 AS ErrorCode -- Agent with no changes or not found
 			END
 
 		END
@@ -700,10 +704,48 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 			-- No deletion validation
 			IF NOT EXISTS(SELECT 1 FROM ccVirtualAgent WHERE idAgent = @idVirtualAgent and wasDeleted = 0)
 			BEGIN
-				SELECT ''The agent was deleted before save the changes.'' AS Result, 7 AS ErrorCode
+				SELECT ''The agent was deleted before saving changes.'' AS Result, 7 AS ErrorCode
 				RETURN
 			END
 			-- 
+
+			 -- *** NUEVA LÓGICA: Manejo automático de voz al cambiar idioma ***
+			DECLARE @currentVoice INT,
+					@currentLanguage INT,
+					@currentGender NVARCHAR(10),
+					@homonymousVoiceID INT = NULL;
+    
+			SELECT @currentVoice = ISNULL(voice, 0), 
+				   @currentLanguage = ISNULL(language, 0)
+			FROM ccVirtualAgent 
+			WHERE idAgent = @idVirtualAgent;
+    
+			IF @languageAgent IS NOT NULL 
+			   AND @languageAgent <> @currentLanguage
+			BEGIN
+				SELECT @currentGender = Gender 
+				FROM ccVirtualAgentVoices 
+				WHERE ID = @currentVoice;
+        
+				IF @currentGender IS NOT NULL
+				BEGIN
+					SELECT TOP 1 @homonymousVoiceID = ID
+					FROM ccVirtualAgentVoices 
+					WHERE Language = @languageAgent 
+					  AND Gender = @currentGender
+					ORDER BY IsDefault DESC, ID; -- Priorizar voz por defecto del idioma
+            
+					IF @homonymousVoiceID IS NOT NULL AND (@voiceID IS NULL OR @voiceID = 0 OR @voiceID = @currentVoice)
+					BEGIN
+						SET @voiceID = @homonymousVoiceID; -- Actualizar a voz homónima
+					END
+				END
+			END
+    
+			IF (@voiceID IS NULL OR @voiceID = 0) AND @homonymousVoiceID IS NULL
+			BEGIN
+				SET @voiceID = @currentVoice;
+			END
 
 			DECLARE @AreaName  NVARCHAR(200),
 					@Login NVARCHAR(200),
@@ -954,9 +996,6 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 				RETURN;
 			END
 
-
-
-
 			-- Crear el duplicado copiando del original y sobrescribiendo con valores del frontend
 			INSERT INTO ccVirtualAgent (
 				nameAgent,
@@ -1062,9 +1101,9 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 					@originalAgentId AS OriginalAgentId;
 		END
 	END	    
-    '
+	'
     EXEC(@sql)
-    ------------------------------------ END Carlos Muñoz ------------------------------------
+    ------------------------------------ END Carlos Pavel ------------------------------------
 
 	
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */

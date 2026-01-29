@@ -1024,18 +1024,6 @@ END'
     EXEC(@sql);
     -------------------------------------------------------END Octavio Ortiz----------------------------------------------------------------------------------------
     -------------------------------- BEGIN LMZN 127.20250905.0.8-------------------------------------------------------
-    SET @process = 'Alter table  RepInCallsDetail'
-    SET @sql = 'IF NOT EXISTS(SELECT 1 FROM sys.columns 
-          WHERE Name = N''originNumber''
-          AND Object_ID = Object_ID(N''RepInCallsDetail''))
-BEGIN
-    ALTER TABLE RepOutCallsDetail ADD 
-	originNumber VARCHAR(50),
-	callbackDate DATETIME,
-	queueTimes INT,
-	ringingTime INT
-END'
-    EXEC(@sql)
 	
 	SET @process = 'Object drop: PROCEDURE [dbo].[ccspRepInCallsDetail]';
     SET @sql = '

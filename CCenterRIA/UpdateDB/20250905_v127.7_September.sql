@@ -44,7 +44,7 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
     BEGIN TRAN
     BEGIN TRY
 
-
+    
 	--- BEGIN MAGV KR234004--
 
 		SET @process = 'KR234004 Add manualCRM  to ccoLogDials'
@@ -15523,12 +15523,62 @@ END'
 
     -------------------- END 127.20250905.0.8 Carlos Chavez ------------------------
 
-    
+    ------------------------ BEGIN Marco Antonio Díaz KR234006------------------------
+       SET @process = 'KR234006 Drop procedure ccsp_ManualCallGetRotativeAni if exists'
+       SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_ManualCallGetRotativeAni'')
+                    BEGIN
+                        DROP PROCEDURE ccsp_ManualCallGetRotativeAni;
+                    END'
+        EXEC(@sql);
 
-    
+        SET @process = 'KR234006 procedure to call rotation from the agent'
+        SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_ManualCallGetRotativeAni]
+                    @phones VARCHAR(MAX),
+                    @camId INT
+                    AS
+                    set nocount on
 
-    
+                    DECLARE @aniId INT;
+                    DECLARE @rotativeAlgo INT;
+                    DECLARE @isManualRotationActive BIT;
+                    DECLARE @Anis TABLE(id INT, pid VARCHAR(2), phone VARCHAR(32), ani VARCHAR(32));
 
+                    SELECT @aniId = idAniListManual, @rotativeAlgo = rotativeAlgorithmManual, @isManualRotationActive = ISNULL(selectRotationManualDialing, 0) FROM ccCamps WHERE cam_id = @camId;
+
+                    IF (@isManualRotationActive = 1 AND @aniId IS NOT NULL) BEGIN
+                    INSERT @Anis
+                    EXEC ccsp_DLRGetRotativeANI @callout_id=0, @phones=@phones, @aniList=@aniId,@algo=@rotativeAlgo;
+                    END
+
+                    IF(SELECT COUNT(*) FROM @Anis) > 0 BEGIN
+                        SELECT TOP 1 ani FROM @Anis
+                    END ELSE IF EXISTS (SELECT valor FROM ccSettings WHERE setting_id = 177) BEGIN
+                        SELECT valor FROM ccSettings WHERE setting_id = 177
+                    END ELSE BEGIN
+                        SELECT ''''
+                    END
+
+                    set nocount off'
+        EXEC(@sql);
+
+       SET @process = 'KR234006 Drop procedure ccsp_ValidateManualRotation if exists'
+       SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_ValidateManualRotation'')
+                BEGIN
+                    DROP PROCEDURE ccsp_ValidateManualRotation;
+                END'
+          EXEC(@sql);
+
+          SET @process = 'KR234006 procedure to validate manual rotation'
+          SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_ValidateManualRotation]
+                @camId INT
+                AS
+                set nocount on
+
+                SELECT TOP 1 ISNULL(selectRotationManualDialing, 0) FROM ccCamps WHERE cam_id = @camId;
+
+                set nocount off'
+EXEC(@sql);
+    ------------------------ END Marco Antonio Díaz KR234006--------------------------
 	
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

@@ -194,14 +194,14 @@ BEGIN
     INSERT INTO #AuxiliarReadyDetail
     EXEC ccspGetAuxiliarReadyDetail @from = @from, @to = @to
         
-    DELETE RepAgentSummary WHERE DATE BETWEEN @from AND @to;
-    DELETE RepAgentSummary_VersionAmatech WHERE DATE BETWEEN @from  AND @to;
+    DELETE RepAgentSummary WHERE loginMktTime BETWEEN @from AND @to;
+    DELETE RepAgentSummary_VersionAmatech WHERE loginMktTime BETWEEN @from  AND @to;
     ;
     WITH AgentSession
     AS (
         SELECT dbo.getdaygroup(loginTime) AS [date], userId, min([login]) AS [login], [user] AS [user], MIN(loginTime) AS dateLogin, MAX(logoutTime) AS logout, SUM(sessionTimeSeconds) AS sessionTime
         FROM RepAgentSession
-        WHERE dbo.getdaygroup(loginTime) BETWEEN @from AND @to
+        WHERE loginTime BETWEEN @from AND @to
         GROUP BY dbo.getdaygroup(logintime), userId, [user]
         ),
         -------------OUT -------------------
@@ -604,11 +604,9 @@ END'
     END';
     EXEC(@sql);
 
-
-
     SET @process = 'CreateProcedure ccspRepOutCallsDetail';
     SET @sql = '
-    CREATE PROCEDURE [dbo].[ccspRepOutCallsDetail] 
+        CREATE PROCEDURE [dbo].[ccspRepOutCallsDetail] 
         @action AS TINYINT,
         @from  AS DATETIME = NULL,
         @to    AS DATETIME = NULL
@@ -644,7 +642,49 @@ END'
             WHERE DATE >= @from 
               AND DATE <  @to;
 
-            INSERT INTO RepOutCallsDetail
+            INSERT INTO dbo.RepOutCallsDetail
+            (
+                [date],
+                [callKey],
+                [telephone],
+                [transfer],
+                [dialog],
+                [nque],
+                [wrapup],
+                [CallDisposition],
+                [extension],
+                [userId],
+                [login],
+                [username],
+                [campaignId],
+                [campaign],
+                [duration],
+                [ncost],
+                [iva],
+                [total],
+                [ByCarrier],
+                [Calltypes],
+                [dialType],
+                [whoHangUp],
+                [subDisposition],
+                [dialResult],
+                [calId],
+                [year],
+                [month],
+                [day],
+                [hour],
+                [minutes],
+                [trunk],
+                [data1],
+                [data2],
+                [data3],
+                [data4],
+                [data5],
+                [MessageTime],
+                [grabId],
+                [areaId],
+                [area]
+            )
             SELECT 
                 Call.cal_inicio AS [date],
                 Call.cal_key AS [callKey],
@@ -703,7 +743,7 @@ END'
                     WHEN Call.califsub_id = 0 THEN ''systemTranslated_NoSubDisposition'' 
                     ELSE ISNULL(sub.califSubDesc, '''') 
                 END AS [subDisposition],
-                sta.descTranslated AS [dialResult], 
+                ISNULL(sta.descTranslated,'''') AS  [dialResult], 
                 Call.cal_id AS [calId],
                 DATEPART(yyyy, Call.cal_inicio) AS [year],
                 DATEPART(mm,   Call.cal_inicio) AS [month],

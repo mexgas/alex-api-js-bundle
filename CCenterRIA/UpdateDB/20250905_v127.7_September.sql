@@ -16839,7 +16839,7 @@ SET @process = '#3684 Drop procedure ccsp_WhatsAppInformationOut if exists'
     AS
     SET NOCOUNT ON
     IF @camId>0 and NOT EXISTS (SELECT * FROM ccCamps WHERE cam_Id = @camId AND CampType = 5) BEGIN
-        print ('Camp Is Not WhatsApp')
+        print (''Camp Is Not WhatsApp'')
         return(-1);
     End
 
@@ -18087,7 +18087,7 @@ SET @process = '#3684 Drop procedure ccsp_ConversationWASaveOut if exists'
         AS
         SET NOCOUNT ON
         IF @camId>0 and NOT EXISTS (SELECT * FROM ccCamps WHERE cam_Id = @camId AND CampType = 5) BEGIN
-            print ('Camp Is Not WhatsApp')
+            print (''Camp Is Not WhatsApp'')
             return(-1);
         End
 

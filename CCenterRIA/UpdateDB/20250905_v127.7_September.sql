@@ -16789,6 +16789,50 @@ EXEC(@sql);
 
 
 
+    --------------------- BEGIN UGMV ----------------------------------
+    SET @process = '#5690 Actualizacion ccStatusLLamada para traduccion en reportes de llamada'
+
+    SET @sql = '
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        UPDATE ccstatusllamada
+        SET descTranslated = CASE statusCall_id
+            WHEN 1  THEN ''systemTranslated_status_initial''
+            WHEN 2  THEN ''systemTranslated_status_outOfSchedule''
+            WHEN 3  THEN ''systemTranslated_status_outOfService''
+            WHEN 4  THEN ''systemTranslated_status_noAgents''
+            WHEN 5  THEN ''systemTranslated_status_waiting''
+            WHEN 6  THEN ''systemTranslated_status_abandon''
+            WHEN 7  THEN ''systemTranslated_status_overflowTime''
+            WHEN 8  THEN ''systemTranslated_status_overflowQueue''
+            WHEN 9  THEN ''systemTranslated_status_withMSSG''
+            WHEN 10 THEN ''systemTranslated_status_assignedMessage''
+            WHEN 11 THEN ''systemTranslated_status_assigned''
+            WHEN 12 THEN ''systemTranslated_status_answeredMessage''
+            WHEN 13 THEN ''systemTranslated_status_answered''
+            WHEN 14 THEN ''systemTranslated_status_cancelledMessage''
+            WHEN 15 THEN ''systemTranslated_status_missed''
+            WHEN 16 THEN ''systemTranslated_status_dialTone''
+            WHEN 18 THEN ''systemTranslated_status_abandonReminder''
+            WHEN 19 THEN ''systemTranslated_status_voicemail''
+        END
+        WHERE descTranslated IS NULL
+          AND statusCall_id IN (
+                1,2,3,4,5,6,7,8,9,10,
+                11,12,13,14,15,16,18,19
+          );
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
+    '
+
+    EXEC(@sql);
+--------------------- END UGMV ----------------------------------
 
 
     

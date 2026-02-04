@@ -16822,7 +16822,7 @@ EXEC(@sql);
 				isnull(ce.zipCodeSchedule, 0) AS zipCodeSchedule
 				from ccCamps c with(index(PK_ccCamps)) join ccCampsAgente ca on c.cam_id=ca.cam_id and c.IDArea = @IdArea
 				join ccRIACampsGraph g ON g.cam_id = c.cam_id
-				join ccCampsExtend ce ON ce.cam_id = c.cam_id
+				left join ccCampsExtend ce ON ce.cam_id = c.cam_id
 				where ca.user_id = @UserID  
 					and cam_ModoManual = case when @DialingMode = 1 OR (@DialingMode = 0 AND cam_ModoManual in (1,3)) then cam_ModoManual else -1 end AND CampType = CASE WHEN @DialingMode = 1 THEN 6 ELSE CampType END
 				order by cam_descripcion

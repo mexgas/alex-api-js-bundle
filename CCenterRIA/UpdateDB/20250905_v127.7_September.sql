@@ -16786,11 +16786,588 @@ EXEC(@sql);
 
 
 	--------------------- END MAGV #6302 ----------------------------------
+    --------------------- BEGIN DEGD ----------------------------------
+
+    SET @process = 'Drop procedure ccsp_RIACampsManualCall if exists'
+    SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_RIACampsManualCall'')
+           BEGIN
+               DROP PROCEDURE ccsp_RIACampsManualCall;
+           END'
+    EXEC(@sql);
+
+    SET @process = 'CREATE PROCEDURE [ccsp_RIACampsManualCall]'
+    SET  @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIACampsManualCall]
+
+    @option int,
+		@UserID int = 0,
+		@onChat int = 0,
+		@campId int = 0
+		AS
+		set nocount on
+		if(@option = 1)
+		begin
+			if (@onChat = 0)
+			begin
+				declare @mod smallint
+				declare @IdArea smallint
+				declare @DialingMode tinyint
+				select @IdArea = IDArea, @DialingMode = DialingMode from ccUsers where User_id = @UserID
+				select @mod = defCampaing from ccRIACat_Areas A
+				where A.IDArea = @IdArea 
+				select distinct c.cam_id, c.cam_descripcion, case when ca.cam_id=@mod then 1 else 0 end [isDefault],  g.graphic_id, c.cam_ModoManual, 
+				isnull(c.selectRotativeANI, 0) selectRotativeANI
+				, CASE WHEN c.ivrScript <> 0 AND c.callsBySurvey <> 0 THEN 8 ELSE isnull(c.CampType,0) END as CampType,
+				CASE WHEN @DialingMode = 1 THEN (select count(1) from ccoWorkingTable nolock where cam_id = c.cam_id) ELSE 0 END AS countJobs,
+				isnull(c.timesPreview, 0) timesPreview,
+				isnull(ce.zipCodeSchedule, 0) AS zipCodeSchedule
+				from ccCamps c with(index(PK_ccCamps)) join ccCampsAgente ca on c.cam_id=ca.cam_id and c.IDArea = @IdArea
+				join ccRIACampsGraph g ON g.cam_id = c.cam_id
+				join ccCampsExtend ce ON ce.cam_id = c.cam_id
+				where ca.user_id = @UserID  
+					and cam_ModoManual = case when @DialingMode = 1 OR (@DialingMode = 0 AND cam_ModoManual in (1,3)) then cam_ModoManual else -1 end AND CampType = CASE WHEN @DialingMode = 1 THEN 6 ELSE CampType END
+				order by cam_descripcion
+			end
+			else 
+			begin 
+				select distinct c.cam_id, c.cam_descripcion,  g.graphic_id,  c.cam_ModoManual
+				, isnull(c.CampType,0) as CampType,
+				isnull(ce.zipCodeSchedule, 0) AS zipCodeSchedule
+				from ccCamps c with(index(PK_ccCamps)) join ccCampsAgente ca on c.cam_id=ca.cam_id
+				join ccRIACampsGraph g ON g.cam_id = c.cam_id
+				join ccCampsExtend ce ON ce.cam_id = c.cam_id 
+				where ca.user_id = @UserID and manualCallOnChat = 1
+				order by cam_descripcion
+				SET NOCOUNT OFF;
+			end
+		end
+		if(@option = 2)
+		begin
+			declare @aniList int 
+			declare @rotativeAniListId int
+			select @aniList = id_anilist, @rotativeAniListId  = rotativeAlgo from ccCamps where cam_id = @campId
+			if @rotativeAniListId >0 begin
+				select telAni from ccRotativeANIListDetail where id_RAniList = @aniList
+			end
+			else begin
+				select top 0 '''' telAni 
+			end					
+		end'
+		exec (@sql);
+
+    --------------------- END DEGD ----------------------------------
+
+    ---------------------- BEGIN DEGD ----------------------------------
+    SET @process = 'Drop procedure ccsp_Limpia if exists'
+    SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_Limpia'')
+           BEGIN
+               DROP PROCEDURE ccsp_Limpia;
+           END'
+    EXEC(@sql);
+
+    SET @process = 'CREATE PROCEDURE [ccsp_Limpia]'
+    SET  @sql = 'CREATE PROCEDURE [dbo].[ccsp_Limpia]
+
+	@tel VARCHAR(50), @Camp INT = 0, @calKey VARCHAR(20) = '''', @dato1 VARCHAR(10)=''''
+	AS
+	SET NOCOUNT ON
+
+	DECLARE @lon TINYINT, @cldLocal VARCHAR(7), @pais VARCHAR(3), @extLen SMALLINT, @specialDialPlan SMALLINT, @validateTel SMALLINT, @ld VARCHAR(7)
+	DECLARE @checkLd_In_ANILst SMALLINT = 0
+	/***
+	 4  as res lista Negra
+	 2 as res Digitos incorrectos Prefijo Marcacion 01,044,045,001
+	 3 as res Number notExists
+	 1 as res Longitud invalida
+	 0 as res Numero correcto
+
+	***/
+	SELECT @tel = dbo.limpia(@tel)
+
+	SELECT @lon = len(@tel)
+
+	SELECT @pais = valor
+	FROM ccSettings WITH (NOLOCK)
+	WHERE setting_id = 104
+
+	SELECT @cldLocal = valor
+	FROM ccSettings WITH (NOLOCK)
+	WHERE setting_id = 17
+
+	SELECT @extLen = valor
+	FROM ccsettings WITH (NOLOCK)
+	WHERE setting_id = 108
+
+	SELECT @validateTel = valor
+	FROM ccsettings WITH (NOLOCK)
+	WHERE setting_id = 206
+
+	SELECT @checkLd_In_ANILst = valor FROM ccsettings WITH (NOLOCK) WHERE setting_id = 213
 
 
+	IF @lon > 1
+	BEGIN
+
+		IF @validateTel = 2
+			BEGIN --Setting 206 only validates blacklist
+	
+				IF (SELECT dbo.ValidateBlackListPhone(@tel, @Camp, @calKey)) = 1
+				BEGIN
+					SELECT 4 AS res, @tel AS tel --blackList
+					RETURN (0)
+				END
+				SELECT 0 AS res, @tel AS tel
+
+				RETURN (0)
+
+		END
+		IF @validateTel = 1
+		BEGIN --Setting 206 para no validar longitud ni listas negras
+			SELECT 0 AS res, @tel AS tel
+
+			RETURN (0)
+		END
+
+		IF @extLen = @lon
+		BEGIN -- Setting 108 validar el tamaño longitud del telefono
+			IF (
+					SELECT dbo.ValidateBlackListPhone(@tel, @Camp, @calKey)
+					) = 1
+			BEGIN
+				SELECT 4 AS res, @tel AS tel --blackList
+
+				RETURN (0)
+			END
+
+			SELECT 0 AS res, @tel AS tel -- Extension
+
+			RETURN (0)
+		END
+	END
+
+	DECLARE @telTemp AS VARCHAR(15)
+
+	SELECT @telTemp = @tel
+
+	IF @pais = 1
+	BEGIN ---Mexico
+		IF @lon = 3 AND @tel = ''911''
+		BEGIN
+			SELECT 4 AS res, @tel AS tel --Lista Negra
+
+			RETURN (0)
+		END
+
+		IF (@lon < 10)
+		BEGIN
+			SELECT 1 AS res, @tel AS tel --Longitud invalida
+
+			RETURN (0)
+		END
+			   IF EXISTS (
+					SELECT 1
+					FROM ccCampsExtend
+					WHERE cam_id = @Camp
+					  AND ZipCodeSchedule = 1
+				)
+				BEGIN
+					IF (@dato1 = '''''''' OR NOT EXISTS (SELECT 1 FROM ccTimeZoneAreaCP WHERE ZipCode = LTRIM(RTRIM(@dato1))))
+					BEGIN
+						SELECT 6 AS res, @tel AS tel; -- No tiene codigo postal 
+						RETURN (0);
+					END
+				END
+
+		IF @lon = 12 AND left(@tel, 2) <> ''01'' OR @lon = 13 AND left(@tel, 3) NOT IN (''044'', ''045'') AND left(@tel, 3) <> ''001''
+		BEGIN
+			SELECT 2 AS res, @tel AS tel --Digitos incorrectos
+
+			RETURN (0)
+		END
+
+		IF left(@tel, 3) = ''001''
+		BEGIN
+			SELECT 0 AS res, @tel AS tel
+
+			RETURN (0)
+		END
+
+		SELECT @tel = right(@tel, 10)
+
+		IF (
+				SELECT dbo.ValidateBlackListPhone(@tel, @Camp, @calKey)
+				) = 1
+		BEGIN
+			SELECT 4 AS res, @tel AS tel --blackList
+
+			RETURN (0)
+		END
+
+		If (@Camp > 0 AND @checkLd_In_ANILst = 1)
+		BEGIN
+			If(SELECT len(ani) FROM ccCamps WHERE cam_id = @Camp) > 0  --Permitir todos los telefonos a 10 digitos cuando existe un ani configurado en la campana.	
+			BEGIN
+				SELECT 0 AS res, @tel AS tel	
+				RETURN (0)
+			END
+
+			IF exists (SELECT TOP 1 area FROM ccCamps c WITH (NOLOCK) inner join ccEdoAniList l WITH (NOLOCK) on c.id_anilist = l.id_AniList
+					  inner join ccEstadosAni e WITH (NOLOCK) on l.id_AniList = e.id_AniList
+					  WHERE cam_id = @Camp and telAni <> '''' and area = left(@tel, 3))
+			BEGIN
+				SELECT 0 AS res, @tel AS tel
+				RETURN (0)
+			END
+			ELSE IF exists (SELECT TOP 1 area FROM ccCamps c WITH (NOLOCK) inner join ccEdoAniList l WITH (NOLOCK) on c.id_anilist = l.id_AniList
+					  inner join ccEstadosAni e WITH (NOLOCK) on l.id_AniList = e.id_AniList
+					  WHERE cam_id = @Camp and telAni <> '''' and area = left(@tel, 2))
+			BEGIN
+				SELECT 0 AS res, @tel AS tel
+				RETURN (0)
+			END
+		END
 
 
+		SELECT @tel = dbo.Verifica2(@tel, 1, @cldLocal, DEFAULT, DEFAULT)
 
+		IF LEFT(@tel, 1) = ''E''
+		BEGIN
+			SELECT 3 AS res, @telTemp AS tel --No encontrado
+
+			RETURN (0)
+		END
+
+		SELECT 0 AS res, @tel AS tel
+
+		RETURN (0)
+	END
+	ELSE IF @pais = 2
+	BEGIN --Argentina 
+		SET @tel = dbo.completa(@tel, @pais, @cldLocal)
+
+		IF left(@tel, 1) = ''E''
+		BEGIN
+			SELECT 1 AS res, @telTemp AS tel --Longitud Invalida
+
+			RETURN (0)
+		END
+
+		SELECT @tel = dbo.fnClearPhoneArg(@tel)
+
+		IF (len(@tel) = 10 OR len(@cldLocal + @tel) = 10) AND left(@tel, 1) <> ''E''
+		BEGIN
+			IF (
+					SELECT dbo.ValidateBlackListPhone(@tel, @Camp, @calKey)
+					) = 1
+			BEGIN
+				SELECT 4 AS res, @tel AS tel --blackList      
+			END
+			ELSE
+			BEGIN
+				SELECT @tel = dbo.verifica2(@tel, @pais, @cldLocal, DEFAULT, DEFAULT)
+
+				IF left(@tel, 1) = ''E''
+				BEGIN
+					SELECT 3 AS res, @telTemp --Not existsFound
+				END
+
+				SELECT 0 AS res, @tel AS tel
+			END
+		END
+		ELSE
+		BEGIN
+			SELECT 2 AS res, @telTemp AS tel --Digitos incorrectos      
+		END
+
+		RETURN (0)
+	END
+	ELSE IF @pais = 3
+	BEGIN --Colombia  
+		IF @lon < 7 OR @lon = 9 OR (@lon = 10 AND left(@telTemp, 1) <> ''3'') OR (@lon = 11 AND left(@telTemp, 2) <> ''03'')
+		BEGIN
+			SELECT 1 AS res, @telTemp AS tel --Longitud Invalida
+
+			RETURN (0)
+		END
+
+		SELECT @tel = dbo.Completa_ListaNegra(@tel)
+
+		IF (len(@tel) IN (8, 10)) AND left(@tel, 1) <> ''E''
+		BEGIN
+			IF (
+					SELECT dbo.ValidateBlackListPhone(@tel, @Camp, @calKey)
+					) = 1
+			BEGIN
+				SELECT 4 AS res, @tel AS tel --blackList      
+			END
+			ELSE
+			BEGIN
+				SELECT @tel = dbo.verifica2(@tel, @pais, @cldLocal, DEFAULT, DEFAULT)
+
+				IF left(@tel, 1) = ''E''
+				BEGIN
+					SELECT 3 AS res, @telTemp --Not existsFound
+				END
+
+				SELECT 0 AS res, @tel AS tel
+			END
+		END
+		ELSE
+		BEGIN
+			SELECT 2 AS res, @telTemp AS tel --Digitos incorrectos
+		END
+
+		RETURN (0)
+	END
+	ELSE IF @pais = 4
+	BEGIN --USA 
+		EXEC ccsp_LimpiaUsa @tel, @Camp, @calKey
+
+		RETURN (0)
+	END
+	ELSE IF @pais = 5
+	BEGIN --Chile  
+		SELECT @tel = dbo.Completa_ListaNegra(@tel)
+
+		IF len(@tel) IN (8, 9) AND left(@tel, 1) <> ''E''
+		BEGIN
+			IF (
+					SELECT dbo.ValidateBlackListPhone(@tel, @Camp, @calKey)
+					) = 1
+			BEGIN
+				SELECT 4 AS res, @tel AS tel --blackList      
+			END
+			ELSE
+			BEGIN
+				SELECT @tel = dbo.verifica2(@tel, @pais, @cldLocal, DEFAULT, DEFAULT)
+
+				IF left(@tel, 1) = ''E''
+				BEGIN
+					SELECT 3 AS res, @telTemp --Not existsFound
+				END
+
+				SELECT 0 AS res, @tel AS tel
+			END
+		END
+		ELSE
+		BEGIN
+			SELECT 2 AS res, @telTemp AS tel --Digitos incorrectos
+		END
+
+		RETURN (0)
+	END
+	ELSE IF @pais = 6
+	BEGIN --Venezuela    
+		SELECT @tel = dbo.Completa_ListaNegra(@tel)
+
+		IF len(@tel) = 10 AND left(@tel, 1) <> ''E''
+		BEGIN
+			IF (
+					SELECT dbo.ValidateBlackListPhone(@tel, @Camp, @calKey)
+					) = 1
+			BEGIN
+				SELECT 4 AS res, @tel AS tel --blackList      
+			END
+			ELSE
+			BEGIN
+				SELECT @tel = dbo.verifica2(@tel, @pais, @cldLocal, DEFAULT, DEFAULT)
+
+				IF left(@tel, 1) = ''E''
+				BEGIN
+					SELECT 3 AS res, @telTemp --Not existsFound
+				END
+
+				SELECT 0 AS res, @tel AS tel
+			END
+		END
+		ELSE
+		BEGIN
+			SELECT 2 AS res, @telTemp AS tel --Digitos incorrectos
+		END
+
+		RETURN (0)
+	END
+	ELSE IF @pais = 7
+	BEGIN --Reino Unido
+		SELECT @tel = dbo.Completa_ListaNegra(@tel)
+
+		IF (len(@tel) IN (9, 10)) AND left(@tel, 1) <> ''E''
+		BEGIN
+			IF (
+					SELECT dbo.ValidateBlackListPhone(@tel, @Camp, @calKey)
+					) = 1
+			BEGIN
+				SELECT 4 AS res, @tel AS tel --blackList      
+			END
+			ELSE
+			BEGIN
+				SELECT @tel = dbo.verifica2(@tel, @pais, @cldLocal, DEFAULT, DEFAULT)
+
+				IF left(@tel, 1) = ''E''
+				BEGIN
+					SELECT 3 AS res, @telTemp --Not existsFound
+				END
+
+				SELECT 0 AS res, @tel AS tel
+			END
+		END
+		ELSE
+		BEGIN
+			SELECT 2 AS res, @telTemp AS tel --Digitos incorrectos
+		END
+
+		RETURN (0)
+	END
+	ELSE IF @pais = 8
+	BEGIN --Arabia saudita   
+		SELECT @tel = dbo.Completa_ListaNegra(@tel)
+
+		IF (len(@tel) IN (9, 10, 11))
+		BEGIN
+			IF (
+					SELECT dbo.ValidateBlackListPhone(@tel, @Camp, @calKey)
+					) = 1
+			BEGIN
+				SELECT 4 AS res, @tel AS tel --blackList      
+			END
+			ELSE
+			BEGIN
+				SELECT @tel = dbo.verifica2(@tel, @pais, @cldLocal, DEFAULT, DEFAULT)
+
+				IF left(@tel, 1) = ''E''
+				BEGIN
+					SELECT 3 AS res, @telTemp --Not existsFound
+				END
+
+				SELECT 0 AS res, @tel AS tel
+			END
+		END
+		ELSE
+		BEGIN
+			SELECT 2 AS res, @telTemp AS tel --Digitos incorrectos
+		END
+
+		RETURN (0)
+	END
+	ELSE IF @pais IN (9, 10, 11, 12, 13, 14, 15, 16)
+	BEGIN --9: Australia, 10:Brasil, 11:Guatemala, 12:Costa Rica, 13:Salvador, 14:España 15:Peru, 16: Panama 
+		SELECT @tel = dbo.Completa_ListaNegra(@tel)
+
+		IF left(@tel, 1) = ''E''
+		BEGIN
+			SELECT 1 AS res, @telTemp --Longitud Invalida   
+		END
+		ELSE IF (
+				SELECT dbo.ValidateBlackListPhone(@tel, @Camp, @calKey)
+				) = 1
+		BEGIN
+			SELECT 4 AS res, @tel AS tel --blackList      
+		END
+		ELSE
+		BEGIN
+			SELECT @tel = dbo.verifica2(@tel, @pais, @cldLocal, DEFAULT, DEFAULT)
+
+			IF left(@tel, 1) = ''E''
+			BEGIN
+				SELECT 2 AS res, @telTemp --Digitos Incorrectos ??? debe ser numero no existe
+			END
+
+			SELECT 0 AS res, @tel AS tel
+		END
+
+		RETURN (0)
+	END'
+	exec (@sql);
+    ----------------------- END DEGD -----------------------------------
+    --------------------- BEGIN script release ----------------------------
+
+    SET @process = 'Drop trigger trigZonaHoraria if exists'
+    SET @sql = 'IF EXISTS (SELECT * FROM sys.triggers WHERE name = N''trigZonaHoraria'')
+           BEGIN
+               DROP TRIGGER trigZonaHoraria;
+           END'
+    EXEC(@sql);
+
+    SET @process = 'CREATE TRIGGER [trigZonaHoraria]'
+    SET  @sql = 'CREATE TRIGGER [dbo].[trigZonaHoraria]
+    ON [dbo].[ccoCallsOutSource]
+    FOR INSERT,UPDATE
+    AS
+    SET NOCOUNT ON
+    begin
+    declare @country as tinyint,@zipCodeSchedule bit 
+    declare @tableCpZoneSchedule table(callout_id int primary key,iZonaHoraria int,iZonaHoraria_verano int)
+
+    select @country =convert(tinyint, valor) from ccSettings with(nolock) where setting_id = 104
+    if @country =1 begin
+        select @zipCodeSchedule=zipCodeSchedule from ccCampsExtend where cam_id in(select top 1 cam_id from inserted)
+    end
+    if @zipCodeSchedule is null begin
+        set @zipCodeSchedule=0
+    end
+
+    if @zipCodeSchedule = 1 begin
+
+        insert into @tableCpZoneSchedule
+        select cs.callout_id, inv.tz_id,v.tz_id
+        from ccTimeZoneAreaCP zoneCp with(nolock) 
+        inner join inserted cs on zoneCp.ZipCode=cs.Dato1	
+        inner join ccTimeZones V on V.tz_offset=zoneCp.SummerTimeDifference
+        inner join ccTimeZones inv on inv.tz_offset=zoneCp.WinterTimeDifference
+
+
+    end
+
+
+    if update(cal_telefono) begin
+        update ccoCallsOutSource 
+        set iZonaHoraria =case when @zipCodeSchedule=1 then ISNULL(cp.iZonaHoraria, 0) else ISNULL(dbo.fnGetTimeZone(cs.cal_telefono,0), 0) end,
+        iZonaHoraria_verano =case when @zipCodeSchedule=1 then ISNULL(cp.iZonaHoraria_verano, 0) else ISNULL(dbo.fnGetTimeZone(cs.cal_telefono,1), 0) end
+        from ccoCallsOutSource cs 
+        inner join inserted i
+        left join @tableCpZoneSchedule cp on cp.callout_id= i.callout_id
+        on cs.callout_id = i.callout_id
+    end
+
+    if update(cal_telefono2) begin
+        update ccoCallsOutSource 
+        set iZonaHoraria2 = case when @zipCodeSchedule=1 then ISNULL(cp.iZonaHoraria,0) else ISNULL(dbo.fnGetTimeZone(cs.cal_telefono2,0),0) end,
+        iZonaHoraria_verano2 = case when @zipCodeSchedule=1 then ISNULL(cp.iZonaHoraria_verano,0) else ISNULL(dbo.fnGetTimeZone(cs.cal_telefono2,1),0) end
+        from ccoCallsOutSource cs 
+        inner join inserted i on cs.callout_id = i.callout_id
+        left join @tableCpZoneSchedule cp on cp.callout_id= i.callout_id
+
+    end
+
+    if update(cal_telefono3) begin
+        update ccoCallsOutSource 
+        set iZonaHoraria3 =  case when @zipCodeSchedule=1 then ISNULL(cp.iZonaHoraria,0) else ISNULL(dbo.fnGetTimeZone(cs.cal_telefono3,0),0) end,
+        iZonaHoraria_verano3 = case when @zipCodeSchedule=1 then ISNULL(cp.iZonaHoraria_verano,0) else ISNULL(dbo.fnGetTimeZone(cs.cal_telefono3,1),0)  end
+        from ccoCallsOutSource cs 
+        inner join inserted i on cs.callout_id = i.callout_id
+        left join @tableCpZoneSchedule cp on cp.callout_id= i.callout_id
+    end
+
+    if update(cal_telefono4) begin
+        update ccoCallsOutSource 
+        set iZonaHoraria4 = case when @zipCodeSchedule=1 then ISNULL(cp.iZonaHoraria,0) else ISNULL(dbo.fnGetTimeZone(cs.cal_telefono4,0),0) end,
+        iZonaHoraria_verano4 = case when @zipCodeSchedule=1 then ISNULL(cp.iZonaHoraria_verano,0) else ISNULL(dbo.fnGetTimeZone(cs.cal_telefono4,1),0) end
+        from ccoCallsOutSource cs 
+        inner join inserted i on cs.callout_id = i.callout_id
+        left join @tableCpZoneSchedule cp on cp.callout_id= i.callout_id
+    end
+
+    if update(cal_telefono5) begin
+        update ccoCallsOutSource 
+        set iZonaHoraria5 = case when @zipCodeSchedule=1 then ISNULL(cp.iZonaHoraria,0) else ISNULL(dbo.fnGetTimeZone(cs.cal_telefono5,0),0) end,
+        iZonaHoraria_verano5 = case when @zipCodeSchedule=1 then ISNULL(cp.iZonaHoraria_verano,0) else ISNULL(dbo.fnGetTimeZone(cs.cal_telefono5,1),0) end
+        from ccoCallsOutSource cs 
+        inner join inserted i on cs.callout_id = i.callout_id
+        left join @tableCpZoneSchedule cp on cp.callout_id= i.callout_id
+    end
+    end'
+	exec (@sql);
+
+    --------------------- END script release ------------------------------
     
 
 	

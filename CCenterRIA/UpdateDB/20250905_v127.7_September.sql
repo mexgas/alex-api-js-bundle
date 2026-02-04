@@ -8995,31 +8995,38 @@ ELSE IF @action = 16 BEGIN --update content message
 
     IF @messageStatus = ''submitted''
     BEGIN
-        UPDATE ccWAConversationsResult
-        SET SentMsg = SentMsg + 1;
+        SET @dynSql = N''UPDATE ccWAConversationsResult SET SentMsg = SentMsg + 1 WHERE camId = @camId'';
+        EXEC sp_executesql @dynSql, @params, @camId = @camId;
     END
     ELSE IF @messageStatus = ''delivered''
     BEGIN
-        UPDATE ccWAConversationsResult
-        SET SentMsg = CASE WHEN SentMsg > 0 THEN SentMsg - 1 ELSE SentMsg END,
-            Delivered = Delivered + 1;
+        SET @dynSql = N''UPDATE ccWAConversationsResult SET SentMsg = CASE WHEN SentMsg > 0 THEN SentMsg - 1 ELSE SentMsg END, Delivered = Delivered + 1 WHERE camId = @camId'';
+        EXEC sp_executesql @dynSql, @params, @camId = @camId;
     END
     ELSE IF @messageStatus = ''read''
     BEGIN
-        UPDATE ccWAConversationsResult
-        SET Delivered = CASE WHEN Delivered > 0 THEN Delivered - 1 ELSE Delivered END,
-            ReadMsg = ReadMsg + 1;
+        SET @dynSql = N''UPDATE ccWAConversationsResult SET Delivered = CASE WHEN Delivered > 0 THEN Delivered - 1 ELSE Delivered END, ReadMsg = ReadMsg + 1 WHERE camId = @camId'';
+        EXEC sp_executesql @dynSql, @params, @camId = @camId;
     END
-    ELSE IF @messageStatus = ''rejected'' OR @messageStatus = ''error'' OR @messageStatus = ''hostError'' OR @messageStatus = ''clientError''
+    ELSE IF @messageStatus = ''rejected'' OR @messageStatus = ''error'' OR @messageStatus = ''hostError'' OR @messageStatus = ''clientError'' OR @messageStatus = ''failed''
     BEGIN
-        UPDATE ccWAConversationsResult
-        SET SentMsg = CASE WHEN SentMsg > 0 THEN SentMsg - 1 ELSE SentMsg END,
-            NotDelivered = NotDelivered + 1;
+        SET @dynSql = N''UPDATE ccWAConversationsResult SET SentMsg = CASE WHEN SentMsg > 0 THEN SentMsg - 1 ELSE SentMsg END, NotDelivered = NotDelivered + 1 WHERE camId = @camId'';
+        EXEC sp_executesql @dynSql, @params, @camId = @camId;
+    END
+    ELSE IF (@messageStatus = ''N/A'' AND @originType = ''Client'')
+    BEGIN
+        SET @dynSql = N''UPDATE ccWAConversationsResult SET Received = Received + 1 WHERE camId = @camId'';
+        EXEC sp_executesql @dynSql, @params, @camId = @camId;
+    END
+    ELSE IF (@messageStatus = ''UnSent'')
+    BEGIN
+        SET @dynSql = N''UPDATE ccWAConversationsResult SET SentMsg = CASE WHEN SentMsg > 0 THEN SentMsg - 1 ELSE SentMsg END, UnSent = UnSent + 1 WHERE camId = @camId'';
+        EXEC sp_executesql @dynSql, @params, @camId = @camId;
     END
     ELSE IF (@messageStatus = ''N/A'' AND @originType != ''Agent'')
     BEGIN
-        UPDATE ccWAConversationsResult
-        SET NotSupported = NotSupported + 1;
+        SET @dynSql = N''UPDATE ccWAConversationsResult SET NotSupported = NotSupported + 1 WHERE camId = @camId'';
+        EXEC sp_executesql @dynSql, @params, @camId = @camId;
     END
 
 
@@ -9285,6 +9292,8 @@ BEGIN
             ISNULL(Delivered, 0) AS Delivered,
             ISNULL(NotDelivered, 0) AS NotDelivered,
             ISNULL(ReadMsg, 0) AS ReadMsg,
+            ISNULL(Received, 0)     AS Received,
+            ISNULL(UnSent, 0)       AS UnSent,
             ISNULL(NotSupported, 0) AS NotSupported
     FROM ccWAConversationsResult
     WHERE camId = @camId
@@ -16791,7 +16800,7 @@ EXEC(@sql);
     --------------------- BEGIN RECG #3684 ----------------------------------
 SET @process = '#3684 Add columns Received & UnSent to ccWAConversationsResult if not exists';
 
-    SET @sql = '   
+    SET @sql = '
 
     IF COL_LENGTH(''dbo.ccWAConversationsResult'', ''Received'') IS NULL
     BEGIN
@@ -16800,7 +16809,7 @@ SET @process = '#3684 Add columns Received & UnSent to ccWAConversationsResult i
                 CONSTRAINT DF_ccWAConversationsResult_Received DEFAULT(0);
 
     END;
-    
+
     ';
 
     EXEC(@sql);
@@ -16808,7 +16817,7 @@ SET @process = '#3684 Add columns Received & UnSent to ccWAConversationsResult i
 
     SET @process = '#3684 Add columns Received & UnSent to ccWAConversationsResult if not exists';
 
-    SET @sql = '    
+    SET @sql = '
 
     IF COL_LENGTH(''dbo.ccWAConversationsResult'', ''UnSent'') IS NULL
     BEGIN
@@ -16817,7 +16826,7 @@ SET @process = '#3684 Add columns Received & UnSent to ccWAConversationsResult i
                 CONSTRAINT DF_ccWAConversationsResult_UnSent DEFAULT(0);
 
     END;
-    
+
     ';
 
     EXEC(@sql);
@@ -16831,12 +16840,12 @@ SET @process = '#3684 Add columns Received & UnSent to ccWAConversationsResult i
             SET Received = 0
         WHERE Received IS NULL;
 
-    
+
 
         UPDATE dbo.ccWAConversationsResult
             SET UnSent = 0
         WHERE UnSent IS NULL;
-    
+
     ';
 
     EXEC(@sql);
@@ -17446,7 +17455,7 @@ BEGIN
     RETURN 0;
 END;
 
-ELSE IF @option = 10 
+ELSE IF @option = 10
 BEGIN -- Get Agents States with totals per campaign by admin id and campaign type **********************
     DECLARE @date DATETIME = CONVERT(DATE, DATEADD(hh, - 3, GETDATE()));
     DECLARE @AdminWorkgroups TABLE (id INT, PRIMARY KEY (id));
@@ -17558,7 +17567,7 @@ BEGIN -- Get Agents States with totals per campaign by admin id and campaign typ
         WHERE multimediaType = 0
     END
 
-       
+
 
     IF @CampType = 1
     BEGIN
@@ -17669,7 +17678,7 @@ BEGIN -- Get Agents States with totals per campaign by admin id and campaign typ
     RETURN 0;
 END -- *****************************************************************************************
 END
-ELSE IF @Option = 11 
+ELSE IF @Option = 11
 BEGIN -- Get Campaigns Ids List Per Workgroup and Campaign Type
     IF NOT EXISTS (
             SELECT *
@@ -17733,7 +17742,7 @@ BEGIN -- Get Campaigns Ids List Per Workgroup and Campaign Type
     RETURN 0;
 END;
 
-ELSE IF @Option = 12 
+ELSE IF @Option = 12
 BEGIN-- Get All Campaigns complete information per Campaign Type and Campaign Id
     IF @CampType = 1 -- Campaigns Out
     BEGIN

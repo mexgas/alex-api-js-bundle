@@ -16846,7 +16846,7 @@ SET @process = '#3684 Drop procedure ccsp_WhatsAppInformationOut if exists'
 
 
     DECLARE @Today SMALLDATETIME = CAST( GETDATE() AS DATE );
-    --set @Today SMALLDATETIME = '2022-03-24'
+    --set @Today SMALLDATETIME = ''2022-03-24''
     IF @Option = 0 BEGIN-- Reset TABLES
         TRUNCATE TABLE ccWAConversationsResult
         TRUNCATE table ccWAOperatingSummaryOut;
@@ -16990,14 +16990,14 @@ SET @process = '#3684 Drop procedure ccsp_WhatsAppInformationOut if exists'
     BEGIN
     declare @nIdioma varchar(22),@nIdiomaSub varchar(22)
     select @nIdioma = case valor
-        when 0 then 'Sin calificación'
-        when 2 then 'Sem classificação'
-        else 'No disposition' end
+        when 0 then ''Sin calificación''
+        when 2 then ''Sem classificação''
+        else ''No disposition'' end
     from ccsettings where setting_id = 27 -- 0esp
     SELECT ISNULL(disposition.Description, @nIdioma) AS DispositionName,
             ISNULL(disposition.calif_id, 0) AS DispositionId,
             COUNT(whatsConv.disposition) AS Total,
-            ISNULL(disposition.GraphColor, '1DB4E2') AS GraphColor,
+            ISNULL(disposition.GraphColor, ''1DB4E2'') AS GraphColor,
             COUNT(CASE WHEN whatsConv.subDisposition != 0 THEN 1 END) AS SubDispositionQuantity
     FROM ccWhatsAppConversationsOut whatsConv with(nolock)
     LEFT JOIN ccTipoCalifOUT disposition ON disposition.calif_id = whatsConv.disposition
@@ -17090,13 +17090,13 @@ SET @process = '#3684 Drop procedure ccsp_WhatsAppInformationOut if exists'
         SELECT
             waco.camid,
 
-            SUM(CASE WHEN s.normStatus IN ('sent','submitted') THEN 1 ELSE 0 END) AS SentMsg,
-            SUM(CASE WHEN s.normStatus = 'delivered' THEN 1 ELSE 0 END) AS Delivered,
-            SUM(CASE WHEN s.normStatus = 'read' THEN 1 ELSE 0 END) AS ReadMsg,
-            SUM(CASE WHEN s.normStatus IN ('rejected','error','hostError','clientError','failed') THEN 1 ELSE 0 END) AS NotDelivered,
-            SUM(CASE WHEN s.normStatus = 'received' THEN 1 ELSE 0 END) AS Received,
-            SUM(CASE WHEN s.normStatus = 'UnSent' THEN 1 ELSE 0 END) AS UnSent,
-            SUM(CASE WHEN s.normStatus = 'N/A' THEN 1 ELSE 0 END) AS NA
+            SUM(CASE WHEN s.normStatus IN (''sent'',''submitted'') THEN 1 ELSE 0 END) AS SentMsg,
+            SUM(CASE WHEN s.normStatus = ''delivered'' THEN 1 ELSE 0 END) AS Delivered,
+            SUM(CASE WHEN s.normStatus = ''read'' THEN 1 ELSE 0 END) AS ReadMsg,
+            SUM(CASE WHEN s.normStatus IN (''rejected'',''error'',''hostError'',''clientError'',''failed'') THEN 1 ELSE 0 END) AS NotDelivered,
+            SUM(CASE WHEN s.normStatus = ''received'' THEN 1 ELSE 0 END) AS Received,
+            SUM(CASE WHEN s.normStatus = ''UnSent'' THEN 1 ELSE 0 END) AS UnSent,
+            SUM(CASE WHEN s.normStatus = ''N/A'' THEN 1 ELSE 0 END) AS NA
 
         FROM ccWhatsAppConversationsOut waco
         INNER JOIN @campsIds c
@@ -17107,35 +17107,35 @@ SET @process = '#3684 Drop procedure ccsp_WhatsAppInformationOut if exists'
         CROSS APPLY (
             SELECT
                 CASE
-                    WHEN wamco.messageStatus = 'Failed'
+                    WHEN wamco.messageStatus = ''Failed''
                         AND EXISTS (
                             SELECT 1
                             FROM ccWhatsAppUnsetMessagesMCSbyWebApi wa WITH (NOLOCK)
                             WHERE wa.Id = wamco.messageId
-                            AND wa.Content = 'Undeliverable'
+                            AND wa.Content = ''Undeliverable''
                         )
-                    THEN 'UnSent'
+                    THEN ''UnSent''
 
-                    WHEN wamco.messageStatus = 'N/A' AND wamco.originType = 'Client'
-                    THEN 'received'
+                    WHEN wamco.messageStatus = ''N/A'' AND wamco.originType = ''Client''
+                    THEN ''received''
 
-                    WHEN wamco.messageStatus = 'N/A' AND wamco.originType = 'Admin'
+                    WHEN wamco.messageStatus = ''N/A'' AND wamco.originType = ''Admin''
                         AND NOT EXISTS (
                             SELECT 1
                             FROM ccWhatsAppUnsetMessagesMCSbyWebApi wa WITH (NOLOCK)
                             WHERE wa.Id = wamco.messageId
-                            AND wa.Content = 'Internal'
+                            AND wa.Content = ''Internal''
                         )
-                    THEN 'submitted'
+                    THEN ''submitted''
 
-                    WHEN wamco.messageStatus = 'N/A' AND wamco.originType = 'Admin'
+                    WHEN wamco.messageStatus = ''N/A'' AND wamco.originType = ''Admin''
                         AND EXISTS (
                             SELECT 1
                             FROM ccWhatsAppUnsetMessagesMCSbyWebApi wa WITH (NOLOCK)
                             WHERE wa.Id = wamco.messageId
-                            AND wa.Content = 'Internal'
+                            AND wa.Content = ''Internal''
                         )
-                    THEN 'N/A'
+                    THEN ''N/A''
 
                     ELSE wamco.messageStatus
                 END AS normStatus
@@ -17150,8 +17150,8 @@ SET @process = '#3684 Drop procedure ccsp_WhatsAppInformationOut if exists'
 	EXEC(@sql)
 
 
-    SET @process = '#3684 Drop procedure ccsp_GalateaAdminCampaigns if exists'
-     SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_GalateaAdminCampaigns'')
+SET @process = '#3684 Drop procedure ccsp_GalateaAdminCampaigns if exists''
+     SET @sql = ''IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_GalateaAdminCampaigns'')
             BEGIN
                 DROP PROCEDURE ccsp_GalateaAdminCampaigns;
             END'
@@ -17182,7 +17182,7 @@ SET @process = '#3684 Drop procedure ccsp_WhatsAppInformationOut if exists'
             ORDER BY IdCampEsp ASC;
         END;
         ELSE BEGIN
-            RAISERROR('ERROR. No existe una lista de campañas con el id de grupo de trabajo especificado', 18, 1);
+            RAISERROR(''ERROR. No existe una lista de campañas con el id de grupo de trabajo especificado'', 18, 1);
         END;
         RETURN 0;
     END;
@@ -17206,14 +17206,14 @@ SET @process = '#3684 Drop procedure ccsp_WhatsAppInformationOut if exists'
                     FROM dbo.ccoWAWorkingTable cwwt
                     JOIN dbo.ccWhatsAppOutSource cwaos  ON cwaos.WAOut_Id = cwwt.WAOut_id
                     JOIN dbo.ccMetaWAOutboundTemplates cmwot ON cmwot.Id = cwaos.TemplateId
-                    WHERE cwaos.camId = @Id AND cmwot.Status = 'PAUSED'
+                    WHERE cwaos.camId = @Id AND cmwot.Status = ''PAUSED''
                 ) SET @HasTemplatePaused = 1;
 
                 IF EXISTS(
                 SELECT 1 FROM dbo.ccMetaWAOutboundTemplates AS cmwot
                     INNER JOIN dbo.ccMetaWhatsAppNumbers AS cmwan
                     ON cmwan.MetaId = cmwot.MetaId
-                    WHERE cmwan.Cam_Id = @Id AND cmwot.Status = 'DISABLED'
+                    WHERE cmwan.Cam_Id = @Id AND cmwot.Status = ''DISABLED''
                     AND cmwot.StatusCW = 1
                 )
                 BEGIN
@@ -17241,7 +17241,7 @@ SET @process = '#3684 Drop procedure ccsp_WhatsAppInformationOut if exists'
                 ORDER BY camps.cam_descripcion ASC;
             END;
             ELSE BEGIN
-                RAISERROR('ERROR. No existe campañas de salida con el id especificado', 18, 1);
+                RAISERROR(''ERROR. No existe campañas de salida con el id especificado'', 18, 1);
             END;
         END;
         ELSE IF @CampType = 0 -- Campaigns In (ACD)
@@ -17261,7 +17261,7 @@ SET @process = '#3684 Drop procedure ccsp_WhatsAppInformationOut if exists'
                 END;
                 ELSE
                     BEGIN
-                        RAISERROR('ERROR. No existe campañas de entrada con el id especificado', 18, 1);
+                        RAISERROR(''ERROR. No existe campañas de entrada con el id especificado'', 18, 1);
                 END;
         END;
         RETURN 0;
@@ -17272,7 +17272,7 @@ SET @process = '#3684 Drop procedure ccsp_WhatsAppInformationOut if exists'
             UPDATE ccCampsNvosCB SET  OverallTotalNew = ccCampsNvosCB.new WHERE id = @Id;
         END;
         ELSE BEGIN
-            RAISERROR('ERROR. No existe la campañas de entrada con el id especificado', 18, 1);
+            RAISERROR(''ERROR. No existe la campañas de entrada con el id especificado'', 18, 1);
         END;
         RETURN 0;
     END;
@@ -17298,7 +17298,7 @@ SET @process = '#3684 Drop procedure ccsp_WhatsAppInformationOut if exists'
         END;
         ELSE
         BEGIN
-            RAISERROR ('ERROR. La campañas o administrador no existen', 18, 1
+            RAISERROR (''ERROR. La campañas o administrador no existen'', 18, 1
                     );
         END;
 
@@ -17311,7 +17311,7 @@ SET @process = '#3684 Drop procedure ccsp_WhatsAppInformationOut if exists'
             ORDER BY Id ASC;
         END;
         ELSE BEGIN
-            RAISERROR('ERROR. El administrador con el id seleccionado no existe', 18, 1);
+            RAISERROR(''ERROR. El administrador con el id seleccionado no existe'', 18, 1);
         END;
         RETURN 0;
     END;
@@ -17321,17 +17321,17 @@ SET @process = '#3684 Drop procedure ccsp_WhatsAppInformationOut if exists'
         BEGIN
             DECLARE @BlackListIds VARCHAR(MAX);
 
-            SELECT @BlackListIds = COALESCE(@BlackListIds + '|' + CAST(idtipolista AS VARCHAR
+            SELECT @BlackListIds = COALESCE(@BlackListIds + ''|'' + CAST(idtipolista AS VARCHAR
                         (MAX)), CAST(idtipolista AS VARCHAR(MAX)))
             FROM Camplistanegra
             WHERE cam_id = @Id
                 AND STATUS = 1;
 
-            SELECT ISNULL(@BlackListIds, '0') AS BlackListIds;
+            SELECT ISNULL(@BlackListIds, ''0'') AS BlackListIds;
         END;
         ELSE
         BEGIN
-            RAISERROR ('ERROR. La campañas con el id seleccionado no existe', 18, 1);
+            RAISERROR (''ERROR. La campañas con el id seleccionado no existe'', 18, 1);
         END;
 
         RETURN 0;
@@ -17357,7 +17357,7 @@ SET @process = '#3684 Drop procedure ccsp_WhatsAppInformationOut if exists'
         ELSE
         BEGIN
             --Si el id de carga es nulo o no se encuentra registro de dicha carga o esta ya ha sido borrada
-            RAISERROR ('ERROR. No existe una campaña con el id especificado', 18, 1);
+            RAISERROR (''ERROR. No existe una campaña con el id especificado'', 18, 1);
         END;
 
         RETURN 0;
@@ -17376,7 +17376,7 @@ SET @process = '#3684 Drop procedure ccsp_WhatsAppInformationOut if exists'
                 )
         BEGIN
             UPDATE ccoCallsOutSource
-            SET cal_status = '5'
+            SET cal_status = ''5''
             WHERE list_id = @loadID;
 
             DELETE
@@ -17388,7 +17388,7 @@ SET @process = '#3684 Drop procedure ccsp_WhatsAppInformationOut if exists'
         ELSE
         BEGIN
             --Si el id de carga es nulo o no se encuentra registro de dicha carga o esta ya ha sido borrada
-            RAISERROR ('ERROR. No existe una carga el id especificado', 18, 1);
+            RAISERROR (''ERROR. No existe una carga el id especificado'', 18, 1);
         END;
 
         RETURN 0;
@@ -17557,12 +17557,12 @@ SET @process = '#3684 Drop procedure ccsp_WhatsAppInformationOut if exists'
         END
 
         DECLARE @StateIds VARCHAR(100) = (
-                SELECT CASE WHEN @MultimediaType = 5 THEN '6,34' WHEN @MultimediaType = 1 THEN
-                                '23' ELSE '4,5,6,9' END
+                SELECT CASE WHEN @MultimediaType = 5 THEN ''6,34'' WHEN @MultimediaType = 1 THEN
+                                ''23'' ELSE ''4,5,6,9'' END
                 ) -- Add more for multimediaTypes
 
         ;with stateDialog as(
-        SELECT cast(value as int) as CurrentState FROM dbo.fn_RIASplitDelimited(@StateIds,',')
+        SELECT cast(value as int) as CurrentState FROM dbo.fn_RIASplitDelimited(@StateIds,'','')
     )
         INSERT INTO @AgentStatus
         SELECT A.camId, A.userId, B.CurrentState,
@@ -17650,7 +17650,7 @@ SET @process = '#3684 Drop procedure ccsp_WhatsAppInformationOut if exists'
                     AND Rol_id = 7
                 )
         BEGIN
-            --print 'xxxx SIn Super'
+            --print ''xxxx SIn Super''
                 ;
 
             WITH wgId
@@ -17683,7 +17683,7 @@ SET @process = '#3684 Drop procedure ccsp_WhatsAppInformationOut if exists'
         END;
         ELSE
         BEGIN
-            --print 'xxxx Super'
+            --print ''xxxx Super''
             IF @CampType = 1
             BEGIN
                 SELECT DISTINCT CAST(cam_id AS INT) AS Id
@@ -17719,7 +17719,7 @@ SET @process = '#3684 Drop procedure ccsp_WhatsAppInformationOut if exists'
                 ON cwaos.WAOut_Id = cwwt.WAOut_id
             INNER JOIN dbo.ccMetaWAOutboundTemplates AS cmwot
                 ON cmwot.Id = cwaos.TemplateId
-            WHERE cmwot.Status IN ('PAUSED', 'DISABLED')
+            WHERE cmwot.Status IN (''PAUSED'', ''DISABLED'')
             GROUP BY cwaos.camId
             )
 
@@ -17808,7 +17808,7 @@ SET @process = '#3684 Drop procedure ccsp_WhatsAppInformationOut if exists'
                                         LEFT JOIN ccRIACampsGraph ccRCG ON (cci.Inbound_id = ccRCG.cam_id)
                                         LEFT JOIN ccInboundExtend ccie ON (cci.Inbound_id = ccie.Inbound_id)
                                         AND ((@multi_type is null AND cci.chat = @InboundType)
-                                            OR (@multi_type is not null AND cci.chat in (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,','))));
+                                            OR (@multi_type is not null AND cci.chat in (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,'',''))));
                 END
             END;
             ELSE
@@ -17845,7 +17845,7 @@ SET @process = '#3684 Drop procedure ccsp_WhatsAppInformationOut if exists'
                                 LEFT JOIN ccInboundExtend ccie ON (cci.Inbound_id = ccie.Inbound_id)
                             where IDArea = @AreaId
                             AND ((@multi_type is null AND cci.chat = @InboundType)
-                                OR (@multi_type is not null AND cci.chat in (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,','))))
+                                OR (@multi_type is not null AND cci.chat in (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,'',''))))
 
                 END
             END;
@@ -17877,7 +17877,7 @@ SET @process = '#3684 Drop procedure ccsp_WhatsAppInformationOut if exists'
             INNER JOIN wgId ON wgId.IDWG = A.IDWG
                 AND A.Tipo = 0
             INNER JOIN ccInbound cci (NOLOCK) ON A.IdCampEsp = cci.Inbound_id
-                AND ((@multi_type is null AND cci.chat = @InboundType) OR (@multi_type is not null AND cci.chat in (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,','))))
+                AND ((@multi_type is null AND cci.chat = @InboundType) OR (@multi_type is not null AND cci.chat in (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,'',''))))
 
         END
         ELSE
@@ -17890,7 +17890,7 @@ SET @process = '#3684 Drop procedure ccsp_WhatsAppInformationOut if exists'
                         CAST(isnull(cam_id,-1) AS INT) AS RelatedCampId
                         FROM ccInbound cci (NOLOCK) where IDArea = @AreaId
                         AND ((@multi_type is null AND cci.chat = @InboundType)
-                            OR (@multi_type is not null AND cci.chat in (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,','))))
+                            OR (@multi_type is not null AND cci.chat in (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,'',''))))
 
         END
     END
@@ -17899,7 +17899,7 @@ SET @process = '#3684 Drop procedure ccsp_WhatsAppInformationOut if exists'
     BEGIN
                 --SELECT DISTINCT
                 --CAST(Inbound_id AS INT) AS CampId,descripcion AS Description,isnull(IDArea, -1) AS AreaID,CAST(chat AS SMALLINT) AS CampaignType,CAST(isnull(cam_id,-1) AS INT) AS RelatedCampId
-                --FROM ccInbound NOLOCK where cam_id = @Id and chat IN (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,','))
+                --FROM ccInbound NOLOCK where cam_id = @Id and chat IN (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,'',''))
 
         select
             CAST(Inbound_id AS INT) AS CampId,
@@ -17910,7 +17910,7 @@ SET @process = '#3684 Drop procedure ccsp_WhatsAppInformationOut if exists'
         from ccCamps ccc
         INNER JOIN ccInbound cci ON cci.IDArea = ccc.IDArea
         where ccc.cam_id = @Id
-            and chat IN (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,','))
+            and chat IN (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,'',''))
             and isnull(cci.cam_id,-1) > 0
 
     END
@@ -17967,13 +17967,13 @@ SET @process = '#3684 Drop procedure ccsp_WhatsAppInformationOut if exists'
         end
     ELSE IF @Option = 17 BEGIN -- Get Campaigns Ids List Per Workgroup and Campaign Type
             IF @groupList IS NOT NULL BEGIN
-                IF OBJECT_ID('tempdb..#WGDelete') IS NOT NULL DROP TABLE #WGDelete;
-                SELECT value As IDwg into #WGDelete FROM fn_RIASplitDelimited(@groupList, ',')
+                IF OBJECT_ID(''tempdb..#WGDelete'') IS NOT NULL DROP TABLE #WGDelete;
+                SELECT value As IDwg into #WGDelete FROM fn_RIASplitDelimited(@groupList, '','')
                 SELECT CAST(IdCampEsp AS INT) AS Id, tipo as Type, IDWG AS IdWg FROM ccRIACampEspWG WHERE IDWG in (select IDwg from #WGDelete)
                 ORDER BY IdCampEsp ASC;
             END;
             ELSE BEGIN
-                RAISERROR('ERROR. No existe una lista de campañas con los ids de grupo de trabajo especificados', 18, 1);
+                RAISERROR(''ERROR. No existe una lista de campañas con los ids de grupo de trabajo especificados'', 18, 1);
             END;
             RETURN 0;
         END;
@@ -18094,7 +18094,7 @@ SET @process = '#3684 Drop procedure ccsp_ConversationWASaveOut if exists'
 
 
         DECLARE @Today SMALLDATETIME = CAST( GETDATE() AS DATE );
-        --set @Today SMALLDATETIME = '2022-03-24'
+        --set @Today SMALLDATETIME = ''2022-03-24''
         IF @Option = 0 BEGIN-- Reset TABLES
             TRUNCATE TABLE ccWAConversationsResult
             TRUNCATE table ccWAOperatingSummaryOut;
@@ -18241,14 +18241,14 @@ SET @process = '#3684 Drop procedure ccsp_ConversationWASaveOut if exists'
         BEGIN
         declare @nIdioma varchar(22),@nIdiomaSub varchar(22)
         select @nIdioma = case valor
-            when 0 then 'Sin calificación'
-            when 2 then 'Sem classificação'
-            else 'No disposition' end
+            when 0 then ''Sin calificación''
+            when 2 then ''Sem classificação''
+            else ''No disposition'' end
         from ccsettings where setting_id = 27 -- 0esp
         SELECT ISNULL(disposition.Description, @nIdioma) AS DispositionName,
                 ISNULL(disposition.calif_id, 0) AS DispositionId,
                 COUNT(whatsConv.disposition) AS Total,
-                ISNULL(disposition.GraphColor, '1DB4E2') AS GraphColor,
+                ISNULL(disposition.GraphColor, ''1DB4E2'') AS GraphColor,
                 COUNT(CASE WHEN whatsConv.subDisposition != 0 THEN 1 END) AS SubDispositionQuantity
         FROM ccWhatsAppConversationsOut whatsConv with(nolock)
         LEFT JOIN ccTipoCalifOUT disposition ON disposition.calif_id = whatsConv.disposition
@@ -18335,13 +18335,13 @@ SET @process = '#3684 Drop procedure ccsp_ConversationWASaveOut if exists'
             SELECT
                 waco.camid,
 
-                SUM(CASE WHEN s.normStatus IN ('sent','submitted') THEN 1 ELSE 0 END) AS SentMsg,
-                SUM(CASE WHEN s.normStatus = 'delivered' THEN 1 ELSE 0 END) AS Delivered,
-                SUM(CASE WHEN s.normStatus = 'read' THEN 1 ELSE 0 END) AS ReadMsg,
-                SUM(CASE WHEN s.normStatus IN ('rejected','error','hostError','clientError','failed') THEN 1 ELSE 0 END) AS NotDelivered,
-                SUM(CASE WHEN s.normStatus = 'received' THEN 1 ELSE 0 END) AS Received,
-                SUM(CASE WHEN s.normStatus = 'UnSent' THEN 1 ELSE 0 END) AS UnSent,
-                SUM(CASE WHEN s.normStatus = 'N/A' THEN 1 ELSE 0 END) AS NA
+                SUM(CASE WHEN s.normStatus IN (''sent'',''submitted'') THEN 1 ELSE 0 END) AS SentMsg,
+                SUM(CASE WHEN s.normStatus = ''delivered'' THEN 1 ELSE 0 END) AS Delivered,
+                SUM(CASE WHEN s.normStatus = ''read'' THEN 1 ELSE 0 END) AS ReadMsg,
+                SUM(CASE WHEN s.normStatus IN (''rejected'',''error'',''hostError'',''clientError'',''failed'') THEN 1 ELSE 0 END) AS NotDelivered,
+                SUM(CASE WHEN s.normStatus = ''received'' THEN 1 ELSE 0 END) AS Received,
+                SUM(CASE WHEN s.normStatus = ''UnSent'' THEN 1 ELSE 0 END) AS UnSent,
+                SUM(CASE WHEN s.normStatus = ''N/A'' THEN 1 ELSE 0 END) AS NA
 
             FROM ccWhatsAppConversationsOut waco
             INNER JOIN @campsIds c
@@ -18352,35 +18352,35 @@ SET @process = '#3684 Drop procedure ccsp_ConversationWASaveOut if exists'
             CROSS APPLY (
                 SELECT
                     CASE
-                        WHEN wamco.messageStatus = 'Failed'
+                        WHEN wamco.messageStatus = ''Failed''
                             AND EXISTS (
                                 SELECT 1
                                 FROM ccWhatsAppUnsetMessagesMCSbyWebApi wa WITH (NOLOCK)
                                 WHERE wa.Id = wamco.messageId
-                                AND wa.Content = 'Undeliverable'
+                                AND wa.Content = ''Undeliverable''
                             )
-                        THEN 'UnSent'
+                        THEN ''UnSent''
 
-                        WHEN wamco.messageStatus = 'N/A' AND wamco.originType = 'Client'
-                        THEN 'received'
+                        WHEN wamco.messageStatus = ''N/A'' AND wamco.originType = ''Client''
+                        THEN ''received''
 
-                        WHEN wamco.messageStatus = 'N/A' AND wamco.originType = 'Admin'
+                        WHEN wamco.messageStatus = ''N/A'' AND wamco.originType = ''Admin''
                             AND NOT EXISTS (
                                 SELECT 1
                                 FROM ccWhatsAppUnsetMessagesMCSbyWebApi wa WITH (NOLOCK)
                                 WHERE wa.Id = wamco.messageId
-                                AND wa.Content = 'Internal'
+                                AND wa.Content = ''Internal''
                             )
-                        THEN 'submitted'
+                        THEN ''submitted''
 
-                        WHEN wamco.messageStatus = 'N/A' AND wamco.originType = 'Admin'
+                        WHEN wamco.messageStatus = ''N/A'' AND wamco.originType = ''Admin''
                             AND EXISTS (
                                 SELECT 1
                                 FROM ccWhatsAppUnsetMessagesMCSbyWebApi wa WITH (NOLOCK)
                                 WHERE wa.Id = wamco.messageId
-                                AND wa.Content = 'Internal'
+                                AND wa.Content = ''Internal''
                             )
-                        THEN 'N/A'
+                        THEN ''N/A''
 
                         ELSE wamco.messageStatus
                     END AS normStatus

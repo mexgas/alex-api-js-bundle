@@ -19640,7 +19640,7 @@ END'
     SELECT 1
     FROM sys.indexes 
     WHERE name = ''IX_ccWAMessagesConversationsOut_conversationId''
-      AND object_id = OBJECT_ID(''dbo.'')
+      AND object_id = OBJECT_ID(''dbo.ccWAMessagesConversationsOut'')
 )
 BEGIN
 	CREATE NONCLUSTERED INDEX IX_ccWAMessagesConversationsOut_conversationId

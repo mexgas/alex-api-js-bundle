@@ -44,6 +44,63 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
     BEGIN TRAN
     BEGIN TRY
 
+    --- BEGIN RECG #3684--
+
+    SET @process = '#3684 Add columns Received & UnSent to ccWAConversationsResult if not exists';
+
+    SET @sql = '
+
+    IF COL_LENGTH(''dbo.ccWAConversationsResult'', ''Received'') IS NULL
+    BEGIN
+        ALTER TABLE dbo.ccWAConversationsResult
+            ADD Received INT NOT NULL
+                CONSTRAINT DF_ccWAConversationsResult_Received DEFAULT(0);
+
+    END;
+
+    ';
+
+    EXEC(@sql);
+
+
+    SET @process = '#3684 Add columns Received & UnSent to ccWAConversationsResult if not exists';
+
+    SET @sql = '
+
+    IF COL_LENGTH(''dbo.ccWAConversationsResult'', ''UnSent'') IS NULL
+    BEGIN
+        ALTER TABLE dbo.ccWAConversationsResult
+            ADD UnSent INT NOT NULL
+                CONSTRAINT DF_ccWAConversationsResult_UnSent DEFAULT(0);
+
+    END;
+
+    ';
+
+    EXEC(@sql);
+
+
+
+    SET @process = '#3684 Add columns Received & UnSent to ccWAConversationsResult if not exists';
+
+    SET @sql = '
+     UPDATE dbo.ccWAConversationsResult
+            SET Received = 0
+        WHERE Received IS NULL;
+
+
+
+        UPDATE dbo.ccWAConversationsResult
+            SET UnSent = 0
+        WHERE UnSent IS NULL;
+
+    ';
+
+    EXEC(@sql);
+
+    --- END RECG #3684--
+
+
 
 	--- BEGIN MAGV KR234004--
 
@@ -8987,8 +9044,9 @@ BEGIN --update content message
         WHERE messageId = @messageId;
     END;
 END;
+
 ELSE IF @action = 16
-BEGIN --update content message
+BEGIN
 
     IF @camId IS NULL OR @camId = 0
     BEGIN
@@ -8997,90 +9055,67 @@ BEGIN --update content message
         WHERE conversationId = @conversationId;
     END
 
-    DECLARE @params NVARCHAR(MAX);
-    SET @params = 'N'@camId INT'';
-
-    DECLARE @col_UnSent BIT;
-    DECLARE @col_Received BIT;
-
-    SET @col_UnSent = 0;
-    SET @col_Received = 0;
-
-    IF EXISTS (SELECT 1 FROM sys.columns
-               WHERE name = ''UnSent''
-               AND object_id = OBJECT_ID(''ccWAConversationsResult''))
-        SET @col_UnSent = 1;
-
-    IF EXISTS (SELECT 1 FROM sys.columns
-               WHERE name = ''Received''
-               AND object_id = OBJECT_ID(''ccWAConversationsResult''))
-        SET @col_Received = 1;
-
+    -- submitted
     IF @messageStatus = ''submitted''
     BEGIN
-        SET @dynSql = ''N''
-            UPDATE ccWAConversationsResult
-            SET SentMsg = SentMsg + 1
-            WHERE camId = @camId'';
+        UPDATE ccWAConversationsResult
+        SET SentMsg = SentMsg + 1
+        WHERE camId = @camId;
     END
 
+    -- delivered
     ELSE IF @messageStatus = ''delivered''
     BEGIN
-        SET @dynSql = ''N''
-            UPDATE ccWAConversationsResult
-            SET SentMsg = CASE WHEN SentMsg > 0 THEN SentMsg - 1 ELSE SentMsg END,
-                Delivered = Delivered + 1
-            WHERE camId = @camId'';
+        UPDATE ccWAConversationsResult
+        SET SentMsg = CASE WHEN SentMsg > 0 THEN SentMsg - 1 ELSE SentMsg END,
+            Delivered = Delivered + 1
+        WHERE camId = @camId;
     END
 
+    -- read
     ELSE IF @messageStatus = ''read''
     BEGIN
-        SET @dynSql = ''N''
-            UPDATE ccWAConversationsResult
-            SET Delivered = CASE WHEN Delivered > 0 THEN Delivered - 1 ELSE Delivered END,
-                ReadMsg = ReadMsg + 1
-            WHERE camId = @camId'';
+        UPDATE ccWAConversationsResult
+        SET Delivered = CASE WHEN Delivered > 0 THEN Delivered - 1 ELSE Delivered END,
+            ReadMsg = ReadMsg + 1
+        WHERE camId = @camId;
     END
 
+    -- rejected / error / failed
     ELSE IF @messageStatus IN (''rejected'',''error'',''hostError'',''clientError'',''failed'')
     BEGIN
-        SET @dynSql = ''N''
-            UPDATE ccWAConversationsResult
-            SET SentMsg = CASE WHEN SentMsg > 0 THEN SentMsg - 1 ELSE SentMsg END,
-                NotDelivered = NotDelivered + 1
-            WHERE camId = @camId'';
+        UPDATE ccWAConversationsResult
+        SET SentMsg = CASE WHEN SentMsg > 0 THEN SentMsg - 1 ELSE SentMsg END,
+            NotDelivered = NotDelivered + 1
+        WHERE camId = @camId;
     END
 
-    ELSE IF (@messageStatus = ''N/A'' AND @originType = ''Client'' AND @col_Received = 1)
+    -- client message received
+    ELSE IF (@messageStatus = ''N/A'' AND @originType = ''Client'')
     BEGIN
-        SET @dynSql = ''N''
-            UPDATE ccWAConversationsResult
-            SET Received = Received + 1
-            WHERE camId = @camId'';
+        UPDATE ccWAConversationsResult
+        SET Received = Received + 1
+        WHERE camId = @camId;
     END
 
-    ELSE IF (@messageStatus = ''UnSent'' AND @col_UnSent = 1)
+    -- unsent
+    ELSE IF (@messageStatus = ''UnSent'')
     BEGIN
-        SET @dynSql = ''N''
-            UPDATE ccWAConversationsResult
-            SET SentMsg = CASE WHEN SentMsg > 0 THEN SentMsg - 1 ELSE SentMsg END,
-                UnSent = UnSent + 1
-            WHERE camId = @camId'';
+        UPDATE ccWAConversationsResult
+        SET SentMsg = CASE WHEN SentMsg > 0 THEN SentMsg - 1 ELSE SentMsg END,
+            UnSent = UnSent + 1
+        WHERE camId = @camId;
     END
 
+    -- unsupported
     ELSE IF (@messageStatus = ''N/A'' AND @originType != ''Agent'')
     BEGIN
-        SET @dynSql = ''N''
-            UPDATE ccWAConversationsResult
-            SET NotSupported = NotSupported + 1
-            WHERE camId = @camId'';
+        UPDATE ccWAConversationsResult
+        SET NotSupported = NotSupported + 1
+        WHERE camId = @camId;
     END
-    IF @dynSql <> ''''
-        EXEC sp_executesql @dynSql, @params, @camId = @camId;
 
 END
-
-
     SELECT @messageId as MessageId
 END;
 ELSE IF @action = 17 BEGIN --update agent status for reassigning error message
@@ -17465,61 +17500,7 @@ EXEC(@sql);
     '
     EXEC(@sql);
 --------------------- END UGMV ----------------------------------
-    --------------------- BEGIN RECG #3684 ----------------------------------
-SET @process = '#3684 Add columns Received & UnSent to ccWAConversationsResult if not exists';
-
-    SET @sql = '
-
-    IF COL_LENGTH(''dbo.ccWAConversationsResult'', ''Received'') IS NULL
-    BEGIN
-        ALTER TABLE dbo.ccWAConversationsResult
-            ADD Received INT NOT NULL
-                CONSTRAINT DF_ccWAConversationsResult_Received DEFAULT(0);
-
-    END;
-
-    ';
-
-    EXEC(@sql);
-
-
-    SET @process = '#3684 Add columns Received & UnSent to ccWAConversationsResult if not exists';
-
-    SET @sql = '
-
-    IF COL_LENGTH(''dbo.ccWAConversationsResult'', ''UnSent'') IS NULL
-    BEGIN
-        ALTER TABLE dbo.ccWAConversationsResult
-            ADD UnSent INT NOT NULL
-                CONSTRAINT DF_ccWAConversationsResult_UnSent DEFAULT(0);
-
-    END;
-
-    ';
-
-    EXEC(@sql);
-
-
-
-    SET @process = '#3684 Add columns Received & UnSent to ccWAConversationsResult if not exists';
-
-    SET @sql = '
-     UPDATE dbo.ccWAConversationsResult
-            SET Received = 0
-        WHERE Received IS NULL;
-
-
-
-        UPDATE dbo.ccWAConversationsResult
-            SET UnSent = 0
-        WHERE UnSent IS NULL;
-
-    ';
-
-    EXEC(@sql);
-
-
-
+--------------------- BEGIN RECG #3684 ----------------------------------
 SET @process = '#3684 Drop procedure ccsp_WhatsAppInformationOut if exists'
      SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_WhatsAppInformationOut'')
             BEGIN

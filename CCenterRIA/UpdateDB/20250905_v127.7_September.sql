@@ -14341,12 +14341,12 @@ SET NOCOUNT OFF
 		dbo.GetRoute(@phone,'''',@trunkId) destination'
     EXEC(@sql)
 
-	SET @process = 'Sears + Guardar ruta dinamica KR237000 Alter SP ccsp_DLRSaveDialResult'
+	SET @process = 'Sears + Guardar ruta dinamica KR237000 Alter SP ccsp_DLRSaveDialResult + update result'
         SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_DLRSaveDialResult]
 		@callout_id INT, @cam_id SMALLINT, @tipoResDial_id TINYINT, @Telefono VARCHAR(30), @Puerto SMALLINT,
 		@tDialing TINYINT= 0, @tBusy SMALLINT= 0, @call_id INT= 0, @answerbit BIT= NULL, @tAnswerBit SMALLINT= 0,
 		@canceledNoAgents BIT= 0, @disconnectCause VARCHAR(250)= '''', @cal_key VARCHAR(40)= '''', @call_TS VARCHAR(15)='''',
-		@ani varchar(32)='''', @destination varchar(50)='''', @destination_name varchar(50)=''''
+		@ani varchar(32)='''', @destination varchar(50)='''', @destination_name varchar(50)='''', @dialId int = 0
 		AS
 		BEGIN
 			SET NOCOUNT ON;
@@ -14384,6 +14384,7 @@ SET NOCOUNT OFF
 		declare @TipoLlamada int, @TipoDialingMode VARCHAR(9);
 		select @TipoLlamada=dbo.fnGetTipoLlamada(@Telefono)
 
+IF @dialId = 0 BEGIN --Begin insert
 		IF @call_id > 0 AND @tipoResDial_id = 1
 		BEGIN
 				INSERT INTO ccoLogDials WITH (ROWLOCK)( callout_id, cam_id, tipoResDial_id, Telefono, Puerto, tDialing, fecha, answerbit, tbusy,
@@ -14414,7 +14415,16 @@ SET NOCOUNT OFF
 				  SET tipoResDial_id = @tipoResDial_id
 				WHERE callout_id = @callout_id;
 			END;
+END--End Insert
 
+IF @dialId > 0 BEGIN --Begin update ccoLogDials
+	PRINT(''Updating info'')
+	UPDATE ccoLogDials set  tipoResDial_id = @tipoResDial_id, answerbit = @answerbit,
+		canceledNoAgents = @canceledNoAgents, disconnectCause = @disconnectCause
+		 WHERE callout_id = @callout_id
+	SELECT @dialId as LogDialId
+	RETURN 0;
+END --End update
 			-- para marcaciones manuales, actualiza puerto de marcacion y costo de la llamada. Solo llamadas contestadas
 		IF @call_id > 0 AND @tipoResDial_id = 1
 			BEGIN
@@ -19184,6 +19194,461 @@ END
 SET NOCOUNT OFF'
 	EXEC(@sql)
 --------------------- END RECG #3684 ----------------------------------
+
+----------------------------BEGIN MACL---------------------------------
+	SET @process = 'Alter ccsp_AgentHistoricalChat'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_AgentHistoricalChat] 
+@option SMALLINT, 
+@clientNum VARCHAR(15) = '''', 
+@conversationId AS INT = 0, 
+@inboundId AS SMALLINT = 0, 
+@serviceType AS SMALLINT = 0,
+@campType AS INT = 0
+AS
+BEGIN
+    IF @option = 1 --whatsapp, get conversation ids
+    BEGIN
+        DECLARE @tempId INT = 0
+        IF @campType = 0 -- INBOUND
+        BEGIN
+            SELECT conversationId AS ConversationId,
+                @campType AS CampType,
+                assignDate AS Date
+            FROM ccWhatsAppConversations with(nolock)
+            WHERE clientId = @clientNum AND assignDate IS NOT NULL
+            GROUP BY conversationId, assignDate
+        END
+        ELSE
+        BEGIN  -- OUTBOUND
+            SELECT conversationId AS ConversationId,
+                @campType AS CampType,
+                assignDate AS Date
+            FROM ccWhatsAppConversationsOut with(nolock)
+            WHERE clientId = @clientNum AND assignDate IS NOT NULL
+            GROUP BY conversationId, assignDate
+        END
+    END
+
+    IF @option = 2 --whatsapp, get acdId by conversation id
+    BEGIN
+        IF @campType = 0
+        BEGIN
+            SELECT CAST(inboundId AS INT)
+            FROM [ccWhatsAppConversations] with(nolock)
+            WHERE conversationId = @conversationId
+        END
+        ELSE
+        BEGIN
+            SELECT CAST(camId AS INT)
+            FROM [ccWhatsAppConversationsOut] with(nolock)
+            WHERE conversationId = @conversationId
+        END
+    END
+
+    IF @option = 3 --get data conversation
+    BEGIN
+        DECLARE @OldAgentId INT = 0
+        DECLARE @OldConversationId INT = 0
+
+        SELECT @OldAgentId = conv.agentId, @OldConversationId = rel.conversationIdBefore
+        FROM ccWhatsAppConversationsRelationship rel with(nolock)
+        RIGHT JOIN ccWhatsAppConversations conv with(nolock) ON conv.conversationId = rel.conversationIdBefore
+        WHERE rel.conversationIdAfter = @conversationId
+
+        SELECT cast(i.chat AS INT) AS ServiceType, cast(c.conversationId AS INT) AS ConversationID, c.clientId AS ClientId, cm.conexionInfo AS [To], cast(i.Inbound_id AS INT) AS ACDId, i.descripcion AS ACDName, cast(g.
+                graphic_id AS INT) AS ACDGraphicId, cast(cm.closeConversationTime AS INT) AS [TimeOut], cast(cm.answerTimeOut AS INT) AS [TimeOutWarning], i.ExitWrapUpDisposition AS [ExitWrapUpDisposition], i.tNotas AS 
+            [WrapUpTime], i.ShowCalifWnd, cast(ISNULL(answerTimeoutClient, 30) AS INT) AS [AnswerTimeoutClient], ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent), 0) AS 
+            [SecTimeOutLastMessageAgent], isnull(permission.AllowUnassign, 0) AS AllowUnassign, isnull(permission.AllowSpam, 0) AS AllowSpam, ISNULL(@OldAgentId, 0) AS OldAgentId, ISNULL(@OldConversationId, 0) AS 
+            OldConversationId, c.agentId AS AgentId
+        FROM ccInbound i
+        INNER JOIN contactMeanIn cm ON i.Inbound_id = cm.inboundId
+        INNER JOIN ccWhatsAppConversations c with(nolock) ON (
+                c.inboundId = i.Inbound_id
+                AND c.conversationId = @conversationId
+                )
+        INNER JOIN ccRIAInboundGraph g ON g.Inbound_id = i.Inbound_id
+        LEFT JOIN ccLastMessageAgentByConversation lm ON lm.conversationId = c.conversationId
+        LEFT JOIN ccRIAAgentsPermissions permission ON permission.AgentId = c.agentId
+        WHERE i.chat = @serviceType
+            AND i.Inbound_id = @inboundId
+
+    END
+
+    IF @option = 4 --get messages from conversation id
+    BEGIN
+        DECLARE @filetype AS VARCHAR(5)
+        DECLARE @camp_acd_id INT = 0;
+
+        IF @campType = 0
+        BEGIN
+            SET @camp_acd_id = (SELECT inboundId FROM ccWhatsAppConversations with(nolock) WHERE conversationId = @conversationId)
+
+			SELECT
+				msg.*,
+				ISNULL(graphics.graphic_id, 0) AS GraphicId
+			FROM dbo.fn_GetMessagesByConversationOrMessageId(@campType, @conversationId, NULL) AS msg
+            LEFT JOIN ccRIAInboundGraph graphics ON Inbound_id = @camp_acd_id
+            ORDER BY msg.TIMESTAMP ASC
+        END
+        ELSE
+        BEGIN
+            SET @camp_acd_id = (SELECT camId FROM ccWhatsAppConversationsOut with(nolock) WHERE conversationId = @conversationId)
+
+			SELECT
+				msg.*,
+				ISNULL(graphics.graphic_id, 0) AS GraphicId
+			FROM dbo.fn_GetMessagesByConversationOrMessageId(@campType, @conversationId, NULL) AS msg
+            LEFT JOIN ccRIACampsGraph graphics ON cam_id = @camp_acd_id
+            ORDER BY msg.TIMESTAMP ASC
+        END
+                
+    END
+
+    IF @option = 5 --get if conversation is reassigned
+    BEGIN
+        IF @campType = 0
+        BEGIN
+            SELECT CASE 
+                WHEN EXISTS (
+                        SELECT *
+                        FROM [CCenterRIA].[dbo].[ccWhatsAppConversationsRelationship] with(nolock)
+                        WHERE conversationIdAfter = @conversationId
+                        )
+                    THEN CAST(1 AS BIT)
+                ELSE CAST(0 AS BIT)
+                END
+        END
+        ELSE
+        BEGIN
+            SELECT CASE 
+                WHEN EXISTS (
+                        SELECT *
+                        FROM [CCenterRIA].[dbo].[ccWhatsAppConversationsRelationshipOut] with(nolock)
+                        WHERE conversationIdAfter = @conversationId
+                        )
+                    THEN CAST(1 AS BIT)
+                ELSE CAST(0 AS BIT)
+                END
+        END
+    END
+END
+        '
+     EXEC(@sql);
+
+	 SET @process = 'Refactor ccsp_createMessageAndGlobalId para evitar hacer consultas a las tablas por cada registro'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_createMessageAndGlobalId] 
+@Type INT,
+@Messages VARCHAR(MAX)
+    
+AS
+BEGIN
+    SET NOCOUNT ON;
+    IF @Type = 1
+    BEGIN
+		DECLARE @ConvId INT;
+		DECLARE @CamId VARCHAR(7)
+		DECLARE @PhoneClient VARCHAR(15)
+		DECLARE @PhoneWa VARCHAR(15)
+		DECLARE @MetaId VARCHAR(150)
+		DECLARE @TimeStamp DATETIME
+		DECLARE @TimeStampUTC DATETIME
+		DECLARE @TemplateCategory varchar(50);
+		DECLARE @TemplateContent varchar(max);
+
+		-- Se crean tablas temporales
+		DECLARE @tmpData TABLE 
+		(MetaId VARCHAR(150), TemplateCategory VARCHAR(50), TemplateContent VARCHAR(MAX),
+		CamId VARCHAR(7),PhoneClient VARCHAR(15),PhoneWa VARCHAR(15),TimeStamp DATETIME,TimeStampUTC DATETIME);
+
+
+		DECLARE @SplitResults TABLE
+		(Id INT PRIMARY KEY,MetaId NVARCHAR(255));
+
+		INSERT INTO @SplitResults
+		SELECT Id, Value FROM dbo.fn_RIASplitDelimited(@Messages, '','')
+
+		--Se inserta toda la info en la tabla para evitar hacer multiples selects
+		INSERT INTO @tmpData
+		SELECT  
+			wld.MetaId,
+			mwat.Category,
+			waos.MessageContent,
+			wld.CamId,
+			wld.PhoneClient,
+			wld.PhoneWa,
+			wld.TimeSpam,
+			DATEADD(HOUR, -tz.tz_offset, wld.TimeSpam)
+		FROM @SplitResults s
+		JOIN ccoWhatsLogDials wld ON wld.MetaId = s.MetaId
+		JOIN ccWhatsAppOutSource waos ON wld.WaOutId = waos.WAOut_Id
+		JOIN ccMetaWAOutboundTemplates mwat ON waos.TemplateId = mwat.Id
+		JOIN ccTimeZones tz ON tz.tz_id = waos.TimeZone;
+
+		select * from @tmpData
+
+		--Se declara cursor para iterar sobre la tabla
+		DECLARE cur CURSOR LOCAL FAST_FORWARD FOR
+		SELECT MetaId, TemplateCategory, TemplateContent,
+			   CamId, PhoneClient, PhoneWa, TimeStamp, TimeStampUTC
+		FROM @tmpData;
+
+		OPEN cur;
+		--obteniendo info de la tabla
+		FETCH NEXT FROM cur INTO
+			@MetaId, @TemplateCategory, @TemplateContent,
+			@CamId, @PhoneClient, @PhoneWa, @TimeStamp, @TimeStampUTC;
+
+		--Iteramos en la tabla
+		WHILE @@FETCH_STATUS = 0
+		BEGIN
+			PRINT(@metaid)
+			EXEC ccsp_ConversationWASaveOut @action = 1, @camId = @CamId, @phoneCam = @PhoneWa,
+				@clientId = @PhoneClient, @conversationStatus = 20, @ConvId = @ConvId OUTPUT;
+
+			EXEC ccsp_ConversationWASaveOut @action = 4, @messageId = @MetaId, @clientNum = @PhoneClient,
+				@vonageNum = @PhoneWa, @typeMessage = ''template'', @content = @TemplateContent,
+				@conversationId = @ConvId, @timeStampMessage = @TimeStamp, @timeStampMessageUTC = @TimeStampUTC,
+				@originType = ''Admin'', @AgentLogin = ''Admin'';
+
+			UPDATE ccoWhatsLogDials SET conversationId = @ConvId WHERE MetaId = @MetaId;
+
+			EXEC ccsp_WhatsAppGlobalIds @ConversationType = 1, @ConversationId = @ConvId, @MessageId = @MetaId,
+				@AssociatedNumber = @PhoneWa, @ClientNumber = @PhoneClient, @TemplateCategory = @TemplateCategory;
+
+			--Obtenemos los siguientes datos
+			FETCH NEXT FROM cur INTO
+				@MetaId, @TemplateCategory, @TemplateContent,
+				@CamId, @PhoneClient, @PhoneWa, @TimeStamp, @TimeStampUTC;
+		END
+
+		CLOSE cur;
+		DEALLOCATE cur;
+    END
+END'
+     EXEC(@sql);
+
+	 SET @process = 'ccsp_WhatsAppGlobalIds refactor para evitar multiples consultas a las mismas tablas'
+    SET @sql = 'ALTER PROCEDURE dbo.ccsp_WhatsAppGlobalIds  
+(
+    @ConversationType TINYINT,
+    @ConversationId INT,
+    @MessageId VARCHAR(150),
+    @AssociatedNumber VARCHAR(30), 
+    @ClientNumber VARCHAR(30),
+    @TemplateCategory VARCHAR(30) = NULL
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE 
+        @originType VARCHAR(20),
+        @firstMessageDateFromAgent DATETIME,
+        @messageStatus VARCHAR(20),
+        @globalId INT,
+        @isBilled BIT = 0;
+
+    -- Se valida si la conversación existe
+    IF @ConversationType = 0 AND NOT EXISTS (SELECT 1 FROM ccWhatsAppConversations WHERE conversationId = @ConversationId)
+        RETURN(1)
+
+    IF @ConversationType = 1 AND NOT EXISTS (SELECT 1 FROM ccWhatsAppConversationsOut WHERE conversationId = @ConversationId)
+        RETURN(1)
+
+    -- Obtenemos los datos necesarios
+    IF @ConversationType = 0
+    BEGIN
+        SELECT 
+            @originType = originType,
+            @firstMessageDateFromAgent = timeStampMessage,
+            @messageStatus = messageStatus
+        FROM ccWAMessagesConversations
+        WHERE messageId = @MessageId;
+    END
+    ELSE
+    BEGIN
+        SELECT 
+            @originType = originType,
+            @firstMessageDateFromAgent = timeStampMessage,
+            @messageStatus = messageStatus
+        FROM ccWAMessagesConversationsOut
+        WHERE messageId = @MessageId;
+    END
+
+    IF @originType IN (''Agent'',''Admin'')
+       AND @messageStatus NOT IN (''rejected'',''undeliverable'',''submitted'')
+    BEGIN
+        SET @isBilled = 1;
+    END
+    ELSE
+    BEGIN
+        SET @firstMessageDateFromAgent = NULL;
+    END
+
+    -- Obtenemos el último GlobalId válido
+    SELECT TOP (1) 
+        @globalId = GlobalId
+    FROM ccWhatsAppGlobalIds
+    WHERE AssociatedNumber = @AssociatedNumber
+      AND ClientNumber = @ClientNumber
+      AND ((@TemplateCategory IS NULL AND Category IS NULL) OR Category = @TemplateCategory)
+    ORDER BY GlobalId DESC;
+
+    -- Crear nuevo GlobalId si no existe o expiró (>24h)
+    IF @globalId IS NULL
+       OR EXISTS (
+            SELECT 1 
+            FROM ccWhatsAppGlobalIds 
+            WHERE GlobalId = @globalId 
+              AND FirstMessageDateFromAgent IS NOT NULL
+              AND FirstMessageDateFromAgent < DATEADD(HOUR, -24, GETDATE())
+       )
+    BEGIN
+        INSERT INTO ccWhatsAppGlobalIds
+        (
+            AssociatedNumber,
+            ClientNumber,
+            FirstMessageDateFromAgent,
+            FirstMessageConversationIdFromAgent,
+            FirstMessageConversationTypeFromAgent,
+            IsBilled,
+            Category
+        )
+        VALUES
+        (
+            @AssociatedNumber,
+            @ClientNumber,
+            @firstMessageDateFromAgent,
+            CASE WHEN @isBilled = 1 THEN @ConversationId END,
+            CASE WHEN @isBilled = 1 THEN @ConversationType END,
+            @isBilled,
+            @TemplateCategory
+        );
+
+        SET @globalId = SCOPE_IDENTITY();
+    END
+    ELSE IF @isBilled = 1
+    BEGIN
+        UPDATE ccWhatsAppGlobalIds
+        SET IsBilled = 1
+        WHERE GlobalId = @globalId;
+    END
+
+    -- Se crea relación entre global id y conversación
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM ccWhatsAppGlobalIdsRelationship
+        WHERE GlobalId = @globalId
+          AND ConversationId = @ConversationId
+          AND ConversationType = @ConversationType
+    )
+    BEGIN
+        INSERT INTO ccWhatsAppGlobalIdsRelationship
+        VALUES (@globalId, @ConversationId, @ConversationType);
+    END
+
+    SELECT @globalId AS GlobalId;
+END'
+     EXEC(@sql);
+
+	 SET @process = 'create index IX_ccWhatsAppGlobalIds_Main'
+	 SET @sql = 'IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes 
+    WHERE name = ''IX_ccWhatsAppGlobalIds_Main''
+      AND object_id = OBJECT_ID(''dbo.ccWhatsAppGlobalIds'')
+)
+BEGIN
+    CREATE INDEX IX_ccWhatsAppGlobalIds_Main
+    ON dbo.ccWhatsAppGlobalIds
+    ( AssociatedNumber, ClientNumber,Category,GlobalId)
+    INCLUDE (FirstMessageDateFromAgent, IsBilled);
+END'
+     EXEC(@sql);
+
+	 SET @process = 'create index IX_GlobalIdsRelationship'
+     SET @sql = 'IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes 
+    WHERE name = ''IX_GlobalIdsRelationship''
+      AND object_id = OBJECT_ID(''dbo.ccWhatsAppGlobalIdsRelationship'')
+)
+BEGIN
+    CREATE INDEX IX_GlobalIdsRelationship
+    ON dbo.ccWhatsAppGlobalIdsRelationship
+    (GlobalId,ConversationId,ConversationType);
+END'
+     EXEC(@sql);
+
+	 SET @process = 'create index IX_ccoWhatsLogDials_MetaId_WaOutId'
+     SET @sql = 'IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes 
+    WHERE name = ''IX_ccoWhatsLogDials_MetaId_WaOutId''
+      AND object_id = OBJECT_ID(''dbo.ccoWhatsLogDials'')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX IX_ccoWhatsLogDials_MetaId_WaOutId
+	ON ccoWhatsLogDials (MetaId, WaOutId)
+	INCLUDE (CamId, PhoneClient, PhoneWa, TimeSpam);
+END'
+     EXEC(@sql);
+
+	 SET @process = 'create index IX_ccWhatsAppOutSource_WAOut_Id_Cover'
+     SET @sql = 'IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes 
+    WHERE name = ''IX_ccWhatsAppOutSource_WAOut_Id_Cover''
+      AND object_id = OBJECT_ID(''dbo.ccWhatsAppOutSource'')
+)
+BEGIN
+	CREATE NONCLUSTERED INDEX IX_ccWhatsAppOutSource_WAOut_Id_Cover
+	ON ccWhatsAppOutSource (WAOut_Id)
+	INCLUDE (TemplateId, MessageContent, CamId, Status, TimeZone);
+END'
+     EXEC(@sql);
+
+	 SET @process = 'create index IX_ccWhatsAppConversationsOut_conversationId'
+     SET @sql = 'IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes 
+    WHERE name = ''IX_ccWhatsAppConversationsOut_conversationId''
+      AND object_id = OBJECT_ID(''dbo.ccWhatsAppConversationsOut'')
+)
+BEGIN
+	CREATE NONCLUSTERED INDEX IX_ccWhatsAppConversationsOut_conversationId
+	ON ccWhatsAppConversationsOut (conversationId)
+	INCLUDE(camId)
+END'
+     EXEC(@sql);
+
+	 SET @process = 'create index IX_ccWAMessagesConversationsOut_messageId'
+     SET @sql = 'IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes 
+    WHERE name = ''IX_ccWAMessagesConversationsOut_messageId''
+      AND object_id = OBJECT_ID(''dbo.ccWAMessagesConversationsOut'')
+)
+BEGIN
+	CREATE NONCLUSTERED INDEX IX_ccWAMessagesConversationsOut_messageId
+	ON ccWAMessagesConversationsOut (messageId)
+END'
+     EXEC(@sql);
+
+	 SET @process = 'create index IX_ccWAMessagesConversationsOut_conversationId'
+     SET @sql = 'IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes 
+    WHERE name = ''IX_ccWAMessagesConversationsOut_conversationId''
+      AND object_id = OBJECT_ID(''dbo.'')
+)
+BEGIN
+	CREATE NONCLUSTERED INDEX IX_ccWAMessagesConversationsOut_conversationId
+	ON ccWAMessagesConversationsOut (conversationId)
+	INCLUDE(originType, messageIdUi)
+END'
+     EXEC(@sql);
+------------------------------END MACL---------------------------------
 
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

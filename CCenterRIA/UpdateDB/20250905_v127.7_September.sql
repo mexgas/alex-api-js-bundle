@@ -8996,6 +8996,8 @@ BEGIN --update content message
         FROM ccWhatsAppConversationsOut WITH (NOLOCK)
         WHERE conversationId = @conversationId;
     END
+
+    DECLARE @params NVARCHAR(MAX);
     SET @params = 'N'@camId INT'';
 
     DECLARE @col_UnSent BIT;

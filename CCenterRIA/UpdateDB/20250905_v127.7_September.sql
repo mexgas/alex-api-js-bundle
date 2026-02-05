@@ -8667,480 +8667,583 @@ END;
 	EXEC(@sql)
 
 	SET @process = 'K066015 Opcion 3, se actualiza info para preasignación salida'
-	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_ConversationWASaveOut] @action             INT
-, @conversationId     INT         = 0
-, @camId          SMALLINT    = NULL
-, @phoneCam           VARCHAR(50) = NULL
-, @clientId           VARCHAR(25) = NULL
-, @conversationStatus SMALLINT    = 0
-, @tChatting          FLOAT    = 0
-, @tWrapUp            SMALLINT    = 0
-, @finishedBy         TINYINT     = 0
-, @onQueue            BIT         = NULL
-, @tQueue             bigint    = 0
-, @tTimeout           INT         = 0
-, @disposition        SMALLINT    = 0
-, @subDisposition     SMALLINT    = 0
-, @agentId            INT         = 0
---VAR MESSAGES
-, @messageId          VARCHAR(150) = NULL
-, @messageIdUi        INT         = NULL
-, @clientNum          VARCHAR(15) = NULL
-, @vonageNum          VARCHAR(15) = NULL
-, @typeMessage        VARCHAR(25) = ''''
-, @content            NVARCHAR(MAX)= NULL
-, @timeStampMessage   DATETIME    = NULL
-, @timeStampMessageUTC DATETIME   = NULL
-, @originType         VARCHAR(15) = NULL
-, @currency           VARCHAR(10) = ''-''
-, @price              VARCHAR(10) = ''0.00''
-, @messageStatus      VARCHAR(15) = ''N/A''
-, @listConversationsIds   VARCHAR(MAX) = NULL
-, @IsAgentLoggingOut  BIT = 0
-, @ConvId             INT = NULL OUTPUT
-, @IsTransfered       BIT = 0
-, @AgentLogin         VARCHAR(50) = ''''
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_ConversationWASaveOut]
+    @action             INT,
+    @conversationId     INT         = 0,
+    @camId              SMALLINT    = NULL,
+    @phoneCam           VARCHAR(50) = NULL,
+    @clientId           VARCHAR(25) = NULL,
+    @conversationStatus SMALLINT    = 0,
+    @tChatting          FLOAT       = 0,
+    @tWrapUp            SMALLINT    = 0,
+    @finishedBy         TINYINT     = 0,
+    @onQueue            BIT         = NULL,
+    @tQueue             BIGINT      = 0,
+    @tTimeout           INT         = 0,
+    @disposition        SMALLINT    = 0,
+    @subDisposition     SMALLINT    = 0,
+    @agentId            INT         = 0,
+    @messageId          VARCHAR(150) = NULL,
+    @messageIdUi        INT         = NULL,
+    @clientNum          VARCHAR(15) = NULL,
+    @vonageNum          VARCHAR(15) = NULL,
+    @typeMessage        VARCHAR(25) = '''',
+    @content            NVARCHAR(MAX)= NULL,
+    @timeStampMessage   DATETIME     = NULL,
+    @timeStampMessageUTC DATETIME    = NULL,
+    @originType         VARCHAR(15) = NULL,
+    @currency           VARCHAR(10) = ''-'',
+    @price              VARCHAR(10) = ''0.00'',
+    @messageStatus      VARCHAR(15) = ''N/A'',
+    @listConversationsIds VARCHAR(MAX) = NULL,
+    @IsAgentLoggingOut  BIT = 0,
+    @ConvId             INT = NULL OUTPUT,
+    @IsTransfered       BIT = 0,
+    @AgentLogin         VARCHAR(50) = ''''
 AS
 BEGIN
-    DECLARE @isEndConversation BIT;
-    DECLARE @meanContactTypeId SMALLINT;
-    DECLARE @conversationIdNew INT;
-    SET @meanContactTypeId = 1;
     SET NOCOUNT ON;
 
+    DECLARE @meanContactTypeId SMALLINT = 1;
+    DECLARE @isEndConversation BIT;
+
     IF @action = 1
-BEGIN --new Conversation
-    IF NOT EXISTS (SELECT A.conversationId conversationId FROM ccWhatsAppConversationsOut A with(nolock)
-    WHERE A.conversationId = @conversationId)
     BEGIN
-        INSERT INTO [ccWhatsAppConversationsOut]
-        (camId, phoneCamp , clientId, conversationStatus, tChatting , tWrapUp, finishedBy, onQueue, tQueue, tTimeout, disposition, subDisposition, agentId)
-        VALUES(@camId, @phoneCam, @clientId, @conversationStatus, @tChatting, @tWrapUp, @finishedBy, @onQueue, @tQueue, @tTimeout, @disposition, @subDisposition, @agentId);
+        IF NOT EXISTS (SELECT 1 FROM ccWhatsAppConversationsOut WITH (NOLOCK)
+                       WHERE conversationId = @conversationId)
+        BEGIN
+            INSERT INTO ccWhatsAppConversationsOut
+            (
+                camId, phoneCamp, clientId, conversationStatus,
+                tChatting, tWrapUp, finishedBy, onQueue, tQueue,
+                tTimeout, disposition, subDisposition, agentId
+            )
+            VALUES
+            (
+                @camId, @phoneCam, @clientId, @conversationStatus,
+                @tChatting, @tWrapUp, @finishedBy, @onQueue,
+                @tQueue, @tTimeout, @disposition, @subDisposition, @agentId
+            );
 
+            SELECT @conversationId = SCOPE_IDENTITY();
+            SET @ConvId = @conversationId;
 
-        SELECT @conversationId = SCOPE_IDENTITY();
-        SELECT @ConvId = @conversationId;
-        SELECT @conversationId AS ConversationId;
+            IF NOT EXISTS (SELECT 1 FROM ccWAOperatingSummaryOut WHERE camId = @camId)
+                INSERT INTO ccWAOperatingSummaryOut (camId, Request)
+                VALUES (@camId, 1);
+            ELSE
+                UPDATE ccWAOperatingSummaryOut SET Request = Request + 1 WHERE camId = @camId;
 
---        Save new request
-    IF NOT EXISTS (SELECT camId FROM ccWAOperatingSummaryOut WHERE camId = @camId) BEGIN
-    INSERT INTO ccWAOperatingSummaryOut (camId, Request) VALUES (@camId, 1);
-    END
-    ELSE BEGIN
-        UPDATE ccWAOperatingSummaryOut SET Request = (Request + 1) WHERE camId = @camId
-    END
-    RETURN(0);
-END
-    ELSE BEGIN
-        DECLARE @conversationStatusTemp INT = @conversationStatus;
-        IF @conversationStatus in(17,18) BEGIN
-            SET @conversationStatusTemp = 1
+            SELECT @conversationId AS ConversationId;
+            RETURN;
         END
+        ELSE
+        BEGIN
+            DECLARE @conversationStatusTemp INT = @conversationStatus;
+            IF @conversationStatus IN (17,18) SET @conversationStatusTemp = 1;
 
-        DECLARE @RequestDate DATETIME = NULL;
-        SELECT @RequestDate = [requestDate] FROM ccWhatsAppConversationsOut WITH(NOLOCK) WHERE conversationId = @conversationId;
+            DECLARE @RequestDate DATETIME;
+            SELECT @RequestDate = requestDate
+            FROM ccWhatsAppConversationsOut WITH (NOLOCK)
+            WHERE conversationId = @conversationId;
 
-        INSERT INTO [ccWhatsAppConversationsOut]
-            (camId, phoneCamp, clientId, conversationStatus, tChatting, tWrapUp, finishedBy, onQueue, tQueue, tTimeout, disposition, subDisposition, agentId, requestDate)
-        VALUES(@camId, @phoneCam, @clientId, @conversationStatusTemp, @tChatting, @tWrapUp, @finishedBy, @onQueue,
-            @tQueue, @tTimeout, @disposition, @subDisposition, @agentId, @RequestDate);
-        SELECT @conversationIdNew = SCOPE_IDENTITY();
+            INSERT INTO ccWhatsAppConversationsOut
+            (
+                camId, phoneCamp, clientId, conversationStatus,
+                tChatting, tWrapUp, finishedBy, onQueue, tQueue,
+                tTimeout, disposition, subDisposition, agentId, requestDate
+            )
+            VALUES
+            (
+                @camId, @phoneCam, @clientId, @conversationStatusTemp,
+                @tChatting, @tWrapUp, @finishedBy, @onQueue,
+                @tQueue, @tTimeout, @disposition, @subDisposition,
+                @agentId, @RequestDate
+            );
 
-        INSERT INTO ccWhatsAppConversationsRelationshipOut (conversationIdBefore, conversationIdAfter)
-        VALUES (@conversationId, @conversationIdNew);
-        --Save new request by reassign
-        UPDATE ccWAOperatingSummaryOut SET Request = (Request + 1), Assigned = (Assigned - 1),EndedBySystem=EndedBySystem+1
-        WHERE camId = @camId
+            DECLARE @conversationIdNew INT = SCOPE_IDENTITY();
 
-    EXEC ccsp_ConversationWASaveOut @action = 2, @conversationId = @conversationId, @conversationStatus = @conversationStatus
+            INSERT INTO ccWhatsAppConversationsRelationshipOut
+                (conversationIdBefore, conversationIdAfter)
+            VALUES (@conversationId, @conversationIdNew);
 
-        SELECT conversationIdAfter as ConversationId FROM ccWhatsAppConversationsRelationshipOut where conversationIdBefore = @conversationId;
-        SELECT @ConvId = conversationIdAfter FROM ccWhatsAppConversationsRelationshipOut WHERE conversationIdBefore = @conversationId;
-        RETURN(0);
-    END;
-END;
+            UPDATE ccWAOperatingSummaryOut
+            SET Request = Request + 1, Assigned = Assigned - 1, EndedBySystem = EndedBySystem + 1
+            WHERE camId = @camId;
 
-else IF @action = 2
-BEGIN --save conversation Times
-    DECLARE @conversationIdTemp INT;
-    DECLARE @TablaTemp TABLE (conversationId INT, status bit);
+            EXEC ccsp_ConversationWASaveOut @action = 2,
+                @conversationId = @conversationId,
+                @conversationStatus = @conversationStatus;
 
-    IF @listConversationsIds IS NOT NULL begin
-        INSERT INTO @TablaTemp
-        SELECT value,0
-        FROM fn_RIASplitDelimited(@listConversationsIds, '','')
-        where value is not null and value<>''''
-    end
-    else begin
-        INSERT INTO @TablaTemp values(@conversationId,0)
-    end
+            SELECT conversationIdAfter AS ConversationId
+            FROM ccWhatsAppConversationsRelationshipOut
+            WHERE conversationIdBefore = @conversationId;
 
-    UPDATE ccWhatsAppConversationsOut
-    SET
-    conversationStatus = @conversationStatus
-    , finishedBy = case when @conversationStatus in(4,10,17,18,19,22) then 2
-    when @conversationStatus in(11, 13) then 1
-        else 0 end
-    , tConversation =  case when @conversationStatus = 10 OR conversationDate is null then 0 else DATEDIFF(ss, conversationDate, GETDATE()) end
-    ,tQueue = case when @conversationStatus = 10 then DATEDIFF(ss,requestDate,getdate()) else tQueue end
-    ,onQueue = case when @conversationStatus = 10 then 1 else onQueue end
-    WHERE conversationId IN (SELECT conversationId FROM @TablaTemp);
-
-    WHILE exists(SELECT conversationId FROM @TablaTemp where status=0)
-    BEGIN
-        select top 1 @conversationIdTemp=conversationId FROM @TablaTemp where status=0
-        exec ccsp_CreateNodeMultimedia @conversationId=@conversationIdTemp, @type=6
-
-        IF @conversationStatus in(4,10,11,13,17,18,22) BEGIN
-            DECLARE @conversationDateTemp INT;
-            select @camId = CamId, @agentId = agentId, @clientId = clientId, @conversationDateTemp = case when conversationDate is not null then 1 else 0 end
-            from ccWhatsAppConversationsOut where conversationId = @conversationId;
-
-            IF @conversationStatus = 13 BEGIN
-                IF NOT EXISTS (SELECT NumberClient from ccWhatsAppSpam with(nolock) where NumberClient = @clientId) BEGIN
-                    INSERT INTO ccWhatsAppSpam (InboundId, AgentId, ConversationId, NumberClient) VALUES (@camId, @agentId, @conversationId, @clientId);
-                END
-            END
-            ELSE IF @conversationStatus in(4,10,17,18,22) BEGIN --Save conversation Ended by system
-                IF @conversationDateTemp > 0 BEGIN
-                    UPDATE ccWAOperatingSummaryOut SET EndedBySystem = (EndedBySystem + 1), Assigned = (Assigned - 1) WHERE CamId = @camId
-                END
-                ELSE BEGIN
-                        UPDATE ccWAOperatingSummaryOut SET EndedBySystem = (EndedBySystem + 1) WHERE CamId = @camId
-                END
-            END
-            ELSE IF @conversationStatus = 11 BEGIN --Save conversation Ended by AGENT
-                UPDATE ccWAOperatingSummaryOut SET Attended = (Attended + 1), Assigned = (Assigned - 1) WHERE CamId = @camId
-            END
+            SET @ConvId = @conversationIdNew;
+            RETURN;
         END
-        update @TablaTemp set status=1 where conversationId=@conversationIdTemp
     END
 
-END;
-
-else IF @action = 3
-BEGIN --save conversation Status
-	DECLARE @isPreassign BIT = 0
-	DECLARE @statePreassign INT = 21;
-	DECLARE @stateInQueue INT = 8;
-	if(@conversationStatus IN (@statePreassign, @stateInQueue) )
-		SET @isPreassign = 1
-
-	UPDATE ccWhatsAppConversationsOut SET
-	conversationStatus = @conversationStatus ,
-	agentId = CASE WHEN @isPreassign = 1 THEN @agentId ELSE agentId END
-	WHERE conversationId = @conversationId;
-END;
-
-else IF @action = 4 BEGIN --save messages from conversation
-    IF EXISTS(SELECT A.conversationId conversationId FROM ccWhatsAppConversationsOut A with(nolock) WHERE A.conversationId=@conversationId)
-        AND NOT EXISTS(SELECT A.messageId messageId FROM ccWAMessagesConversationsOut A with(nolock) WHERE A.messageId=@messageId)
+    ELSE IF @action = 2
     BEGIN
-        IF (@originType = ''Agent'' OR @originType = ''Admin'') AND NOT EXISTS
-            (SELECT messageIdUi
-                FROM ccWAMessagesConversationsOut
-                WHERE originType IN (''Agent'', ''Admin'')
-                AND conversationId = @conversationId)
+        DECLARE @conversationIdTemp INT;
+        DECLARE @TablaTemp TABLE (conversationId INT, status BIT);
+
+        IF @listConversationsIds IS NOT NULL
+            INSERT INTO @TablaTemp
+            SELECT value, 0
+            FROM fn_RIASplitDelimited(@listConversationsIds, '','')
+            WHERE value <> '''';
+        ELSE
+            INSERT INTO @TablaTemp VALUES (@conversationId, 0);
+
+        UPDATE ccWhatsAppConversationsOut
+        SET
+            conversationStatus = @conversationStatus,
+            finishedBy = CASE
+                            WHEN @conversationStatus IN (4,10,17,18,19,22) THEN 2
+                            WHEN @conversationStatus IN (11,13) THEN 1
+                            ELSE 0
+                         END,
+            tConversation = CASE WHEN @conversationStatus = 10 OR conversationDate IS NULL
+                                 THEN 0
+                                 ELSE DATEDIFF(SECOND, conversationDate, GETDATE()) END,
+            tQueue = CASE WHEN @conversationStatus = 10
+                          THEN DATEDIFF(SECOND, requestDate, GETDATE())
+                          ELSE tQueue END,
+            onQueue = CASE WHEN @conversationStatus = 10 THEN 1 ELSE onQueue END
+        WHERE conversationId IN (SELECT conversationId FROM @TablaTemp);
+
+        WHILE EXISTS (SELECT 1 FROM @TablaTemp WHERE status = 0)
+        BEGIN
+            SELECT TOP 1 @conversationIdTemp = conversationId
+            FROM @TablaTemp WHERE status = 0;
+
+            EXEC ccsp_CreateNodeMultimedia @conversationId = @conversationIdTemp, @type = 6;
+
+            IF @conversationStatus IN (4,10,11,13,17,18,22)
+            BEGIN
+                DECLARE @conversationDateTemp INT;
+                SELECT @camId = camId,
+                       @agentId = agentId,
+                       @clientId = clientId,
+                       @conversationDateTemp = CASE WHEN conversationDate IS NOT NULL THEN 1 ELSE 0 END
+                FROM ccWhatsAppConversationsOut
+                WHERE conversationId = @conversationId;
+
+                IF @conversationStatus = 13
+                BEGIN
+                    IF NOT EXISTS (SELECT 1 FROM ccWhatsAppSpam WHERE NumberClient = @clientId)
+                        INSERT INTO ccWhatsAppSpam (InboundId, AgentId, ConversationId, NumberClient)
+                        VALUES (@camId, @agentId, @conversationId, @clientId);
+                END
+                ELSE IF @conversationStatus IN (4,10,17,18,22)
+                BEGIN
+                    IF @conversationDateTemp = 1
+                        UPDATE ccWAOperatingSummaryOut SET EndedBySystem = EndedBySystem + 1,
+                                                            Assigned = Assigned - 1
+                        WHERE camId = @camId;
+                    ELSE
+                        UPDATE ccWAOperatingSummaryOut SET EndedBySystem = EndedBySystem + 1
+                        WHERE camId = @camId;
+                END
+                ELSE IF @conversationStatus = 11
+                BEGIN
+                    UPDATE ccWAOperatingSummaryOut
+                    SET Attended = Attended + 1, Assigned = Assigned - 1
+                    WHERE camId = @camId;
+                END
+            END
+
+            UPDATE @TablaTemp SET status = 1 WHERE conversationId = @conversationIdTemp;
+        END
+    END
+
+    ELSE IF @action = 3
+    BEGIN
+        DECLARE @isPreassign BIT = 0;
+        IF @conversationStatus IN (21,8) SET @isPreassign = 1;
+
+        UPDATE ccWhatsAppConversationsOut
+        SET conversationStatus = @conversationStatus,
+            agentId = CASE WHEN @isPreassign = 1 THEN @agentId ELSE agentId END
+        WHERE conversationId = @conversationId;
+    END
+
+    ELSE IF @action = 4
+    BEGIN
+        IF EXISTS(SELECT 1 FROM ccWhatsAppConversationsOut WHERE conversationId = @conversationId)
+           AND NOT EXISTS(SELECT 1 FROM ccWAMessagesConversationsOut WHERE messageId = @messageId)
+        BEGIN
+            IF (@originType IN (''Agent'',''Admin''))
+               AND NOT EXISTS (SELECT 1 FROM ccWAMessagesConversationsOut
+                               WHERE originType IN (''Agent'',''Admin'')
+                               AND conversationId = @conversationId)
             BEGIN
                 UPDATE ccWhatsAppConversationsOut
-                    SET FirstMessageAgent = @timeStampMessage
-                    WHERE conversationId = @conversationId;
+                SET FirstMessageAgent = @timeStampMessage
+                WHERE conversationId = @conversationId;
             END
 
-        IF(@originType = ''Client'')
-        BEGIN
-            SET @AgentLogin = ''''
+            IF @originType = ''Client''
+                SET @AgentLogin = '''';
+
+            INSERT INTO ccWAMessagesConversationsOut
+            (
+                messageId, messageIdUi, clientNum, vonageNum,
+                typeMessage, content, conversationId,
+                timeStampMessage, timeStampMessageUTC,
+                originType, currency, price, messageStatus, AgentLogin
+            )
+            VALUES
+            (
+                @messageId, @messageIdUi, @clientNum, @vonageNum,
+                @typeMessage, @content, @conversationId,
+                @timeStampMessage, @timeStampMessageUTC,
+                @originType, @currency, @price, @messageStatus, @AgentLogin
+            );
+
+            SELECT @messageId = SCOPE_IDENTITY();
+
+            SELECT @camId = camId FROM ccWhatsAppConversationsOut WHERE conversationId = @conversationId;
+
+            IF NOT EXISTS (SELECT 1 FROM ccWAConversationsResult WHERE camId = @camId)
+                INSERT INTO ccWAConversationsResult
+                (camId, SentMsg, Delivered, NotDelivered, ReadMsg, NotSupported, Received, UnSent)
+                VALUES(@camId,0,0,0,0,0,0,0);
+
+            EXEC ccsp_ConversationWASaveOut @action = 16,
+                 @camId = @camId,
+                 @messageStatus = @messageStatus,
+                 @conversationId = @conversationId,
+                 @originType = @originType;
+
+            SELECT @messageId AS MessageId;
+            RETURN;
         END
-
-        INSERT INTO [ccWAMessagesConversationsOut](
-                                            messageId, messageIdUi, clientNum, vonageNum, typeMessage, content, conversationId, timeStampMessage, timeStampMessageUTC, originType, currency, price, messageStatus, AgentLogin) values
-                                            (@messageId, @messageIdUi, @clientNum, @vonageNum, @typeMessage, @content, @conversationId, @timeStampMessage, @timeStampMessageUTC, @originType, @currency, @price, @messageStatus, @AgentLogin)
-        SELECT @messageId=SCOPE_IDENTITY()
-
-    SELECT @camId=camId FROM ccWhatsAppConversationsOut A with(nolock) WHERE A.conversationId=@conversationId
-        if not exists(select * from ccWAConversationsResult where camId=@camId)begin
-            insert into ccWAConversationsResult(camId,SentMsg,Delivered,NotDelivered,ReadMsg,NotSupported,Received,UnSent)
-            values(@camId,0,0,0,0,0,0,0)
-        end
-        exec ccsp_ConversationWASaveOut @action=16,@camId=@camId,@messageStatus=@messageStatus,@conversationId=@conversationId,@originType=@originType
-
-        SELECT @messageId as MessageId
-
-        RETURN (0)
+        ELSE
+        BEGIN
+            SELECT 0 AS MessageId;
+            RETURN;
+        END
     END
-    ELSE BEGIN
-        SELECT 0 AS MessageId
-        RETURN (0)
-    END
-END;
 
-ELSE IF @action = 5
-BEGIN --save onQueue
-    UPDATE ccWhatsAppConversationsOut
-            SET onQueue = 1,
-            conversationStatus = @conversationStatus
-    WHERE conversationId = @conversationId;
-    DECLARE @campaignId INT = (SELECT camId FROM ccWhatsAppConversationsOut with(nolock) where conversationId=@conversationId);
-
-    DECLARE @onQueueConversations INT = (SELECT COUNT(CASE WHEN onQueue = 1 AND finishedBy = 0 AND conversationStatus IN (8,9) THEN 1 END)
-                                            FROM ccWhatsAppConversationsOut WHERE camId = @campaignId)
-    UPDATE ccWAOperatingSummaryOut SET OnQueue = @onQueueConversations WHERE camId = @campaignId
-END;
-
-else IF @action = 6
-BEGIN --save agent, assigdate and tqueue
-    declare @agentIdTmp int
-    SELECT @agentIdTmp = A.agentId FROM ccWhatsAppConversationsOut A with(nolock) where A.conversationId = @conversationId
-
-    IF(@agentId > 0 and @IsTransfered = 1)
+    ELSE IF @action = 5
     BEGIN
         UPDATE ccWhatsAppConversationsOut
-                SET agentId = @agentId,
+        SET onQueue = 1,
+            conversationStatus = @conversationStatus
+        WHERE conversationId = @conversationId;
+
+        DECLARE @campaignId INT;
+        SELECT @campaignId = camId
+        FROM ccWhatsAppConversationsOut WHERE conversationId = @conversationId;
+
+        DECLARE @onQueueConversations INT;
+        SELECT @onQueueConversations =
+            COUNT(CASE WHEN onQueue = 1 AND finishedBy = 0 AND conversationStatus IN (8,9) THEN 1 END)
+        FROM ccWhatsAppConversationsOut WHERE camId = @campaignId;
+
+        UPDATE ccWAOperatingSummaryOut
+        SET OnQueue = @onQueueConversations
+        WHERE camId = @campaignId;
+    END
+
+    ELSE IF @action = 6
+    BEGIN
+        DECLARE @agentIdTmp INT;
+        SELECT @agentIdTmp = agentId
+        FROM ccWhatsAppConversationsOut WHERE conversationId = @conversationId;
+
+        IF(@agentId > 0 AND @IsTransfered = 1)
+        BEGIN
+            UPDATE ccWhatsAppConversationsOut
+            SET agentId = @agentId,
                 conversationStatus = @conversationStatus,
                 IsTransfered = @IsTransfered
-        WHERE conversationId = @conversationId;
-    END
-    ELSE BEGIN
-        UPDATE ccWhatsAppConversationsOut
-                SET agentId = @agentId,
-                assignDate = getdate(),
-                conversationStatus = @conversationStatus,
-                tQueue = case when onQueue = 1 then DATEDIFF(ss,requestDate,isnull(assignDate,getdate())) else 0 end,
-                IsTransfered = CASE WHEN ISNULL(IsTransfered, 0) = 0 THEN @IsTransfered ELSE IsTransfered END
-        WHERE conversationId = @conversationId;
-    END
-
-
-    SELECT @conversationId as conversationId
-    SELECT @camId = camId,  @onQueue = onQueue FROM ccWhatsAppConversationsOut with(nolock) where conversationId=@conversationId;
-
-    IF @onQueue = 1 BEGIN
-        UPDATE ccWAOperatingSummaryOut SET OnQueue = (OnQueue - 1) WHERE camId = @camId
-    END
-END;
-
-Else IF @action = 7
-BEGIN --update price message
-    UPDATE ccWAMessagesConversationsOut SET price = @price, currency = @currency WHERE messageId = @messageId;
-END;
-else IF @action = 8
-BEGIN --update status message
-    IF (SELECT A.messageStatus messageStatus FROM ccWAMessagesConversationsOut A with(nolock)
-        WHERE A.messageId=@messageId) <> ''read''
-    BEGIN
-        UPDATE ccWAMessagesConversationsOut
-                SET messageStatus = @messageStatus
-        WHERE messageId = @messageId;
-        exec ccsp_ConversationWASaveOut @action=16,@camId=@camId,@messageStatus=@messageStatus,@conversationId=@conversationId,@originType=@originType
-
-    END;
-END;
-
-else IF @action = 9
-BEGIN --Save last message time by conversationID
-    IF (SELECT A.conversationId conversationID FROM ccLastMessageAgentByConversationOut A with(nolock)
-        WHERE A.conversationId=@conversationId) IS NULL BEGIN
-        INSERT INTO ccLastMessageAgentByConversationOut (conversationId) VALUES (@conversationId)
-    END;
-    ELSE
-        BEGIN
-            UPDATE ccLastMessageAgentByConversationOut
-                SET timeStampLastMessageAgent = getDate()
             WHERE conversationId = @conversationId;
-        END;
-END;
+        END
+        ELSE
+        BEGIN
+            UPDATE ccWhatsAppConversationsOut
+            SET agentId = @agentId,
+                assignDate = GETDATE(),
+                conversationStatus = @conversationStatus,
+                tQueue = CASE WHEN onQueue = 1
+                              THEN DATEDIFF(SECOND, requestDate, ISNULL(assignDate, GETDATE()))
+                              ELSE 0 END,
+                IsTransfered = CASE WHEN ISNULL(IsTransfered, 0) = 0 THEN @IsTransfered ELSE IsTransfered END
+            WHERE conversationId = @conversationId;
+        END
 
-else IF @action = 10
-BEGIN --drop and insert register by conversationID
-    DELETE FROM ccLastMessageAgentByConversationOut WHERE conversationId = @conversationId;
-END;
+        SELECT @conversationId AS conversationId;
 
-Else IF @action = 11
-BEGIN --register desconnection agent by conversationID
-    UPDATE ccLastMessageAgentByConversationOut
-	SET desconnectionAgent = getDate()
-	WHERE conversationId = @conversationId;
-END;
+        SELECT @camId = camId, @onQueue = onQueue
+        FROM ccWhatsAppConversationsOut WHERE conversationId = @conversationId;
 
-else IF @action = 12  BEGIN --Obtain conversationsWA post MCS reset
-    declare @disconnectionIdTemp int = (select top 1 disconnectionId from [ccDisconnectionMCSOut] with(nolock)
-    where timeStampConnection is null order by timeStampDisconnection desc);
-    UPDATE ccDisconnectionMCSOut SET timeStampConnection = GETDATE() WHERE disconnectionId = @disconnectionIdTemp;
+        IF @onQueue = 1
+            UPDATE ccWAOperatingSummaryOut SET OnQueue = OnQueue - 1 WHERE camId = @camId;
+    END
 
-    declare @from as datetime;
-    select @from = convert(datetime,convert(varchar(11),getdate()))
-    set @from=DATEADD(dd,-1,@from);
-    declare @conversationIds table (conversationId  int primary key,phoneCamp varchar(50) not null,clientId varchar(25) not null)
-
-    insert into @conversationIds
-    select A.conversationId,A.phoneCamp,A.clientId from ccWhatsAppConversationsOut A with(nolock)
-    where A.requestDate >= @from
-    and A.finishedBy=0
-
-    ;with conversationRepeat as(
-        select max(conversationId) conversationId, phoneCamp,clientId from @conversationIds
-        group by phoneCamp,clientId Having count(*)>1
-    )
-
-    update A set A.finishedBy=2
-    from ccWhatsAppConversationsOut A
-    inner join conversationRepeat R on A.phoneCamp=R.phoneCamp and A.clientId=R.clientId
-    and A.conversationId<>R.conversationId
-    where A.requestDate >= @from
-    and A.finishedBy=0
-
-    select A.conversationId, A.camId as inboundId, A.phoneCamp as phoneACD
-    , A.clientId, A.conversationStatus, A.requestDate, isnull(A.conversationDate,'''') conversationDate, isnull(A.onQueue,0) onQueue, A.agentId,
-    isnull(B.timeStampMessage,'''') timeStampMessage, isnull(B.originType,'''') originType, isnull(B.price,'''') price, isnull(B.messageIdUi,'''') messageIdUi,
-    isnull(B.messageId,'''') messageId, isnull(B.typeMessage,'''') typeMessage, isnull(B.content,'''') content, isnull(B.messageStatus,'''') messageStatus
-    ,isnull(C.timeStampDisconnection,'''') timeStampDisconnection, isnull(C.timeStampConnection,'''') timeStampConnection
-    from ccWhatsAppConversationsOut A with(nolock)
-    left join ccWAMessagesConversationsOut B with(nolock) on A.conversationId = B.conversationId
-    left join [ccDisconnectionMCSOut] C with(nolock) on C.disconnectionId = @disconnectionIdTemp
-    where A.requestDate >= @from
-    and A.conversationStatus not in (4, 10, 11, 13, 17, 18, 19, 20)
-    and A.finishedBy=0
-    order by agentId desc, requestDate,timeStampMessage, camId, clientId
-END;
-else IF @action = 13
-BEGIN ---Obtain agents ON STATUS READY
-    WITH agents
-    AS(
-        SELECT c.User_id, c.fecha, c.currentStatus
-        FROM ccLogAgentesDia c
-        INNER JOIN
-        (
-            SELECT User_id, MAX(fecha) max_time
-            FROM ccLogAgentesDia with(nolock)
-            where fecha>=CONVERT(date,getdate(),121)
-            GROUP BY User_id
-        ) AS t
-        ON c.fecha = t.max_time
-        AND c.User_id=t.User_id AND currentStatus in (3,34)
-    ), usersByCampigns
-    AS (
-        select IdCampEsp, User_id from ccRIACampEspWG A
-        Inner join ccRIAWorkGroupUsers B
-        on A.IDWG = B.IDWG
-        Inner join contactMeanOut C
-        ON A.idCampEsp = C.camp_id
-        where A.IDWG = 1 and A.Tipo = 1
-        AND C.meanContactTypeId = 5
-    )
-
-    select DISTINCT A.User_Id from agents A
-    left join usersByCampigns B on A.User_Id = B.User_Id
-END;
-
-else IF @action = 14
-BEGIN --register desconnection MCS
-    INSERT INTO ccDisconnectionMCS (timeStampDisconnection) VALUES(GETDATE());
-END;
-ELSE IF @action = 15
-BEGIN --update content message
-    IF (SELECT A.messageStatus messageStatus FROM ccWAMessagesConversationsOut A WHERE A.messageId=@messageId) <> ''read'' BEGIN
+    ELSE IF @action = 7
+    BEGIN
         UPDATE ccWAMessagesConversationsOut
-                SET content = @content
+        SET price = @price, currency = @currency
         WHERE messageId = @messageId;
-    END;
-END;
+    END
 
-ELSE IF @action = 16
-BEGIN
-
-    IF @camId IS NULL OR @camId = 0
+    ELSE IF @action = 8
     BEGIN
-        SELECT @camId = camId
-        FROM ccWhatsAppConversationsOut WITH (NOLOCK)
+        IF (SELECT messageStatus FROM ccWAMessagesConversationsOut WHERE messageId = @messageId) <> ''read''
+        BEGIN
+            UPDATE ccWAMessagesConversationsOut
+            SET messageStatus = @messageStatus
+            WHERE messageId = @messageId;
+
+            EXEC ccsp_ConversationWASaveOut @action = 16,
+                 @camId = @camId,
+                 @messageStatus = @messageStatus,
+                 @conversationId = @conversationId,
+                 @originType = @originType;
+        END
+    END
+
+    ELSE IF @action = 9
+    BEGIN
+        IF NOT EXISTS (SELECT 1 FROM ccLastMessageAgentByConversationOut WHERE conversationId = @conversationId)
+            INSERT INTO ccLastMessageAgentByConversationOut (conversationId) VALUES (@conversationId);
+        ELSE
+            UPDATE ccLastMessageAgentByConversationOut
+            SET timeStampLastMessageAgent = GETDATE()
+            WHERE conversationId = @conversationId;
+    END
+
+    ELSE IF @action = 10
+    BEGIN
+        DELETE FROM ccLastMessageAgentByConversationOut WHERE conversationId = @conversationId;
+    END
+
+    ELSE IF @action = 11
+    BEGIN
+        UPDATE ccLastMessageAgentByConversationOut
+        SET desconnectionAgent = GETDATE()
         WHERE conversationId = @conversationId;
     END
 
-    -- submitted
-    IF @messageStatus = ''submitted''
+    ELSE IF @action = 12
     BEGIN
-        UPDATE ccWAConversationsResult
-        SET SentMsg = SentMsg + 1
-        WHERE camId = @camId;
+        DECLARE @disconnectionIdTemp INT =
+            (SELECT TOP 1 disconnectionId
+             FROM ccDisconnectionMCSOut WITH(NOLOCK)
+             WHERE timeStampConnection IS NULL
+             ORDER BY timeStampDisconnection DESC);
+
+        UPDATE ccDisconnectionMCSOut
+        SET timeStampConnection = GETDATE()
+        WHERE disconnectionId = @disconnectionIdTemp;
+
+        DECLARE @from DATETIME = CONVERT(DATETIME,CONVERT(VARCHAR(11),GETDATE()));
+        SET @from = DATEADD(DAY, -1, @from);
+
+        DECLARE @conversationIds TABLE
+        (
+            conversationId INT PRIMARY KEY,
+            phoneCamp VARCHAR(50),
+            clientId VARCHAR(25)
+        );
+
+        INSERT INTO @conversationIds
+        SELECT conversationId, phoneCamp, clientId
+        FROM ccWhatsAppConversationsOut
+        WHERE requestDate >= @from AND finishedBy = 0;
+
+        ;WITH conversationRepeat AS
+        (
+            SELECT MAX(conversationId) AS conversationId,
+                   phoneCamp, clientId
+            FROM @conversationIds
+            GROUP BY phoneCamp, clientId
+            HAVING COUNT(*) > 1
+        )
+        UPDATE A
+        SET A.finishedBy = 2
+        FROM ccWhatsAppConversationsOut A
+        INNER JOIN conversationRepeat R
+            ON A.phoneCamp = R.phoneCamp
+           AND A.clientId = R.clientId
+           AND A.conversationId <> R.conversationId
+        WHERE requestDate >= @from AND A.finishedBy = 0;
+
+        SELECT
+            A.conversationId,
+            A.camId AS inboundId,
+            A.phoneCamp AS phoneACD,
+            A.clientId,
+            A.conversationStatus,
+            A.requestDate,
+            A.conversationDate,
+            ISNULL(A.onQueue,0) AS onQueue,
+            A.agentId,
+            B.timeStampMessage,
+            B.originType,
+            B.price,
+            B.messageIdUi,
+            B.messageId,
+            B.typeMessage,
+            B.content,
+            B.messageStatus,
+            C.timeStampDisconnection,
+            C.timeStampConnection
+        FROM ccWhatsAppConversationsOut A WITH (NOLOCK)
+        LEFT JOIN ccWAMessagesConversationsOut B WITH (NOLOCK)
+               ON A.conversationId = B.conversationId
+        LEFT JOIN ccDisconnectionMCSOut C WITH (NOLOCK)
+               ON C.disconnectionId = @disconnectionIdTemp
+        WHERE A.requestDate >= @from
+          AND A.conversationStatus NOT IN (4,10,11,13,17,18,19,20)
+          AND A.finishedBy = 0
+        ORDER BY agentId DESC, requestDate, timeStampMessage, camId, clientId;
     END
 
-    -- delivered
-    ELSE IF @messageStatus = ''delivered''
+    ELSE IF @action = 13
     BEGIN
-        UPDATE ccWAConversationsResult
-        SET SentMsg = CASE WHEN SentMsg > 0 THEN SentMsg - 1 ELSE SentMsg END,
-            Delivered = Delivered + 1
-        WHERE camId = @camId;
+        WITH agents AS
+        (
+            SELECT c.User_id, c.fecha, c.currentStatus
+            FROM ccLogAgentesDia c
+            INNER JOIN
+            (
+                SELECT User_id, MAX(fecha) AS max_time
+                FROM ccLogAgentesDia WITH (NOLOCK)
+                WHERE fecha >= CONVERT(DATE,GETDATE(),121)
+                GROUP BY User_id
+            ) t
+                ON c.fecha = t.max_time
+               AND c.User_id = t.User_id
+            WHERE c.currentStatus IN (3,34)
+        ),
+        usersByCampigns AS
+        (
+            SELECT IdCampEsp, User_id
+            FROM ccRIACampEspWG A
+            INNER JOIN ccRIAWorkGroupUsers B ON A.IDWG = B.IDWG
+            INNER JOIN contactMeanOut C ON A.idCampEsp = C.camp_id
+            WHERE A.IDWG = 1 AND A.Tipo = 1 AND C.meanContactTypeId = 5
+        )
+        SELECT DISTINCT A.User_Id
+        FROM agents A
+        LEFT JOIN usersByCampigns B ON A.User_Id = B.User_Id;
     END
 
-    -- read
-    ELSE IF @messageStatus = ''read''
+    ELSE IF @action = 14
     BEGIN
-        UPDATE ccWAConversationsResult
-        SET Delivered = CASE WHEN Delivered > 0 THEN Delivered - 1 ELSE Delivered END,
-            ReadMsg = ReadMsg + 1
-        WHERE camId = @camId;
+        INSERT INTO ccDisconnectionMCS (timeStampDisconnection)
+        VALUES(GETDATE());
     END
 
-    -- rejected / error / failed
-    ELSE IF @messageStatus IN (''rejected'',''error'',''hostError'',''clientError'',''failed'')
+    ELSE IF @action = 15
     BEGIN
-        UPDATE ccWAConversationsResult
-        SET SentMsg = CASE WHEN SentMsg > 0 THEN SentMsg - 1 ELSE SentMsg END,
-            NotDelivered = NotDelivered + 1
-        WHERE camId = @camId;
+        IF (SELECT messageStatus FROM ccWAMessagesConversationsOut WHERE messageId = @messageId) <> ''read''
+        BEGIN
+            UPDATE ccWAMessagesConversationsOut
+            SET content = @content
+            WHERE messageId = @messageId;
+        END
     END
 
-    -- client message received
-    ELSE IF (@messageStatus = ''N/A'' AND @originType = ''Client'')
+    ELSE IF @action = 16
     BEGIN
-        UPDATE ccWAConversationsResult
-        SET Received = Received + 1
-        WHERE camId = @camId;
+        IF @camId IS NULL OR @camId = 0
+        BEGIN
+            SELECT @camId = camId
+            FROM ccWhatsAppConversationsOut WITH (NOLOCK)
+            WHERE conversationId = @conversationId;
+        END
+
+        IF @messageStatus = ''submitted''
+        BEGIN
+            UPDATE ccWAConversationsResult
+            SET SentMsg = SentMsg + 1
+            WHERE camId = @camId;
+        END
+        ELSE IF @messageStatus = ''delivered''
+        BEGIN
+            UPDATE ccWAConversationsResult
+            SET SentMsg = CASE WHEN SentMsg > 0 THEN SentMsg - 1 ELSE SentMsg END,
+                Delivered = Delivered + 1
+            WHERE camId = @camId;
+        END
+        ELSE IF @messageStatus = ''read''
+        BEGIN
+            UPDATE ccWAConversationsResult
+            SET Delivered = CASE WHEN Delivered > 0 THEN Delivered - 1 ELSE Delivered END,
+                ReadMsg = ReadMsg + 1
+            WHERE camId = @camId;
+        END
+        ELSE IF @messageStatus IN (''rejected'',''error'',''hostError'',''clientError'',''failed'')
+        BEGIN
+            UPDATE ccWAConversationsResult
+            SET SentMsg = CASE WHEN SentMsg > 0 THEN SentMsg - 1 ELSE SentMsg END,
+                NotDelivered = NotDelivered + 1
+            WHERE camId = @camId;
+        END
+        ELSE IF @messageStatus = ''N/A'' AND @originType = ''Client''
+        BEGIN
+            UPDATE ccWAConversationsResult
+            SET Received = Received + 1
+            WHERE camId = @camId;
+        END
+        ELSE IF @messageStatus = ''UnSent''
+        BEGIN
+            UPDATE ccWAConversationsResult
+            SET SentMsg = CASE WHEN SentMsg > 0 THEN SentMsg - 1 ELSE SentMsg END,
+                UnSent = UnSent + 1
+            WHERE camId = @camId;
+        END
+        ELSE IF @messageStatus = ''N/A'' AND @originType <> ''Agent''
+        BEGIN
+            UPDATE ccWAConversationsResult
+            SET NotSupported = NotSupported + 1
+            WHERE camId = @camId;
+        END
+
+        SELECT @messageId AS MessageId;
     END
 
-    -- unsent
-    ELSE IF (@messageStatus = ''UnSent'')
+    ELSE IF @action = 17
     BEGIN
-        UPDATE ccWAConversationsResult
-        SET SentMsg = CASE WHEN SentMsg > 0 THEN SentMsg - 1 ELSE SentMsg END,
-            UnSent = UnSent + 1
-        WHERE camId = @camId;
-    END
-
-    -- unsupported
-    ELSE IF (@messageStatus = ''N/A'' AND @originType != ''Agent'')
-    BEGIN
-        UPDATE ccWAConversationsResult
-        SET NotSupported = NotSupported + 1
-        WHERE camId = @camId;
-    END
-
-END
-    SELECT @messageId as MessageId
-END;
-ELSE IF @action = 17 BEGIN --update agent status for reassigning error message
-UPDATE ccWhatsAppConversationsOut
-SET IsAgentLoggingOut = @IsAgentLoggingOut
-WHERE conversationId = @conversationId;
-END;
-ELSE IF @action = 18 BEGIN
-    DECLARE @dateNow DATETIME;
-    SET @dateNow = DATEADD(HOUR, -23, GETDATE());
-
-    UPDATE ccWhatsAppConversationsOut
-    SET finishedBy = 2, conversationStatus=17
-        WHERE finishedBy = 0  AND requestDate <= @dateNow
-    END;
-ELSE IF @action = 19
-BEGIN
-    UPDATE ccWhatsAppConversationsOut SET assignDate = FirstMessageAgent where conversationId = @conversationId;
-END
-ELSE IF @action = 20 BEGIN
         UPDATE ccWhatsAppConversationsOut
-        SET tQueue = tQueue+@tQueue
+        SET IsAgentLoggingOut = @IsAgentLoggingOut
         WHERE conversationId = @conversationId;
-    END;
-END;'
+    END
+
+    ELSE IF @action = 18
+    BEGIN
+        DECLARE @dateNow DATETIME = DATEADD(HOUR,-23,GETDATE());
+
+        UPDATE ccWhatsAppConversationsOut
+        SET finishedBy = 2,
+            conversationStatus = 17
+        WHERE finishedBy = 0
+          AND requestDate <= @dateNow;
+    END
+
+    ELSE IF @action = 19
+    BEGIN
+        UPDATE ccWhatsAppConversationsOut
+        SET assignDate = FirstMessageAgent
+        WHERE conversationId = @conversationId;
+    END
+
+    ELSE IF @action = 20
+    BEGIN
+        UPDATE ccWhatsAppConversationsOut
+        SET tQueue = tQueue + @tQueue
+        WHERE conversationId = @conversationId;
+    END
+
+END
+'
 	EXEC(@sql)
 	-------------------------------------END MACL------------------------------------------------
     -------------------------------------begin dmm------------------------------------------------

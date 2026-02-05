@@ -8998,8 +8998,11 @@ BEGIN --update content message
     END
     SET @params = 'N'@camId INT'';
 
-    DECLARE @col_UnSent BIT = 0,
-            @col_Received BIT = 0;
+    DECLARE @col_UnSent BIT;
+    DECLARE @col_Received BIT;
+
+    SET @col_UnSent = 0;
+    SET @col_Received = 0;
 
     IF EXISTS (SELECT 1 FROM sys.columns
                WHERE name = ''UnSent''

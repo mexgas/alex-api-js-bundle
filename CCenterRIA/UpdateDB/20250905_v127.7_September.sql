@@ -8987,47 +8987,93 @@ BEGIN --update content message
         WHERE messageId = @messageId;
     END;
 END;
-ELSE IF @action = 16 BEGIN --update content message
+ELSE IF @action = 16
+BEGIN --update content message
 
-    if @camId is null or @camId=0 begin
-    SELECT @camId=camId FROM ccWhatsAppConversationsOut A with(nolock) WHERE A.conversationId=@conversationId
-    end
+    IF @camId IS NULL OR @camId = 0
+    BEGIN
+        SELECT @camId = camId
+        FROM ccWhatsAppConversationsOut WITH (NOLOCK)
+        WHERE conversationId = @conversationId;
+    END
+    SET @params = 'N'@camId INT'';
+
+    DECLARE @col_UnSent BIT = 0,
+            @col_Received BIT = 0;
+
+    IF EXISTS (SELECT 1 FROM sys.columns
+               WHERE name = ''UnSent''
+               AND object_id = OBJECT_ID(''ccWAConversationsResult''))
+        SET @col_UnSent = 1;
+
+    IF EXISTS (SELECT 1 FROM sys.columns
+               WHERE name = ''Received''
+               AND object_id = OBJECT_ID(''ccWAConversationsResult''))
+        SET @col_Received = 1;
 
     IF @messageStatus = ''submitted''
     BEGIN
-        SET @dynSql = N''UPDATE ccWAConversationsResult SET SentMsg = SentMsg + 1 WHERE camId = @camId'';
-        EXEC sp_executesql @dynSql, @params, @camId = @camId;
+        SET @dynSql = ''N''
+            UPDATE ccWAConversationsResult
+            SET SentMsg = SentMsg + 1
+            WHERE camId = @camId'';
     END
+
     ELSE IF @messageStatus = ''delivered''
     BEGIN
-        SET @dynSql = N''UPDATE ccWAConversationsResult SET SentMsg = CASE WHEN SentMsg > 0 THEN SentMsg - 1 ELSE SentMsg END, Delivered = Delivered + 1 WHERE camId = @camId'';
-        EXEC sp_executesql @dynSql, @params, @camId = @camId;
+        SET @dynSql = ''N''
+            UPDATE ccWAConversationsResult
+            SET SentMsg = CASE WHEN SentMsg > 0 THEN SentMsg - 1 ELSE SentMsg END,
+                Delivered = Delivered + 1
+            WHERE camId = @camId'';
     END
+
     ELSE IF @messageStatus = ''read''
     BEGIN
-        SET @dynSql = N''UPDATE ccWAConversationsResult SET Delivered = CASE WHEN Delivered > 0 THEN Delivered - 1 ELSE Delivered END, ReadMsg = ReadMsg + 1 WHERE camId = @camId'';
-        EXEC sp_executesql @dynSql, @params, @camId = @camId;
+        SET @dynSql = ''N''
+            UPDATE ccWAConversationsResult
+            SET Delivered = CASE WHEN Delivered > 0 THEN Delivered - 1 ELSE Delivered END,
+                ReadMsg = ReadMsg + 1
+            WHERE camId = @camId'';
     END
-    ELSE IF @messageStatus = ''rejected'' OR @messageStatus = ''error'' OR @messageStatus = ''hostError'' OR @messageStatus = ''clientError'' OR @messageStatus = ''failed''
+
+    ELSE IF @messageStatus IN (''rejected'',''error'',''hostError'',''clientError'',''failed'')
     BEGIN
-        SET @dynSql = N''UPDATE ccWAConversationsResult SET SentMsg = CASE WHEN SentMsg > 0 THEN SentMsg - 1 ELSE SentMsg END, NotDelivered = NotDelivered + 1 WHERE camId = @camId'';
-        EXEC sp_executesql @dynSql, @params, @camId = @camId;
+        SET @dynSql = ''N''
+            UPDATE ccWAConversationsResult
+            SET SentMsg = CASE WHEN SentMsg > 0 THEN SentMsg - 1 ELSE SentMsg END,
+                NotDelivered = NotDelivered + 1
+            WHERE camId = @camId'';
     END
-    ELSE IF (@messageStatus = ''N/A'' AND @originType = ''Client'')
+
+    ELSE IF (@messageStatus = ''N/A'' AND @originType = ''Client'' AND @col_Received = 1)
     BEGIN
-        SET @dynSql = N''UPDATE ccWAConversationsResult SET Received = Received + 1 WHERE camId = @camId'';
-        EXEC sp_executesql @dynSql, @params, @camId = @camId;
+        SET @dynSql = ''N''
+            UPDATE ccWAConversationsResult
+            SET Received = Received + 1
+            WHERE camId = @camId'';
     END
-    ELSE IF (@messageStatus = ''UnSent'')
+
+    ELSE IF (@messageStatus = ''UnSent'' AND @col_UnSent = 1)
     BEGIN
-        SET @dynSql = N''UPDATE ccWAConversationsResult SET SentMsg = CASE WHEN SentMsg > 0 THEN SentMsg - 1 ELSE SentMsg END, UnSent = UnSent + 1 WHERE camId = @camId'';
-        EXEC sp_executesql @dynSql, @params, @camId = @camId;
+        SET @dynSql = ''N''
+            UPDATE ccWAConversationsResult
+            SET SentMsg = CASE WHEN SentMsg > 0 THEN SentMsg - 1 ELSE SentMsg END,
+                UnSent = UnSent + 1
+            WHERE camId = @camId'';
     END
+
     ELSE IF (@messageStatus = ''N/A'' AND @originType != ''Agent'')
     BEGIN
-        SET @dynSql = N''UPDATE ccWAConversationsResult SET NotSupported = NotSupported + 1 WHERE camId = @camId'';
-        EXEC sp_executesql @dynSql, @params, @camId = @camId;
+        SET @dynSql = ''N''
+            UPDATE ccWAConversationsResult
+            SET NotSupported = NotSupported + 1
+            WHERE camId = @camId'';
     END
+    IF @dynSql <> ''''
+        EXEC sp_executesql @dynSql, @params, @camId = @camId;
+
+END
 
 
     SELECT @messageId as MessageId

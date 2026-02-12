@@ -36,7 +36,7 @@ end'
 
     SET @process = '#5367 - Drop SP trsp_GetNetworkCredentialsGalatea'
 
-    SET @sql = 'if exists (select * from sys.procedures where name = N''trsp_InsertRecNodeGrabIds'')
+    SET @sql = 'if exists (select * from sys.procedures where name = N''trsp_GetNetworkCredentialsGalatea'')
     BEGIN
         DROP PROCEDURE dbo.trsp_GetNetworkCredentialsGalatea;
     END'

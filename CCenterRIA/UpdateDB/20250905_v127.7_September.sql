@@ -21641,7 +21641,51 @@ END'
             END
         END	    
 	'
-    EXEC(@sql)
+    EXEC(@sql);
+
+    SET @process = 'Drop procedure trsp_GetNetworkCredentialsGalatea'
+    SET @sql = 'IF EXISTS (SELECT * FROM sysobjects WHERE name=''trsp_GetNetworkCredentialsGalatea'')
+        BEGIN
+            DROP PROCEDURE dbo.trsp_GetNetworkCredentialsGalatea
+        END';
+    EXEC(@sql);
+
+    SET @process = 'Create procedure trsp_GetNetworkCredentialsGalatea'
+    SET @sql = 'CREATE PROCEDURE trsp_GetNetworkCredentialsGalatea
+
+                @pbxId Int= Null
+
+                AS
+                BEGIN
+                    If @pbxId Is Null 
+                        Set @pbxId =1
+
+                    Declare @pathRepository Varchar(500),
+                            @domain Varchar(100),
+                            @user Varchar(100),
+                            @password varchar(100)
+
+
+                    Select @pathRepository=ruta_repositorio From TREC_REPOSITORIOS Where id_repositorio=@pbxId
+
+                    If @pathRepository is null 
+                        Select @pathRepository=par_valor From TREC_PARAMETROS Where par_id=1
+
+                    Select @domain= N.domain,@user= N.[user],@password= N.[password] 
+                        From RIA_NETWORKCREDENTIALS N
+                        Inner Join TREC_REPO_NWCREDENTIALS R On R.id_nwCredential=N.Id
+                        Where R.id_repository=@pbxId and N.status=1
+
+                    If @domain Is Null 
+                    Begin
+                        Select Top 1 @domain= N.domain,@user= N.[user],@password= N.[password] 
+                            From RIA_NETWORKCREDENTIALS N	
+                    End
+
+                    Select @pathRepository pathRepository,@domain domain,@user [user],@password [password] 
+                END
+            ';
+    EXEC(@sql);
 
 
 ------------------------------END JUAN MEDINA---------------------------------

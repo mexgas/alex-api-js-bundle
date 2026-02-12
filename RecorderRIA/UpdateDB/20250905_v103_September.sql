@@ -34,6 +34,45 @@ end'
 	EXEC(@sql)
 ------------------------------------END MACL----------------------------------------
 
+    SET @process = '#5367 - Drop SP trsp_GetNetworkCredentialsGalatea'
+
+    SET @sql = 'if exists (select * from sys.procedures where name = N''trsp_InsertRecNodeGrabIds'')
+    BEGIN
+        DROP PROCEDURE dbo.trsp_GetNetworkCredentialsGalatea;
+    END'
+    EXEC(@sql);
+
+    SET @process = '#5367 CREATE PROCEDURE [dbo].[trsp_GetNetworkCredentialsGalatea]'
+    SET @sql = 'CREATE PROCEDURE [dbo].[trsp_GetNetworkCredentialsGalatea]
+@pbxId int= null
+AS
+BEGIN
+if @pbxId is null set @pbxId =1
+declare @pathRepository varchar(500)
+declare @domain varchar(100),@user varchar(100),@password varchar(100)
+
+
+select @pathRepository=ruta_repositorio from TREC_REPOSITORIOS where id_repositorio=@pbxId
+if @pathRepository is null 
+select @pathRepository=par_valor from TREC_PARAMETROS where par_id=1
+
+
+select @domain= N.domain,@user= N.[user],@password= N.[password] 
+from RIA_NETWORKCREDENTIALS N
+inner join TREC_REPO_NWCREDENTIALS R on R.id_nwCredential=N.Id
+where R.id_repository=@pbxId and N.status=1
+
+if @domain is null begin
+    select top 1 @domain= N.domain,@user= N.[user],@password= N.[password] 
+    from RIA_NETWORKCREDENTIALS N   
+end
+
+select @pathRepository pathRepository,@domain domain,@user [user],@password [password] 
+
+END'
+    EXEC(@sql)
+
+
     update trec_parametros set par_valor = @Version where par_id = 30
     set @Version_Actual=@Version_Actual+1
 

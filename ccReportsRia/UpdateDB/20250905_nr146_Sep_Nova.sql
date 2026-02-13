@@ -1347,9 +1347,11 @@ END'
 	timeTotalInCallMin,
 	statusCallByIVR,
 	IVR_ID as ivrId,
-	callHung
+	callHung,
+	areaId
 	FROM RepInCallsDetail NOLOCK;
-    EXEC(@sql);'
+    '
+    EXEC(@sql);
 
     SET @process = 'ALTER ReportsTotals queueTime';
     SET @sql = 'update ReportsTotals set totalColumns = ''sum:queueTime|sum:xferTime|sum:ringingTime|sum:dialogTime|sum:holdTime|sum:twrapup''where id = 3010';
@@ -1427,7 +1429,8 @@ where id = 4020'
 	[MessageTime],
 	[grabId],
 	[areaId],
-	[area]
+	[area],
+	[campaignId]
 	FROM RepOutCallsDetail nolock'
     EXEC(@sql)
 

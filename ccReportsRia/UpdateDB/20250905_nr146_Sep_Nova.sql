@@ -1348,7 +1348,8 @@ END'
 	statusCallByIVR,
 	IVR_ID as ivrId,
 	callHung,
-	areaId
+    areaId,
+	area
 	FROM RepInCallsDetail NOLOCK;
     '
     EXEC(@sql);
@@ -1428,9 +1429,9 @@ where id = 4020'
 	[data5] [Dato5],
 	[MessageTime],
 	[grabId],
+	[campaignId],
 	[areaId],
-	[area],
-	[campaignId]
+	[area]
 	FROM RepOutCallsDetail nolock'
     EXEC(@sql)
 

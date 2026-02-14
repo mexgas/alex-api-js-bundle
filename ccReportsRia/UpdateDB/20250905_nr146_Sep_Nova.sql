@@ -1347,7 +1347,9 @@ END'
 	timeTotalInCallMin,
 	statusCallByIVR,
 	IVR_ID as ivrId,
-	callHung
+	callHung,
+    areaId,
+	area
 	FROM RepInCallsDetail NOLOCK;
     EXEC(@sql);'
 

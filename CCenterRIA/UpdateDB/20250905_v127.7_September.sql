@@ -22633,6 +22633,565 @@ set nocount off';
     EXEC(@sql);
 
 ------------------------------END Jesus Gallardo---------------------------------
+------------------------------BEGIN Giovanni Vivaldo-----------------------------
+SET @process = 'Delete from ccRIACATLogPhones tipoMov 7'
+SET @sql = 'IF EXISTS (SELECT * FROM ccRIACATLogPhones WHERE tipoMov = 7)
+    BEGIN
+        DELETE FROM ccRIACATLogPhones WHERE tipoMov = 7
+    END';
+EXEC(@sql);
+
+SET @process = 'Insert into ccRIACATLogPhones tipoMov 7'
+SET @sql = 'INSERT INTO dbo.ccRIACATLogPhones (tipoMov, descTipoMov)
+            VALUES (7, ''No cargados en proceso'')';
+EXEC(@sql);
+
+SET @process = 'Delete from tableLangueDbLoader tag record-not-loaded-processing'
+SET @sql = 'IF EXISTS (SELECT * FROM tableLangueDbLoader WHERE tag = ''record-not-loaded-processing'')
+    BEGIN
+        DELETE FROM tableLangueDbLoader WHERE tag = ''record-not-loaded-processing''
+    END';
+EXEC(@sql);
+
+SET @process = 'Insert into tableLangueDbLoader record-not-loaded-processing'
+SET @sql = 'INSERT INTO tableLangueDbLoader (languageId, tag, translate)
+            VALUES
+                (0, ''record-not-loaded-processing'', ''No cargado, procesando''),
+                (1, ''record-not-loaded-processing'', ''Not loaded, processing''),
+                (2, ''record-not-loaded-processing'', ''N�o carregado, processando'')';
+EXEC(@sql);
+
+-- Eliminar el procedimiento si existe
+SET @process = 'Drop procedure ccsp_UpdateSmsOutFromTempAction'
+SET @sql = 'IF EXISTS (SELECT * FROM sysobjects WHERE name=''ccsp_UpdateSmsOutFromTempAction'')
+    BEGIN
+        DROP PROCEDURE dbo.ccsp_UpdateSmsOutFromTempAction
+    END';
+EXEC(@sql);
+
+-- Crear el procedimiento
+SET @process = 'Create procedure ccsp_UpdateSmsOutFromTempAction'
+SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_UpdateSmsOutFromTempAction]
+    @action INT,
+    @tableName NVARCHAR(255),
+    @sms_status int = 0,
+    @idLoad int=0,
+    @motivo varchar(50)=null,
+    @DateStart varchar(50) = null,
+    @DateEnd varchar(50) = null,
+    @internationalRecords int=0
+
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @sql NVARCHAR(MAX);
+    DECLARE @paramDef NVARCHAR(300);
+    DECLARE @date datetime = getdate()
+    declare @emtpy varchar(1)=''''
+
+    IF @action = 1
+    BEGIN
+        SET @sql = ''INSERT INTO dbo.smsOutSource(callkey,sms_phoneNumber,sms_phoneNumber2,sms_phoneNumber3,sms_phoneNumber4,sms_phoneNumber5,
+        data1,data2,data3,data4,data5,list_id,cam_id,Region,Localidad,sms_status,sms_dateDial,
+        iTimeZone,iTimeZone_summer,iTimeZone2,iTimeZone_summer2,iTimeZone3,iTimeZone_summer3,iTimeZone4,iTimeZone_summer4,iTimeZone5,iTimeZone_summer5)
+        select cal_Key,cal_telefono,cal_telefono2,cal_telefono3,cal_telefono4,cal_telefono5
+        ,Dato1,Dato2,Dato3,Dato4,Dato5,list_id,cam_id,Region,Localidad,cal_status,cal_fechaDial
+        ,iZonaHoraria,iZonaHoraria_verano
+        ,iZonaHoraria2,iZonaHoraria_verano2
+        ,iZonaHoraria3,iZonaHoraria_verano3
+        ,iZonaHoraria4,iZonaHoraria_verano4
+        ,iZonaHoraria5,iZonaHoraria_verano5
+        from '' + QUOTENAME(@tableName) + '' where callout_id=0;'';
+
+        EXEC sp_executesql @sql;
+    END
+    ELSE IF @action = 2
+    BEGIN
+        SET @sql = N''
+UPDATE A
+SET A.cal_fechaDial = CASE
+                         WHEN A.callout_id > 0 THEN B.sms_dateDial
+                         ELSE @date
+                      END
+FROM '' + QUOTENAME(@tableName) + '' AS A
+INNER JOIN smsOutSource AS B WITH (NOLOCK)
+    ON A.callout_id = B.smsout_id;
+'';
+        SET @paramDef =  N''@date DATETIME'';
+        EXEC sp_executesql @sql,@paramDef , @date = @date;
+    END
+
+    ELSE IF @action = 3
+    BEGIN
+        SET @sql = ''update C set C.sms_status = @sms_status,
+C.sms_phoneNumber = A.cal_telefono,C.sms_phoneNumber2 = A.cal_telefono2,C.sms_phoneNumber3 = A.cal_telefono3,C.sms_phoneNumber4 = A.cal_telefono4,
+C.sms_phoneNumber5 = A.cal_telefono5,
+C.data1 = A.Dato1,C.data2 = A.Dato2,C.data3 = A.Dato3,C.data4 = A.Dato4,C.data5 = A.Dato5,
+C.list_id = A.list_id,
+C.sms_dateDial =  ''''''+@DateStart+'''''', C.sms_dateDialEnd =  ''''''+@DateEnd+'''''',
+C.Region = A.Region,
+C.Localidad = A.Localidad,
+C.isSegmentLoad = 1
+,C.iTimeZone=A.iZonaHoraria,C.iTimeZone_summer=A.iZonaHoraria_verano
+,C.iTimeZone2=A.iZonaHoraria2,C.iTimeZone_summer2=A.iZonaHoraria_verano2
+,C.iTimeZone3=A.iZonaHoraria3,C.iTimeZone_summer3=A.iZonaHoraria_verano3
+,C.iTimeZone4=A.iZonaHoraria4,C.iTimeZone_summer4=A.iZonaHoraria_verano4
+,C.iTimeZone5=A.iZonaHoraria5,C.iTimeZone_summer5=A.iZonaHoraria_verano5
+from '' + QUOTENAME(@tableName) + '' A
+left join dbo.smsWorkingTable  B with (nolock) on A.callout_id=B.smsout_id and A.cam_id=B.cam_id and B.sms_status <=2
+inner join dbo.smsOutSource  C with(nolock) on A.callout_id=C.smsout_id
+where B.smsout_id is null;'';
+
+        SET @paramDef =   N''@sms_status int'';
+        EXEC sp_executesql @sql,@paramDef ,@sms_status=@sms_status;
+    END
+    ELSE IF @action = 4
+    BEGIN
+        SET @sql = ''update C set C.sms_status = @sms_status,
+C.sms_phoneNumber = A.cal_telefono,C.sms_phoneNumber2 = A.cal_telefono2,C.sms_phoneNumber3 = A.cal_telefono3,C.sms_phoneNumber4 = A.cal_telefono4,
+C.sms_phoneNumber5 = A.cal_telefono5,
+C.data1 = A.Dato1,C.data2 = A.Dato2,C.data3 = A.Dato3,C.data4 = A.Dato4,C.data5 = A.Dato5,
+C.list_id = A.list_id,
+C.sms_dateDial =  A.cal_fechaDial,
+C.Region = A.Region,
+C.Localidad = A.Localidad
+,C.isSegmentLoad = 0
+from  '' + QUOTENAME(@tableName) + '' A
+left join dbo.smsWorkingTable  B with (nolock) on A.callout_id=B.smsout_id and A.cam_id=B.cam_id and B.sms_status <=2
+inner join dbo.smsOutSource  C with(nolock) on A.callout_id=C.smsout_id
+where B.smsout_id is null;'';
+
+        SET @paramDef =   N''@sms_status int'';
+        EXEC sp_executesql @sql,@paramDef ,@sms_status=@sms_status;
+    END
+    ELSE IF @action =5
+    BEGIN
+        SET @sql = ''select count(*) from '' + QUOTENAME(@tableName) + '' A
+left join smsWorkingTable B with (nolock) on A.callout_id=B.smsout_id and A.cam_id=B.cam_id and B.sms_status <=2
+where B.smsout_id is null;'';
+
+        EXEC sp_executesql @sql;
+    END
+    ELSE IF @action =6
+    BEGIN
+        SET @sql = ''Insert into ccRIALogPhones(load_id,cal_key,telefono,tipoMov,motivo,internationalRecords)
+select @idLoad, A.cal_Key,@emtpy, 2, @motivo, @internationalRecords from '' + QUOTENAME(@tableName) + '' A
+left join smsWorkingTable B with (nolock) on A.callout_id=B.smsout_id and A.cam_id=B.cam_id and B.sms_status <=2
+where B.smsout_id is null;
+
+delete A from '' + QUOTENAME(@tableName) + '' A
+left join smsWorkingTable B with (nolock) on A.callout_id=B.smsout_id and A.cam_id=B.cam_id and B.sms_status <=2
+where B.smsout_id is null;'';
+
+        SET @paramDef = N''@emtpy varchar(1),@idLoad int,@motivo varchar(50),@internationalRecords int'';
+        EXEC sp_executesql @sql, @paramDef,
+        @emtpy=@emtpy,
+        @idLoad=@idLoad,
+        @motivo=@motivo,
+        @internationalRecords =@internationalRecords;
+    END
+
+    ELSE IF @action =7
+    BEGIN
+        SET @sql = ''select count(*) from '' + QUOTENAME(@tableName) + '';
+Insert into ccRIALogPhones(load_id,cal_key,telefono,tipoMov,motivo)
+select @idLoad, A.cal_Key,@emtpy, 2, @motivo from '' + QUOTENAME(@tableName) + '' A;
+delete from '' + QUOTENAME(@tableName) + '';'';
+
+        SET @paramDef = N''@emtpy varchar(1),@idLoad int,@motivo varchar(50)'';
+        EXEC sp_executesql @sql, @paramDef, @emtpy = @emtpy,@idLoad=@idLoad,@motivo=@motivo;
+    END
+    ELSE IF @action = 8
+    BEGIN
+        SET @sql = ''select count(*) from '' + QUOTENAME(@tableName) + '' where callout_id=0;
+delete from '' + QUOTENAME(@tableName) + '' where callout_id=0;'';
+
+        EXEC sp_executesql @sql;
+    END
+    ELSE IF @action =9
+    BEGIN
+        SET @sql = ''Insert into ccRIALogPhones(load_id,cal_key,telefono,tipoMov,motivo,internationalRecords)
+select @idLoad, A.cal_Key,@emtpy, 7, @motivo, @internationalRecords from '' + QUOTENAME(@tableName) + '' A;
+delete from '' + QUOTENAME(@tableName) + '';'';
+
+        SET @paramDef = N''@emtpy varchar(1),@idLoad int,@motivo varchar(50), @internationalRecords int'';
+        EXEC sp_executesql @sql, @paramDef,
+        @emtpy=@emtpy,
+        @idLoad=@idLoad,
+        @motivo=@motivo,
+        @internationalRecords =@internationalRecords;
+    END
+    ELSE IF @action = 10
+    BEGIN
+        SET @sql = ''select count(*) from '' + QUOTENAME(@tableName) + '';'';
+        EXEC sp_executesql @sql
+    END
+    ELSE IF @action = 11 BEGIN
+
+        SET @sql = ''
+    UPDATE T SET
+        iZonaHoraria = CASE
+            WHEN (cal_telefono IS NULL OR LTRIM(RTRIM(cal_telefono)) = @emtpy) THEN 0
+            ELSE dbo.fnGetTimeZone(T.cal_telefono,  0) END,
+
+        iZonaHoraria_verano = CASE
+          WHEN (cal_telefono IS NULL OR LTRIM(RTRIM(cal_telefono)) = @emtpy) THEN 0
+            ELSE dbo.fnGetTimeZone(T.cal_telefono,  1) END,
+
+        iZonaHoraria2 = CASE
+            WHEN (cal_telefono2 IS NULL OR LTRIM(RTRIM(cal_telefono2)) = @emtpy) THEN 0
+            ELSE dbo.fnGetTimeZone(T.cal_telefono2,  0) END,
+
+        iZonaHoraria_verano2 = CASE
+          WHEN (cal_telefono2 IS NULL OR LTRIM(RTRIM(cal_telefono2)) = @emtpy) THEN 0
+            ELSE dbo.fnGetTimeZone(T.cal_telefono2,  1) END,
+
+        iZonaHoraria3 = CASE
+            WHEN (cal_telefono3 IS NULL OR LTRIM(RTRIM(cal_telefono3)) = @emtpy) THEN 0
+            ELSE dbo.fnGetTimeZone(T.cal_telefono3,  0) END,
+
+        iZonaHoraria_verano3 = CASE
+          WHEN (cal_telefono3 IS NULL OR LTRIM(RTRIM(cal_telefono3)) = @emtpy) THEN 0
+            ELSE dbo.fnGetTimeZone(T.cal_telefono3,  1) END,
+
+        iZonaHoraria4 = CASE
+            WHEN (cal_telefono4 IS NULL OR LTRIM(RTRIM(cal_telefono4)) = @emtpy) THEN 0
+            ELSE dbo.fnGetTimeZone(T.cal_telefono4,  0) END,
+
+        iZonaHoraria_verano4 = CASE
+          WHEN (cal_telefono4 IS NULL OR LTRIM(RTRIM(cal_telefono4)) = @emtpy) THEN 0
+            ELSE dbo.fnGetTimeZone(T.cal_telefono4,  1) END,
+
+        iZonaHoraria5 = CASE
+            WHEN (cal_telefono5 IS NULL OR LTRIM(RTRIM(cal_telefono5)) = @emtpy) THEN 0
+            ELSE dbo.fnGetTimeZone(T.cal_telefono5,  0) END,
+
+        iZonaHoraria_verano5 = CASE
+          WHEN (cal_telefono5 IS NULL OR LTRIM(RTRIM(cal_telefono5)) = @emtpy) THEN 0
+            ELSE dbo.fnGetTimeZone(T.cal_telefono5,  1) END
+
+    FROM '' + QUOTENAME(@tableName) + '' T
+    ''
+    EXEC sp_executesql @sql,
+            N''@emtpy varchar(1)'',
+            @emtpy = @emtpy
+
+    END
+
+
+    ELSE
+    BEGIN
+        RAISERROR(''Acción inválida: %d. Use 1 = UpdateOutSource, 2 = UpdateLogDials, 3 = UpdateCallsOut, 4 = UpdateInternational'', 16, 1, @action);
+        RETURN;
+    END
+END
+';
+EXEC(@sql);
+
+-- Eliminar el procedimiento si existe
+SET @process = 'Drop procedure ccsp_RIALogPhones'
+SET @sql = 'IF EXISTS (SELECT * FROM sysobjects WHERE name=''ccsp_RIALogPhones'')
+    BEGIN
+        DROP PROCEDURE dbo.ccsp_RIALogPhones
+    END';
+EXEC(@sql);
+
+-- Crear el procedimiento
+SET @process = 'Create procedure ccsp_RIALogPhones'
+SET @sql = 'CREATE procedure [dbo].[ccsp_RIALogPhones]
+		@load_id int,
+		@Type smallint,
+		@GenCSV bit = 1, -- 0:100 / 1:todos
+		@isKolob bit = 0,
+		@PageIndex      INT = 0,
+		@PageSize       INT = 0,
+		@option SMALLINT = NULL
+		as
+		set nocount ON
+ 
+		declare @CaseType varchar(2000), @sql nvarchar(MAX), @nType char(5), @MovType SMALLINT, @language int, @LoadBySegment varchar(1)
+		SELECT @language = cs.valor FROM dbo.ccSettings AS cs WHERE cs.setting_id = 27;
+		declare @PageStart int,@PageEnd int
+		SELECT @LoadBySegment = CAST(ISNULL(LoadBySegment,''0'') as varchar) from ccRIALoading where load_id = @load_id
+		IF(@option = 0)
+		BEGIN
+			select CAST(@LoadBySegment as bit) as LoadBySegment
+			return 0;
+		END
+ 
+		select @CaseType = '''', @nType = right(''0000''+cast(@Type as varchar(5)), 5)
+		if @nType like ''%____1%'' --Record Not Loaded
+			select @CaseType = @CaseType + '' or isnull(telefono,'''')='''' and crlp.tipoMov in (0,7,8) 
+			''
+ 
+		if @nType like ''%___1_%''--Number Not Loaded
+			select @CaseType = @CaseType + '' or isnull(telefono,'''')<>'''''''' and crlp.tipoMov in(-1,0,7,8) 
+			''
+ 
+		if @nType like ''%__1__%''--Record Blocked
+			select @CaseType = @CaseType + '' or isnull(telefono,'''')='''' and crlp.tipoMov IN (1)
+			''
+ 
+		if @nType like ''%_1___%''--Number blocked
+			select @CaseType = @CaseType + '' or isnull(telefono,'''')<>'''''''' and crlp.tipoMov IN (1,4) 
+			''
+ 
+		if @nType like ''%1____%''--Record Updated
+			select @CaseType = @CaseType + '' or isnull(telefono,'''')='''' and crlp.tipoMov = 2 ''
+ 
+		if @CaseType = '''' and @nType <> 0
+			return(0)
+ 
+		if @nType like ''%____1%''
+			select @CaseType = @CaseType + ''  or telefono<>'''''''' and crlp.tipoMov = 0''
+ 
+		select @PageStart=@PageSize*(@PageIndex-1),@PageEnd=@PageSize*@PageIndex
+ 
+		IF(@option = 1)
+		BEGIN	
+			SET @sql = ''SELECT count(*) AS listSize FROM (
+		select crlp.load_id
+		from ccRIALogPhones AS crlp 
+		where crlp.load_id = @load_id and ('' 
+		+ ISNULL(STUFF(@CaseType,CHARINDEX(''or'',@CaseType),LEN(''or''),''''),'''') +'')) tmp '' +
+		case @GenCSV when 0 then ''WHERE tmp.RowNum > @PageStart AND tmp.RowNum <= @PageEnd'' else '''' end
+					--EXEC(@sql);
+ 
+				Exec sp_executesql @sql
+						 , N''@PageStart int,@PageEnd int,@language int,@load_id int''
+						 , @PageStart=@PageStart,@PageEnd=@PageEnd,@language=@language,@load_id=@load_id
+					RETURN (0);
+				END
+				ELSE 
+				BEGIN
+						IF(@isKolob = 1)
+						BEGIN
+ 
+						declare @column VARCHAR(100), @typeDescriptionPhoneNotLoaded VARCHAR(200), @typeDescriptionPhoneBlocked VARCHAR(200), @typeDescriptionPhoneUpdated VARCHAR(200), @typeDescriptionPhoneBlackList VARCHAR(200),
+						@typeBlockedRecords VARCHAR(200), @typeIncorrectRecords VARCHAR(200), @typeUpdatedRecords VARCHAR(200), @descriptionBlockedRecords VARCHAR(200), @descriptionIncorrectRecords VARCHAR(200),  @descriptionInternationalPortNotFound VARCHAR(200), @headerPhone VARCHAR(max), @headerPhone2 VARCHAR(max), @headerPhone3 VARCHAR(max), @headerPhone4 VARCHAR(max), @headerPhone5 VARCHAR(max),    @descriptionProcessingRecords VARCHAR(200);
+ 
+						select @typeDescriptionPhoneBlocked=translate from tableLangueDbLoader where languageId=@language and tag=''type-blocked-num''
+						select @typeDescriptionPhoneUpdated=translate from tableLangueDbLoader where languageId=@language and tag=''type-updated-num''
+						select @typeIncorrectRecords=translate from tableLangueDbLoader where languageId=@language and tag=''type-incorrect-records''
+						select @typeBlockedRecords=translate from tableLangueDbLoader where languageId=@language and tag=''type-blocked-records''
+						select @typeDescriptionPhoneNotLoaded=translate from tableLangueDbLoader where languageId=@language and tag=''type-not-loaded-num''
+ 
+						select @typeDescriptionPhoneBlackList=translate from tableLangueDbLoader where languageId=@language and tag=''description-dnc-list''
+						select @descriptionIncorrectRecords=translate from tableLangueDbLoader where languageId=@language and tag=''description-incorrect-records''
+						select @descriptionBlockedRecords=translate from tableLangueDbLoader where languageId=@language and tag=''description-blocked-records''
+						select @typeUpdatedRecords=translate from tableLangueDbLoader where languageId=@language and tag=''type-updated-records''
+						select @descriptionInternationalPortNotFound=TRANSLATE from tableLangueDbLoader where languageId=@language and tag=''type-camp-no-international-port''
+						select @descriptionProcessingRecords = translate from tableLangueDbLoader where languageId = @language and tag = ''record-not-loaded-processing'';
+ 
+						select @column=translate from tableLangueDbLoader where languageId=@language and tag=''column-file-field''
+ 
+						select @headerPhone=header_phone,@headerPhone2=header_phone2,@headerPhone3=header_phone3,@headerPhone4=header_phone4 
+						,@headerPhone5=header_phone5
+						from fileHeadersPhoneLoad where load_id=@load_id
+							set @CaseType=case when @CaseType <> '''' then '' and ('' + substring(@CaseType, 5, len(@CaseType)) + '')'' else '''' END
+							SET @sql = '';with result as(
+							SELECT * FROM (select  
+							ROW_NUMBER() OVER(ORDER BY crlp.cal_key ASC) AS RowNum,
+							crlp.load_id,
+							crlp.cal_key, 
+							CASE
+								WHEN ISNULL(crlp.telefono, '''''''') = '''''''' THEN ''''''''
+								WHEN crlp.internationalRecords = 0 THEN ''N-'' + REPLACE(crlp.telefono, ''E_'', '''''''')
+								ELSE ''I-'' + REPLACE(crlp.telefono, ''E_'', '''''''')
+							END AS phone,
+							CASE
+								WHEN crlp.tipoMov in (1,4)  THEN @typeDescriptionPhoneBlocked  
+								WHEN crlp.tipoMov = 2 THEN @typeUpdatedRecords	
+								WHEN crlp.motivo in (select translate from tableLangueDbLoader where tag=''''type-incorrect-records'''') THEN @typeIncorrectRecords
+								WHEN crlp.motivo in (select translate from tableLangueDbLoader where tag=''''type-blocked-records'''') THEN @typeBlockedRecords
+								WHEN crlp.tipoMov in(-1,0) THEN @typeDescriptionPhoneNotLoaded
+								WHEN crlp.tipoMov = 7 THEN @descriptionProcessingRecords
+								WHEN crlp.tipoMov in(8) THEN @descriptionInternationalPortNotFound
+								WHEN crlp.keyTranslate is not null THEN isnull(tlan.translate,crlp2.descTipoMov)
+							ELSE 
+								crlp2.descTipoMov  
+							END AS Tipo,
+							case when CHARINDEX('':'',crlp.motivo)=0 then 0 else
+								convert(int,substring(crlp.motivo ,CHARINDEX('':'',crlp.motivo)-1 ,1))
+							end
+							 AS ColumnFile, 
+							CASE  WHEN crlp.tipoMov = 2 THEN ''N/A'' 
+									WHEN crlp.tipoMov in (1,4) THEN @typeDescriptionPhoneBlackList							  
+									WHEN crlp.motivo in (select translate from tableLangueDbLoader where tag=''''type-incorrect-records'''') THEN @descriptionIncorrectRecords
+									WHEN crlp.motivo in (select translate from tableLangueDbLoader where tag=''''type-blocked-records'''') THEN @descriptionBlockedRecords
+									WHEN crlp.tipoMov = 7 THEN @descriptionProcessingRecords
+									WHEN crlp.motivo in (select translate from tableLangueDbLoader where tag=''''type-camp-no-international-port'''') THEN  @descriptionInternationalPortNotFound
+									WHEN crlp.keyTranslate is not null THEN tlan.translate 
+							ELSE crlp.motivo END AS motivo,
+							CAST(' + @LoadBySegment + ' as BIT) AS LoadBySegment
+							from ccRIALogPhones AS crlp 
+							INNER JOIN dbo.ccRIACATLogPhones AS  crlp2 ON crlp.tipoMov = crlp2.tipoMov
+							left join tableLangueDbLoader tlan on tlan.tag=crlp.keyTranslate and tlan.languageId=@language
+							where crlp.load_id = @load_id '' 				
+							+ @CaseType +'') tmp '' +
+							case @GenCSV when 0 then '' WHERE tmp.RowNum > @PageStart AND tmp.RowNum <= @PageEnd '' else '''' end +'' 
+							) 
+							select  crlp.RowNum,
+							crlp.load_id,
+							crlp.cal_key, 
+							crlp.phone,
+							crlp.Tipo,
+							case when crlp.ColumnFile=1 then @headerPhone
+							when crlp.ColumnFile=2 then @headerPhone2
+							when crlp.ColumnFile=3 then @headerPhone3
+							when crlp.ColumnFile=4 then @headerPhone4
+							when crlp.ColumnFile=5 then @headerPhone5
+							else '''' end ColumnFile,
+							crlp.motivo
+							from result crlp ''
+			END
+			ELSE
+			BEGIN
+				set @sql = ''select '' + case @GenCSV when 0 then ''top 100 '' else '''' end 
+				+ ''load_id, cal_key, telefono, tipoMov, motivo from ccRIALogPhones AS crlp where load_id = @load_id '' 
+				+ @CaseType
+			END  
+			--PRINT(@sql);
+ 
+			Exec sp_executesql @sql, N''@PageStart int,@PageEnd int,@language int,@load_id int, @column VARCHAR(100), @typeDescriptionPhoneNotLoaded VARCHAR(200), @typeDescriptionPhoneBlocked VARCHAR(200),
+			@typeDescriptionPhoneUpdated VARCHAR(200), @typeDescriptionPhoneBlackList VARCHAR(200),
+			@typeBlockedRecords VARCHAR(200), @typeIncorrectRecords VARCHAR(200), @descriptionBlockedRecords VARCHAR(200), @descriptionIncorrectRecords VARCHAR(200),  @descriptionInternationalPortNotFound VARCHAR(200)
+			, @headerPhone VARCHAR(max), @headerPhone2 VARCHAR(max), @headerPhone3 VARCHAR(max), @headerPhone4 VARCHAR(max), @headerPhone5 VARCHAR(max), @typeUpdatedRecords varchar(200) , @descriptionProcessingRecords VARCHAR(200)''
+			, @PageStart=@PageStart,@PageEnd=@PageEnd,@language=@language,@load_id=@load_id,@column=@column,@typeDescriptionPhoneNotLoaded=@typeDescriptionPhoneNotLoaded
+			,@typeDescriptionPhoneBlocked=@typeDescriptionPhoneBlocked,@typeDescriptionPhoneUpdated=@typeDescriptionPhoneUpdated,@typeDescriptionPhoneBlackList=@typeDescriptionPhoneBlackList
+			,@typeBlockedRecords=@typeBlockedRecords,@typeIncorrectRecords=@typeIncorrectRecords,@descriptionBlockedRecords=@descriptionBlockedRecords,@descriptionIncorrectRecords=@descriptionIncorrectRecords,
+			 @descriptionInternationalPortNotFound= @descriptionInternationalPortNotFound 
+			,@headerPhone=@headerPhone,@headerPhone2=@headerPhone2,@headerPhone3=@headerPhone3,@headerPhone4=@headerPhone4,@headerPhone5=@headerPhone5,@typeUpdatedRecords=@typeUpdatedRecords, @descriptionProcessingRecords=@descriptionProcessingRecords
+
+		return(0)
+		END
+		set nocount OFF
+';
+EXEC(@sql);
+-- Eliminar el procedimiento si existe
+SET @process = 'Drop procedure ccsp_GalateaGetRecordsImportStatus'
+SET @sql = 'IF EXISTS (SELECT * FROM sysobjects WHERE name=''ccsp_GalateaGetRecordsImportStatus'')
+    BEGIN
+        DROP PROCEDURE dbo.ccsp_GalateaGetRecordsImportStatus
+    END';
+EXEC(@sql);
+
+-- Crear el procedimiento
+SET @process = 'Create procedure ccsp_GalateaGetRecordsImportStatus'
+SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaGetRecordsImportStatus]
+-- @Type = 1:Detalle general de carga de registros | 2:Detalle específico de carga de registros | 3:Porcentaje de carga de registros
+@action tinyint, 
+@loadID int = NULL, 
+@userID smallint = NULL
+
+AS
+declare @today datetime
+select @today =convert(datetime, convert(varchar(11),getdate(),121),121)
+SET nocount ON
+if @action not IN (1,2,3)
+raiserror(''ERROR. No se ingreso parametro de entrada'', 18, 1)
+
+if @action=1 -- Detalle general de carga de registros
+BEGIN
+if not exists(SELECT User_id FROM ccUsers WHERE TipoUser_id IN(2,6) AND Status>0 AND User_id=@userID)
+    BEGIN
+    raiserror(''ERROR. invalid user id'', 18, 1)
+    return(0)
+    END
+
+if exists (select * from ccUsers_Roles where User_id = @userID and Rol_id = (select Rol_id from ccRoles where Level = 7))
+    BEGIN
+        SELECT DISTINCT 
+            load_id, 
+            cccamps.cam_descripcion as camName, 
+            pctg, 
+            -- Restamos los bloqueados de los cargados/actualizados
+            (regsLoaded + alreadyLoaded) - 
+            (regsNotLoaded + regsBlocked + isnull(regsNotLoadedCp,0) + ISNULL(recordsNotLoadedPort,0)) as regsLoaded, 
+            regsNotLoaded + regsBlocked + isnull(regsNotLoadedCp,0) + ISNULL(recordsNotLoadedPort,0) as regsNotLoaded, 
+            state, 
+            loadDate,
+            riaLoad.description
+        FROM ccRIALoading riaLoad
+        JOIN ccCamps cccamps ON riaLoad.cam_id = cccamps.cam_id
+        WHERE 
+        loadDate>=@today
+        ORDER BY riaLoad.loadDate DESC
+    END
+else
+    BEGIN
+        SELECT DISTINCT 
+            load_id, 
+            cccamps.cam_descripcion as camName, 
+            pctg, 
+            -- Restamos los bloqueados de los cargados/actualizados
+            (regsLoaded + alreadyLoaded) - 
+            (regsNotLoaded + regsBlocked + isnull(regsNotLoadedCp,0) + ISNULL(recordsNotLoadedPort,0)) as regsLoaded, 
+            regsNotLoaded + regsBlocked + isnull(regsNotLoadedCp,0) + ISNULL(recordsNotLoadedPort,0) as regsNotLoaded, 
+            state, 
+            loadDate,
+            riaLoad.description
+        FROM ccRIALoading riaLoad
+        JOIN ccSupervisorCam superCam ON riaLoad.cam_id = superCam.cam_id
+        JOIN ccCamps cccamps ON riaLoad.cam_id = cccamps.cam_id
+        WHERE 
+        loadDate>=@today AND
+        superCam.user_id = @userID
+        AND superCam.tipo = 1
+        ORDER BY riaLoad.loadDate DESC
+    END
+
+return(0)
+END
+
+if @action=2 -- Detalle específico de carga de registros
+BEGIN
+if not exists(SELECT load_id FROM ccRIALoading)
+    BEGIN
+    raiserror(''ERROR. invalid template ID'', 18, 1)
+    return(0)
+    END
+    SELECT 
+    crl.regsLoaded
+    ,crl.alreadyLoaded
+    ,crl.regsBlocked
+    ,crl.regsNotLoaded
+    ,crl.telsLoaded
+    ,crl.telsBlocked
+    ,crl.telsNotLoaded
+    ,ISNULL(regsNotLoadedCp,0) as regsNotLoadedCp
+    ,ISNULL(telsNotLoadedCp,0) as telsNotLoadedCp
+    ,ISNULL(recordsNotLoadedPort,0) as recordsNotLoadedPort
+    ,ISNULL(phonesNotLoadedPort, 0) as phonesNotLoadedPort
+    ,ISNULL(LoadBySegment, CAST(0 AS BIT)) as IsSegmentLoad
+    ,cc.CampType
+    FROM dbo.ccRIALoading AS crl
+    JOIN dbo.ccCamps AS cc
+    ON cc.cam_id = crl.cam_id
+    WHERE crl.load_id = @loadID
+          
+
+END
+
+if @action=3 -- Porcentaje de carga de registros
+BEGIN
+if not exists(SELECT load_id FROM ccRIALoading)
+    BEGIN
+    raiserror(''ERROR. invalid load ID'', 18, 1)
+    return(0)
+    END
+
+     SELECT state,case when state in(3) and pctg<100 then convert(smallint, 100) else pctg end pctg,
+	description
+  FROM ccRIALoading
+  WHERE load_id  = @loadID
+
+END
+SET nocount off
+';
+EXEC(@sql);
+------------------------------END Giovanni Vivaldo-------------------------------
 
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

@@ -22147,50 +22147,97 @@ WHERE StartIndex <= LEN(@packageData); -- Asegúrate de no exceder la longitud.
 
 end
 else if @action = 15 begin 
-; with 
-tempUserIds as(
-        select cast(Value as int) as userId from dbo.fn_RIASplitDelimited(@userIds,'','')
-), WgUser AS(
-select distinct
-u.UserId,
-A.IdCampEsp,A.Tipo from ccRIAWorkGroupUsers WG
-inner join ccRIACampEspWG A on A.IDWG=WG.IDWG
-inner join tempUserIds u on u.userId=WG.User_id
-where WG.IDWG<>@WgId
-)
-, wGCamp AS(
-select u.userId, A.IdCampEsp,A.Tipo from ccRIACampEspWG A
-cross join tempUserIds u
-where A.IDWG=@WgId
-)
-, campData as(
-select wg.* from wGCamp wg
-left join WgUser w on wg.userId=w.userId and wg.IdCampEsp=w.IdCampEsp and wg.Tipo=w.Tipo
-where w.IdCampEsp is null
-)
-, dataDiferent as(
-select 
-convert(varchar, A.userId)+''-''+
-convert(varchar, A.IdCampEsp)+''-''+convert(varchar,A.Tipo+1)  
-+''-''+convert(varchar,COALESCE (campAgent.prioridad ,inboundAgent.prioridad,1)) 
-+''-''+convert(varchar,COALESCE (campAgent.skill ,inboundAgent.skill,1))
-as UserIdCampAndType
-from campData A
-left join ccCampsAgente campAgent on A.IdCampEsp = campAgent.cam_id and A.Tipo=1 and A.userId=campAgent.user_id
-left join ccInboundAgentes inboundAgent on A.IdCampEsp = inboundAgent.inbound_id and A.Tipo=0 and A.userId=inboundAgent.user_id
-)
-select @packageData=UserIdCampAndType+'',''+@packageData from dataDiferent   
 
-;WITH BlockIndices AS (
-        SELECT TOP ((LEN(@packageData) + @blockSize - 1) / @blockSize) -- Calcula cuántos bloques son necesarios.
-                   (ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) - 1) * @blockSize + 1 AS StartIndex
-        FROM master.dbo.spt_values -- Usamos una tabla auxiliar para generar números.
-)
-SELECT                  
-        convert(varchar(8000), SUBSTRING(@packageData, StartIndex, @blockSize)) AS packageData
-FROM BlockIndices
-WHERE StartIndex <= LEN(@packageData); -- Asegúrate de no exceder la longitud.
+    -- 1. IMPORTANTE: Evita que el "X rows affected" confunda a la aplicación
+    SET NOCOUNT ON;
 
+    -- Configuración de bloques (igual que antes)
+    DECLARE @RowsPerBlock INT = 250; 
+
+    -- 2. Tabla Temporal para cálculo masivo
+    CREATE TABLE #TempRawData (
+        RowID INT IDENTITY(1,1) PRIMARY KEY,
+        User_id INT,
+        IdCampEsp INT,
+        Tipo INT,
+        Prioridad INT,
+        Skill INT,
+        TotalTipo INT
+    );
+
+    -- 3. Lógica de Negocio (Set-Based / Sin Cursores)
+    ;WITH TargetUsers AS (
+        SELECT DISTINCT CAST(Value AS INT) as User_id
+        FROM dbo.fn_RIASplitDelimited(@userIds, '','')
+        WHERE Value IS NOT NULL AND Value <> ''''
+    ),
+    ExistingAccess AS (
+        SELECT WG.User_id, CWG.IdCampEsp, CWG.Tipo
+        FROM ccRIAWorkGroupUsers WG WITH(NOLOCK)
+        INNER JOIN TargetUsers U ON WG.User_id = U.User_id
+        INNER JOIN ccRIACampEspWG CWG WITH(NOLOCK) ON WG.IDWG = CWG.IDWG
+        WHERE WG.IDWG <> @WgId
+    ),
+    TargetWGCampaigns AS (
+        SELECT CWG.IdCampEsp, CWG.Tipo
+        FROM ccRIACampEspWG CWG WITH(NOLOCK)
+        WHERE CWG.IDWG = @WgId
+    ),
+    UserTotals AS (
+        SELECT WG.User_id, SUM(CWG.Tipo + 1) as TotalTipo
+        FROM ccRIAWorkGroupUsers WG WITH(NOLOCK)
+        INNER JOIN TargetUsers U ON WG.User_id = U.User_id
+        INNER JOIN ccRIACampEspWG CWG WITH(NOLOCK) ON WG.IDWG = CWG.IDWG
+        GROUP BY WG.User_id
+    )
+    INSERT INTO #TempRawData (User_id, IdCampEsp, Tipo, Prioridad, Skill, TotalTipo)
+    SELECT 
+        U.User_id,
+        T.IdCampEsp,
+        T.Tipo,
+        COALESCE(CA.prioridad, IA.prioridad, 1),
+        COALESCE(CA.skill, IA.skill, 1),
+        ISNULL(UT.TotalTipo, 0)
+    FROM TargetUsers U
+    CROSS JOIN TargetWGCampaigns T
+    LEFT JOIN UserTotals UT ON U.User_id = UT.User_id
+    LEFT JOIN ExistingAccess E 
+        ON U.User_id = E.User_id AND T.IdCampEsp = E.IdCampEsp AND T.Tipo = E.Tipo
+    LEFT JOIN ccCampsAgente CA WITH(NOLOCK) 
+        ON T.IdCampEsp = CA.cam_id AND T.Tipo = 1 AND U.User_id = CA.User_id
+    LEFT JOIN ccInboundAgentes IA WITH(NOLOCK) 
+        ON T.IdCampEsp = IA.inbound_id AND T.Tipo = 0 AND U.User_id = IA.User_id
+    WHERE E.IdCampEsp IS NULL;
+
+    -- 4. SALIDA EXACTA (Mismo formato que el código original)
+    -- El código original devolvía: segmentId (int), segment (varchar)
+    
+    SELECT 
+        -- Simulamos el segmentId usando el número de bloque
+        Groups.BlockID + 1 AS segmentId, 
+        
+        -- Simulamos la columna ''segment'' convirtiendo a VARCHAR(8000)
+        CAST(STUFF((
+            SELECT '','' + 
+                CAST(T2.User_id AS VARCHAR(20)) + ''-'' +
+                CAST(T2.IdCampEsp AS VARCHAR(20)) + ''-'' +
+                CAST(T2.Tipo + 1 AS VARCHAR(5)) + ''-'' +
+                CAST(T2.Prioridad AS VARCHAR(5)) + ''-'' +
+                CAST(T2.Skill AS VARCHAR(5)) + ''-'' +
+                CAST(T2.TotalTipo AS VARCHAR(10))
+            FROM #TempRawData T2
+            WHERE (T2.RowID - 1) / @RowsPerBlock = Groups.BlockID 
+            ORDER BY T2.RowID
+            FOR XML PATH(''''), TYPE
+        ).value(''.'', ''VARCHAR(MAX)''), 1, 1, '''') AS VARCHAR(8000)) AS segment
+
+    FROM (
+        SELECT DISTINCT (RowID - 1) / @RowsPerBlock AS BlockID
+        FROM #TempRawData
+    ) Groups
+    ORDER BY Groups.BlockID;
+
+    DROP TABLE #TempRawData;
 
 end';
     EXEC(@sql);

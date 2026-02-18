@@ -23423,6 +23423,213 @@ SET @sql = 'CREATE procedure [dbo].[ccsp_RIALogPhones]
 		END
 	END'
     EXEC(@sql)
+
+    SET @process = 'Modificacion para guardado de grabaciones'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_EngineLogTransfers]
+		@action as tinyint,
+		@cal_id as integer,
+		@tipo as tinyint,
+		@modo as tinyint,
+		@destino as varchar(50),
+		@tantes integer = 0,
+		@tdespues integer = 0,
+		@pbxId tinyint =0,
+		@channel int =0,
+		@callerAni as varchar(50) = null,
+		@destination varchar(50)='''',
+		@destination_name varchar(50)=''''
+		as
+		-- tipo: 1 inbound, 2 outbound
+		-- modo: 0 externa ciega, 1 agente, 2 acd, 3 confer, 4 externa supervisada, 5 desborde, 6 supervisada acd, 7 in callback
+
+		declare @totalCall_Time integer
+		declare @callout_id int
+		declare @xferDate datetime = getdate()
+
+		declare @calloutId int
+
+		if @action = 1 begin
+			if @modo = 4 begin
+				insert into ccLogTransfers(cal_id,tipo,modo,destino,tAntesXfer,tDespuesXfer,fechaFin,pbxId,channel, tipoLlamada_id, callerAni, destination, destination_name)
+				values ( @cal_id, @tipo, @modo, @destino, @tantes, @tdespues, @xferDate, @pbxId, @channel, dbo.fnGetTipoLlamada(@destino), @callerAni, @destination, @destination_name)
+				if @tdespues > 0 begin
+						select @totalCall_Time = ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0) + @tdespues
+						update ccoCallsOut set totalCall_Time = @totalCall_Time where cal_id = @cal_id
+				end
+			end
+			else begin
+				if @modo = 5 and @tipo = 1 and @cal_id = 0
+				begin
+					insert into ccLogTransfers(cal_id,tipo,modo,destino,tAntesXfer,tDespuesXfer,fechaFin,pbxId,channel, tipoLlamada_id, callerAni, destination, destination_name)
+					values ( @cal_id, @tipo, @modo, @destino, @tantes, @tdespues, @xferDate, @pbxId, @channel, dbo.fnGetTipoLlamada(@destino), @callerAni, @destination, @destination_name)
+					return;
+				end
+
+				if not exists (select 1 from ccLogTransfers where cal_id = @cal_id and tipo = @tipo)
+				begin
+					insert into ccLogTransfers(cal_id,tipo,modo,destino,tAntesXfer,tDespuesXfer,fechaFin,pbxId,channel, tipoLlamada_id, callerAni, destination, destination_name)
+					values ( @cal_id, @tipo, @modo, @destino, 0, @tantes, @xferDate, @pbxId, @channel, dbo.fnGetTipoLlamada(@destino), @callerAni, @destination, @destination_name)
+				end
+
+				if @tipo = 2 begin
+					if @modo = 5 begin
+						select @cal_id = (select callout_id from ccCallsIn where cal_id = @cal_id)
+						update ccLogTransfers set tDespuesXfer = @tantes + (select tDespuesXfer from ccLogTransfers where cal_id = @cal_id and tipo = 2), tAntesXfer = @tdespues + (select tAntesXfer from ccLogTransfers where cal_id = @cal_id and tipo = 2)  where cal_id = @cal_id and tipo = 2
+					end
+
+					if @modo in (0,1,2) begin
+						select @totalCall_Time = ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0) + @tantes
+						update ccoCallsOut set totalCall_Time = @totalCall_Time, tipoLlamada_id = dbo.fnGetTipoLlamada(@destino) where cal_id = @cal_id
+					end
+				end
+				else begin
+					if @modo = 7 begin
+					select @xferDate XferDate
+					return(0)
+					end
+					select @calloutId = callout_id from ccCallsIn where cal_id = @cal_id
+					if @calloutId <> 0
+					begin
+						select @cal_id = @calloutId
+						select @totalCall_Time = ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0) + @tantes
+						update ccoCallsOut set totalCall_Time = @totalCall_Time, tipoLlamada_id = dbo.fnGetTipoLlamada(@destino) where cal_id = @cal_id
+					end
+				end
+			end
+			--Valida que no existe y que el tiempo minimo de la grabacion se mayor al establecido para que lo tome el detector de gritos
+			declare @tMinAVRS smallint,@cal_tDialog int,@cal_manual int
+			set @tMinAVRS=5
+			set @cal_manual=0
+			select @tMinAVRS=valor from ccSettings where setting_id=65
+			if @tipo=2 begin
+				select @cal_tDialog=cal_tDialog,@cal_manual=cal_manual from ccoCallsOut where cal_id=@cal_id
+			end
+			else begin
+				select @cal_tDialog=cal_tDialog from ccCallsIn where cal_id=@cal_id
+			end
+
+			if @cal_tDialog >= @tMinAVRS and @cal_manual<>1 begin
+				insert into ccAVRSTransfer (cal_id,tipo) values(@cal_id,@tipo-1)
+			end
+		end
+
+		else if @action = 2
+		begin
+			select @calloutId = callout_id from ccCallsIn where cal_id = @cal_id
+			if @calloutId <> 0
+			begin
+				select @cal_id = @calloutId
+				update ccLogTransfers set tDespuesXfer = @tdespues + @tantes + (select tDespuesXfer from ccLogTransfers where cal_id = @cal_id and tipo = 2)  where cal_id = @cal_id and tipo = 2
+				select @totalCall_Time = ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0) + @tantes + @tdespues
+				update ccoCallsOut set totalCall_Time = @totalCall_Time where cal_id = @cal_id
+			end
+		end
+
+		else if @action = 4 begin
+			select @totalCall_Time = ISNULL((select sum(tincall) from IVRCallsIn where callout_id = @cal_id), 0) + ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0)
+			update ccoCallsOut set totalCall_Time = @totalCall_Time, tipoLlamada_id = dbo.fnGetTipoLlamada(@destino) where cal_id = @cal_id
+		end'
+	EXEC(@sql)
+
+    SET @process = 'Se elimina sp ccsp_AgentUpdateCallTimes en caso de existir'
+    SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_AgentUpdateCallTimes'')
+			begin
+				DROP PROCEDURE ccsp_AgentUpdateCallTimes;
+			end'
+    EXEC(@sql)
+	SET @process = 'elimina validacion de no grabaciones en avrsTransfer'
+	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_AgentUpdateCallTimes]
+	@IDCall int,
+	@cal_tXfer float,
+	@cal_tDialog float,
+	@cal_tNotas float,
+	@TipoCall tinyint,
+	@cal_tRing float=0,
+	@mtmoh smallint = 0,
+	@isChatCall bit = 0,
+	@isErroManualCall bit =0,
+	@isTransferEngine bit =0,
+	@cal_twait float = null,
+	@cal_whoHung smallint = null
+	AS
+	set nocount on
+	if @IDCall<=0 
+		return(0)
+
+	declare @tMinAVRS smallint
+	declare @cal_manual int
+	declare @minimoDialogo tinyint 
+	select @minimoDialogo = valor from ccSettings where setting_id = 13
+
+	set @cal_manual=0
+
+	if @TipoCall=1 begin--INBOUND
+	  if @cal_tDialog < @minimoDialogo and @isTransferEngine =1 begin
+		--el status 18 es para llamada cortada con transferencia en Reminder
+		exec ccsp_RIAUpdateCallBack_Abandon @cal_id = @IDCall, @nStatus = 18
+	  end
+	  Update ccCallsIN with(rowlock) Set cal_tXfer=@cal_tXfer, 
+		cal_tDialog=case when @cal_tDialog > 0 and @cal_tDialog > cal_tDialog then @cal_tDialog else cal_tDialog end, 
+	  cal_tNotas=@cal_tNotas, 
+	  cal_tRing=@cal_tRing, cal_colgada=0, statusCall_id=13, 
+	  cal_tMoh= case when @mtmoh>0 then  @mtmoh else cal_tMoh end
+	  Where cal_id= @IDCall
+
+	  exec ccspSaveDispositionResult @action=2, @callid=@IDCall,@callType=0,@statusCallId=13
+
+
+	  --Actualizar tiempo total de llamada
+	  exec ccsp_EngineLogTransfers 2, @IDCall, @TipoCall, 2, null, @cal_tXfer, @cal_tDialog
+
+	  -- Elimina callback generado por abandono
+  
+	  if @isTransferEngine = 0  begin
+	  Declare @ANI_x varchar(19)
+	  select @ANI_x=cal_ani from cccallsin with(index(PK_ccCallsIn), nolock) where cal_id=@IDCall
+
+	  DELETE ccoWorkingTable with(rowlock ) WHERE callout_id in (select callout_id from ccRIAUpdateCallBack_Abandon with(index(PK_ccRIAUpdateCallBack_Abandon), nolock) where cal_ani=@ANI_x)
+	  DELETE ccRIAUpdateCallBack_Abandon with(rowlock) WHERE cal_ANI=@ANI_x
+	  end
+	end
+	else if @TipoCall=2 begin--OUTBOUND 
+		declare @calloutId int
+		Update ccoCallsOUT with(rowlock) Set cal_tXfer=case when @cal_tXfer > 0 then @cal_tXfer else cal_tXfer end, 
+		cal_tRing=case when @cal_tRing > 0 then @cal_tRing else cal_tRing end, 
+		cal_tDialog=case when @cal_tDialog > 0 and @cal_tDialog > cal_tDialog then @cal_tDialog else cal_tDialog end, 
+    
+		cal_tNotas=case when @cal_tNotas > 0 then @cal_tNotas else cal_tNotas end, 
+		cal_tMoh=case when @mtmoh > 0 then @mtmoh else cal_tMoh end,
+    
+		cal_manual=case when @isChatCall=1 then 3 else cal_manual end,
+		cal_colgada=0, statusCall_id=case when @isErroManualCall=0 then 13 else statusCall_id end,
+		totalCall_Time=case when totalCall_Time is null then @cal_tDialog else totalCall_Time end 
+		,@calloutId=callout_id,
+		cal_twait = ISNULL(@cal_twait, cal_twait),
+		cal_whoHung = ISNULL(@cal_whoHung, cal_whoHung)
+		Where cal_id=@IDCall
+
+		exec ccspSaveDispositionResult @action=2, @callid=@IDCall,@callType=1,@statusCallId=13
+		
+		DELETE ccRIAUpdateCallBack_Abandon with(rowlock) WHERE callout_id=@calloutId
+
+		-- calcula el costo de la llamada
+		exec ccsp_CstoCalculaCosto @IDCall
+	  select @cal_manual=cal_manual from ccoCallsOUT with(nolock) Where cal_id=@IDCall
+
+	 end
+
+	select @tMinAVRS=isnull(valor,5) from ccSettings where setting_id=65
+
+	if @cal_tDialog >= @tMinAVRS and @cal_manual<>1
+	  begin 
+			insert ccAVRSTransfer (cal_id, tipo) values (@IDCall, @TipoCall - 1)
+	end
+
+	return(0)
+	set nocount off'
+	EXEC(@sql);
+
+
 ------------------------------END Giovanni Vivaldo-------------------------------
 
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */

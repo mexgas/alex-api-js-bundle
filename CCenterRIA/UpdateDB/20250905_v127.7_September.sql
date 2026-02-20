@@ -22075,27 +22075,54 @@ end
 else if @action = 13 begin 
 if @tipo=2 set @tipo=1
 
+declare @WgUserCamp table (User_id int primary key)
+
 ; with WgCamp As(
-select IDWG,IdCampEsp,tipo from ccRIACampEspWG A
+select IDWG from ccRIACampEspWG A
 where tipo=@tipo and IdCampEsp=@camId and IDWG<>@WgId
 )
-, WgUserCamp as(
-select C.Login,WGUser.User_id,WgCamp.* from ccRIAWorkGroupUsers WGUser
-inner join WgCamp on WGUser.IDWG=WgCamp.IDWG 
+
+insert into @WgUserCamp
+select WGUser.User_id
+from WgCamp
+inner join ccRIAWorkGroupUsers WGUser on WGUser.IDWG=WgCamp.IDWG 
 inner join ccUsers C on WGUser.User_id=C.User_id and C.TipoUser_id=1
-), dataDiferent as(     
 
-select distinct convert(varchar, WG.User_id)
-+''-''+convert(varchar,COALESCE (campAgent.prioridad ,inboundAgent.prioridad,1))
-+''-''+convert(varchar,COALESCE (campAgent.skill ,inboundAgent.skill,1))        CampAndType
-from ccRIAWorkGroupUsers WG     
-inner join ccUsers C on WG.User_id=C.User_id and C.TipoUser_id=1
-left join ccCampsAgente campAgent on campAgent.user_id=c.User_id
-left join ccInboundAgentes inboundAgent on inboundAgent.User_id=c.User_id
-where Wg.IDWG=@WgId and Wg.User_id not in(select User_id from WgUserCamp)
-)
+if @tipo=1 begin
 
-select @packageData=CampAndType+'',''+@packageData from dataDiferent 
+    ;with dataPackage as(
+    select distinct     
+    convert(varchar, WG.User_id)
+    +''-''+convert(varchar,isnull (campAgent.prioridad ,1))
+    +''-''+convert(varchar,isnull (campAgent.skill ,1))    package
+    from ccRIAWorkGroupUsers WG
+    inner join ccCampsAgente campAgent on campAgent.user_id=WG.User_id and WG.IDWG=campAgent.IDWG
+    where Wg.IDWG=@WgId and Wg.User_id not in(select User_id from @WgUserCamp)
+
+    )
+    select @packageData=package+'',''+@packageData from dataPackage
+
+
+end
+else begin 
+
+    ;with dataPackage as(
+     select distinct 
+    
+    convert(varchar, WG.User_id)
+    +''-''+convert(varchar,isnull (campAgent.prioridad ,1))
+    +''-''+convert(varchar,isnull (campAgent.skill ,1)) package
+    
+    from ccRIAWorkGroupUsers WG
+    inner join ccInboundAgentes campAgent on campAgent.user_id=WG.User_id and WG.IDWG=campAgent.IDWG
+     where Wg.IDWG=@WgId and Wg.User_id not in(select User_id from @WgUserCamp)
+     )
+
+     select @packageData=package+'',''+@packageData from dataPackage
+
+end
+
+
 
 -- Generar un rango de índices para dividir la cadena en bloques.
 ;WITH BlockIndices AS (

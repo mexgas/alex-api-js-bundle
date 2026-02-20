@@ -14942,7 +14942,7 @@ SET NOCOUNT OFF
             AS
             set nocount on
             declare @message_name as varchar(8000), @messageDNCL_name as varchar(max), @messageDNCLConfirm_name as varchar(max)    
-            declare @prefix as varchar(15)
+            declare @prefix as varchar(15), @trunk varchar(200)
             declare @prefixCalKey as varchar(30)
             declare @tNoContesta as tinyint
             declare @ani as varchar(32)
@@ -14973,7 +14973,7 @@ SET NOCOUNT OFF
             from dbo.fn_ccCamps_SelMessage(@cam_id)
 
             -- Prefijo por puerto
-		    select @prefix = prefix from cstoProvedor with(nolock) where provedor_id = (
+		    select @prefix = prefix, @trunk=isnull(trunk,'''') from cstoProvedor with(nolock) where provedor_id = (
 		        select provedor_id from ccodialers with(nolock) where puerto = @iPortNumber )
 		    -- Prefijo por campa?a
 		    if @prefix =''''
@@ -15114,6 +15114,7 @@ SET NOCOUNT OFF
                 @recordIvr as recordIvr,
                 isnull(C.data_api_quantum, '''') AS data_api_quantum,
                 @apikeyQuantum AS key_api_quantum,
+				@trunk trunk,
 				dbo.GetRoute(C.cal_telefono,isnull(@croute,''''),@trunkId) destination
         		FROM @tmpccoCallsOutSource C
 				left join ccoCallPriorityOrder cpo with(nolock) on cpo.callout_id = c.callout_id
@@ -15135,7 +15136,7 @@ SET NOCOUNT OFF
                     @callout_id int = 0,
 					@trunkId int=0
                     as
-                    declare @prefix as varchar(15), @sipheader varchar(500)
+                    declare @prefix as varchar(15), @sipheader varchar(500), @trunk varchar(200)
                     declare @ani as varchar(32)
                     declare @pais as tinyint
                     declare @aniglobal varchar(32), @sipHdrFormat varchar(255)
@@ -15152,7 +15153,8 @@ SET NOCOUNT OFF
 
                     set @prefix =''''
                     -- Prefijo por puerto
-                    select @prefix = prefix from cstoProvedor where provedor_id = (select provedor_id from ccodialers where puerto = @iPortNumber )
+                    select @prefix = prefix, @trunk=isnull(trunk,'''') from cstoProvedor nolock where provedor_id = (
+						select provedor_id from ccodialers nolock where puerto = @iPortNumber )
 
                     -- Prefijo por campa?a,
                     if @prefix =''''
@@ -15215,7 +15217,7 @@ SET NOCOUNT OFF
                     select @prefix as sDialPrefix, @tNoContesta as tNoContesta,@ani as ani, @detectAnswerMachine detectAnswerMachine, @detectVoiceMail detectVoiceMail,
                     @call_record as call_record, isnull(@MsgFiles,'''') as messageFiles, isnull(@MohFiles,'''') as mohFiles, @ivr_script ivrScript, @sipheader data
                     ,@PrefixRec PrefijoRec, @carrier Carrier, @recordHold recordHold, @recordIvr recordIvr,
-					dbo.GetRoute(@phone,isnull(@croute,''''),@trunkId) destination'
+					@trunk trunk, dbo.GetRoute(@phone,isnull(@croute,''''),@trunkId) destination'
 	EXEC(@sql)
 
 	SET @process = 'CW-9905 + Obtener ruta dinamica KR237000'
@@ -15229,7 +15231,7 @@ SET NOCOUNT OFF
 		@trunkId int=0
 		as
 		-- @type: 1 transferencia entrada, 2 transferencia salida, 3 desborde (siempre es entrada, con o sin especialidad)
-		declare @prefix as varchar(15)
+		declare @prefix as varchar(15), @trunk varchar(200)
 		declare @timeout int
 		declare @ani as varchar(32)
 		declare @stop int
@@ -15241,7 +15243,8 @@ SET NOCOUNT OFF
 		set @stop = 0
 
 		-- Prefijo por puerto
-		select @prefix = prefix from cstoProvedor where provedor_id = (select provedor_id from ccodialers where puerto = @iPortNumber )
+		select @prefix = prefix, @trunk=isnull(trunk,'''') from cstoProvedor nolock where provedor_id = (
+			select provedor_id from ccodialers nolock where puerto = @iPortNumber )
 		-- Prefijo por campaña o especialidad
 		if @prefix =''''
 			if @type = 2
@@ -15277,7 +15280,7 @@ SET NOCOUNT OFF
 		end
 
 		select @prefix as sDialPrefix, @timeout as tNoContesta, @ani as ani, @stop as stopRecording, @ivr_script as ivrScript,
-		dbo.GetRoute(@phone,'''',@trunkId) destination'
+		@trunk trunk, dbo.GetRoute(@phone,'''',@trunkId) destination'
     EXEC(@sql)
 
 	SET @process = 'Sears + Guardar ruta dinamica KR237000 Alter SP ccsp_DLRSaveDialResult + update result'

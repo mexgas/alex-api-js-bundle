@@ -264,6 +264,10 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
                 ''N/A'',
                 1)
         END
+		ELSE
+		BEGIN
+			UPDATE ccPermissions set OrderGrl = 27 where Permissions_Id = 10044
+		END
 
         IF NOT EXISTS(SELECT * FROM ccPermissions WHERE Permissions_Id = 10045)
         BEGIN
@@ -277,6 +281,10 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
                 ''N/A'',
                 1)
         END
+		ELSE
+		BEGIN
+			UPDATE ccPermissions set OrderGrl = 28 where Permissions_Id = 10045
+		END
 	 '
     EXEC(@sql)
 

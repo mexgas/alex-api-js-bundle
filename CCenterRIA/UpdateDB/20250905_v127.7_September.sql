@@ -260,7 +260,7 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
                 ''RolesPermissionManageVirtualAgentModule'',
                 0,
                 0,
-                0,
+                27,
                 ''N/A'',
                 1)
         END
@@ -277,7 +277,7 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
                 ''RolesPermissionViewVirtualAgentModule'',
                 0,
                 0,
-                0,
+                28,
                 ''N/A'',
                 1)
         END

@@ -1627,6 +1627,17 @@ where id = 4020'
 
 	------------------------------------------ END MACL ---------------------------------------------
 
+	------------------------------------------ BEGIN Rod Salazar ---------------------------------------------
+
+	set @process = 'Fix columnas sin totales'
+	set @sql='
+	IF EXISTS (select 1 from ReportsTotals where id = 2010)
+	BEGIN
+		update ReportsTotals set totalColumns = ''sum:tauxiliarready|sum:nxferin|sum:nanswerin|sum:nabndxferin|sum:nabndringin|sum:nabnddlgin|sum:abndaxferin|sum:nnoanswerin|sum:nlostin|sum:tdialogin|sum:tnotesin|sum:tChatting|sum:tManual|sum:tundefined|sum:tringin|sum:txferin|sum:nxferout|sum:nanswerout|sum:nabndxferout|sum:nabndringout|sum:nabnddlgout|sum:abndaxferout|sum:nnoanswerout|sum:nlostout|sum:tdialogout|sum:tnotesout|sum:tringout|sum:txferout|sum:nother|sum:tunknown|sum:tnotav|sum:tlog|sum:tav|sum:tother|sum:tprob|sum:nmohin|sum:nmohout|sum:nwhagin|sum:nwhagout|sum:nwhcliin|sum:nwhcliout|special:tnotavg:isnull(sum([tdialogin]+[tdialogout])/nullif(sum([nanswerin]+[nanswerout]),0),0)'' where id = 2010
+	END'
+	EXEC(@sql)
+	------------------------------------------ END Rod Salazar ---------------------------------------------
+
 
 set @process = ''
 set @sql=''

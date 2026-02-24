@@ -21304,7 +21304,7 @@ END'
 
                 DECLARE @AreaName  NVARCHAR(200),
                         @Login NVARCHAR(200),
-                        @NameCampaing NVARCHAR(200);
+                        @NameCampaing NVARCHAR(200), @nameAgentBeforeUpdate VARCHAR(255);
 
                 EXEC InsertLogAdminGalatea @action = 1,
                                             @tableName = ''ccVirtualAgent'',
@@ -21316,6 +21316,10 @@ END'
                     dataInfo varchar(255),
                     identifierInfo varchar(255)
                 )
+
+				SELECT @nameAgentBeforeUpdate = v.nameAgent
+                FROM dbo.ccVirtualAgent AS v
+                WHERE v.idAgent = @idVirtualAgent;
 
                 UPDATE ccVirtualAgent
                 SET
@@ -21503,7 +21507,10 @@ END'
                             END
                         ELSE ''''
                     END,
-                    @NameAgent
+					CASE
+					WHEN S.identifierInfo = ''VA_NAME'' THEN @nameAgentBeforeUpdate 
+					ELSE 
+					@NameAgent END
                 FROM src AS S
                 WHERE NULLIF(LTRIM(RTRIM(S.identifierInfo)), '''') IS NOT NULL
                     AND NOT (S.identifierInfo = ''VA_SCRIPTED_RESPONSES'' AND S.rn > 1)

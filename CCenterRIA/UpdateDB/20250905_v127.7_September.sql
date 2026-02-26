@@ -20967,115 +20967,120 @@ END'
 
             ELSE IF @action = 4 -- Change of associated campaign. Brings the info for Activity history
             BEGIN
-                DECLARE @PreviousAgentData AS TABLE(
-                    idAgent INT,
-                    nameAgent VARCHAR(255),
-                    idCampaign SMALLINT,
-                    camptype TINYINT
-                );
+				BEGIN TRY
+					DECLARE @PreviousAgentData AS TABLE(
+						idAgent INT,
+						nameAgent VARCHAR(255),
+						idCampaign SMALLINT,
+						camptype TINYINT
+					);
 
-                IF(@campaignId <> 0)
-                BEGIN
-                    -- *** VALIDATIONS FOR CAMPAIGN ASSIGNATION ***
-                    -- Campaign was deleted
-                    DECLARE @campaignArea AS SMALLINT
+					IF(@campaignId <> 0)
+					BEGIN
+						-- *** VALIDATIONS FOR CAMPAIGN ASSIGNATION ***
+						-- Campaign was deleted
+						DECLARE @campaignArea AS SMALLINT
 
-                    IF @campType = 0
-                    BEGIN
-                        SELECT @campaignArea =
-                            CASE
-                                WHEN EXISTS (SELECT 1 FROM ccInbound_Consulta WHERE Inbound_id = @campaignId)
-                                    THEN 1
-                                ELSE 0
-                            END;
-                    END
-                    ELSE IF @campType = 1
-                    BEGIN
-                        SELECT @campaignArea =
-                            CASE
-                                WHEN EXISTS (SELECT 1 FROM ccCamps_Consulta WHERE cam_id = @campaignId)
-                                    THEN 1
-                                ELSE 0
-                            END;
-                    END
+						IF @campType = 0
+						BEGIN
+							SELECT @campaignArea =
+								CASE
+									WHEN EXISTS (SELECT 1 FROM ccInbound_Consulta WHERE Inbound_id = @campaignId)
+										THEN 1
+									ELSE 0
+								END;
+						END
+						ELSE IF @campType = 1
+						BEGIN
+							SELECT @campaignArea =
+								CASE
+									WHEN EXISTS (SELECT 1 FROM ccCamps_Consulta WHERE cam_id = @campaignId)
+										THEN 1
+									ELSE 0
+								END;
+						END
 
-                    IF @campaignArea <> 0
-                    BEGIN
-                        SELECT ''Campaign was deleted'' AS Result, 3 AS ErrorCode , 0 AS idAgent, '''' as nameAgent, 0 AS idCampaign, '''' AS nameCampaign
-                        RETURN
-                    END
+						IF @campaignArea <> 0
+						BEGIN
+							SELECT ''Campaign was deleted'' AS Result, 3 AS ErrorCode , 0 AS idAgent, '''' as nameAgent, 0 AS idCampaign, '''' AS nameCampaign
+							RETURN
+						END
 
-                        --- Campaign was assigned to another model
-                    IF EXISTS (SELECT 1 FROM ccVirtualAgent WHERE idAgent != @idVirtualAgent AND idCampaign = @campaignId AND mediaType = @mediaType AND campType = @campType)
-                    BEGIN
-                        SELECT ''Campaign has already been assigned'' as Result, 4 AS ErrorCode , 0 AS idAgent, '''' as nameAgent, 0 AS idCampaign, '''' AS nameCampaign;
-                        RETURN
-                    END
+							--- Campaign was assigned to another model
+						IF EXISTS (SELECT 1 FROM ccVirtualAgent WHERE idAgent != @idVirtualAgent AND idCampaign = @campaignId AND mediaType = @mediaType AND campType = @campType)
+						BEGIN
+							SELECT ''Campaign has already been assigned'' as Result, 4 AS ErrorCode , 0 AS idAgent, '''' as nameAgent, 0 AS idCampaign, '''' AS nameCampaign;
+							RETURN
+						END
 
-                    --- Campaign doesn''t belong to the same wg than te user
-                    DECLARE @CampaignIsNotInUserWorkgroup  BIT = 0;
+						--- Campaign doesn''t belong to the same wg than te user
+						DECLARE @CampaignIsNotInUserWorkgroup  BIT = 0;
 
-                    IF NOT EXISTS (SELECT * FROM ccUsers_Roles NOLOCK WHERE User_id = @AdminId AND Rol_id = 7) -- It''s not a superUser
-                    BEGIN
-                        SELECT @CampaignIsNotInUserWorkgroup =
-                            CASE WHEN NOT EXISTS (
-                                SELECT 1
-                                FROM dbo.ccRIAWorkGroupUsers AS userWG
-                                    JOIN dbo.ccRIACampEspWG AS campaignWg ON campaignWg.IDWG = userWG.IDWG
-                                WHERE userWG.User_id    = @adminId
-                                    AND campaignWg.Tipo       = @campType 
-                                    AND campaignWg.IdCampEsp  = @campaignId
-                                )
-                                THEN 1 ELSE 0 END;
+						IF NOT EXISTS (SELECT * FROM ccUsers_Roles NOLOCK WHERE User_id = @AdminId AND Rol_id = 7) -- It''s not a superUser
+						BEGIN
+							SELECT @CampaignIsNotInUserWorkgroup =
+								CASE WHEN NOT EXISTS (
+									SELECT 1
+									FROM dbo.ccRIAWorkGroupUsers AS userWG
+										JOIN dbo.ccRIACampEspWG AS campaignWg ON campaignWg.IDWG = userWG.IDWG
+									WHERE userWG.User_id    = @adminId
+										AND campaignWg.Tipo       = @campType 
+										AND campaignWg.IdCampEsp  = @campaignId
+									)
+									THEN 1 ELSE 0 END;
 
-                        IF @CampaignIsNotInUserWorkgroup = 1
-                        BEGIN
-                            SELECT ''Campaign doesn''''t belong to admin workgroups'' as Result, 5 AS ErrorCode , 0 AS idAgent, '''' as nameAgent, 0 AS idCampaign, '''' AS nameCampaign;
-                            RETURN
-                        END
-                    END
-                END
+							IF @CampaignIsNotInUserWorkgroup = 1
+							BEGIN
+								SELECT ''Campaign doesn''''t belong to admin workgroups'' as Result, 5 AS ErrorCode , 0 AS idAgent, '''' as nameAgent, 0 AS idCampaign, '''' AS nameCampaign;
+								RETURN
+							END
+						END
+					END
 
-                UPDATE ccVirtualAgent SET idCampaign = @campaignId,
-                                            mediaType = @mediaType,
-                                            camptype = @campType,
-                                            latestUpdateDateAgent = GETDATE()
-                                            OUTPUT deleted.idAgent, deleted.nameAgent, deleted.idCampaign, deleted.campType INTO @PreviousAgentData
-                                            WHERE idAgent = @idVirtualAgent
-                IF @campaignId <> 0
-                    BEGIN
-                        SELECT
-                            ''Campaign changed'' AS Result,
-                            0 AS ErrorCode,
-                            va.idAgent,
-                            va.nameAgent,
-                            CAST(va.idCampaign as int) idCampaign,
-                            CASE 
-                                WHEN @campType = 0 THEN i.descripcion
-                                ELSE cout.cam_descripcion 
-                            END AS campaignName
-                        FROM ccVirtualAgent va
-                            LEFT JOIN ccInbound i ON va.idCampaign = i.Inbound_id AND @campType = 0
-                            LEFT JOIN ccCamps cout ON va.idCampaign = cout.cam_id AND @campType = 1
-                        WHERE va.idAgent = @idVirtualAgent;
-                    END
-                ELSE
-                    BEGIN
-                        SELECT
-                            ''Campaign retired'' AS Result,
-                            0 AS ErrorCode,
-                            pvd.idAgent,
-                            pvd.nameAgent,
-                            CAST(0 as int) idCampaign,
-                            CASE 
-                                WHEN pvd.camptype = 0 THEN i.descripcion
-                                ELSE cout.cam_descripcion 
-                            END AS campaignName
-                        FROM @PreviousAgentData pvd
-                            LEFT JOIN ccInbound i ON pvd.idCampaign = i.Inbound_id AND pvd.camptype = 0
-                            LEFT JOIN ccCamps cout ON pvd.idCampaign = cout.cam_id AND pvd.camptype = 1
-                    END
-
+					UPDATE ccVirtualAgent SET idCampaign = @campaignId,
+												mediaType = @mediaType,
+												camptype = @campType,
+												latestUpdateDateAgent = GETDATE()
+												OUTPUT deleted.idAgent, deleted.nameAgent, deleted.idCampaign, deleted.campType INTO @PreviousAgentData
+												WHERE idAgent = @idVirtualAgent
+					IF @campaignId <> 0
+						BEGIN
+							SELECT
+								''Campaign changed'' AS Result,
+								0 AS ErrorCode,
+								va.idAgent,
+								va.nameAgent,
+								CAST(va.idCampaign as int) idCampaign,
+								CASE 
+									WHEN @campType = 0 THEN i.descripcion
+									ELSE cout.cam_descripcion 
+								END AS campaignName
+							FROM ccVirtualAgent va
+								LEFT JOIN ccInbound i ON va.idCampaign = i.Inbound_id AND @campType = 0
+								LEFT JOIN ccCamps cout ON va.idCampaign = cout.cam_id AND @campType = 1
+							WHERE va.idAgent = @idVirtualAgent;
+						END
+					ELSE
+						BEGIN
+							SELECT
+								''Campaign retired'' AS Result,
+								0 AS ErrorCode,
+								pvd.idAgent,
+								pvd.nameAgent,
+								CAST(0 as int) idCampaign,
+								CASE 
+									WHEN pvd.camptype = 0 THEN i.descripcion
+									ELSE cout.cam_descripcion 
+								END AS campaignName
+							FROM @PreviousAgentData pvd
+								LEFT JOIN ccInbound i ON pvd.idCampaign = i.Inbound_id AND pvd.camptype = 0
+								LEFT JOIN ccCamps cout ON pvd.idCampaign = cout.cam_id AND pvd.camptype = 1
+						END
+				END TRY
+				BEGIN CATCH
+					SELECT ''Generic error to assign or unassign campaign to agent'' as Result, 7 AS ErrorCode , 0 AS idAgent, '''' as nameAgent, 0 AS idCampaign, '''' AS nameCampaign;
+					RETURN
+				END CATCH
             END
 
             ELSE IF @action = 5 -- Status change

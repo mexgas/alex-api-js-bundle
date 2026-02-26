@@ -356,6 +356,36 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 		BEGIN
 		 INSERT INTO ccGalateaIdentifiers VALUES(''VA_STRUCTURE_CONFIGURATION'', ''Objetivo, Reglas generales, Guion'', ''Objective, General rules, Script'', ''Objetivo, Regras gerais, Script'')
 		END
+
+		IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''VA_STRUCTURE_CONFIGURATION_OBJECTIVE'')
+		BEGIN
+		 INSERT INTO ccGalateaIdentifiers VALUES(''VA_STRUCTURE_CONFIGURATION_OBJECTIVE'', ''Objetivo'', ''Objective'', ''Objetivo'')
+		END
+
+		IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''VA_STRUCTURE_CONFIGURATION_RULE'')
+		BEGIN
+		 INSERT INTO ccGalateaIdentifiers VALUES(''VA_STRUCTURE_CONFIGURATION_RULE'', ''Reglas generales'', ''General rules'', ''Regras gerais'')
+		END
+
+		IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''VA_STRUCTURE_CONFIGURATION_SCRIPT'')
+		BEGIN
+		 INSERT INTO ccGalateaIdentifiers VALUES(''VA_STRUCTURE_CONFIGURATION_SCRIPT'', ''Guion'', ''Script'', ''Script'')
+		END
+
+		IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''VA_STRUCTURE_CONFIGURATION_OBJECTIVE_RULE'')
+		BEGIN
+		 INSERT INTO ccGalateaIdentifiers VALUES(''VA_STRUCTURE_CONFIGURATION_OBJECTIVE_RULE'', ''Objetivo, Reglas generales'', ''Objective, General rules'', ''Objetivo, Regras gerais'')
+		END
+
+		IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''VA_STRUCTURE_CONFIGURATION_OBJECTIVE_SCRIPT'')
+		BEGIN
+		 INSERT INTO ccGalateaIdentifiers VALUES(''VA_STRUCTURE_CONFIGURATION_OBJECTIVE_SCRIPT'', ''Objetivo, Guion'', ''Objective, Script'', ''Objetivo, Script'')
+		END
+
+		IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''VA_STRUCTURE_CONFIGURATION_RULE_SCRIPT'')
+		BEGIN
+		 INSERT INTO ccGalateaIdentifiers VALUES(''VA_STRUCTURE_CONFIGURATION_RULE_SCRIPT'', ''Reglas generales, Guion'', ''General rules, Script'', ''Regras gerais, Script'')
+		END
 	 '
     EXEC(@sql)
 
@@ -21176,13 +21206,20 @@ END'
             END
             ELSE IF (@action = 13) --Register model definition (Objectives, instructions, rules and variables)
             BEGIN
-                DECLARE @modifiedModelName VARCHAR(255);
+                DECLARE @modifiedModelName VARCHAR(255), @objectiveModified TINYINT = 0, @rulesModified TINYINT = 0, @instructionsModified TINYINT = 0;
 
                 IF NOT EXISTS(SELECT 1 FROM ccVirtualAgent WHERE idAgent = @idVirtualAgent and wasDeleted = 0)
                 BEGIN
                     SELECT 2 AS ErrorCode -- Agent deleted before saving changes
                     RETURN
                 END
+
+				SELECT 
+				@objectiveModified = CASE WHEN ISNULL(cva.objective, '''') = @objective THEN 0 ELSE 1 END,
+				@rulesModified = CASE WHEN ISNULL(cva.rules,'''') = @rules THEN 0 ELSE 1 END,
+				@instructionsModified = CASE WHEN ISNULL(cva.instructions,'''') = @instructions THEN 0 ELSE 1 END,
+				@modifiedModelName = nameAgent
+				FROM dbo.ccVirtualAgent AS cva WHERE cva.idAgent = @idVirtualAgent
 
                 UPDATE ccVirtualAgent
                 SET
@@ -21196,10 +21233,6 @@ END'
 
                 IF @@ROWCOUNT = 1
                 BEGIN
-                    SELECT @modifiedModelName = nameAgent
-                    FROM ccVirtualAgent
-                    WHERE idAgent = @idVirtualAgent;
-
                     SELECT @idArea = IDArea, @userName = Login FROM ccUsers where User_id = @adminId
 
                     -- ACTIVITY HISTORY REGISTER
@@ -21210,9 +21243,26 @@ END'
                             @userName, 
                             170,
                             24,
-                            ''VA_STRUCTURE_CONFIGURATION'',
+                            CASE 
+							WHEN @objectiveModified = 1 AND @rulesModified = 1 AND @instructionsModified = 1 
+								THEN ''VA_STRUCTURE_CONFIGURATION'' 
+							WHEN @objectiveModified = 1 AND @rulesModified = 1 
+								THEN ''VA_STRUCTURE_CONFIGURATION_OBJECTIVE_RULE''
+							WHEN @objectiveModified = 1 AND @instructionsModified = 1 
+								THEN ''VA_STRUCTURE_CONFIGURATION_OBJECTIVE_SCRIPT''
+							WHEN @rulesModified = 1 AND @instructionsModified = 1 
+								THEN ''VA_STRUCTURE_CONFIGURATION_RULE_SCRIPT''
+							WHEN @objectiveModified = 1 
+								THEN ''VA_STRUCTURE_CONFIGURATION_OBJECTIVE''
+							WHEN @rulesModified = 1 
+								THEN ''VA_STRUCTURE_CONFIGURATION_RULE''
+							WHEN @instructionsModified = 1 
+								THEN ''VA_STRUCTURE_CONFIGURATION_SCRIPT''
+							ELSE
+							 ''''
+							END,
                             '''',
-                            @modifiedModelName
+                            @modifiedModelName;
                 
                     SELECT 0 AS ErrorCode -- Success
                 END
@@ -21304,7 +21354,7 @@ END'
 
                 DECLARE @AreaName  NVARCHAR(200),
                         @Login NVARCHAR(200),
-                        @NameCampaing NVARCHAR(200);
+                        @NameCampaing NVARCHAR(200), @nameAgentBeforeUpdate VARCHAR(255);
 
                 EXEC InsertLogAdminGalatea @action = 1,
                                             @tableName = ''ccVirtualAgent'',
@@ -21316,6 +21366,10 @@ END'
                     dataInfo varchar(255),
                     identifierInfo varchar(255)
                 )
+
+				SELECT @nameAgentBeforeUpdate = v.nameAgent
+                FROM dbo.ccVirtualAgent AS v
+                WHERE v.idAgent = @idVirtualAgent;
 
                 UPDATE ccVirtualAgent
                 SET
@@ -21503,7 +21557,10 @@ END'
                             END
                         ELSE ''''
                     END,
-                    @NameAgent
+					CASE
+					WHEN S.identifierInfo = ''VA_NAME'' THEN @nameAgentBeforeUpdate 
+					ELSE 
+					@NameAgent END
                 FROM src AS S
                 WHERE NULLIF(LTRIM(RTRIM(S.identifierInfo)), '''') IS NOT NULL
                     AND NOT (S.identifierInfo = ''VA_SCRIPTED_RESPONSES'' AND S.rn > 1)

@@ -1636,6 +1636,30 @@ where id = 4020'
 		update ReportsTotals set totalColumns = ''sum:tauxiliarready|sum:nxferin|sum:nanswerin|sum:nabndxferin|sum:nabndringin|sum:nabnddlgin|sum:abndaxferin|sum:nnoanswerin|sum:nlostin|sum:tdialogin|sum:tnotesin|sum:tChatting|sum:tManual|sum:tundefined|sum:tringin|sum:txferin|sum:nxferout|sum:nanswerout|sum:nabndxferout|sum:nabndringout|sum:nabnddlgout|sum:abndaxferout|sum:nnoanswerout|sum:nlostout|sum:tdialogout|sum:tnotesout|sum:tringout|sum:txferout|sum:nother|sum:tunknown|sum:tnotav|sum:tlog|sum:tav|sum:tother|sum:tprob|sum:nmohin|sum:nmohout|sum:nwhagin|sum:nwhagout|sum:nwhcliin|sum:nwhcliout|special:tnotavg:isnull(sum([tdialogin]+[tdialogout])/nullif(sum([nanswerin]+[nanswerout]),0),0)'' where id = 2010
 	END'
 	EXEC(@sql)
+
+	set @process = 'insert menu 2110'
+	set @sql='
+	IF NOT EXISTS (SELECT 1 FROM ccMenus WHERE menu_id = 2110)
+	BEGIN
+		INSERT INTO ccMenus VALUES (2110, ''Tiempos de jornada|Shift Time'', 2000, ''B'', 2, 3, '''', ''59e49d1a69b47480dbea6022fcbb02d186f63530500b9861f99ff8de26f86450'');
+	END'
+	EXEC(@sql)
+
+	set @process = 'insert menu 2120'
+	set @sql='
+	IF NOT EXISTS (SELECT 1 FROM ccMenus WHERE menu_id = 2120)
+	BEGIN
+		INSERT INTO ccMenus VALUES (2120, ''Detalle auxiliares por agente|Auxiliary details by agent'', 2100, ''B'', 2, 3, '''', ''fffe3e1af96616008d0b5b3f644e16cf792d8be7cfe33d4b93a43208ee10d77da093aaa985dcf1d0fe1952499fc34801be116ff32af2f5336b1563861cb91646'');  
+	END'
+	EXEC(@sql)
+
+	set @process = 'insert menu 2130'
+	set @sql='
+	IF NOT EXISTS (SELECT 1 FROM ccMenus WHERE menu_id = 2130)
+	BEGIN
+		INSERT INTO ccMenus VALUES (2130, ''Detalle de Especial (Auxiliar)|Special Detail (Auxiliary)'', 2000, ''B'', 2, 3, '''', ''d0df11930b9ac68aa5866c2760e456b7b5a686b8d838d01ab8ae7f4db57a2ff1418b4220a5daa1e20c6857d053450c444c77e33264bc19586d1c950b29c2fcb4'');   
+	END'
+	EXEC(@sql)
 	------------------------------------------ END Rod Salazar ---------------------------------------------
 
 

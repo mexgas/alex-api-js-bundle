@@ -21244,19 +21244,14 @@ END'
                             170,
                             24,
                             CASE 
-							-- LAS 3 JUNTAS
 							WHEN @objectiveModified = 1 AND @rulesModified = 1 AND @instructionsModified = 1 
 								THEN ''VA_STRUCTURE_CONFIGURATION'' 
-
-							-- COMBINACIONES DE 2
 							WHEN @objectiveModified = 1 AND @rulesModified = 1 
 								THEN ''VA_STRUCTURE_CONFIGURATION_OBJECTIVE_RULE''
 							WHEN @objectiveModified = 1 AND @instructionsModified = 1 
 								THEN ''VA_STRUCTURE_CONFIGURATION_OBJECTIVE_SCRIPT''
 							WHEN @rulesModified = 1 AND @instructionsModified = 1 
 								THEN ''VA_STRUCTURE_CONFIGURATION_RULE_SCRIPT''
-							
-							-- INDIVIDUALES
 							WHEN @objectiveModified = 1 
 								THEN ''VA_STRUCTURE_CONFIGURATION_OBJECTIVE''
 							WHEN @rulesModified = 1 

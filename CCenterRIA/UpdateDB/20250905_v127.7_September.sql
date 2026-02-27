@@ -22028,8 +22028,8 @@ exec(@sql)
 return(0)';
     EXEC(@sql);
 
-SET @process = '#6640 ALTER PROCEDURE [dbo].[ccsp_ccActivityDataQuery]'
-    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_ccActivityDataQuery]
+SET @process = 'We reduced @RowsPerBlock from 250 to 60 to prevent buffer overflows and stabilise the socket connection into ccsp_ccActivityDataQuery]'
+    SET @sql = 'ALTER PROCEDURE PROCEDURE ccsp_ccActivityDataQuery
 @action int,@userId int=0,@camId int=0,@dnisId int=0,@WgId int=0,@tipo int =null
 ,@camIdOuts varchar(1000)='''',@camIdIns varchar(1000)='''',@userIds varchar(max)=''''
 AS
@@ -22143,68 +22143,53 @@ WHERE StartIndex <= LEN(@packageData); -- Asegúrate de no exceder la longitud.
 end
 
 else if @action = 13 begin 
-if @tipo=2 set @tipo=1
+    if @tipo=2 set @tipo=1
 
-declare @WgUserCamp table (User_id int primary key)
+    declare @WgUserCamp table (User_id int primary key)
 
-; with WgCamp As(
-select IDWG from ccRIACampEspWG A
-where tipo=@tipo and IdCampEsp=@camId and IDWG<>@WgId
-)
-
-insert into @WgUserCamp
-select WGUser.User_id
-from WgCamp
-inner join ccRIAWorkGroupUsers WGUser on WGUser.IDWG=WgCamp.IDWG 
-inner join ccUsers C on WGUser.User_id=C.User_id and C.TipoUser_id=1
-
-if @tipo=1 begin
-
-    ;with dataPackage as(
-    select distinct     
-    convert(varchar, WG.User_id)
-    +''-''+convert(varchar,isnull (campAgent.prioridad ,1))
-    +''-''+convert(varchar,isnull (campAgent.skill ,1))    package
-    from ccRIAWorkGroupUsers WG
-    inner join ccCampsAgente campAgent on campAgent.user_id=WG.User_id and WG.IDWG=campAgent.IDWG
-    where Wg.IDWG=@WgId and Wg.User_id not in(select User_id from @WgUserCamp)
-
+    ; with WgCamp As(
+    select IDWG from ccRIACampEspWG A WITH(NOLOCK)
+    where tipo=@tipo and IdCampEsp=@camId and IDWG<>@WgId
     )
-    select @packageData=package+'',''+@packageData from dataPackage
 
+    insert into @WgUserCamp
+    select WGUser.User_id
+    from WgCamp
+    inner join ccRIAWorkGroupUsers WGUser WITH(NOLOCK) on WGUser.IDWG=WgCamp.IDWG 
+    inner join ccUsers C WITH(NOLOCK) on WGUser.User_id=C.User_id and C.TipoUser_id=1
 
-end
-else begin 
+    if @tipo=1 begin
 
-    ;with dataPackage as(
-     select distinct 
-    
-    convert(varchar, WG.User_id)
-    +''-''+convert(varchar,isnull (campAgent.prioridad ,1))
-    +''-''+convert(varchar,isnull (campAgent.skill ,1)) package
-    
-    from ccRIAWorkGroupUsers WG
-    inner join ccInboundAgentes campAgent on campAgent.user_id=WG.User_id and WG.IDWG=campAgent.IDWG
-     where Wg.IDWG=@WgId and Wg.User_id not in(select User_id from @WgUserCamp)
-     )
+        ;with dataPackage as(
+            select distinct      
+            convert(varchar, WG.User_id)
+            +''-''+convert(varchar,isnull (campAgent.prioridad ,1))
+            +''-''+convert(varchar,isnull (campAgent.skill ,1)) as package,
+            (ROW_NUMBER() OVER (ORDER BY WG.User_id) - 1) / 80 AS GrupoID
+            from ccRIAWorkGroupUsers WG WITH(NOLOCK)
+            inner join ccCampsAgente campAgent WITH(NOLOCK) on campAgent.user_id=WG.User_id and WG.IDWG=campAgent.IDWG
+            where Wg.IDWG=@WgId and Wg.User_id not in(select User_id from @WgUserCamp)
+        )
+        SELECT CAST(STUFF((SELECT '','' + package FROM dataPackage d2 WHERE d2.GrupoID = d1.GrupoID FOR XML PATH('''')), 1, 1, '''') AS VARCHAR(8000)) AS packageData
+        FROM dataPackage d1 GROUP BY GrupoID
 
-     select @packageData=package+'',''+@packageData from dataPackage
+    end
+    else begin 
 
-end
+        ;with dataPackage as(
+            select distinct 
+            convert(varchar, WG.User_id)
+            +''-''+convert(varchar,isnull (campAgent.prioridad ,1))
+            +''-''+convert(varchar,isnull (campAgent.skill ,1)) as package,
+            (ROW_NUMBER() OVER (ORDER BY WG.User_id) - 1) / 80 AS GrupoID
+            from ccRIAWorkGroupUsers WG WITH(NOLOCK)
+            inner join ccInboundAgentes campAgent WITH(NOLOCK) on campAgent.user_id=WG.User_id and WG.IDWG=campAgent.IDWG
+            where Wg.IDWG=@WgId and Wg.User_id not in(select User_id from @WgUserCamp)
+        )
+        SELECT CAST(STUFF((SELECT '','' + package FROM dataPackage d2 WHERE d2.GrupoID = d1.GrupoID FOR XML PATH('''')), 1, 1, '''') AS VARCHAR(8000)) AS packageData
+        FROM dataPackage d1 GROUP BY GrupoID
 
-
-
--- Generar un rango de índices para dividir la cadena en bloques.
-;WITH BlockIndices AS (
-        SELECT TOP ((LEN(@packageData) + @blockSize - 1) / @blockSize) -- Calcula cuántos bloques son necesarios.
-                   (ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) - 1) * @blockSize + 1 AS StartIndex
-        FROM master.dbo.spt_values -- Usamos una tabla auxiliar para generar números.
-)
-SELECT                  
-        convert(varchar(8000), SUBSTRING(@packageData, StartIndex, @blockSize)) AS packageData
-FROM BlockIndices
-WHERE StartIndex <= LEN(@packageData); -- Asegúrate de no exceder la longitud.
-
+    end
 end
 else if @action = 14 begin --Delete WG
 ; with wgCam as (
@@ -22251,8 +22236,8 @@ else if @action = 15 begin
     -- 1. IMPORTANTE: Evita que el "X rows affected" confunda a la aplicación
     SET NOCOUNT ON;
 
-    -- Configuración de bloques (igual que antes)
-    DECLARE @RowsPerBlock INT = 250; 
+
+    DECLARE @RowsPerBlock INT = 60; 
 
     -- 2. Tabla Temporal para cálculo masivo
     CREATE TABLE #TempRawData (
@@ -22309,14 +22294,9 @@ else if @action = 15 begin
         ON T.IdCampEsp = IA.inbound_id AND T.Tipo = 0 AND U.User_id = IA.User_id
     WHERE E.IdCampEsp IS NULL;
 
-    -- 4. SALIDA EXACTA (Mismo formato que el código original)
-    -- El código original devolvía: segmentId (int), segment (varchar)
-    
     SELECT 
-        -- Simulamos el segmentId usando el número de bloque
         Groups.BlockID + 1 AS segmentId, 
         
-        -- Simulamos la columna ''segment'' convirtiendo a VARCHAR(8000)
         CAST(STUFF((
             SELECT '','' + 
                 CAST(T2.User_id AS VARCHAR(20)) + ''-'' +
@@ -22339,7 +22319,7 @@ else if @action = 15 begin
 
     DROP TABLE #TempRawData;
 
-end';
+END';
     EXEC(@sql);
 
 

@@ -22029,7 +22029,7 @@ return(0)';
     EXEC(@sql);
 
 SET @process = 'We reduced @RowsPerBlock from 250 to 60 to prevent buffer overflows and stabilise the socket connection into ccsp_ccActivityDataQuery]'
-    SET @sql = 'ALTER PROCEDURE PROCEDURE ccsp_ccActivityDataQuery
+    SET @sql = 'ALTER PROCEDURE ccsp_ccActivityDataQuery
 @action int,@userId int=0,@camId int=0,@dnisId int=0,@WgId int=0,@tipo int =null
 ,@camIdOuts varchar(1000)='''',@camIdIns varchar(1000)='''',@userIds varchar(max)=''''
 AS

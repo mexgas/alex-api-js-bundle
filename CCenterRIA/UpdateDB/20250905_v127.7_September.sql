@@ -9633,7 +9633,8 @@ END;
     @IsAgentLoggingOut  BIT = 0,
     @ConvId             INT = NULL OUTPUT,
     @IsTransfered       BIT = 0,
-    @AgentLogin         VARCHAR(50) = ''''
+    @AgentLogin         VARCHAR(50) = '''',
+	@returnInfo			BIT = 0
 AS
 BEGIN
     SET NOCOUNT ON;

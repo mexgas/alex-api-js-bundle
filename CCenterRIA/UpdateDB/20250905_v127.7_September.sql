@@ -20497,8 +20497,8 @@ BEGIN
         WHERE messageId = @MessageId;
     END
 
-    IF @originType IN ('Agent','Admin')
-       AND @messageStatus NOT IN ('rejected','undeliverable','submitted')
+    IF @originType IN (''Agent'',''Admin'')
+       AND @messageStatus NOT IN (''rejected'',''undeliverable'',''submitted'')
     BEGIN
         SET @isBilled = 1;
     END

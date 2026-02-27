@@ -20734,25 +20734,80 @@ END'
 
 			IF @Action = 5 -- Get Transfer Status 
 			BEGIN
-				SELECT 
+				IF @CampType = 0
+				BEGIN
+					SELECT 
+						 CASE 
+						-- 1. If both transfer options are disabled (0), return FALSE (0).
+						WHEN ISNULL(cie.TransferToHumanAgents, 0) = 0 
+							 AND ISNULL(cie.TransferOnSuccessfulHandling, 0) = 0 THEN CAST(0 AS BIT)
+
+						-- 2. LOGICAL VALIDATION:
+						-- Ensure that all active configurations are valid and have no missing requirements.
+						WHEN 
+							(
+								-- Validate ''TransferToHumanAgents'' integrity
+								CASE 
+									WHEN cie.TransferToHumanAgents = 2 THEN 1 -- Valid: External transfer
+									WHEN cie.TransferToHumanAgents = 1 AND ISNULL(ci2.idForNonComprehension, 0) <> 0 THEN 1 -- Valid: Campaign transfer with assigned ID
+									WHEN cie.TransferToHumanAgents = 0 THEN 1 -- Valid: Option is disabled, skip validation
+									ELSE 0 -- Invalid: Option enabled but missing target campaign ID
+								END = 1
+							)
+							AND -- ALL enabled configurations must be valid simultaneously
+							(
+								-- Validate ''TransferOnSuccessfulHandling'' integrity
+								CASE 
+									WHEN cie.TransferOnSuccessfulHandling = 2 THEN 1 -- Valid: External transfer
+									WHEN cie.TransferOnSuccessfulHandling = 1 AND ISNULL(ci2.idForSuccessfulTransaction, 0) <> 0 THEN 1 -- Valid: Campaign transfer with assigned ID
+									WHEN cie.TransferOnSuccessfulHandling = 0 THEN 1 -- Valid: Option is disabled, skip validation
+									ELSE 0 -- Invalid: Option enabled but missing target campaign ID
+								END = 1
+							)
+							THEN CAST(1 AS BIT)
+
+						ELSE CAST(0 AS BIT)
+					END
+					FROM dbo.ccInboundExtend AS cie
+					INNER JOIN dbo.ccInbound AS ci2
+					ON ci2.Inbound_id = cie.Inbound_id
+					WHERE cie.Inbound_id= @CampId;
+				END
+				ELSE
+				BEGIN
+					SELECT 
 					CASE 
-						WHEN TransferToHumanAgents <> 0 OR TransferOnSuccessfulHandling <> 0 
+						WHEN EXISTS (SELECT 1 FROM dbo.ccInbound WHERE cam_id = @CampId) 
 						THEN CAST(1 AS BIT) 
 						ELSE CAST(0 AS BIT) 
-					END
-				FROM ccInboundExtend
-				WHERE Inbound_id = @CampId;
+					END AS ExisteCampana;
+				END
 			END
 
 			IF @Action = 6 -- Agent Id By Campaign 
 			BEGIN
-				SELECT ISNULL(
-					(SELECT TOP 1 idAgent 
-					 FROM ccVirtualAgent 
-					 WHERE idCampaign = @CampId 
-					   AND mediaType = 11),
-					0
-				) AS idAgent;
+				IF(@CampType = 0)
+				BEGIN
+				
+					SELECT ISNULL(
+						(SELECT TOP 1 idAgent 
+						 FROM ccVirtualAgent 
+						 WHERE idCampaign = @CampId 
+						   AND mediaType = 11
+						   AND campType = 0),
+						0
+					) AS idAgent;
+				END
+				ELSE
+				BEGIN
+					SELECT ISNULL(
+							(SELECT TOP 1 idAgent 
+							 FROM ccVirtualAgent 
+							 WHERE idCampaign = @CampId 
+							   AND mediaType = 10 AND campType = 1),
+							0
+						) AS idAgent;
+				END
 			END
 		END
 	 '

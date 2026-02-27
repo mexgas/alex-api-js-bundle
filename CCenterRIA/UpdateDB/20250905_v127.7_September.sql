@@ -9845,7 +9845,9 @@ BEGIN
 	END CATCH
 
     if not exists(select 1 from ccWAConversationsResult where camId=@camId)begin
-        insert into ccWAConversationsResult values(@camId,0,0,0,0,0)
+         INSERT INTO ccWAConversationsResult
+                (camId, SentMsg, Delivered, NotDelivered, ReadMsg, NotSupported, Received, UnSent)
+                VALUES(@camId,0,0,0,0,0,0,0);
     end
 
     exec ccsp_ConversationWASaveOut @action=16,@camId=@camId,@messageStatus=@messageStatus,@conversationId=@conversationId,@originType=@originType, @returnInfo = @returnInfo

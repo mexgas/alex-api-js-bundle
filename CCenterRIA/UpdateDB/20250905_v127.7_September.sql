@@ -14969,7 +14969,6 @@ SET NOCOUNT OFF
 	EXEC(@sql)
 
 	SET @process = 'Drop Procedure ccsp_DLRGetDialInfo '
-
 	SET @sql = '
 		IF EXISTS (SELECT * from sys.procedures WHERE name = N''ccsp_DLRGetDialInfo'')
 		BEGIN
@@ -14978,7 +14977,6 @@ SET NOCOUNT OFF
 	EXEC(@sql);
 
 	SET @process = 'Added change to send country and time_zone to quantum in out calls'
-
     SET @sql = '
 		CREATE PROCEDURE [dbo].[ccsp_DLRGetDialInfo]
             @callout_id int,
@@ -15173,6 +15171,44 @@ SET NOCOUNT OFF
             set nocount off
 	 '
     EXEC(@sql)
+
+	SET @process = 'Drop Procedure ccsp_DLRGetTrunkConfig '
+	SET @sql = '
+		IF EXISTS (SELECT * from sys.procedures WHERE name = N''ccsp_DLRGetTrunkConfig'')
+		BEGIN
+			DROP PROCEDURE dbo.ccsp_DLRGetTrunkConfig;
+		END'
+	EXEC(@sql);
+
+	SET @process = 'Obtener ruta dinamica KR237000'
+    SET @sql = 'CREATE procedure [dbo].[ccsp_DLRGetTrunkConfig]
+		@pbx_id int
+		AS
+		set nocount on
+
+		select 
+		domain,
+		isnull(proxy,'''') proxy,
+		[user],
+		isnull(authName,'''') authName,
+		isnull(encPassword,'''') encPassword,
+		isnull(realm,'''') realm,
+		ttl,
+		isnull(ipNatOut,'''') ipNatOut,
+		isnull(sipAgent,'''') sipAgent,
+		isnull(fixedDomain,'''') fixedDomain,
+		isnull(allowReinvite,0) allowReinvite,
+		isnull(options,0) options,
+		isnull(calloutHdr,'''') calloutHdr,
+		isnull(sipId,1) sipId,
+		isnull(sipPriority,1) sipPriority,
+		TrunkId
+		from ccTrunkConfiguration nolock 
+		where pbxid=@pbx_id and active=1
+		order by sipId,sipPriority
+
+		set nocount off'
+	EXEC(@sql);
 
 	SET @process = 'Obtener ruta dinamica KR237000'
     SET @sql = 'ALTER procedure [dbo].[ccsp_DLRgetDialPrefix]

@@ -1660,6 +1660,14 @@ where id = 4020'
 		INSERT INTO ccMenus VALUES (2130, ''Detalle de Especial (Auxiliar)|Special Detail (Auxiliary)'', 2000, ''B'', 2, 3, '''', ''d0df11930b9ac68aa5866c2760e456b7b5a686b8d838d01ab8ae7f4db57a2ff1418b4220a5daa1e20c6857d053450c444c77e33264bc19586d1c950b29c2fcb4'');   
 	END'
 	EXEC(@sql)
+
+	set @process = 'se actualiza sp 7010'
+	set @sql='
+	if exists (select 1 from ReportsTotals where id = 7010)
+	begin
+		update ReportsTotals set totalColumns = ''sum:totalInOutCalls|sum:abandonedCalls|avg:abandonedCallsPctg'' where id = 7010
+	end'
+	EXEC(@sql)
 	------------------------------------------ END Rod Salazar ---------------------------------------------
 
 

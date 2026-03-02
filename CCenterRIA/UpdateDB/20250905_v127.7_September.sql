@@ -20677,6 +20677,46 @@ BEGIN
 	INCLUDE(originType, messageIdUi)
 END'
      EXEC(@sql);
+
+	  SET @process = 'create index IX_ccWAMessagesConversations_conversationId'
+     SET @sql = 'IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes 
+    WHERE name = ''IX_ccWAMessagesConversations_conversationId''
+      AND object_id = OBJECT_ID(''dbo.ccWAMessagesConversations'')
+)
+BEGIN
+	CREATE NONCLUSTERED INDEX IX_ccWAMessagesConversations_conversationId
+	ON ccWAMessagesConversations (conversationId)
+	INCLUDE(originType, messageIdUi)
+END'
+     EXEC(@sql);
+
+	 SET @process = 'create index IX_ccWAMessagesConversations_messageId'
+     SET @sql = 'IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes 
+    WHERE name = ''IX_ccWAMessagesConversations_messageId''
+      AND object_id = OBJECT_ID(''dbo.ccWAMessagesConversations'')
+)
+BEGIN
+	CREATE NONCLUSTERED INDEX IX_ccWAMessagesConversations_messageId
+	ON ccWAMessagesConversations (messageId)
+END'
+     EXEC(@sql);
+
+	 SET @process = 'create index UX_ccWAMessagesConversationsOut_messageId'
+     SET @sql = 'IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes 
+    WHERE name = ''UX_ccWAMessagesConversationsOut_messageId''
+      AND object_id = OBJECT_ID(''dbo.ccWAMessagesConversationsOut'')
+)
+BEGIN
+   CREATE UNIQUE INDEX UX_ccWAMessagesConversationsOut_messageId
+   ON ccWAMessagesConversationsOut(messageId);
+END'
+     EXEC(@sql);
 ------------------------------END MACL---------------------------------
 
 ------------------------------BEGIN JUAN MEDINA---------------------------------

@@ -11716,8 +11716,8 @@ BEGIN
         END
         ELSE
         BEGIN
-            INSERT INTO ccoCallsOutDispositionIA (call_id, Qualification, result, Observations)
-            VALUES (@call_Id, @Qualification, @result, @Observations);
+            INSERT INTO ccoCallsOutDispositionIA (call_id, Qualification, result, Observations, disposition_id)
+            VALUES (@call_Id, @Qualification, @result, @Observations, @disposition_Id);
         END
 
 		IF EXISTS (SELECT 1 FROM ccTipoCalif WHERE calif_id = @disposition_Id)

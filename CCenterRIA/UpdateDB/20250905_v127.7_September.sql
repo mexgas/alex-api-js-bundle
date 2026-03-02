@@ -11716,8 +11716,8 @@ BEGIN
         END
         ELSE
         BEGIN
-            INSERT INTO ccoCallsOutDispositionIA (call_id, Qualification, result, Observations)
-            VALUES (@call_Id, @Qualification, @result, @Observations);
+            INSERT INTO ccoCallsOutDispositionIA (call_id, Qualification, result, Observations, disposition_id)
+            VALUES (@call_Id, @Qualification, @result, @Observations, @disposition_Id);
         END
 
 		IF EXISTS (SELECT 1 FROM ccTipoCalif WHERE calif_id = @disposition_Id)
@@ -11847,9 +11847,11 @@ SELECT s.call_id, s.tipo, s.disposition_id
 FROM (
     SELECT DISTINCT call_id, CONVERT(bit, 0) AS tipo, disposition_id
     FROM dbo.ccCallsInDispositionIA
+	WHERE disposition_id IS NOT NULL
     UNION ALL
     SELECT DISTINCT call_id, CONVERT(bit, 1) AS tipo, disposition_id
     FROM dbo.ccoCallsOutDispositionIA
+	WHERE disposition_id IS NOT NULL
 ) AS s
 WHERE NOT EXISTS (
     SELECT 1

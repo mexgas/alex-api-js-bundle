@@ -20453,132 +20453,132 @@ BEGIN
 END'
      EXEC(@sql);
 
---	 SET @process = 'ccsp_WhatsAppGlobalIds refactor para evitar multiples consultas a las mismas tablas'
---    SET @sql = 'ALTER PROCEDURE dbo.ccsp_WhatsAppGlobalIds  
---(
---    @ConversationType TINYINT,
---    @ConversationId INT,
---    @MessageId VARCHAR(150),
---    @AssociatedNumber VARCHAR(30), 
---    @ClientNumber VARCHAR(30),
---    @TemplateCategory VARCHAR(30) = NULL,
---    @returnInfo int = 1
---)
---AS
---BEGIN
---    SET NOCOUNT ON;
+	 SET @process = 'ccsp_WhatsAppGlobalIds refactor para evitar multiples consultas a las mismas tablas'
+    SET @sql = 'ALTER PROCEDURE dbo.ccsp_WhatsAppGlobalIds  
+(
+    @ConversationType TINYINT,
+    @ConversationId INT,
+    @MessageId VARCHAR(150),
+    @AssociatedNumber VARCHAR(30), 
+    @ClientNumber VARCHAR(30),
+    @TemplateCategory VARCHAR(30) = NULL,
+    @returnInfo int = 1
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
 
---    DECLARE 
---        @originType VARCHAR(20),
---        @firstMessageDateFromAgent DATETIME,
---        @messageStatus VARCHAR(20),
---        @globalId INT,
---        @isBilled BIT = 0;
+    DECLARE 
+        @originType VARCHAR(20),
+        @firstMessageDateFromAgent DATETIME,
+        @messageStatus VARCHAR(20),
+        @globalId INT,
+        @isBilled BIT = 0;
 
---    -- Se valida si la conversación existe
---    IF @ConversationType = 0 AND NOT EXISTS (SELECT 1 FROM ccWhatsAppConversations WHERE conversationId = @ConversationId)
---        RETURN;
+    -- Se valida si la conversación existe
+    IF @ConversationType = 0 AND NOT EXISTS (SELECT 1 FROM ccWhatsAppConversations WHERE conversationId = @ConversationId)
+        RETURN;
 
---    IF @ConversationType = 1 AND NOT EXISTS (SELECT 1 FROM ccWhatsAppConversationsOut WHERE conversationId = @ConversationId)
---        RETURN;
+    IF @ConversationType = 1 AND NOT EXISTS (SELECT 1 FROM ccWhatsAppConversationsOut WHERE conversationId = @ConversationId)
+        RETURN;
 
---    -- Obtenemos los datos necesarios
---    IF @ConversationType = 0
---    BEGIN
---        SELECT 
---            @originType = originType,
---            @firstMessageDateFromAgent = timeStampMessage,
---            @messageStatus = messageStatus
---        FROM ccWAMessagesConversations
---        WHERE messageId = @MessageId;
---    END
---    ELSE
---    BEGIN
---        SELECT 
---            @originType = originType,
---            @firstMessageDateFromAgent = timeStampMessage,
---            @messageStatus = messageStatus
---        FROM ccWAMessagesConversationsOut
---        WHERE messageId = @MessageId;
---    END
+    -- Obtenemos los datos necesarios
+    IF @ConversationType = 0
+    BEGIN
+        SELECT 
+            @originType = originType,
+            @firstMessageDateFromAgent = timeStampMessage,
+            @messageStatus = messageStatus
+        FROM ccWAMessagesConversations
+        WHERE messageId = @MessageId;
+    END
+    ELSE
+    BEGIN
+        SELECT 
+            @originType = originType,
+            @firstMessageDateFromAgent = timeStampMessage,
+            @messageStatus = messageStatus
+        FROM ccWAMessagesConversationsOut
+        WHERE messageId = @MessageId;
+    END
 
---    IF @originType IN (''Agent'',''Admin'')
---       AND @messageStatus NOT IN (''rejected'',''undeliverable'',''submitted'')
---    BEGIN
---        SET @isBilled = 1;
---    END
---    ELSE
---    BEGIN
---        SET @firstMessageDateFromAgent = NULL;
---    END
+    IF @originType IN (''Agent'',''Admin'')
+       AND @messageStatus NOT IN (''rejected'',''undeliverable'',''submitted'')
+    BEGIN
+        SET @isBilled = 1;
+    END
+    ELSE
+    BEGIN
+        SET @firstMessageDateFromAgent = NULL;
+    END
 
---    -- Obtenemos el último GlobalId válido
---    SELECT TOP (1) 
---        @globalId = GlobalId
---    FROM ccWhatsAppGlobalIds
---    WHERE AssociatedNumber = @AssociatedNumber
---      AND ClientNumber = @ClientNumber
---      AND ((@TemplateCategory IS NULL AND Category IS NULL) OR Category = @TemplateCategory)
---    ORDER BY GlobalId DESC;
+    -- Obtenemos el último GlobalId válido
+    SELECT TOP (1) 
+        @globalId = GlobalId
+    FROM ccWhatsAppGlobalIds
+    WHERE AssociatedNumber = @AssociatedNumber
+      AND ClientNumber = @ClientNumber
+      AND ((@TemplateCategory IS NULL AND Category IS NULL) OR Category = @TemplateCategory)
+    ORDER BY GlobalId DESC;
 
---    -- Crear nuevo GlobalId si no existe o expiró (>24h)
---    IF @globalId IS NULL
---       OR EXISTS (
---            SELECT 1 
---            FROM ccWhatsAppGlobalIds 
---            WHERE GlobalId = @globalId 
---              AND FirstMessageDateFromAgent IS NOT NULL
---              AND FirstMessageDateFromAgent < DATEADD(HOUR, -24, GETDATE())
---       )
---    BEGIN
---        INSERT INTO ccWhatsAppGlobalIds
---        (
---            AssociatedNumber,
---            ClientNumber,
---            FirstMessageDateFromAgent,
---            FirstMessageConversationIdFromAgent,
---            FirstMessageConversationTypeFromAgent,
---            IsBilled,
---            Category
---        )
---        VALUES
---        (
---            @AssociatedNumber,
---            @ClientNumber,
---            @firstMessageDateFromAgent,
---            CASE WHEN @isBilled = 1 THEN @ConversationId END,
---            CASE WHEN @isBilled = 1 THEN @ConversationType END,
---            @isBilled,
---            @TemplateCategory
---        );
+    -- Crear nuevo GlobalId si no existe o expiró (>24h)
+    IF @globalId IS NULL
+       OR EXISTS (
+            SELECT 1 
+            FROM ccWhatsAppGlobalIds 
+            WHERE GlobalId = @globalId 
+              AND FirstMessageDateFromAgent IS NOT NULL
+              AND FirstMessageDateFromAgent < DATEADD(HOUR, -24, GETDATE())
+       )
+    BEGIN
+        INSERT INTO ccWhatsAppGlobalIds
+        (
+            AssociatedNumber,
+            ClientNumber,
+            FirstMessageDateFromAgent,
+            FirstMessageConversationIdFromAgent,
+            FirstMessageConversationTypeFromAgent,
+            IsBilled,
+            Category
+        )
+        VALUES
+        (
+            @AssociatedNumber,
+            @ClientNumber,
+            @firstMessageDateFromAgent,
+            CASE WHEN @isBilled = 1 THEN @ConversationId END,
+            CASE WHEN @isBilled = 1 THEN @ConversationType END,
+            @isBilled,
+            @TemplateCategory
+        );
 
---        SET @globalId = SCOPE_IDENTITY();
---    END
---    ELSE IF @isBilled = 1
---    BEGIN
---        UPDATE ccWhatsAppGlobalIds
---        SET IsBilled = 1
---        WHERE GlobalId = @globalId;
---    END
+        SET @globalId = SCOPE_IDENTITY();
+    END
+    ELSE IF @isBilled = 1
+    BEGIN
+        UPDATE ccWhatsAppGlobalIds
+        SET IsBilled = 1
+        WHERE GlobalId = @globalId;
+    END
 
---    -- Se crea relación entre global id y conversación
---    IF NOT EXISTS (
---        SELECT 1 
---        FROM ccWhatsAppGlobalIdsRelationship
---        WHERE GlobalId = @globalId
---          AND ConversationId = @ConversationId
---          AND ConversationType = @ConversationType
---    )
---    BEGIN
---        INSERT INTO ccWhatsAppGlobalIdsRelationship
---        VALUES (@globalId, @ConversationId, @ConversationType);
---    END
---	IF(@returnInfo = 1)
---	BEGIN
---		SELECT @globalId AS GlobalId;
---	END
---END'
---     EXEC(@sql);
+    -- Se crea relación entre global id y conversación
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM ccWhatsAppGlobalIdsRelationship
+        WHERE GlobalId = @globalId
+          AND ConversationId = @ConversationId
+          AND ConversationType = @ConversationType
+    )
+    BEGIN
+        INSERT INTO ccWhatsAppGlobalIdsRelationship
+        VALUES (@globalId, @ConversationId, @ConversationType);
+    END
+	IF(@returnInfo = 1)
+	BEGIN
+		SELECT @globalId AS GlobalId;
+	END
+END'
+     EXEC(@sql);
 
 	 SET @process = 'create index IX_ccWhatsAppGlobalIds_Main'
 	 SET @sql = 'IF NOT EXISTS (

@@ -1691,6 +1691,86 @@ where id = 4020'
       EXEC(@sql)
 ------------------------------------------ END Pavel Martinez ---------------------------------------------
 
+--------------------------------  BEING Marco Díaz -------------------------------- 
+
+SET @process = 'AlterColumn RepSpececialPromises.percentage'
+
+SET @sql = '
+IF EXISTS (
+    SELECT 1
+    FROM sys.columns c
+    JOIN sys.types t ON c.user_type_id = t.user_type_id
+    WHERE c.name = N''percentage''
+      AND c.object_id = OBJECT_ID(N''dbo.RepSpececialPromises'')
+      AND NOT (
+            t.name = N''decimal''
+            AND c.precision = 10
+            AND c.scale = 4
+      )
+)
+BEGIN
+    ALTER TABLE dbo.RepSpececialPromises
+    ALTER COLUMN percentage DECIMAL(10,4) NOT NULL
+END'
+EXEC(@sql)
+
+--------------------------------  END Marco Díaz --------------------------------
+
+--------------------------------  BEING Marco Díaz --------------------------------
+
+    set @process = 'ALTER PROCEDURE [dbo].[ccspRepSpececialPromises]'
+    set @sql='ALTER PROCEDURE [dbo].[ccspRepSpececialPromises]
+@action as tinyint,
+@from AS datetime = null,
+@to AS datetime = null
+AS
+
+if @action = 1
+begin
+    if @from is null
+    select @from = convert(date,getdate())
+
+    if @to is null
+        select @to = getdate()
+
+    set @from=convert(date,@from)
+
+    DECLARE @data varchar(10), @promesa INT, @promesainb INT
+    DECLARE @dummyInbound INT
+    SELECT TOP 1 @dummyInbound = inbound_id FROM ccInbound
+    select @data = isnull(valor,''1|1'') from ccSettings where setting_id = 30
+    SELECT @promesainb = value FROM dbo.fn_RIASplitDelimited(@data,''|'') where id = 1
+    SELECT @promesa = value FROM dbo.fn_RIASplitDelimited(@data,''|'') where id = 2
+
+    delete RepSpececialPromises with(rowlock)
+    where [date] between @from and @to
+    
+    insert RepSpececialPromises SELECT convert(varchar(10),[date],121) [date], ''systemTranslated_outbound'' [type],
+    cout.campaignId campaignId,@dummyInbound inboundId,
+    camp.cam_descripcion [campACDDescription],
+    ISNULL(SUM(CASE cout.dispositionId WHEN @promesa THEN cout.count ELSE 0 END),0) AS promises,
+    ISNULL(SUM(cout.count),0) AS total,
+    CASE ISNULL(SUM(cout.count),0) WHEN 0 THEN 0 ELSE  
+    CONVERT(decimal(10,4),ISNULL(SUM(CASE cout.dispositionId WHEN @promesa THEN cout.count ELSE 0 END),0))/ 
+    CONVERT(decimal(10,4),ISNULL(SUM(cout.count),0)) END AS percentage 
+    FROM RepOutDispositions as cout JOIN ccCamps as camp ON camp.cam_id = cout.campaignId 
+    WHERE cout.date BETWEEN @from AND @to GROUP BY convert(varchar(10),[date],121), cout.campaignId, camp.cam_descripcion
+    union all
+    SELECT convert(varchar(10),[date],121) [date], ''systemTranslated_inbound'' [type],
+    0 campaignId, cin.inboundId inboundId,
+    espe.descripcion [campACDDescription],
+    ISNULL(SUM(CASE cin.dispositionId WHEN @promesainb THEN cin.count ELSE 0 END),0) AS promises,
+    ISNULL(SUM(cin.count),0) AS TOTAL,
+    CASE ISNULL(SUM(cin.count),0) WHEN 0 THEN 0 ELSE
+    CONVERT(decimal(10,4),ISNULL(SUM(CASE cin.dispositionId WHEN @promesainb THEN cin.count ELSE 0 END),0))/ 
+    CONVERT(decimal(10,4),ISNULL(SUM(cin.count),0)) END AS percentage
+    FROM RepInDispositions as cin JOIN ccInbound as espe ON espe.inbound_id = cin.inboundId
+    WHERE cin.date BETWEEN @from AND @to GROUP BY convert(varchar(10),[date],121), cin.inboundId, espe.descripcion
+end'
+    EXEC(@sql)
+
+--------------------------------  END Marco Díaz -------------------------------------------------------------------------
+
 
 set @process = ''
 set @sql=''

@@ -154,6 +154,8 @@ END;
 
 EXEC(@sql);
 
+
+
 --------------------------------  END Octavio  --------------------------------
 --------------------------------  BEING GASJ --------------------------------
 
@@ -1669,6 +1671,25 @@ where id = 4020'
 	end'
 	EXEC(@sql)
 	------------------------------------------ END Rod Salazar ---------------------------------------------
+    ------------------------------------------ BEGIN Pavel Martinez ---------------------------------------------
+
+     set @process = 'Se inserta el reporte para Reporte Conversaciones de WA detalle de conversacion Salida'
+     set @sql='if not exists (select 1 from ccmenus where menu_id =14010)
+        begin
+            INSERT INTO ccmenus 
+                VALUES (
+                    14010, 
+                    ''Detalle de conversaciones|Conversations Detail'', 
+                    14000, 
+                    ''B'', 
+                    7, 
+                    3, 
+                    '''', 
+                    ''accb20a46285ea9856ace61e5e3ffd452de1f55f20c7a005ce8e05a503060fb18beee994719b6abd36ad36efaffd0370''
+                 )
+        end '
+      EXEC(@sql)
+------------------------------------------ END Pavel Martinez ---------------------------------------------
 
 
 set @process = ''

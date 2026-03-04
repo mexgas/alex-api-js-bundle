@@ -22311,7 +22311,7 @@ else if @action = 13 begin
             +''-''+convert(varchar,isnull (campAgent.skill ,1)) as package,
             (ROW_NUMBER() OVER (ORDER BY WG.User_id) - 1) / 80 AS GrupoID
             from ccRIAWorkGroupUsers WG WITH(NOLOCK)
-            inner join ccCampsAgente campAgent WITH(NOLOCK) on campAgent.user_id=WG.User_id and WG.IDWG=campAgent.IDWG
+            left join ccCampsAgente campAgent WITH(NOLOCK) on campAgent.user_id=WG.User_id and WG.IDWG=campAgent.IDWG
             where Wg.IDWG=@WgId and Wg.User_id not in(select User_id from @WgUserCamp)
         )
         SELECT CAST(STUFF((SELECT '','' + package FROM dataPackage d2 WHERE d2.GrupoID = d1.GrupoID FOR XML PATH('''')), 1, 1, '''') AS VARCHAR(8000)) AS packageData
@@ -22327,7 +22327,7 @@ else if @action = 13 begin
             +''-''+convert(varchar,isnull (campAgent.skill ,1)) as package,
             (ROW_NUMBER() OVER (ORDER BY WG.User_id) - 1) / 80 AS GrupoID
             from ccRIAWorkGroupUsers WG WITH(NOLOCK)
-            inner join ccInboundAgentes campAgent WITH(NOLOCK) on campAgent.user_id=WG.User_id and WG.IDWG=campAgent.IDWG
+            left join ccInboundAgentes campAgent WITH(NOLOCK) on campAgent.user_id=WG.User_id and WG.IDWG=campAgent.IDWG
             where Wg.IDWG=@WgId and Wg.User_id not in(select User_id from @WgUserCamp)
         )
         SELECT CAST(STUFF((SELECT '','' + package FROM dataPackage d2 WHERE d2.GrupoID = d1.GrupoID FOR XML PATH('''')), 1, 1, '''') AS VARCHAR(8000)) AS packageData

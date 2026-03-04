@@ -1691,7 +1691,7 @@ where id = 4020'
       EXEC(@sql)
 ------------------------------------------ END Pavel Martinez ---------------------------------------------
 
---------------------------------  BEING Marco Díaz -------------------------------- 
+-------------------------------  BEING Marco Díaz -------------------------------- 
 
 SET @process = 'AlterColumn RepSpececialPromises.percentage'
 
@@ -1706,6 +1706,7 @@ IF EXISTS (
             t.name = N''decimal''
             AND c.precision = 10
             AND c.scale = 4
+            AND c.is_nullable = 0
       )
 )
 BEGIN
@@ -1770,6 +1771,71 @@ end'
     EXEC(@sql)
 
 --------------------------------  END Marco Díaz -------------------------------------------------------------------------
+
+--------------------------------------------------------BEGIN Marco Diaz----------------------------------------------------------------------
+
+SET @process = 'CLEAN DUPLICATES RepInNotTransferred';
+
+SET @sql = '
+IF EXISTS (
+    SELECT 1
+    FROM RepInNotTransferred
+    GROUP BY date, inboundId, callStatusId, workgroupId, phonein
+    HAVING COUNT(*) > 1
+)
+BEGIN
+
+    WITH duplicates AS
+    (
+        SELECT *,
+        ROW_NUMBER() OVER(
+        PARTITION BY 
+            date,
+            inboundId,
+            callStatusId,
+            workgroupId,
+            phonein
+        ORDER BY date
+        ) AS rn
+        FROM RepInNotTransferred
+    )
+    DELETE FROM duplicates
+    WHERE rn > 1
+
+END
+'
+
+EXEC(@sql)
+
+
+
+SET @process = 'CREATE UNIQUE INDEX UX_RepInNotTransferred_NoDuplicates';
+
+SET @sql = '
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes
+    WHERE name = ''UX_RepInNotTransferred_NoDuplicates''
+      AND object_id = OBJECT_ID(''dbo.RepInNotTransferred'')
+)
+BEGIN
+
+    CREATE UNIQUE INDEX UX_RepInNotTransferred_NoDuplicates
+    ON dbo.RepInNotTransferred
+    (
+        date,
+        inboundId,
+        callStatusId,
+        workgroupId,
+        phonein
+    )
+
+END
+'
+
+EXEC(@sql)
+
+--------------------------------------------------------END Marco Diaz----------------------------------------------------------------------
 
 
 set @process = ''

@@ -15371,70 +15371,77 @@ SET NOCOUNT OFF
     EXEC(@sql)
 
 	SET @process = 'Sears + Guardar ruta dinamica KR237000 Alter SP ccsp_DLRSaveDialResult + update result'
-        SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_DLRSaveDialResult]
-		@callout_id INT, @cam_id SMALLINT, @tipoResDial_id TINYINT, @Telefono VARCHAR(30), @Puerto SMALLINT,
-		@tDialing TINYINT= 0, @tBusy SMALLINT= 0, @call_id INT= 0, @answerbit BIT= NULL, @tAnswerBit SMALLINT= 0,
-		@canceledNoAgents BIT= 0, @disconnectCause VARCHAR(250)= '''', @cal_key VARCHAR(40)= '''', @call_TS VARCHAR(15)='''',
-		@ani varchar(32)='''', @destination varchar(50)='''', @destination_name varchar(50)='''', @dialId int = 0
-		AS
-		BEGIN
-			SET NOCOUNT ON;
+        SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_DLRSaveDialResult] 
+	@callout_id INT, @cam_id SMALLINT, @tipoResDial_id TINYINT, @Telefono VARCHAR(30), @Puerto SMALLINT,
+	@tDialing TINYINT= 0, @tBusy SMALLINT= 0, @call_id INT= 0, @answerbit BIT= NULL, @tAnswerBit SMALLINT= 0,
+	@canceledNoAgents BIT= 0, @disconnectCause VARCHAR(250)= '''', @cal_key VARCHAR(40)= '''', @call_TS VARCHAR(15)='''',
+	@ani varchar(32)='''', @destination varchar(50)='''', @destination_name varchar(50)='''', @dialId int = 0
+	AS
+	BEGIN
+		SET NOCOUNT ON;
 
-			DECLARE @tNow AS DATETIME, @RecicleSIC TINYINT;
-			DECLARE @logDial_id INT;
-			DECLARE @tAnswerBitFinal AS DATETIME;
-			DECLARE @MaxCal_id INT;
-			DECLARE @tTotal SMALLINT;
-			DECLARE @setting292 TINYINT;
+		DECLARE @tNow AS DATETIME, @RecicleSIC TINYINT;
+		DECLARE @logDial_id INT;
+		DECLARE @tAnswerBitFinal AS DATETIME;
+		DECLARE @MaxCal_id INT;
+		DECLARE @tTotal SMALLINT;
+		DECLARE @setting292 TINYINT;
 
-			SELECT @RecicleSIC = ISNULL(valor, 0)
-			FROM ccSettings
-			WHERE setting_id = 60;
+		SELECT @RecicleSIC = ISNULL(valor, 0)
+		FROM ccSettings
+		WHERE setting_id = 60;
 
-			SELECT @setting292 = ISNULL(valor, 0)
-			FROM ccSettings2
-			WHERE setting_id = 292;
+		SELECT @setting292 = ISNULL(valor, 0)
+		FROM ccSettings2
+		WHERE setting_id = 292;
 
-			SELECT @tTotal = @tDialing + @tAnswerBit;
+		SELECT @tTotal = @tDialing + @tAnswerBit;
 
-			SELECT @tNow = GETDATE();
+		SELECT @tNow = GETDATE();
 
-			SELECT @tAnswerBitFinal = DATEADD(ss, -@tAnswerBit, @tNow);
+		SELECT @tAnswerBitFinal = DATEADD(ss, -@tAnswerBit, @tNow);
 
+		IF @dialId > 0 BEGIN --Begin update ccoLogDials
+			UPDATE ccoLogDials set  tipoResDial_id = @tipoResDial_id, answerbit = @answerbit,
+				canceledNoAgents = @canceledNoAgents, disconnectCause = @disconnectCause
+				 WHERE logdial_id = @dialId
+			SELECT @dialId as LogDialId
+			RETURN 0;
+		END --End update
 
 		-- para marcaciones manuales, actualiza puerto de marcacion y costo de la llamada. Solo llamadas contestadas
 		IF @call_id > 0 AND @tipoResDial_id = 1 and @cal_key = ''''
-			BEGIN
+		BEGIN
 			SELECT @cal_key = cal_key
 			FROM ccoCallsOutSource WITH(NOLOCK)
-			WHERE @callout_id = callout_id;
+			WHERE @callout_id = callout_id;         
 		END;
 
 		declare @TipoLlamada int, @TipoDialingMode VARCHAR(9);
 		select @TipoLlamada=dbo.fnGetTipoLlamada(@Telefono)
 
-IF @dialId = 0 BEGIN --Begin insert
-		IF @call_id > 0 AND @tipoResDial_id = 1
-		BEGIN
-				INSERT INTO ccoLogDials WITH (ROWLOCK)( callout_id, cam_id, tipoResDial_id, Telefono, Puerto, tDialing, fecha, answerbit, tbusy,
-				TipoDialingMode, cal_id, tAnswerBit, canceledNoAgents, disconnectCause, cal_key, call_TS, tipoLlamada_id, ani,
-				destination, destination_name)
-					   SELECT @callout_id, @cam_id, @tipoResDial_id, @Telefono, @Puerto, @tTotal, @tNow, @answerbit, @tBusy,
-					   ''000000000'', @call_id, @tAnswerBitFinal, @canceledNoAgents, @disconnectCause, @cal_key, @call_TS,
-					   @TipoLlamada, @ani, @destination, @destination_name;
-			END;
-				 ELSE
+		IF @dialId = 0 BEGIN --Begin insert
+			IF @call_id > 0 AND @tipoResDial_id = 1 
 			BEGIN
 				INSERT INTO ccoLogDials WITH (ROWLOCK)( callout_id, cam_id, tipoResDial_id, Telefono, Puerto, tDialing, fecha, answerbit, tbusy,
-				TipoDialingMode, cal_id, tAnswerBit, canceledNoAgents, disconnectCause, cal_key, call_TS, tipoLlamada_id, ani,
-				destination, destination_name)
+					TipoDialingMode, cal_id, tAnswerBit, canceledNoAgents, disconnectCause, cal_key, call_TS, tipoLlamada_id, ani,
+					destination, destination_name)
+					   SELECT @callout_id, @cam_id, @tipoResDial_id, @Telefono, @Puerto, @tTotal, @tNow, @answerbit, @tBusy,
+					   ''000000000'', @call_id, @tAnswerBitFinal, @canceledNoAgents, @disconnectCause, @cal_key, @call_TS, 
+						   @TipoLlamada, @ani, @destination, @destination_name;
+			END;
+			ELSE
+			BEGIN
+				INSERT INTO ccoLogDials WITH (ROWLOCK)( callout_id, cam_id, tipoResDial_id, Telefono, Puerto, tDialing, fecha, answerbit, tbusy,
+					TipoDialingMode, cal_id, tAnswerBit, canceledNoAgents, disconnectCause, cal_key, call_TS, tipoLlamada_id, ani,
+					destination, destination_name)
 					   SELECT @callout_id, @cam_id, @tipoResDial_id, @Telefono, @Puerto, @tTotal, @tNow, @answerbit, @tBusy,
 					   ''000000000'', @call_id, @tAnswerBitFinal, @canceledNoAgents, @disconnectCause, @cal_key, @call_TS,
-					   @TipoLlamada, @ani, @destination, @destination_name;
+						   @TipoLlamada, @ani, @destination, @destination_name;
 			END;
 
 			SELECT @logDial_id = SCOPE_IDENTITY();
-			INSERT INTO ccoLogDialsData(logDial_id, callout_id, Data1, Data2, Data3, Data4, Data5, callDate)
+			INSERT INTO ccoLogDialsData(logDial_id, callout_id, Data1, Data2, Data3, Data4, Data5, callDate)  
 			SELECT @logDial_id, @callout_id, ISNULL(Dato1, ''''), ISNULL(Dato2, ''''), ISNULL(Dato3, ''''), ISNULL(Dato4, ''''), ISNULL(Dato5, ''''), @tNow
 			FROM ccoCallsOutSource WITH (NOLOCK) where callout_id = @callout_id
 
@@ -15444,44 +15451,36 @@ IF @dialId = 0 BEGIN --Begin insert
 				  SET tipoResDial_id = @tipoResDial_id
 				WHERE callout_id = @callout_id;
 			END;
-END--End Insert
+		END--End Insert
 
-IF @dialId > 0 BEGIN --Begin update ccoLogDials
-	PRINT(''Updating info'')
-	UPDATE ccoLogDials set  tipoResDial_id = @tipoResDial_id, answerbit = @answerbit,
-		canceledNoAgents = @canceledNoAgents, disconnectCause = @disconnectCause
-		 WHERE callout_id = @callout_id
-	SELECT @dialId as LogDialId
-	RETURN 0;
-END --End update
-			-- para marcaciones manuales, actualiza puerto de marcacion y costo de la llamada. Solo llamadas contestadas
+		-- para marcaciones manuales, actualiza puerto de marcacion y costo de la llamada. Solo llamadas contestadas
 		IF @call_id > 0 AND @tipoResDial_id = 1
-			BEGIN
-				UPDATE ccoCallsOut WITH(ROWLOCK)
+		BEGIN
+			UPDATE ccoCallsOut WITH(ROWLOCK)
 			SET cal_puerto = @Puerto, cal_manual = CASE WHEN cal_manual = 1 THEN 2 ELSE cal_manual END
 			WHERE cal_id = @call_id AND cal_puerto = 0;
 
-				EXEC ccsp_CstoCalculaCosto @call_id;
-			END;
-		else IF @call_id > 0 AND @tipoResDial_id = 11
+			EXEC ccsp_CstoCalculaCosto @call_id;
+		END;
+		ELSE IF @call_id > 0 AND @tipoResDial_id = 11
 		BEGIN
-				UPDATE ccoCallsOut WITH(ROWLOCK)
+			UPDATE ccoCallsOut WITH(ROWLOCK)
 			SET cal_puerto = @Puerto
 			WHERE cal_id = @call_id AND cal_puerto = 0;
+		END
 
-		end
+		SET @TipoDialingMode = dbo.fn_getDialingMode( @call_id, 0, @logDial_id, @cam_id );
 
-			SET @TipoDialingMode = dbo.fn_getDialingMode( @call_id, 0, @logDial_id, @cam_id );
+		-- Guarda configuracion de TipoDialingMode
+		UPDATE ccoLogDials WITH(ROWLOCK)
+		SET  TipoDialingMode = @TipoDialingMode,
+		manualCRM = CASE WHEN @setting292 = 1 AND RIGHT(''00'' + RTRIM(COALESCE(@TipoDialingMode, '''')), 2) LIKE ''%1%'' THEN 1 ELSE 0 END
+		WHERE logDial_id = @logDial_id;
 
-			-- Guarda configuracion de TipoDialingMode
-			UPDATE ccoLogDials WITH(ROWLOCK)
-			  SET  TipoDialingMode = @TipoDialingMode,
-			  manualCRM = CASE WHEN @setting292 = 1 AND RIGHT(''00'' + RTRIM(COALESCE(@TipoDialingMode, '''')), 2) LIKE ''%1%'' THEN 1 ELSE 0 END
-			WHERE logDial_id = @logDial_id;
-			SET NOCOUNT OFF;
-		END;
+		SELECT @logDial_id as LogDialId
 
-			SELECT @logDial_id as LogDialId'
+		SET NOCOUNT OFF;
+	END;'
     EXEC(@sql);
 
 	SET @process = 'Guardar ruta dinamica KR237000'

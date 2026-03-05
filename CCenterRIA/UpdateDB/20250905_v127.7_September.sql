@@ -15972,9 +15972,11 @@ BEGIN
         ON t.phoneNumber = v.tel
     WHERE v.tel <> @phoneEmpty;
 
-    INSERT INTO dbo.cchistoriallistanegra (callout_id, telefono, cam_id, idtipomov, idtipolista)
-    SELECT callout_id, telefono, cam_id, 3, @ln_id
-    FROM #ToRemove;
+    --Se quitan registros de eliminacion masiva si un numero que habia sido registrado y caliifcado con anterioridad
+
+    --INSERT INTO dbo.cchistoriallistanegra (callout_id, telefono, cam_id, idtipomov, idtipolista)
+	--SELECT callout_id, telefono, cam_id, 3, @ln_id
+    --FROM #ToRemove;
 
     /*==================== POS 1 ====================*/
     IF OBJECT_ID(''tempdb..#X1'') IS NOT NULL DROP TABLE #X1;

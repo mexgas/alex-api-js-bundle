@@ -149,7 +149,7 @@ END;
 -- Remove distributor
 -- =============================================
 BEGIN TRY
-    EXEC sp_dropdistributor @no_checks = 1;
+    EXEC sp_dropdistributor @no_checks = 1, @ignore_distributor = 1;
     PRINT 'Replication distributor removed';
 END TRY
 BEGIN CATCH

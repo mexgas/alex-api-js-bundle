@@ -22434,7 +22434,8 @@ else if @action = 15 begin
         WHERE CWG.IDWG = @WgId
     ),
     UserTotals AS (
-        SELECT WG.User_id, SUM(CWG.Tipo + 1) as TotalTipo
+        SELECT WG.User_id, (MAX(CASE WHEN CWG.tipo = 0 THEN 1 ELSE 0 END) + 
+			 MAX(CASE WHEN CWG.tipo = 1 THEN 2 ELSE 0 END)) as TotalTipo
         FROM ccRIAWorkGroupUsers WG WITH(NOLOCK)
         INNER JOIN TargetUsers U ON WG.User_id = U.User_id
         INNER JOIN ccRIACampEspWG CWG WITH(NOLOCK) ON WG.IDWG = CWG.IDWG

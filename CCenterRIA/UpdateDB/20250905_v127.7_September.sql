@@ -24596,22 +24596,25 @@ if @option = 2 -- Delete Agent-Supervisor from WorkGroup
         if @Type = 1 --delete skill media
         exec ccsp_Skills @action= 4,@userId=@user,@idwg=@IDWG
 
-		INSERT INTO dbo.unassignAgentInfoTmp
-		(
-		    userId,
-		    idcamp,
-		    tipo,
-		    prioridad,
-		    skill
-		)
-		SELECT DISTINCT crwgu.User_id, crcew.IdCampEsp, crcew.Tipo,  COALESCE(CA.prioridad, IA.prioridad, 1) AS Prioridad,COALESCE(CA.skill, IA.skill, 1) AS Skill FROM dbo.ccRIAWorkGroupUsers AS crwgu 
-		INNER JOIN dbo.ccRIACampEspWG AS crcew
-		ON crcew.IDWG = crwgu.IDWG
-		LEFT JOIN ccCampsAgente CA WITH(NOLOCK) 
-        ON crcew.IdCampEsp = CA.cam_id AND crcew.Tipo = 1 AND crwgu.User_id = CA.User_id
-		LEFT JOIN ccInboundAgentes IA WITH(NOLOCK) 
-			ON crcew.IdCampEsp = IA.inbound_id AND crcew.Tipo = 0 AND crwgu.User_id = IA.User_id
-		WHERE crwgu.User_id = @user AND crwgu.IDWG = @IDWG;
+		IF(@Type = 1)
+		BEGIN
+			INSERT INTO dbo.unassignAgentInfoTmp
+			(
+				userId,
+				idcamp,
+				tipo,
+				prioridad,
+				skill
+			)
+			SELECT DISTINCT crwgu.User_id, crcew.IdCampEsp, crcew.Tipo,  COALESCE(CA.prioridad, IA.prioridad, 1) AS Prioridad,COALESCE(CA.skill, IA.skill, 1) AS Skill FROM dbo.ccRIAWorkGroupUsers AS crwgu 
+			INNER JOIN dbo.ccRIACampEspWG AS crcew
+			ON crcew.IDWG = crwgu.IDWG
+			LEFT JOIN ccCampsAgente CA WITH(NOLOCK) 
+			ON crcew.IdCampEsp = CA.cam_id AND crcew.Tipo = 1 AND crwgu.User_id = CA.User_id
+			LEFT JOIN ccInboundAgentes IA WITH(NOLOCK) 
+				ON crcew.IdCampEsp = IA.inbound_id AND crcew.Tipo = 0 AND crwgu.User_id = IA.User_id
+			WHERE crwgu.User_id = @user AND crwgu.IDWG = @IDWG;
+		END
         
         if exists(select IDWG from ccRIAWorkGroupUsers where IDWG = @IDWG AND User_id = @user)
         begin

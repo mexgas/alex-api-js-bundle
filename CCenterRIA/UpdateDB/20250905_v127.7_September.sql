@@ -25067,7 +25067,6 @@ AS
 (
 SELECT User_id, MAX(fecha) AS fecha
 FROM ccLogAgentesDia
-WHERE fecha >= CONVERT(DATE, DATEADD(HOUR,-3,GETDATE()))
 GROUP BY User_id
 )
 
@@ -25289,7 +25288,7 @@ SET NOCOUNT ON;
 
 EXEC(@sql);
 
------------------------- END Marco Antonio Díaz KM28002------------------------
+------------------------ END Marco Antonio Díaz------------------------
 
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

@@ -25067,7 +25067,6 @@ AS
 (
 SELECT User_id, MAX(fecha) AS fecha
 FROM ccLogAgentesDia
-WHERE fecha >= CONVERT(DATE, DATEADD(HOUR,-3,GETDATE()))
 GROUP BY User_id
 )
 

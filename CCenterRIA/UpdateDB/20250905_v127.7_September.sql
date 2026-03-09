@@ -24918,7 +24918,6 @@ set nocount off
 
 
 	------ END MAGV ----------------------
-
     ------------------------ BEGIN Marco Antonio Díaz------------------------
 
 SET @process = 'Drop procedure ccsp_GalateaAdminGetAgentCounters if exists'

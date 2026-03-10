@@ -3249,7 +3249,6 @@ ELSE IF @option = 10 BEGIN -- Get Agents States with totals per campaign by admi
 				);
 	END;
 
-        DECLARE @MultimediaType SMALLINT, @chatType SMALLINT;
 	;WITH lastState
     AS (
         SELECT A.user_id, A.fecha
@@ -3263,6 +3262,7 @@ ELSE IF @option = 10 BEGIN -- Get Agents States with totals per campaign by admi
     SELECT A.User_id, currentStatus, IdCampEsp, Tipo
     FROM lastState A
 
+
 	IF @Id = 0
 		AND @CampType = 0
 	BEGIN
@@ -3271,7 +3271,7 @@ ELSE IF @option = 10 BEGIN -- Get Agents States with totals per campaign by admi
 		WHERE multimediaType = 0
 	END
 
-
+	DECLARE @MultimediaType SMALLINT, @chatType SMALLINT;
 
 	IF @CampType = 1
 	BEGIN
@@ -3296,11 +3296,8 @@ ELSE IF @option = 10 BEGIN -- Get Agents States with totals per campaign by admi
 	END
 
 	DECLARE @StateIds VARCHAR(100) = (
-SELECT CASE 
-WHEN @MultimediaType = 5 THEN ''2,3,4,6,34''
-WHEN @MultimediaType = 1 THEN ''2,3,4,23''
-ELSE ''2,3,4,5,6,9''
-END
+			SELECT CASE WHEN @MultimediaType = 5 THEN ''6,34'' WHEN @MultimediaType = 1 THEN
+							''23'' ELSE ''4,5,6,9'' END
 			) -- Add more for multimediaTypes
 
 	;with stateDialog as(
@@ -3342,7 +3339,9 @@ END
 	END
 	ELSE
 	BEGIN
-		;WITH campDataTotal
+			;
+
+		WITH campDataTotal
 		AS (
 			SELECT camId, count(*) total
 			FROM @tmpCamAgent A
@@ -3381,7 +3380,7 @@ END
 	ORDER BY A.campName
 
 	RETURN 0;
-END -- *****************************************************************************************
+END; -- *****************************************************************************************
 ELSE IF @Option = 11 BEGIN -- Get Campaigns Ids List Per Workgroup and Campaign Type
 	IF NOT EXISTS (
 			SELECT *

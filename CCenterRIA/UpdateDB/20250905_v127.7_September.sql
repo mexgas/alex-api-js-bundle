@@ -2907,8 +2907,6 @@ END'
         END'
     EXEC(@sql);
 
-
-
 	SET @process = 'CW-9315 Validar SP  - Create procedure ccsp_GalateaAdminCampaigns'
 	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns]
 @Option AS      SMALLINT,
@@ -10198,6 +10196,188 @@ END;
 END
 '
 	EXEC(@sql)
+
+		SET @process = 'Se modifica ccsp_GalateaAdminUploadBLst para eliminar correctamente 1 numero cuando existe el numero con y sin calkey'
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminUploadBLst]  
+@command TINYINT,
+@telephone VARCHAR(20) = 0,
+@idtipolista INT,
+@calKey AS VARCHAR(40) = NULL,
+@isKolob bit=0
+AS
+DECLARE @hashCalKey BIGINT, @hashPhone BIGINT
+
+SELECT @hashPhone = dbo.hashPhone(@telephone)
+
+IF @calKey IS NOT NULL
+BEGIN
+	SELECT @hashCalKey = dbo.hashList(@calKey)
+END
+
+IF @hashCalKey IS NULL
+BEGIN
+	IF @command IN (1, 4) --LookForNumber 
+	AND EXISTS (
+		SELECT idtipolista
+		FROM cclistanegra
+		WHERE Hashtel = @hashPhone AND HashKey IS NULL AND idtipolista = @idtipolista
+		)
+	BEGIN
+	SELECT 1
+
+	RETURN (0)
+	END
+END
+ELSE
+BEGIN
+	IF @command IN (1, 4) --LookForNumber 
+	AND EXISTS (
+		SELECT idtipolista
+		FROM cclistanegra
+		WHERE Hashtel = @hashPhone AND HashKey = @hashCalKey AND idtipolista = @idtipolista
+		)
+	BEGIN
+	SELECT 1
+
+	RETURN (0)
+	END
+END
+
+IF @command = 1 --Insert Number
+BEGIN
+	EXEC ccsp_InsertDNCList @telephone, @idtipolista, @hashCalKey, @calKey
+
+	INSERT INTO cchistoriallistanegra (telefono, idtipomov, idtipolista)
+	VALUES (@telephone, 1, @idtipolista)
+
+	SELECT 200
+END
+
+IF @command = 2 --Delete Number
+BEGIN
+	--Check if phone number exists
+			IF EXISTS(SELECT cln.Hashtel FROM dbo.ccListaNegra AS cln WHERE cln.Hashtel = @hashPhone AND cln.idtipolista = @idtipolista)
+			BEGIN
+					IF @hashCalKey IS NULL
+					BEGIN
+					--Check if request is from kolob or xion
+					IF(@isKolob = 1)
+					BEGIN
+						--Check if phone without HashKey exists
+						IF EXISTS(SELECT 1 FROM dbo.ccListaNegra AS cln WHERE 
+						cln.Hashtel = @hashPhone AND cln.idtipolista = @idtipolista AND HashKey IS NULL)
+						BEGIN
+							INSERT INTO cchistoriallistanegra (telefono, idtipomov, idtipolista)
+							VALUES (@telephone, 5, @idtipolista)
+
+							DELETE
+							FROM cclistanegra
+							WHERE Hashtel = @hashPhone AND HashKey IS NULL AND idtipolista = @idtipolista;
+							SELECT CAST(1 AS INT)
+						END
+						ELSE
+						BEGIN
+							SELECT CAST(-1 AS INT) --Phone number need a calkey to delete it
+						END
+					END
+					ELSE
+					BEGIN
+						INSERT INTO cchistoriallistanegra (telefono, idtipomov, idtipolista)
+						VALUES (@telephone, 5, @idtipolista)
+
+						DELETE
+						FROM cclistanegra
+						WHERE Hashtel = @hashPhone AND HashKey IS NULL AND idtipolista = @idtipolista
+					END
+					END
+					ELSE
+					BEGIN
+					--Check if phone with calKey exist
+					IF NOT EXISTS (SELECT cln.HashKey FROM dbo.ccListaNegra AS cln WHERE cln.HashKey = @hashCalKey AND cln.idtipolista = @idtipolista)
+					BEGIN
+						SELECT CAST(-4 AS INT) --Phone Number with calKey not exist
+					END
+					ELSE
+					BEGIN
+						INSERT INTO cchistoriallistanegra (telefono, idtipomov, idtipolista)
+						VALUES (@telephone, 5, @idtipolista)
+
+						DELETE
+						FROM cclistanegra
+						WHERE Hashtel = @hashPhone AND HashKey = @hashCalKey AND idtipolista = @idtipolista
+						IF(@isKolob = 1)
+						BEGIN
+							SELECT CAST(1 AS INT)
+						END
+					END
+					END
+			END
+			ELSE
+			BEGIN
+				SELECT CAST(-3 AS INT) --Phone Number not exist
+			END
+			RETURN (0)
+END
+
+IF @command = 3 --Reemplaza
+BEGIN
+	INSERT cchistoriallistanegra (telefono, idtipomov, idtipolista)
+	SELECT telefono, 4, @idtipolista
+	FROM cclistanegra
+	WHERE idtipolista = @idtipolista
+
+	DELETE
+	FROM cclistanegra
+	WHERE idtipolista = @idtipolista
+
+	RETURN (0)
+END
+
+IF @command = 5 --Delete by idtipolista
+BEGIN
+	UPDATE ccTiposListaNegra
+	SET STATUS = 0
+	WHERE idtipolista = @idtipolista
+
+	DELETE ccAgendaListaNegra
+	WHERE idagenda IN (
+		SELECT idagenda
+		FROM ccAgenda_TipolistaNegra
+		WHERE idtipolista = @idtipolista
+		)
+
+	DELETE ccAgenda_TipolistaNegra
+	WHERE idtipolista = @idtipolista
+
+	DELETE cccalifblacklist
+	WHERE idtipolista = @idtipolista
+
+	DELETE Camplistanegra
+	WHERE idtipolista = @idtipolista
+
+	DECLARE @telefono VARCHAR(10)
+
+	WHILE EXISTS (
+		SELECT telefono
+		FROM ccListaNegra
+		WHERE idtipolista = @idtipolista
+		)
+	BEGIN
+	SELECT TOP 1 @hashPhone = Hashtel, @telefono = telefono
+	FROM ccListaNegra
+	WHERE idtipolista = @idtipolista
+
+	INSERT INTO cchistoriallistanegra (telefono, idtipomov, idtipolista)
+	VALUES (@telefono, 5, @idtipolista)
+
+	DELETE
+	FROM cclistanegra
+	WHERE Hashtel = @hashPhone AND idtipolista = @idtipolista
+	END
+
+	RETURN (0)
+END'
+EXEC(@sql);
 	-------------------------------------END MACL------------------------------------------------
     -------------------------------------begin dmm------------------------------------------------
 

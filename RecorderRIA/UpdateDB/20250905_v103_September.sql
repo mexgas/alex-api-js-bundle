@@ -34,6 +34,8 @@ end'
 	EXEC(@sql)
 ------------------------------------END MACL----------------------------------------
 
+
+
     SET @process = '#5367 - Drop SP trsp_GetNetworkCredentialsGalatea'
 
     SET @sql = 'if exists (select * from sys.procedures where name = N''trsp_GetNetworkCredentialsGalatea'')
@@ -71,27 +73,7 @@ select @pathRepository pathRepository,@domain domain,@user [user],@password [pas
 
 END'
     EXEC(@sql)
-
-
-    update trec_parametros set par_valor = @Version where par_id = 30
-    set @Version_Actual=@Version_Actual+1
-
-    select par_valor from trec_parametros where par_id = 30
-
-    commit tran
-
-    end try
-    begin catch
-        select @errorGenerated = 'DB Script Version: ' + cast(@Version as nvarchar) + ' Error Process: ' + @process + ' Line: ' + cast(error_line() as nvarchar) + ' Number: ' + cast(@@error as nvarchar) + ' Message: ' + error_message()
-        RAISERROR(@errorGenerated, 11, 1)
-    rollback tran
-    end catch
- end
- else begin
-    select par_valor,'This version is incorrect, need version '+ convert(varchar(max),@Version-1) from trec_parametros where par_id = 30
- end
-
- 	-----------------------------------BEGIN Pavel Martinez---------------------------------------
+     	-----------------------------------BEGIN Pavel Martinez---------------------------------------
         
     SET @process = 'Drop procedure trsp_InsertRecNodeGrabIds'
 	SET @sql = '
@@ -333,9 +315,30 @@ END'
         if exists(select 1 from @XMLTable where status=0) begin
             INSERT INTO ria_RecNode (grab_id, node, dateIn, [status]) 
             select grab_id,[node],dateIn,0 from @XMLTable where status=0    
-        end'
+        end
+         end'
 
       EXEC(@sql)
 
     ------------------------------------END Pavel Martinez----------------------------------------
 
+
+
+
+    update trec_parametros set par_valor = @Version where par_id = 30
+    set @Version_Actual=@Version_Actual+1
+
+    select par_valor from trec_parametros where par_id = 30
+
+    commit tran
+
+    end try
+    begin catch
+        select @errorGenerated = 'DB Script Version: ' + cast(@Version as nvarchar) + ' Error Process: ' + @process + ' Line: ' + cast(error_line() as nvarchar) + ' Number: ' + cast(@@error as nvarchar) + ' Message: ' + error_message()
+        RAISERROR(@errorGenerated, 11, 1)
+    rollback tran
+    end catch
+ end
+ else begin
+    select par_valor,'This version is incorrect, need version '+ convert(varchar(max),@Version-1) from trec_parametros where par_id = 30
+ end

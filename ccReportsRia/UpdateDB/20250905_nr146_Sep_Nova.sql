@@ -136,6 +136,17 @@ END;
 ';
 EXEC (@sql);
 
+SET @process = 'Update: Migracion de AreaId y Area en RepAgentSummary';
+    SET @sql = N'
+    UPDATE R
+    SET R.areaId = A.IDArea, R.area = A.AreaName
+    FROM RepAgentSummary R
+    INNER JOIN ccUserView u ON R.userId = u.User_id
+    INNER JOIN ccriacat_areas A ON u.IDArea = A.IDArea
+    WHERE R.areaId = 0;
+    ';
+EXEC (@sql);
+
 SET @process = 'AlterTable RepOutCallsDetail';
 SET @sql = N'
 IF COL_LENGTH(N''dbo.RepOutCallsDetail'', N''areaId'') IS NULL
@@ -153,6 +164,17 @@ END;
 ';
 
 EXEC(@sql);
+
+SET @process = 'Update: Migracion de AreaId y Area en RepOutCallsDetail';
+    SET @sql = N'
+    UPDATE R
+    SET R.areaId = A.IDArea, R.area = A.AreaName
+    FROM RepOutCallsDetail R
+    INNER JOIN cccamps c ON R.campaignId = c.cam_id
+    INNER JOIN ccriacat_areas A ON c.IDArea = A.IDArea
+    WHERE R.areaId = 0;
+    ';
+EXEC (@sql);
 
 
 
@@ -367,6 +389,16 @@ END'
 
     EXEC(@sql);
 
+    SET @process = 'Update: Migracion de AreaId y Area en RepInCallsDetail';
+        SET @sql = N'
+        UPDATE R
+        SET R.areaId = A.IDArea, R.area = A.AreaName
+        FROM RepInCallsDetail R
+        INNER JOIN ccinbound c ON R.inboundId = c.inbound_id
+        INNER JOIN ccriacat_areas A ON c.IDArea = A.IDArea
+        WHERE R.areaId = 0;
+        ';
+    EXEC (@sql);
 
     SET @process = 'Create Column source';
     SET @sql = '
@@ -446,6 +478,17 @@ END'
 
     EXEC(@sql);
 
+    SET @process = 'Update: Migracion de AreaId y Area en RepOutDialDetail';
+        SET @sql = N'
+        UPDATE R
+        SET R.areaId = A.IDArea, R.area = A.AreaName
+        FROM RepOutDialDetail R
+        INNER JOIN cccamps c ON R.campaignId = c.cam_id
+        INNER JOIN ccriacat_areas A ON c.IDArea = A.IDArea
+        WHERE R.areaId = 0;
+        ';
+    EXEC (@sql);
+
 
     SET @process = 'AlterTable RepSpecialAbndCamp';
     SET @sql = N'
@@ -464,6 +507,17 @@ END'
     ';
 
     EXEC(@sql);
+
+    SET @process = 'Update: Migracion de AreaId y Area en RepSpecialAbndCamp';
+        SET @sql = N'
+        UPDATE R
+        SET R.areaId = A.IDArea, R.area = A.AreaName
+        FROM RepSpecialAbndCamp R
+        INNER JOIN cccamps c ON R.campaignId = c.cam_id
+        INNER JOIN ccriacat_areas A ON c.IDArea = A.IDArea
+        WHERE R.areaId = 0;
+        ';
+    EXEC (@sql);
 
     SET @process = 'Insert into ReportsFilters - KR201001';
     SET @sql = '

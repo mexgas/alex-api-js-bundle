@@ -9,9 +9,13 @@ namespace DatabaseUpdateValidator.Nuxiba.Repository.Impl
         {
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
-                SqlCommand command = new SqlCommand(script, connection);
-                connection.Open();
-                command.ExecuteNonQuery();
+                using (SqlCommand command = new SqlCommand(script, connection))
+                {
+                    // increase command timeout to 60 minutes for heavy queries
+                    command.CommandTimeout = 60 * 60; // seconds
+                    connection.Open();
+                    command.ExecuteNonQuery();
+                }
             }
         }
 
@@ -19,9 +23,13 @@ namespace DatabaseUpdateValidator.Nuxiba.Repository.Impl
         {
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
-                SqlCommand command = new SqlCommand(script, connection);
-                connection.Open();
-                return command.ExecuteScalar();
+                using (SqlCommand command = new SqlCommand(script, connection))
+                {
+                    // increase command timeout to 60 minutes for heavy queries
+                    command.CommandTimeout = 60 * 60; // seconds
+                    connection.Open();
+                    return command.ExecuteScalar();
+                }
             }
         }
     }

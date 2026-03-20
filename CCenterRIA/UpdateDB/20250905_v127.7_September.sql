@@ -25486,8 +25486,16 @@ SET @sql = 'if not exists(select * from sys.tables where name=''ccDNCQueue'') be
 end';
 EXEC(@sql);
 
+SET @process = '#Sears Monti 9  DROP PROCEDURE ccsp_InsertDNCList_Static'
+SET @sql = N'
+If Exists (Select 1 From sys.procedures Where name = N''ccsp_InsertDNCList_Static'')
+    Begin
+        DROP PROCEDURE ccsp_InsertDNCList_Static
+    End';
+EXEC(@sql);
+
 SET @process = '#Sears Monti 9 ALTER PROCEDURE [dbo].[ccsp_InsertDNCList_Static]'
-SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_InsertDNCList_Static]
+SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_InsertDNCList_Static]
     @telephone NVARCHAR(30) = NULL,
     @ln_id INT,
     @calKey VARCHAR(40) = NULL,
@@ -25560,7 +25568,7 @@ BEGIN
 END';
 EXEC(@sql);
 
-SET @process = '#Sears Monti 9 '
+SET @process = '#Sears Monti 9  DROP PROCEDURE ccsp_ProcessDNCQueue'
 SET @sql = N'
 If Exists (Select 1 From sys.procedures Where name = N''ccsp_ProcessDNCQueue'')
     Begin

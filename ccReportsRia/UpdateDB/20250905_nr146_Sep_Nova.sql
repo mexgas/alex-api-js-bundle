@@ -1930,14 +1930,26 @@ EXEC(@sql)
 
 --------------------------------------------------------END Marco Diaz----------------------------------------------------------------------
 
+------------------------------BEGIN Jesus Gallardo MED Nova Monti 9---------------------------------
 
-set @process = ''
-set @sql=''
+set @process = '#6535 ALTER VIEW [dbo].[ccUserView] isnull(IDArea,1)'
+set @sql='ALTER VIEW [dbo].[ccUserView] AS
+SELECT 
+    User_id, Login, Nombres, ApellidoPaterno, ApellidoMaterno, 
+    TipoStatusAge_id, TipoUser_id, Status, Sexo, isnull(IDArea,1) IDArea, fCreate 
+FROM ccUsers
+UNION
+SELECT 
+    User_id, Login, Nombres, ApellidoPaterno, ApellidoMaterno, 
+    TipoStatusAge_id, TipoUser_id, Status, Sexo, isnull(IDArea,1) IDArea, fCreate 
+FROM ccUsers_Consulta;'
 EXEC(@sql)
 
 set @process = ''
 set @sql=''
 EXEC(@sql)
+
+------------------------------END Jesus Gallardo Sears Nova Monti 9---------------------------------
 
     	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version
 

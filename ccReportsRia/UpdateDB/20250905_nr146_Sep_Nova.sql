@@ -2347,23 +2347,6 @@ END'
 EXEC(@sql)
 
 
-SET @process = '#7806 UPDATE STATISTICS '
-SET @sql = 'UPDATE STATISTICS dbo.RepOutDialDetail WITH FULLSCAN;
-UPDATE STATISTICS dbo.ccoLogDials WITH FULLSCAN;
-UPDATE STATISTICS dbo.ccoCallsOut WITH FULLSCAN;
-UPDATE STATISTICS dbo.ccoLogDialsData WITH FULLSCAN;
-UPDATE STATISTICS dbo.ccoCallsOutSource WITH FULLSCAN;
-UPDATE STATISTICS dbo.RegProcessPreviewRecord WITH FULLSCAN;
-'
-EXEC(@sql)
-
-
-SET @process = '#7806 sp_recompile ccspRepOutDialDetail y ReportsMasterProcessWIthOnlyGenerate'
-SET @sql = 'EXEC sp_recompile ''dbo.ccspRepOutDialDetail'';
-EXEC sp_recompile ''dbo.ReportsMasterProcessWIthOnlyGenerate''; '
-EXEC(@sql)
-
-
 set @process = ''
 set @sql=''
 EXEC(@sql)

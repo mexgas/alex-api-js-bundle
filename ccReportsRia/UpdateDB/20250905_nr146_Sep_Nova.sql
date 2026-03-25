@@ -2174,31 +2174,6 @@ end'
 EXEC(@sql)
 
 
-SET @process = '#7806 '
-SET @sql = ' '
-EXEC(@sql)
-
-
-SET @process = '#7806 '
-SET @sql = ' '
-EXEC(@sql)
-
-
-SET @process = '#7806 '
-SET @sql = ' '
-EXEC(@sql)
-
-
-SET @process = '#7806 '
-SET @sql = ' '
-EXEC(@sql)
-
-
-SET @process = '#7806 '
-SET @sql = ' '
-EXEC(@sql)
-
-
 SET @process = '#7806  CREATE NONCLUSTERED INDEX [IX_ccoLogDials_cal_id_logDial]'
 SET @sql = 'IF NOT EXISTS (
     SELECT 1

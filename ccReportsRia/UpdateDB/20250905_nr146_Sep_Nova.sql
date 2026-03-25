@@ -1945,6 +1945,406 @@ SELECT
 FROM ccUsers_Consulta;'
 EXEC(@sql)
 
+
+
+SET @process = '#7806 DROP INDEX repetidos'
+SET @sql = '
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepAgentGI_date''AND object_id = OBJECT_ID(''RepAgentGI'') ) BEGIN DROP INDEX IX_RepAgentGI_date ON RepAgentGI END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepAgentKPI_date''AND object_id = OBJECT_ID(''RepAgentKPI'') ) BEGIN DROP INDEX IX_RepAgentKPI_date ON RepAgentKPI END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepAgentNotReady_date''AND object_id = OBJECT_ID(''RepAgentNotReady'') ) BEGIN DROP INDEX IX_RepAgentNotReady_date ON RepAgentNotReady END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepAgentNotReadyDet_date''AND object_id = OBJECT_ID(''RepAgentNotReadyDet'') ) BEGIN DROP INDEX IX_RepAgentNotReadyDet_date ON RepAgentNotReadyDet END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepAgentSession_date''AND object_id = OBJECT_ID(''RepAgentSession'') ) BEGIN DROP INDEX IX_RepAgentSession_date ON RepAgentSession END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepAgentSessionByInterval_date''AND object_id = OBJECT_ID(''RepAgentSessionByInterval'') ) BEGIN DROP INDEX IX_RepAgentSessionByInterval_date ON RepAgentSessionByInterval END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepAgentTimeShift_date''AND object_id = OBJECT_ID(''RepAgentTimeShift'') ) BEGIN DROP INDEX IX_RepAgentTimeShift_date ON RepAgentTimeShift END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepAuxiliariesByAgentDet_date''AND object_id = OBJECT_ID(''RepAuxiliariesByAgentDet'') ) BEGIN DROP INDEX IX_RepAuxiliariesByAgentDet_date ON RepAuxiliariesByAgentDet END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInChangeFlow''AND object_id = OBJECT_ID(''RepInChangeFlow'') ) BEGIN DROP INDEX IX_RepInChangeFlow ON RepInChangeFlow END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInChangeFlow_date''AND object_id = OBJECT_ID(''RepInChangeFlow'') ) BEGIN DROP INDEX IX_RepInChangeFlow_date ON RepInChangeFlow END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInNotTransferred''AND object_id = OBJECT_ID(''RepInNotTransferred'') ) BEGIN DROP INDEX IX_RepInNotTransferred ON RepInNotTransferred END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInNotTransferred_date''AND object_id = OBJECT_ID(''RepInNotTransferred'') ) BEGIN DROP INDEX IX_RepInNotTransferred_date ON RepInNotTransferred END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepOutDialDetail''AND object_id = OBJECT_ID(''RepOutDialDetail'') ) BEGIN DROP INDEX IX_RepOutDialDetail ON RepOutDialDetail END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepOutDialDetail_date''AND object_id = OBJECT_ID(''RepOutDialDetail'') ) BEGIN DROP INDEX IX_RepOutDialDetail_date ON RepOutDialDetail END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepSpecialRecordingsDownload_date''AND object_id = OBJECT_ID(''RepSpecialRecordingsDownload'') ) BEGIN DROP INDEX IX_RepSpecialRecordingsDownload_date ON RepSpecialRecordingsDownload END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepSpecialStatusDetail_date''AND object_id = OBJECT_ID(''RepSpecialStatusDetail'') ) BEGIN DROP INDEX IX_RepSpecialStatusDetail_date ON RepSpecialStatusDetail END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepWhatsAppByCampaignIn_date''AND object_id = OBJECT_ID(''RepWhatsAppByCampaignIn'') ) BEGIN DROP INDEX IX_RepWhatsAppByCampaignIn_date ON RepWhatsAppByCampaignIn END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepWhatsAppByCampaignOut_date''AND object_id = OBJECT_ID(''RepWhatsAppByCampaignOut'') ) BEGIN DROP INDEX IX_RepWhatsAppByCampaignOut_date ON RepWhatsAppByCampaignOut END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepWhatsAppDetailConversationIn_date''AND object_id = OBJECT_ID(''RepWhatsAppDetailConversationIn'') ) BEGIN DROP INDEX IX_RepWhatsAppDetailConversationIn_date ON RepWhatsAppDetailConversationIn END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepWhatsAppDetailConversationOut_date''AND object_id = OBJECT_ID(''RepWhatsAppDetailConversationOut'') ) BEGIN DROP INDEX IX_RepWhatsAppDetailConversationOut_date ON RepWhatsAppDetailConversationOut END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepWhatsConversationsMarkedAsSpam_date''AND object_id = OBJECT_ID(''RepWhatsConversationsMarkedAsSpam'') ) BEGIN DROP INDEX IX_RepWhatsConversationsMarkedAsSpam_date ON RepWhatsConversationsMarkedAsSpam END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepWhatsConversationsUnassigned_date''AND object_id = OBJECT_ID(''RepWhatsConversationsUnassigned'') ) BEGIN DROP INDEX IX_RepWhatsConversationsUnassigned_date ON RepWhatsConversationsUnassigned END
+
+
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepACDChats''AND object_id = OBJECT_ID(''RepACDChats'') ) BEGIN DROP INDEX IX_RepACDChats ON RepACDChats END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepAgentCallStatusesByInterval''AND object_id = OBJECT_ID(''RepAgentCallStatusesByInterval'') ) BEGIN DROP INDEX IX_RepAgentCallStatusesByInterval ON RepAgentCallStatusesByInterval END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepAgentGI_VersionOld''AND object_id = OBJECT_ID(''RepAgentGI_VersionOld'') ) BEGIN DROP INDEX IX_RepAgentGI_VersionOld ON RepAgentGI_VersionOld END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepAgentHSBCKPI''AND object_id = OBJECT_ID(''RepAgentHSBCKPI'') ) BEGIN DROP INDEX IX_RepAgentHSBCKPI ON RepAgentHSBCKPI END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepAgentSummary''AND object_id = OBJECT_ID(''RepAgentSummary'') ) BEGIN DROP INDEX IX_RepAgentSummary ON RepAgentSummary END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepAnsweredCallsByDialingRetries''AND object_id = OBJECT_ID(''RepAnsweredCallsByDialingRetries'') ) BEGIN DROP INDEX IX_RepAnsweredCallsByDialingRetries ON RepAnsweredCallsByDialingRetries END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepAvgAnswerTimeChats''AND object_id = OBJECT_ID(''RepAvgAnswerTimeChats'') ) BEGIN DROP INDEX IX_RepAvgAnswerTimeChats ON RepAvgAnswerTimeChats END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepAVRSDisposition''AND object_id = OBJECT_ID(''RepAVRSDisposition'') ) BEGIN DROP INDEX IX_RepAVRSDisposition ON RepAVRSDisposition END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepCallTimeSummary''AND object_id = OBJECT_ID(''RepCallTimeSummary'') ) BEGIN DROP INDEX IX_RepCallTimeSummary ON RepCallTimeSummary END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepCallXfer''AND object_id = OBJECT_ID(''RepCallXfer'') ) BEGIN DROP INDEX IX_RepCallXfer ON RepCallXfer END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepChatsAndCallsGeneral''AND object_id = OBJECT_ID(''RepChatsAndCallsGeneral'') ) BEGIN DROP INDEX IX_RepChatsAndCallsGeneral ON RepChatsAndCallsGeneral END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepChatsDetail''AND object_id = OBJECT_ID(''RepChatsDetail'') ) BEGIN DROP INDEX IX_RepChatsDetail ON RepChatsDetail END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepChatsEffectiveness''AND object_id = OBJECT_ID(''RepChatsEffectiveness'') ) BEGIN DROP INDEX IX_RepChatsEffectiveness ON RepChatsEffectiveness END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepChatsNotContacted''AND object_id = OBJECT_ID(''RepChatsNotContacted'') ) BEGIN DROP INDEX IX_RepChatsNotContacted ON RepChatsNotContacted END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepDetailAgent''AND object_id = OBJECT_ID(''RepDetailAgent'') ) BEGIN DROP INDEX IX_RepDetailAgent ON RepDetailAgent END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepDialingResultsDetail''AND object_id = OBJECT_ID(''RepDialingResultsDetail'') ) BEGIN DROP INDEX IX_RepDialingResultsDetail ON RepDialingResultsDetail END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepEmailACD''AND object_id = OBJECT_ID(''RepEmailACD'') ) BEGIN DROP INDEX IX_RepEmailACD ON RepEmailACD END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepEmailAgente''AND object_id = OBJECT_ID(''RepEmailAgente'') ) BEGIN DROP INDEX IX_RepEmailAgente ON RepEmailAgente END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepEmailDetail''AND object_id = OBJECT_ID(''RepEmailDetail'') ) BEGIN DROP INDEX IX_RepEmailDetail ON RepEmailDetail END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepEmailGeneral''AND object_id = OBJECT_ID(''RepEmailGeneral'') ) BEGIN DROP INDEX IX_RepEmailGeneral ON RepEmailGeneral END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInAbnd''AND object_id = OBJECT_ID(''RepInAbnd'') ) BEGIN DROP INDEX IX_RepInAbnd ON RepInAbnd END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInAnsw''AND object_id = OBJECT_ID(''RepInAnsw'') ) BEGIN DROP INDEX IX_RepInAnsw ON RepInAnsw END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInBill01900''AND object_id = OBJECT_ID(''RepInBill01900'') ) BEGIN DROP INDEX IX_RepInBill01900 ON RepInBill01900 END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInboundKPI''AND object_id = OBJECT_ID(''RepInboundKPI'') ) BEGIN DROP INDEX IX_RepInboundKPI ON RepInboundKPI END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInCalls''AND object_id = OBJECT_ID(''RepInCalls'') ) BEGIN DROP INDEX IX_RepInCalls ON RepInCalls END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInCallsDetail''AND object_id = OBJECT_ID(''RepInCallsDetail'') ) BEGIN DROP INDEX IX_RepInCallsDetail ON RepInCallsDetail END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInDIDResume''AND object_id = OBJECT_ID(''RepInDIDResume'') ) BEGIN DROP INDEX IX_RepInDIDResume ON RepInDIDResume END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInDispositions''AND object_id = OBJECT_ID(''RepInDispositions'') ) BEGIN DROP INDEX IX_RepInDispositions ON RepInDispositions END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInEffectiveness''AND object_id = OBJECT_ID(''RepInEffectiveness'') ) BEGIN DROP INDEX IX_RepInEffectiveness ON RepInEffectiveness END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInRejectedCalls''AND object_id = OBJECT_ID(''RepInRejectedCalls'') ) BEGIN DROP INDEX IX_RepInRejectedCalls ON RepInRejectedCalls END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInSubDispositions''AND object_id = OBJECT_ID(''RepInSubDispositions'') ) BEGIN DROP INDEX IX_RepInSubDispositions ON RepInSubDispositions END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInTrunkBusy''AND object_id = OBJECT_ID(''RepInTrunkBusy'') ) BEGIN DROP INDEX IX_RepInTrunkBusy ON RepInTrunkBusy END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepIVRByOptions''AND object_id = OBJECT_ID(''RepIVRByOptions'') ) BEGIN DROP INDEX IX_RepIVRByOptions ON RepIVRByOptions END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepIVRDetail''AND object_id = OBJECT_ID(''RepIVRDetail'') ) BEGIN DROP INDEX IX_RepIVRDetail ON RepIVRDetail END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepIVRFirstOption''AND object_id = OBJECT_ID(''RepIVRFirstOption'') ) BEGIN DROP INDEX IX_RepIVRFirstOption ON RepIVRFirstOption END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepIVRGeneral''AND object_id = OBJECT_ID(''RepIVRGeneral'') ) BEGIN DROP INDEX IX_RepIVRGeneral ON RepIVRGeneral END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepMKTTiemposTotales_1''AND object_id = OBJECT_ID(''RepMKTTiemposTotales'') ) BEGIN DROP INDEX IX_RepMKTTiemposTotales_1 ON RepMKTTiemposTotales END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepOutAnswCalls''AND object_id = OBJECT_ID(''RepOutAnswCalls'') ) BEGIN DROP INDEX IX_RepOutAnswCalls ON RepOutAnswCalls END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepOutboundKPI''AND object_id = OBJECT_ID(''RepOutboundKPI'') ) BEGIN DROP INDEX IX_RepOutboundKPI ON RepOutboundKPI END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepOutCallBacks''AND object_id = OBJECT_ID(''RepOutCallBacks'') ) BEGIN DROP INDEX IX_RepOutCallBacks ON RepOutCallBacks END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepOutCalls''AND object_id = OBJECT_ID(''RepOutCalls'') ) BEGIN DROP INDEX IX_RepOutCalls ON RepOutCalls END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepOutCallsByTelephone''AND object_id = OBJECT_ID(''RepOutCallsByTelephone'') ) BEGIN DROP INDEX IX_RepOutCallsByTelephone ON RepOutCallsByTelephone END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepOutCallsDetail''AND object_id = OBJECT_ID(''RepOutCallsDetail'') ) BEGIN DROP INDEX IX_RepOutCallsDetail ON RepOutCallsDetail END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepOutCallsOnChatDetail''AND object_id = OBJECT_ID(''RepOutCallsOnChatDetail'') ) BEGIN DROP INDEX IX_RepOutCallsOnChatDetail ON RepOutCallsOnChatDetail END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepOutDials''AND object_id = OBJECT_ID(''RepOutDials'') ) BEGIN DROP INDEX IX_RepOutDials ON RepOutDials END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepOutDispositions''AND object_id = OBJECT_ID(''RepOutDispositions'') ) BEGIN DROP INDEX IX_RepOutDispositions ON RepOutDispositions END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepOutKPI''AND object_id = OBJECT_ID(''RepOutKPI'') ) BEGIN DROP INDEX IX_RepOutKPI ON RepOutKPI END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepOutManagementBase_1''AND object_id = OBJECT_ID(''RepOutManagementBase'') ) BEGIN DROP INDEX IX_RepOutManagementBase_1 ON RepOutManagementBase END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepOutSubDispositions''AND object_id = OBJECT_ID(''RepOutSubDispositions'') ) BEGIN DROP INDEX IX_RepOutSubDispositions ON RepOutSubDispositions END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepOutTrunkBusy''AND object_id = OBJECT_ID(''RepOutTrunkBusy'') ) BEGIN DROP INDEX IX_RepOutTrunkBusy ON RepOutTrunkBusy END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepSpececialAbnd''AND object_id = OBJECT_ID(''RepSpececialAbnd'') ) BEGIN DROP INDEX IX_RepSpececialAbnd ON RepSpececialAbnd END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepSpececialAgent''AND object_id = OBJECT_ID(''RepSpececialAgent'') ) BEGIN DROP INDEX IX_RepSpececialAgent ON RepSpececialAgent END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepSpececialAgtPerformance''AND object_id = OBJECT_ID(''RepSpececialAgtPerformance'') ) BEGIN DROP INDEX IX_RepSpececialAgtPerformance ON RepSpececialAgtPerformance END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepSpececialCamMovs''AND object_id = OBJECT_ID(''RepSpececialCamMovs'') ) BEGIN DROP INDEX IX_RepSpececialCamMovs ON RepSpececialCamMovs END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepSpececialPromises''AND object_id = OBJECT_ID(''RepSpececialPromises'') ) BEGIN DROP INDEX IX_RepSpececialPromises ON RepSpececialPromises END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepSpecialCallKeyHistory''AND object_id = OBJECT_ID(''RepSpecialCallKeyHistory'') ) BEGIN DROP INDEX IX_RepSpecialCallKeyHistory ON RepSpecialCallKeyHistory END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepSpecialTimes''AND object_id = OBJECT_ID(''RepSpecialTimes'') ) BEGIN DROP INDEX IX_RepSpecialTimes ON RepSpecialTimes END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepTrunkBusy''AND object_id = OBJECT_ID(''RepTrunkBusy'') ) BEGIN DROP INDEX IX_RepTrunkBusy ON RepTrunkBusy END'
+EXEC(@sql)
+
+
+SET @process = '#7806 ALTER PROCEDURE [dbo].[ccSpCreateIndexReport] se quita los inidices en reportes'
+SET @sql = 'ALTER PROCEDURE [dbo].[ccSpCreateIndexReport]
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+declare @tIndexMerge table(id int identity,tableName varchar(255),status bit)
+declare @sql nvarchar(max),@tableName varchar(255),@id int
+declare @column varchar(255),@indexName varchar(255)
+
+
+
+/****************************INDICES PARA REPORTES *******************************/
+if not exists (select * from sys.indexes where name = N''IX_ccoCallsOut13'' and object_id = OBJECT_ID(N''ccoCallsOut''))
+begin
+   CREATE NONCLUSTERED INDEX IX_ccoCallsOut13
+ON [dbo].[ccoCallsOut] ([cal_Inicio])
+INCLUDE ([cal_id],[cal_telefono],[cal_puerto],[cam_id],[User_id],[statusCall_id],[calif_id],[cal_tDialog],[cal_tNotas],[cal_tXfer],[cal_tRing],[cal_manual],[cal_tMoh],[cal_whoHung],[cal_twait])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_RIA_GRABACION_11'' and object_id = OBJECT_ID(N''RIA_GRABACION''))
+begin
+CREATE NONCLUSTERED INDEX IX_RIA_GRABACION_11
+ON [dbo].[RIA_GRABACION] ([tipo_llamada],[cal_id])
+INCLUDE ([grab_id])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_ccLogTransfers_3'' and object_id = OBJECT_ID(N''ccLogtransfers''))
+begin
+   CREATE NONCLUSTERED INDEX IX_ccLogTransfers_3
+ON [dbo].[ccLogtransfers] ([fechaFin])
+INCLUDE ([cal_id],[tipo],[modo],[destino],[tAntesXfer],[tDespuesXfer])
+end
+
+
+if not exists (select * from sys.indexes where name = N''IX_ccLogAgentesDia_6'' and object_id = OBJECT_ID(N''ccLogAgentesDia''))
+begin
+   CREATE NONCLUSTERED INDEX IX_ccLogAgentesDia_6
+ON [dbo].[ccLogAgentesDia] ([fecha])
+INCLUDE ([User_id],[TipoStatusAge_id],[tStatus])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_ccLogAgentesNotReady_5'' and object_id = OBJECT_ID(N''cclogagentesnotready''))
+begin
+   CREATE NONCLUSTERED INDEX IX_ccLogAgentesNotReady_5
+ON [dbo].[cclogagentesnotready] ([fecha])
+INCLUDE ([User_id],[TipoNotReady_id],[tStatus])
+end
+
+    
+if not exists (select * from sys.indexes where name = N''IX_ccLogLogin_6'' and object_id = OBJECT_ID(N''ccloglogin''))
+begin
+   CREATE NONCLUSTERED INDEX IX_ccLogLogin_6
+ON [dbo].[ccloglogin] ([fecha])
+INCLUDE ([User_id],[Extension],[TipoMov])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_ccoLogDials_8'' and object_id = OBJECT_ID(N''ccoLogDials''))
+begin
+CREATE NONCLUSTERED INDEX IX_ccoLogDials_8
+ON [dbo].[ccoLogDials] ([fecha],[cal_id])
+INCLUDE ([tipoResDial_id])
+end
+
+
+
+if not exists (select * from sys.indexes where name = N''IX_ccCallsIn_8'' and object_id = OBJECT_ID(N''ccCallsIn''))
+begin
+CREATE NONCLUSTERED INDEX IX_ccCallsIn_8
+ON [dbo].[ccCallsIn] ([IVR_id])
+INCLUDE ([cal_id])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_ccCallsIn_9'' and object_id = OBJECT_ID(N''ccCallsIn''))
+begin
+CREATE NONCLUSTERED INDEX IX_ccCallsIn_9
+ON [dbo].[ccCallsIn] ([cal_Inicio])
+INCLUDE ([cal_id])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_tmpSessionTimeGroup_1'' and object_id = OBJECT_ID(N''tmpSessionTimeGroup''))
+begin
+CREATE NONCLUSTERED INDEX IX_tmpSessionTimeGroup_1
+ON [dbo].[tmpSessionTimeGroup] ([user_id])
+INCLUDE ([timegroup],[tlog])
+end
+
+   
+if not exists (select * from sys.indexes where name = N''IX_tmpccLogAgentesDia_2'' and object_id = OBJECT_ID(N''tmpccLogAgentesDia''))
+begin
+CREATE NONCLUSTERED INDEX IX_tmpccLogAgentesDia_2
+ON [dbo].[tmpccLogAgentesDia] ([userId],[timeGroup])
+INCLUDE ([TipoStatusAge_id],[tStatus])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_tmpTimesInboundData_1'' and object_id = OBJECT_ID(N''tmpTimesInboundData''))
+begin
+CREATE NONCLUSTERED INDEX IX_tmpTimesInboundData_1
+ON [dbo].[tmpTimesInboundData] ([statusCall_id])
+INCLUDE ([timegroup],[Inbound_id],[nabnd],[tque],[txfer],[tring])
+end
+
+    
+if not exists (select * from sys.indexes where name = N''IX_tmpTimesInboundData_2'' and object_id = OBJECT_ID(N''tmpTimesInboundData''))
+begin
+CREATE NONCLUSTERED INDEX IX_tmpTimesInboundData_2
+ON [dbo].[tmpTimesInboundData] ([cal_id])
+INCLUDE ([Inbound_id],[User_id])
+end
+
+
+if not exists (select * from sys.indexes where name = N''IX_tmpTimesOutboundData_1'' and object_id = OBJECT_ID(N''tmpTimesOutboundData''))
+begin
+CREATE NONCLUSTERED INDEX IX_tmpTimesOutboundData_1
+ON [dbo].[tmpTimesOutboundData] ([timegroup],[cal_id])
+INCLUDE ([User_id])
+end
+    
+if not exists (select * from sys.indexes where name = N''IX_tmpTimesOutboundData_2'' and object_id = OBJECT_ID(N''tmpTimesOutboundData''))
+begin
+CREATE NONCLUSTERED INDEX IX_tmpTimesOutboundData_2
+ON [dbo].[tmpTimesOutboundData] ([cal_manual])
+INCLUDE ([timegroup],[User_id],[nabnd_xfer],[nabnd_ring],[tdialog],[tnotes],[cal_id])
+end
+
+
+    
+if not exists (select * from sys.indexes where name = N''IX_RepAgentNotReadyDet_2'' and object_id = OBJECT_ID(N''RepAgentNotReadyDet''))
+begin
+CREATE NONCLUSTERED INDEX IX_RepAgentNotReadyDet_2
+ON [dbo].[RepAgentNotReadyDet] ([tiponotreadyId],[startDate])
+INCLUDE ([userId],[status],[statusTime])
+end
+
+ 
+
+end'
+EXEC(@sql)
+
+
+SET @process = '#7806 '
+SET @sql = ' '
+EXEC(@sql)
+
+
+SET @process = '#7806 '
+SET @sql = ' '
+EXEC(@sql)
+
+
+SET @process = '#7806 '
+SET @sql = ' '
+EXEC(@sql)
+
+
+SET @process = '#7806 '
+SET @sql = ' '
+EXEC(@sql)
+
+
+SET @process = '#7806 '
+SET @sql = ' '
+EXEC(@sql)
+
+
+SET @process = '#7806  CREATE NONCLUSTERED INDEX [IX_ccoLogDials_cal_id_logDial]'
+SET @sql = 'IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes i
+    WHERE i.name = ''IX_ccoLogDials_cal_id_logDial''
+      AND i.object_id = OBJECT_ID(''dbo.ccoLogDials'')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX [IX_ccoLogDials_cal_id_logDial]
+    ON [dbo].[ccoLogDials] ([cal_id] desc)
+    INCLUDE ([logDial_id])
+END'
+EXEC(@sql)
+
+
+SET @process = '#7806 CREATE NONCLUSTERED INDEX IX_ccoLogDials_fecha_repOutDialDetail'
+SET @sql = 'IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes i
+    WHERE i.name = ''IX_ccoLogDials_fecha_repOutDialDetail''
+      AND i.object_id = OBJECT_ID(''dbo.ccoLogDials'')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX IX_ccoLogDials_fecha_repOutDialDetail
+    ON dbo.ccoLogDials
+    (
+        fecha ASC
+    )
+    INCLUDE
+    (
+        logDial_id,
+        callout_id,
+        cam_id,
+        tipoResDial_id,
+        Telefono,
+        Puerto,
+        tDialing,
+        tBusy,
+        answerbit,
+        TipoDialingMode,
+        cal_id,
+        canceledNoAgents,
+        disconnectCause,
+        tipoLlamada_id,
+        manualCRM
+    );
+END'
+EXEC(@sql)
+
+
+SET @process = '#7806 CREATE NONCLUSTERED INDEX IX_ccoCallsOut_cal_id_repOutDialDetail'
+SET @sql = 'IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes i
+    WHERE i.name = ''IX_ccoCallsOut_cal_id_repOutDialDetail''
+      AND i.object_id = OBJECT_ID(''dbo.ccoCallsOut'')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX IX_ccoCallsOut_cal_id_repOutDialDetail
+    ON dbo.ccoCallsOut
+    (
+        cal_id
+    )
+    INCLUDE
+    (
+        callout_id,
+        User_id,
+        cal_key,
+        calif_id,
+        califSub_id,
+        cal_manual,
+        file_moved
+    );
+END'
+EXEC(@sql)
+
+
+SET @process = '#7806  CREATE NONCLUSTERED INDEX IX_ccoLogDialsData_logDial_repOutDialDetail'
+SET @sql = 'IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes i
+    WHERE i.name = ''IX_ccoLogDialsData_logDial_repOutDialDetail''
+      AND i.object_id = OBJECT_ID(''dbo.ccoLogDialsData'')
+)
+BEGIN
+
+    CREATE NONCLUSTERED INDEX IX_ccoLogDialsData_logDial_repOutDialDetail
+    ON dbo.ccoLogDialsData
+    (
+        logDial_id
+    )
+    INCLUDE
+    (
+        Data1,
+        Data2,
+        Data3,
+        Data4,
+        Data5
+    );
+END'
+EXEC(@sql)
+
+
+SET @process = '#7806  DROP INDEX IX_RepOutDialDetail ON RepOutDialDetail;'
+SET @sql = 'IF EXISTS (
+    SELECT 1 
+    FROM sys.indexes 
+    WHERE name = ''IX_RepOutDialDetail''
+    AND object_id = OBJECT_ID(''RepOutDialDetail'')
+)
+BEGIN
+    DROP INDEX IX_RepOutDialDetail ON RepOutDialDetail;
+END'
+EXEC(@sql)
+
+
+SET @process = '#7806 DROP INDEX IX_RepOutDialDetail_date ON RepOutDialDetail'
+SET @sql = 'IF EXISTS (
+    SELECT 1 
+    FROM sys.indexes 
+    WHERE name = ''IX_RepOutDialDetail_date''
+    AND object_id = OBJECT_ID(''RepOutDialDetail'')
+)
+BEGIN
+    DROP INDEX IX_RepOutDialDetail_date ON RepOutDialDetail;
+END'
+EXEC(@sql)
+
+
+SET @process = '#7806 UPDATE STATISTICS '
+SET @sql = 'UPDATE STATISTICS dbo.RepOutDialDetail WITH FULLSCAN;
+UPDATE STATISTICS dbo.ccoLogDials WITH FULLSCAN;
+UPDATE STATISTICS dbo.ccoCallsOut WITH FULLSCAN;
+UPDATE STATISTICS dbo.ccoLogDialsData WITH FULLSCAN;
+UPDATE STATISTICS dbo.ccoCallsOutSource WITH FULLSCAN;
+UPDATE STATISTICS dbo.RegProcessPreviewRecord WITH FULLSCAN;
+'
+EXEC(@sql)
+
+
+SET @process = '#7806 sp_recompile ccspRepOutDialDetail y ReportsMasterProcessWIthOnlyGenerate'
+SET @sql = 'EXEC sp_recompile ''dbo.ccspRepOutDialDetail'';
+EXEC sp_recompile ''dbo.ReportsMasterProcessWIthOnlyGenerate''; '
+EXEC(@sql)
+
+
 set @process = ''
 set @sql=''
 EXEC(@sql)

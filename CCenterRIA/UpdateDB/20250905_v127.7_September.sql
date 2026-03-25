@@ -25604,7 +25604,7 @@ EXEC(@sql);
 
  SET @process = '#7786 ALTER PROCEDURE [dbo].[ccsp_UpdateCallsOutFromTempAction]'
  
- SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_UpdateCallsOutFromTempAction]
+ SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_UpdateCallsOutFromTempAction]
 @action INT,
 @tableName NVARCHAR(255),
 @cal_status int = 0,

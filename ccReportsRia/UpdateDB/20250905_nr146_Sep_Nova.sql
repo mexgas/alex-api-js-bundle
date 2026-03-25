@@ -2275,6 +2275,25 @@ BEGIN
 END'
 EXEC(@sql)
 
+SET @process = 'KR140003 - Tabla nueva en BD de Reporte de Detalle de Marcación'
+    SET @sql = '
+IF NOT EXISTS(SELECT 1 FROM sys.tables WHERE name = ''ccoLogDialsData'')
+BEGIN
+    CREATE TABLE ccoLogDialsData(
+        logDial_id INT NOT NULL PRIMARY KEY,
+        callout_id INT NOT NULL,
+        Data1 VARCHAR(255) NOT NULL,
+        Data2 VARCHAR(255) NOT NULL,
+        Data3 VARCHAR(255) NOT NULL,
+        Data4 VARCHAR(255) NOT NULL,
+        Data5 VARCHAR(255) NOT NULL,
+        callDate DATETIME NOT NULL
+    )
+
+    CREATE INDEX IX_ccoLogDialsData ON ccoLogDialsData (callout_id, callDate)
+END'
+    EXEC(@sql)
+
 
 SET @process = '#7806  CREATE NONCLUSTERED INDEX IX_ccoLogDialsData_logDial_repOutDialDetail'
 SET @sql = 'IF NOT EXISTS (

@@ -25602,7 +25602,7 @@ END'
 EXEC(@sql);
 -----------------------------------END Esmeralda Garcia--------------------------------
 
- SET @process = '#7786 ALTER PROCEDURE [dbo].[ccsp_UpdateCallsOutFromTempAction]'
+ SET @process = '#7786 CREATE PROCEDURE [dbo].[ccsp_UpdateCallsOutFromTempAction]'
  
  SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_UpdateCallsOutFromTempAction]
 @action INT,

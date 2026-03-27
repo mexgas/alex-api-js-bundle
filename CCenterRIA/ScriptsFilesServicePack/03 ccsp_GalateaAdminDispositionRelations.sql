@@ -261,5 +261,85 @@ BEGIN
 	end
 END
 
+IF @command = 10  -- DELETE IA  
+BEGIN  
+    BEGIN TRY  
+  
+        DECLARE @Ids TABLE (calif_id INT)  
+        DECLARE @Active TABLE (calif_id INT)  
+        DECLARE @ToDelete TABLE (calif_id INT)  
+  
+        -- IDs enviados  
+        INSERT INTO @Ids  
+        SELECT CAST(value AS INT)  
+        FROM dbo.fn_RIASplitDelimited(@califIdLst, ',')  
+  
+        -- Detectar campañas activas  
+        INSERT INTO @Active  
+        SELECT DISTINCT c.calif_id  
+        FROM ccCalifCampIA c  
+        INNER JOIN @Ids i ON i.calif_id = c.calif_id  
+        LEFT JOIN ccCamps o ON o.cam_id = c.cam_id AND c.tipo = 1  
+        LEFT JOIN ccInbound ib ON ib.Inbound_id = c.cam_id AND c.tipo = 0  
+        WHERE   
+            (c.tipo = 1 AND o.cam_procesando = 1)  
+            OR  
+            (c.tipo = 0 AND ib.Status = 1)  
+  
+        -- Si todos están activos  
+        IF (SELECT COUNT(*) FROM @Ids) = (SELECT COUNT(*) FROM @Active)  
+        BEGIN  
+            SELECT -27 AS ResponseCode,  
+                   'All dispositions are active in campaigns.' AS ResponseCodeDescription  
+            RETURN  
+        END  
+  
+        -- Determinar cuáles sí se pueden borrar  
+        INSERT INTO @ToDelete  
+        SELECT calif_id FROM @Ids  
+        WHERE calif_id NOT IN (SELECT calif_id FROM @Active)  
+  
+        -- Eliminación lógica  
+        UPDATE cctipoCalif_IA  
+        SET Cali_StatusIA = 0  
+        WHERE calif_id IN (SELECT calif_id FROM @ToDelete)  
+  
+        -- Eliminar relaciones  
+        DELETE FROM ccCalifCampIA  
+        WHERE calif_id IN (SELECT calif_id FROM @ToDelete)  
+  
+        -- Log por cada nombre eliminado  
+        INSERT INTO ccGalateaActivityLog  
+        (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)  
+        SELECT   
+            NULL,  
+            GETDATE(),  
+            (SELECT [Login] FROM ccUsers WHERE User_id = @user_id),  
+      177,  
+            7,  
+            '',  
+            Name_cal,  
+            'IA Disposition Delete'  
+        FROM cctipoCalif_IA  
+        WHERE calif_id IN (SELECT calif_id FROM @ToDelete)  
+  
+        -- Si hubo algunas activas / parcial  
+        IF EXISTS (SELECT 1 FROM @Active)  
+        BEGIN  
+            SELECT -28 AS ResponseCode,  
+                   'Partial Success. Some dispositions are active.' AS ResponseCodeDescription  
+            RETURN  
+        END  
+  
+        -- Todo correcto  
+        SELECT 200 AS ResponseCode,  
+               'SUCCESS' AS ResponseCodeDescription  
+  
+    END TRY  
+    BEGIN CATCH  
+        SELECT -1 AS ResponseCode,  
+               ERROR_MESSAGE() AS ResponseCodeDescription  
+    END CATCH  
+END  
 
 set nocount OFF

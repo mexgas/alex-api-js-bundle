@@ -30,7 +30,9 @@
         @ExtDescription varchar(100) = null,
         @AplBlackList bit = null,
         @Cali_StatusIA bit = 1,  
-        @DirectoryNumberFlag bit = 1  
+        @DirectoryNumberFlag bit = 1,
+         @user_id INT = NULL,
+        @type TINYINT = NULL
 
         AS
         set nocount on

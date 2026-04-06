@@ -1,7 +1,7 @@
 	USE [CCenterRIA]
 
 	DECLARE @process VARCHAR(MAX), @sql VARCHAR(MAX);
-
+GO
 		ALTER PROCEDURE [dbo].[ccsp_GalateaAdminDispositions]
         @command int,
         @calif_id smallint = null,

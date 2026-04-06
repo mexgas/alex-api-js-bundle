@@ -302,7 +302,7 @@
                 delete from ccCalifCamp where tipo=2 and calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, ','))
                 delete from cctipoSubCalifRel where tipoSubRel=2 and calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, ','))
                 update ccTipoCalif_IA set Cali_StatusIA=0 where calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, ','))
-                -- Agregar aqu� cualquier limpieza adicional espec�fica para IA si es necesario
+                -- Agregar aqu� cualquier limpieza adicional espec�fica para IA si es necesario
                 return(0)
             end
     
@@ -332,5 +332,133 @@
                     select ID [result] from @inserted
                     return(0)
                 end
+                               IF @command = 13  -- DELETE IA
+BEGIN  
+    BEGIN TRY  
+
+        -- 0. Validación inicial
+        IF @califIdLst IS NULL OR LTRIM(RTRIM(@califIdLst)) = ''
+        BEGIN
+            SELECT -10 AS ResponseCode,
+                   'califIdLst is empty' AS ResponseCodeDescription,
+                   '' AS CalifIdLst
+            RETURN
+        END
+
+        DECLARE @Ids TABLE (calif_id INT)  
+        DECLARE @Active TABLE (calif_id INT)  
+        DECLARE @ToDelete TABLE (calif_id INT)  
+
+        -- 1. Parseo de IDs
+        INSERT INTO @Ids  
+        SELECT TRY_CAST(value AS INT)  
+        FROM dbo.fn_RIASplitDelimited(@califIdLst, ',')  
+        WHERE TRY_CAST(value AS INT) IS NOT NULL
+
+        IF NOT EXISTS (SELECT 1 FROM @Ids)
+        BEGIN
+            SELECT -11 AS ResponseCode,
+                   'No valid IDs received' AS ResponseCodeDescription,
+                   '' AS CalifIdLst
+            RETURN
+        END
+
+        -- 2. Detectar activos (solo campañas ACTIVAS)
+        INSERT INTO @Active  
+        SELECT DISTINCT c.calif_id  
+        FROM ccCalifCampIA c  
+        INNER JOIN @Ids i ON i.calif_id = c.calif_id  
+        WHERE 
+        (
+            c.tipo = 1 AND EXISTS (
+                SELECT 1 
+                FROM ccCamps o
+                WHERE o.cam_id = c.cam_id 
+                  AND o.cam_procesando = 1
+            )
+        )
+        OR
+        (
+            c.tipo = 0 AND EXISTS (
+                SELECT 1 
+                FROM ccInbound ib
+                WHERE ib.Inbound_id = c.cam_id 
+                  AND ib.Status = 1
+            )
+        )
+
+        -- 3. Determinar eliminables
+        INSERT INTO @ToDelete  
+        SELECT i.calif_id 
+        FROM @Ids i
+        LEFT JOIN @Active a ON i.calif_id = a.calif_id
+        WHERE a.calif_id IS NULL
+
+        -- 4. Si TODOS están activos → NO borrar nada
+        IF NOT EXISTS (SELECT 1 FROM @ToDelete)
+        BEGIN  
+            SELECT 
+                -27 AS ResponseCode,  
+                'All dispositions are active in campaigns.' AS ResponseCodeDescription,
+                '' AS CalifIdLst
+            RETURN  
+        END  
+
+        -- 5. ELIMINACIÓN REAL
+        UPDATE cctipoCalif_IA  
+        SET Cali_StatusIA = 0  
+        WHERE calif_id IN (SELECT calif_id FROM @ToDelete)  
+
+        DELETE FROM ccCalifCampIA  
+        WHERE calif_id IN (SELECT calif_id FROM @ToDelete)  
+
+        -- 6. LOG
+        IF EXISTS (SELECT 1 FROM @ToDelete)
+        BEGIN
+            INSERT INTO ccGalateaActivityLog  
+(Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)  
+SELECT   
+    'Default',  
+    GETDATE(),  
+    ISNULL(u.Login, 'system'),  
+    177,
+    7,  
+    CAST(c.calif_id AS VARCHAR),
+    c.Name_cal,  
+    'Deleted Disposition'
+FROM cctipoCalif_IA c
+LEFT JOIN ccUsers u ON u.User_id = @user_id
+WHERE c.calif_id IN (SELECT calif_id FROM @ToDelete)
+        END
+
+        -- 7. RESPUESTA
+
+        -- Parcial
+        IF EXISTS (SELECT 1 FROM @Active)
+        BEGIN  
+            SELECT 
+                -28 AS ResponseCode,  
+                'Partial Success. Some dispositions are active.' AS ResponseCodeDescription,
+                STRING_AGG(CAST(calif_id AS VARCHAR), ',') AS CalifIdLst
+            FROM @ToDelete
+            RETURN  
+        END  
+
+        -- Éxito total
+        SELECT 
+            200 AS ResponseCode,  
+            'SUCCESS' AS ResponseCodeDescription,
+            STRING_AGG(CAST(calif_id AS VARCHAR), ',') AS CalifIdLst
+        FROM @ToDelete
+
+    END TRY  
+    BEGIN CATCH  
+        SELECT 
+            -1 AS ResponseCode,  
+            ERROR_MESSAGE() AS ResponseCodeDescription,
+            '' AS CalifIdLst
+    END CATCH  
+END
+
 
         set nocount off

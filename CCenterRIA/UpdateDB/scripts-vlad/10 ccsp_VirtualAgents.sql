@@ -575,7 +575,7 @@ GO
 										@userId = @adminId
 			CREATE TABLE #ccVirtualAgentTable (
 				columnInfo varchar(255),
-				dataInfo varchar(255),
+				dataInfo varchar(MAX),
 				identifierInfo varchar(255)
 			)
 

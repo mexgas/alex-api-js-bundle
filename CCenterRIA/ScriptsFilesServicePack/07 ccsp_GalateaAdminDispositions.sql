@@ -16,23 +16,26 @@ GO
         @contactOwner bit=null,
         @finishPreview bit = 0,
         @allNumbersToBlacklist bit = 0,
-  			@FinishRecordPreview bit = 0,
+        @FinishRecordPreview bit = 0,
         @Name_cal varchar(150) = null,
         @Description_cal varchar(100) = null,
         @ReturnCall smallint = null,
-        @AplTransfer bit = null,
-        @TransferOpcion smallint = null,
-        @DestinyIVR bit = null,
+        @AplTransfer bit = 0,
+        @TransferOpcion smallint = 0,
+        @DestinyIVR bit = 0,
         @DestinyIVR_camp smallint = null,
         @DestinyIVR_number varchar(20) = null,
         @DestinyIVR_directory smallint = null,
-        @AplExtDate bit = null,
+        @AplExtDate bit = 0,
         @ExtDescription varchar(100) = null,
-        @AplBlackList bit = null,
+        @AplBlackList bit = 0,
         @Cali_StatusIA bit = 1,  
         @DirectoryNumberFlag bit = 1,
-         @user_id INT = NULL,
-        @type TINYINT = NULL
+        @user_id INT = NULL,
+        @type TINYINT = NULL,
+        @acdId SMALLINT = NULL,
+        @directoryId SMALLINT = NULL
+
 
         AS
         set nocount on
@@ -122,14 +125,38 @@ GO
             update ccTipoCalif set Calif_Status=0 where calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, ','))
             return(0)
         end
-        if @command=6 -- Delete Outbound Disposition
-        begin
-            delete from ccCalifCamp where tipo=1 and calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, ','))
-            delete from cctipoSubCalifRel where tipoSubRel=0 and calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, ','))
-            update ccTipoCalifOUT set CalifOut_Status=0 where calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, ','))
-            update ccCamps set keepDial=dbo.fn_keepDial_Camps(cam_id)
-            return(0)
-        end
+       if @command=6 -- Delete Outbound Disposition
+begin
+    declare @cams table (cam_id int)
+
+    insert into @cams
+    select distinct cam_id
+    from ccCalifCamp
+    where tipo = 1
+    and calif_id in (
+        select value from dbo.fn_RIASplitDelimited(@califIdLst, ',')
+    )
+
+    -- deletes
+    delete from ccCalifCamp 
+    where tipo=1 
+    and calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, ','))
+
+    delete from cctipoSubCalifRel 
+    where tipoSubRel=0 
+    and calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, ','))
+
+    update ccTipoCalifOUT 
+    set CalifOut_Status=0 
+    where calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, ','))
+
+    update ccCamps 
+    set keepDial = dbo.fn_keepDial_Camps(cam_id)
+    where cam_id in (select cam_id from @cams)
+
+    select 200 as ResponseCode, 'SUCCESS' as ResponseCodeDescription
+
+end
         if @command=7 -- Update Inbound Disposition
         begin
             if(exists(select calif_id from ccTipoCalif where Calif_Status=1 and description=@Description and calif_id<>@calif_id))
@@ -233,7 +260,7 @@ GO
                             ReturnCall            = @ReturnCall,
                             Color                 = isnull(@graphColor, '1DB4E2'),
                             AplTransfer           = isnull(@AplTransfer, 0),
-                            TransferOpcion        = @TransferOpcion,
+                            TransferOpcion        = isnull(@TransferOpcion, 0),
                             DestinyIVR            = isnull(@DestinyIVR, 0),
                             DestinyIVR_camp       = @DestinyIVR_camp,
                             DestinyIVR_number     = @DestinyIVR_number,
@@ -282,7 +309,7 @@ GO
                         @ReturnCall,
                         isnull(@graphColor, '1DB4E2'),
                         isnull(@AplTransfer, 0),
-                        @TransferOpcion,
+                        isnull(@TransferOpcion, 0),
                         isnull(@DestinyIVR, 0),
                         @DestinyIVR_camp,
                         @DestinyIVR_number,
@@ -304,7 +331,7 @@ GO
                 delete from ccCalifCamp where tipo=2 and calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, ','))
                 delete from cctipoSubCalifRel where tipoSubRel=2 and calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, ','))
                 update ccTipoCalif_IA set Cali_StatusIA=0 where calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, ','))
-                -- Agregar aqu� cualquier limpieza adicional espec�fica para IA si es necesario
+                -- Agregar aquí cualquier limpieza adicional específica para IA si es necesario
                 return(0)
             end
     
@@ -326,7 +353,7 @@ GO
                     ReturnCall=isnull(@ReturnCall, ReturnCall), AplTransfer=@AplTransfer, TransferOpcion=@TransferOpcion,
                     DestinyIVR=@DestinyIVR, DestinyIVR_camp=@DestinyIVR_camp,
                     DestinyIVR_number=@DestinyIVR_number, DestinyIVR_directory=@DestinyIVR_directory,
-                    AplExtDate=@AplExtDate, ExtDescription=@ExtDescription,
+                    AplExtDate=@AplExtDate, ExtDescription=@ExtDescription, DirectoryNumberFlag=isnull(@DirectoryNumberFlag, DirectoryNumberFlag),
                     AplBlackList=@AplBlackList, Cali_StatusIA=isnull(@Cali_StatusIA, Cali_StatusIA)
                     output inserted.calif_id into @inserted
                     where calif_id=@calif_id
@@ -334,7 +361,8 @@ GO
                     select ID [result] from @inserted
                     return(0)
                 end
-                               IF @command = 13  -- DELETE IA
+
+IF @command = 13  -- DELETE IA
 BEGIN  
     BEGIN TRY  
 
@@ -462,5 +490,37 @@ WHERE c.calif_id IN (SELECT calif_id FROM @ToDelete)
     END CATCH  
 END
 
+IF @command = 14 
+BEGIN 
+SELECT Name_cal AS [Name],
+       Description_cal AS [Description],
+       CanReprogram AS Reprogram,
+       autoCallback AS Callback,
+       Color AS Color,
+       ISNULL(AplTransfer, 0) AS [Transfer],
+       ISNULL(TransferOpcion, 0) AS TransferOption,
+       ISNULL(DestinyIVR, 0) AS DestinyDropDown,
+       DestinyIVR_camp AS DestinyCamp,
+       ISNULL(DirectoryNumberFlag, 0) AS NumberDropDown,
+       DestinyIVR_number AS DestinyNumber,
+       DestinyIVR_directory AS DestinyDirectory,
+       ISNULL(AplExtDate, 0) AS Extraction,
+       ExtDescription AS ExtractionDescription,
+       ISNULL(AplBlackList, 0) AS DNC
+FROM cctipoCalif_IA 
+WHERE calif_id = @calif_id
+END
+--select * from cctipoCalif_IA
 
-        set nocount off
+
+IF @command = 15 
+BEGIN 
+    select descripcion from ccinbound where inbound_id = @acdId
+END
+
+IF @command = 16
+BEGIN 
+    SELECT tel FROM dbo.telefonosTransferencia where numtra_id = @directoryId 
+END
+
+SET NOCOUNT OFF 

@@ -184,11 +184,6 @@ BEGIN
     values ('AI_UPDATE_DISPOSITION_TRANSFER_OPTION_3', 'Por seguimiento (IVR)', 'On follow‑up (IVR)', 'Por acompanhamento (IVR)')
 END
 
-IF NOT EXISTS(SELECT * FROM ccGalateaIdentifiers WHERE Description = 'AI_UPDATE_DISPOSITION_TRANSFER_OPTION_3')
-BEGIN
-    insert into ccGalateaIdentifiers(Description, TagEs, TagEn, TagPt) 
-    values ('AI_UPDATE_DISPOSITION_TRANSFER_OPTION_3', 'Por seguimiento (IVR)', 'On follow‑up (IVR)', 'Por acompanhamento (IVR)')
-END
 
 
 IF NOT EXISTS(SELECT * FROM ccGalateaIdentifiers WHERE Description = 'AI_UPDATE_DISPOSITION_CALLBACK_OPTION_1')

@@ -1909,4 +1909,36 @@ ALTER PROCEDURE [dbo].[ccsp_VirtualAgents]
                         @originalAgentId AS OriginalAgentId;
             END
         END	    
-	
+GO
+
+
+
+/******************************** rollback file 11 ccsp_AIToHumanTransfer.SQL **************************************************/
+ALTER PROCEDURE [dbo].[ccsp_AIToHumanTransfer]
+		@action int = null,
+		@camId int = null,
+		@CallOutId int = null,
+		@acdId int = null
+
+	AS
+	BEGIN 
+		if @action = 1
+		Begin
+			select Inbound_id from ccInbound where cam_id = @camId
+		end
+
+		if @action = 2
+		Begin
+			select data_overflow_variables_quantum from ccoCallsOutSource where callout_id = @CallOutId
+		end
+
+		if @action = 3
+		Begin
+			select idForNonComprehension from ccInbound where Inbound_id = @acdId
+		end
+
+		if @action = 4
+		Begin
+			select idForSuccessfulTransaction from ccInbound where Inbound_id = @acdId
+		end
+	END

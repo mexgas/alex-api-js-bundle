@@ -8,7 +8,7 @@ IF NOT EXISTS (
 )
 BEGIN
 	INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
-	VALUES (175, 'Asignar calificaci�n de agente virtual', 'Assign virtual agent disposition', 'Atribuir classifica��o de agente virtual');
+	VALUES (175, 'Asignar calificación de agente virtual', 'Assign virtual agent disposition', 'Atribuir classificação de agente virtual');
 END
 IF NOT EXISTS (
 	SELECT 1
@@ -17,7 +17,7 @@ IF NOT EXISTS (
 )
 BEGIN
 	INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt)
-	VALUES (176, 'Desasignar calificaci�n de agente virtual', 'Unassign virtual agent disposition', 'Cancelar atribui��o de classifica��o de agente virtual');
+	VALUES (176, 'Desasignar calificación de agente virtual', 'Unassign virtual agent disposition', 'Cancelar atribuição de classificação de agente virtual');
 END
 
 IF NOT EXISTS (

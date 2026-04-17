@@ -445,20 +445,25 @@ BEGIN
         -- 6. LOG
         IF EXISTS (SELECT 1 FROM @ToDelete)
         BEGIN
-            INSERT INTO ccGalateaActivityLog  
-(Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)  
+                        INSERT INTO ccGalateaActivityLog
+(Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
 SELECT   
-    'Default',  
+    ISNULL((
+        SELECT TOP 1 AreaName FROM ccRIACat_Areas
+    ), 'Default'),
+
     GETDATE(),  
-    ISNULL(u.Login, 'system'),  
-    177,
+    (SELECT [Login] FROM ccUsers WHERE User_id = @user_id),  
+    177,  
     7,  
-    CAST(c.calif_id AS VARCHAR),
+
+    '',             
+
     c.Name_cal,  
-    'Deleted Disposition'
-FROM cctipoCalif_IA c
-LEFT JOIN ccUsers u ON u.User_id = @user_id
-WHERE c.calif_id IN (SELECT calif_id FROM @ToDelete)
+
+    'IA Disposition Delete'  
+FROM cctipoCalif_IA c  
+WHERE calif_id IN (SELECT calif_id FROM @ToDelete)
         END
 
         -- 7. RESPUESTA

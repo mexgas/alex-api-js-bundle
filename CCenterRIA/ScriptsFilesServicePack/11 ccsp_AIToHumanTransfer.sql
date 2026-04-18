@@ -10,7 +10,7 @@ ALTER PROCEDURE [dbo].[ccsp_AIToHumanTransfer]
 	BEGIN 
 		if @action = 1
 		Begin
-			select Inbound_id AS ACDToTranfer, 0 AS TransferMode , 0 AS TransferTo, '' AS TransferToExternalNumber, '' AS TransferToExternalDirectoryNumber   from ccInbound where cam_id = @camId
+			select Inbound_id AS ACDToTranfer, CAST(0 AS BIT) AS TransferMode , 0 AS TransferTo, '' AS TransferToExternalNumber, '' AS TransferToExternalDirectoryNumber   from ccInbound where cam_id = @camId
 		end
 
 		if @action = 2

@@ -10,7 +10,7 @@ BEGIN TRAN
 BEGIN TRY
 
         set @process = 'BEFORE CREATING DatabaseCentinella JOB'
-        set @sql = 'USE [master];
+    set @sql = 'USE [master];
 
 IF OBJECT_ID(''dbo.userDatabases'', ''U'') IS NOT NULL
     DROP TABLE dbo.userDatabases;
@@ -631,7 +631,8 @@ QuitWithRollback:
 EndSave:'
     EXEC(@sql)
 
-     set @process = 'CREATE JOB '
+
+    set @process = 'CREATE JOB '
     set @sql = ''
     EXEC(@sql)
 

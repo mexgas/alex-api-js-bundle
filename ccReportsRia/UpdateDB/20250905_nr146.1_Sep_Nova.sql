@@ -53,7 +53,7 @@ BEGIN
 END'
     exec (@sql)
 
-	SET @process = 'ALTER VIEW [dbo].[ccUserView]'
+	SET @process = '#6535 ALTER VIEW [dbo].[ccUserView]'
 	SET @sql = 'ALTER VIEW [dbo].[ccUserView] AS
 SELECT 
     User_id, Login, Nombres, ApellidoPaterno, ApellidoMaterno, 

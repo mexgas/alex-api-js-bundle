@@ -937,7 +937,22 @@ END
     SET @sql = ''
     exec (@sql)
 
+    --- BEGIN Carlos Muñoz ---
+    SET @process = 'KM52000 Calculo de información de columna de posiciones en reporte de llamadas contestadas por campaña.' 
 
+    IF 
+    SET @sql = '
+    IF NOT EXISTS (SELECT 1 FROM GroupByReports WHERE id = 4030)
+    BEGIN
+        INSERT INTO GroupByReports VALUES (4030, ''max([areaId]):areaId|max([area]):area|workgroupId|max([workgroup]):workgroup|campaignId|max([campaign]):campaign|userId|max([user]):user|sum([ntotal]):ntotal|sum([nxfer]):nxfer|sum([nnoagent]):nnoagent|sum([nanswer]):nanswer|sum([nnoanswer]):nnoanswer|sum([nlost]):nlost|sum([nabndxfer]):nabndxfer|sum([nabndring]):nabndring|sum([nabnddialog]):nabnddialog|sum([postot]):postot|sum([postime]):postime|sum([nhangup]):nhangup|sum([tatencion]):tatencion'', ''campaignId|userId|workgroupId'')
+    END
+    ELSE
+    BEGIN
+        UPDATE GroupByReports set columns = ''max([areaId]):areaId|max([area]):area|workgroupId|max([workgroup]):workgroup|campaignId|max([campaign]):campaign|userId|max([user]):user|sum([ntotal]):ntotal|sum([nxfer]):nxfer|sum([nnoagent]):nnoagent|sum([nanswer]):nanswer|sum([nnoanswer]):nnoanswer|sum([nlost]):nlost|sum([nabndxfer]):nabndxfer|sum([nabndring]):nabndring|sum([nabnddialog]):nabnddialog|sum([postot]):postot|sum([postime]):postime|sum([nhangup]):nhangup|sum([tatencion]):tatencion'' WHERE id = 4030;
+    END'
+    
+    EXEC(@sql)
+    --- END Carlos Muñoz ---
 
 	--- END Services Pack 1-8 ----
   

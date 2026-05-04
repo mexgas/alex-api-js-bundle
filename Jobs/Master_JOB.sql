@@ -9,21 +9,33 @@ BEGIN TRAN
 
 BEGIN TRY
 
-    set @process = 'CREATE JOB '
+        set @process = 'BEFORE CREATING DatabaseCentinella JOB'
+    set @sql = 'USE [master];
+
+IF OBJECT_ID(''dbo.userDatabases'', ''U'') IS NOT NULL
+    DROP TABLE dbo.userDatabases;
+IF OBJECT_ID(''dbo.indexMaintenance'', ''U'') IS NOT NULL
+    DROP TABLE dbo.indexMaintenance;
+IF OBJECT_ID(''dbo.logCentinella'', ''U'') IS NOT NULL
+    DROP TABLE dbo.logCentinella;'
+    EXEC(@sql)
+
+    set @process = 'CREATE JOB DatabaseCentinella'
     set @sql = 'USE [msdb]
-if exists(select * from  [msdb].[dbo].[sysjobs] AS [sJOB] where [name]=N''DatabaseCentinella'') begin
-        EXEC msdb.dbo.sp_delete_job @job_name=N''DatabaseCentinella'', @delete_unused_schedule=1
-end
+/****** Object:  Job [DatabaseCentinella] ******/
+IF EXISTS (SELECT job_id FROM msdb.dbo.sysjobs_view WHERE name = N''DatabaseCentinella'')
+BEGIN
+    EXEC msdb.dbo.sp_delete_job @job_name = N''DatabaseCentinella'', @delete_unused_schedule = 1
+END
 
 BEGIN TRANSACTION
 DECLARE @ReturnCode INT
 SELECT @ReturnCode = 0
-/****** Object:  JobCategory [[Uncategorized (Local)]]    Script Date: 03/09/2021 07:49:16 p. m. ******/
-IF NOT EXISTS (SELECT name FROM msdb.dbo.syscategories WHERE name=N''[Uncategorized (Local)]'' AND category_class=1)
-BEGIN
-EXEC @ReturnCode = msdb.dbo.sp_add_category @class=N''JOB'', @type=N''LOCAL'', @name=N''[Uncategorized (Local)]''
-IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 
+IF NOT EXISTS (SELECT name FROM msdb.dbo.syscategories WHERE name = N''Nuxiba'' AND category_class = 1)
+BEGIN
+    EXEC @ReturnCode = msdb.dbo.sp_add_category @class = N''JOB'', @type = N''LOCAL'', @name = N''Nuxiba'';
+    IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback;
 END
 
 DECLARE @jobId BINARY(16)
@@ -34,15 +46,11 @@ EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N''DatabaseCentinella'',
                 @notify_level_netsend=0, 
                 @notify_level_page=0, 
                 @delete_level=0, 
-                @description=N''Autor: Raymundo Gonzalez
-                                Fecha: 2018/06/15
-                                Descripcion:
-                                        Centinela para monitoreo de performance y mantenimiento de las BD de SQL
-                                '', 
-                @category_name=N''[Uncategorized (Local)]'', 
+                @description=N''Automated routine for SQL Server database maintenance and performance optimization. Includes dynamic index management, integrity checks (DBCC CHECKDB), and configurable backups via @enableBackups variable. Version March 2026'', 
+                @category_name=N''Nuxiba'', 
                 @owner_login_name=N''replication'', @job_id = @jobId OUTPUT
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
-/****** Object:  Step [DatabaseCentinellaTasks]    Script Date: 03/09/2021 07:49:16 p. m. ******/
+/****** Object:  Step [DatabaseCentinellaTasks] ******/
 EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N''DatabaseCentinellaTasks'', 
                 @step_id=1, 
                 @cmdexec_success_code=0, 
@@ -71,6 +79,8 @@ declare @cmdSql nvarchar(max)
 declare @maxTimeSeconds int
 declare @maxTimeSecondsSunday int
 declare @dateExecution datetime
+declare @onlineOption nvarchar(3)
+declare @enableBackups bit
 
 set @idDb = 0
 set @dbName = ''''''''
@@ -86,6 +96,15 @@ set @cmdSql = ''''''''
 set @maxTimeSeconds = 7200
 set @maxTimeSecondsSunday = 14400
 set @dateExecution = getdate()
+
+set @enableBackups = 0 
+
+
+-- Determine if the edition supports ONLINE INDEX REBUILD (Enterprise, Developer, Evaluation = 3)
+IF CAST(SERVERPROPERTY(''''EngineEdition'''') AS INT) = 3
+    SET @onlineOption = ''''ON''''
+ELSE
+    SET @onlineOption = ''''OFF''''
 
 if @firstSunday = convert(datetime,convert(varchar(11), getdate()))
         begin
@@ -118,6 +137,10 @@ if not exists (select * from sys.tables where name = ''''userDatabases'''')
                         [status] ASC
                 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 100) ON [PRIMARY]
         end
+else
+        begin
+                TRUNCATE TABLE master.dbo.userDatabases
+        end
 
 if not exists (select * from sys.tables where name = ''''indexMaintenance'''')
         begin
@@ -127,7 +150,8 @@ if not exists (select * from sys.tables where name = ''''indexMaintenance'''')
                         [tableName] nvarchar(100) not null,
                         [indexName] nvarchar(100) not null,
                         [indexType] nvarchar(100) not null,
-                        [indexFragmentation] nvarchar(100) not null,
+                        [indexFragmentation] decimal(5,2) not null,
+                        [actionType] nvarchar(20) not null,
                         [status] bit not null
                 )
 
@@ -145,6 +169,10 @@ if not exists (select * from sys.tables where name = ''''indexMaintenance'''')
                 (
                         [status] ASC
                 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 100) ON [PRIMARY]
+        end
+else
+        begin
+                TRUNCATE TABLE master.dbo.indexMaintenance
         end
 
 if not exists (select * from sys.tables where name = ''''logCentinella'''')
@@ -183,6 +211,8 @@ set [dbLog] = name
 from sys.master_files
 inner join userDatabases on (db_name(database_id) = [dbName] and type = 1)
 
+
+
 while (select count(*) from userDatabases where status = 0) > 0
         begin
                 set rowcount 1
@@ -192,11 +222,25 @@ while (select count(*) from userDatabases where status = 0) > 0
                 select @sql = ''''use ['''' + @dbName + '''']
 
 insert into master.dbo.indexMaintenance
-SELECT '''''''''''' + @dbName + '''''''''''', OBJECT_NAME(ind.OBJECT_ID), ind.name, indexstats.index_type_desc, indexstats.avg_fragmentation_in_percent, 0
-FROM sys.dm_db_index_physical_stats(DB_ID(), NULL, NULL, NULL, NULL) indexstats
-INNER JOIN sys.indexes ind ON (ind.object_id = indexstats.object_id AND ind.index_id = indexstats.index_id and ind.type > 0)
-inner join sysobjects obj on (obj.id = indexstats.object_id and xtype=''''''''U'''''''' and category = 0)
-WHERE indexstats.avg_fragmentation_in_percent > 30
+SELECT 
+    '''''''''''' + @dbName + '''''''''''',
+    OBJECT_NAME(ind.OBJECT_ID),
+    ind.name,
+    indexstats.index_type_desc,
+    indexstats.avg_fragmentation_in_percent,
+    CASE 
+        WHEN indexstats.avg_fragmentation_in_percent BETWEEN 10 AND 30 THEN ''''''''REORGANIZE''''''''
+        WHEN indexstats.avg_fragmentation_in_percent > 30 THEN ''''''''REBUILD''''''''
+        ELSE ''''''''NONE''''''''
+    END,
+    0
+FROM sys.dm_db_index_physical_stats(DB_ID(), NULL, NULL, NULL, ''''''''LIMITED'''''''') indexstats
+INNER JOIN sys.indexes ind 
+    ON (ind.object_id = indexstats.object_id AND ind.index_id = indexstats.index_id and ind.type > 0)
+INNER JOIN sys.objects obj 
+        ON (obj.object_id = indexstats.object_id AND obj.type = ''''''''U'''''''')
+WHERE indexstats.avg_fragmentation_in_percent >= 10
+AND indexstats.page_count >= 50
 ORDER BY OBJECT_NAME(ind.OBJECT_ID), ind.name''''
 
                 exec(@sql)
@@ -206,43 +250,41 @@ ORDER BY OBJECT_NAME(ind.OBJECT_ID), ind.name''''
                 where idDb = @idDb
         end
 
-while (select count(*) from indexMaintenance where status = 0) > 0
+
+while (select count(*) from indexMaintenance where status = 0 and actionType <> ''''NONE'''') > 0
         begin
                 set rowcount 1
-                        select @idIndex = idIndex, @dbName = dbName, @tableName = tableName, @indexName = indexName from indexMaintenance where status = 0 order by idIndex
+                        select @idIndex = idIndex, @dbName = dbName, @tableName = tableName, @indexName = indexName from indexMaintenance where status = 0 and actionType <> ''''NONE'''' order by idIndex
                 set rowcount 0
 
                 select @sql = ''''use ['''' + @dbName + ''''] ''''
 
-                if @process = 1
-                                select @sql = @sql + ''''ALTER INDEX ['''' + @indexName + ''''] ON [dbo].['''' + @tableName + ''''] REORGANIZE WITH ( LOB_COMPACTION = ON )''''
-                else if @process = 2
-                                select @sql = @sql + ''''ALTER INDEX ['''' + @indexName + ''''] ON [dbo].['''' + @tableName + ''''] REBUILD WITH ( PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON, SORT_IN_TEMPDB = OFF, ONLINE = OFF )''''
-                else if @process = 3
-                                select @sql = @sql + ''''UPDATE STATISTICS [dbo].['''' + @tableName + ''''] WITH FULLSCAN''''
+                declare @action nvarchar(20)
+                select @action = actionType from indexMaintenance where idIndex = @idIndex
 
-                insert into logCentinella
-                select getdate(), @sql, 0, ''''19000101'''', ''''19000101'''',0
-
-                if @process < 3
-                        update indexMaintenance set status = 1 where idIndex = @idIndex
-                else
-                        update indexMaintenance set status = 1 where dbName = @dbName and tableName = @tableName
-
-                if @process < 3
+                if @action = ''''REORGANIZE''''
                         begin
-                                if (select count(*) from indexMaintenance where status = 0) = 0
-                                        begin
-                                                update indexMaintenance
-                                                set status = 0
+                                select @sql = @sql + ''''ALTER INDEX ['''' + @indexName + ''''] ON [dbo].['''' + @tableName + ''''] REORGANIZE WITH ( LOB_COMPACTION = ON )''''
+                                insert into logCentinella
+                                select getdate(), @sql, 0, ''''19000101'''', ''''19000101'''',0
 
-                                                set @process = @process + 1
-                                        end
+                                select @sql = ''''use ['''' + @dbName + ''''] UPDATE STATISTICS [dbo].['''' + @tableName + ''''] WITH FULLSCAN''''
+                                insert into logCentinella
+                                select getdate(), @sql, 0, ''''19000101'''', ''''19000101'''',0
                         end
+                else if @action = ''''REBUILD''''
+                        begin
+                                                                select @sql = @sql + ''''ALTER INDEX ['''' + @indexName + ''''] ON [dbo].['''' + @tableName + ''''] REBUILD WITH ( FILLFACTOR = 100, PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON, SORT_IN_TEMPDB = OFF, ONLINE = '''' + @onlineOption + '''' )''''
+                                insert into logCentinella
+                                select getdate(), @sql, 0, ''''19000101'''', ''''19000101'''',0
+                        end
+
+                update indexMaintenance
+                set status = 1
+                where idIndex = @idIndex
         end
 
 if @firstSunday = convert(datetime,convert(varchar(11), getdate()))
---if 1=1
         begin
                 update userDatabases
                 set status = 0
@@ -258,7 +300,9 @@ if @firstSunday = convert(datetime,convert(varchar(11), getdate()))
                                 insert into logCentinella
                                 select getdate(), @sql, 0, ''''19000101'''', ''''19000101'''',0 
                                 
-                                select @sql = ''''use [master]
+                                if @enableBackups = 1
+                                begin
+                                    select @sql = ''''use [master]
 
 DECLARE @currentdate datetime
 declare @date varchar(200)
@@ -283,9 +327,9 @@ drop table #RutaBak
 
 BACKUP DATABASE ['''' + @dbName + ''''] TO  DISK = @rutaBak WITH NOFORMAT, NOINIT,  NAME = @date, SKIP, REWIND, NOUNLOAD,  STATS = 10''''
 
-                                insert into logCentinella
-                                select getdate(), @sql, 0, ''''19000101'''', ''''19000101'''',0                         
-
+                                    insert into logCentinella
+                                    select getdate(), @sql, 0, ''''19000101'''', ''''19000101'''',0                         
+                                end
 
                                 if @dbName in(''''CCenterRIA'''',''''CCRecorderRIA'''',''''CCReportsRIA'''',''''CW_CRMx'''') begin
 
@@ -296,17 +340,14 @@ BACKUP DATABASE ['''' + @dbName + ''''] TO  DISK = @rutaBak WITH NOFORMAT, NOINI
                                 
                                 end                             
 
-                                select @sql = ''''use ['''' + @dbName + ''''] DBCC SHRINKFILE('''''''''''' + @dbLog + '''''''''''',1)''''
-
-                                insert into logCentinella
-                                select getdate(), @sql, 0, ''''19000101'''', ''''19000101'''',0                                                         
-
                                 update userDatabases
                                 set status = 1
                                 where idDb = @idDb
                         end
 
-                select @sql = ''''use [master]
+                if @enableBackups = 1
+                begin
+                    select @sql = ''''use [master]
 
 DECLARE @currentdate datetime
 declare @date datetime
@@ -329,9 +370,9 @@ EXECUTE master.dbo.xp_delete_file 0,@rutaBak,N''''''''bak'''''''',@date
 
 drop table #RutaBak''''
 
-                insert into logCentinella
-                select getdate(), @sql, 0, ''''19000101'''', ''''19000101'''',0
-
+                    insert into logCentinella
+                    select getdate(), @sql, 0, ''''19000101'''', ''''19000101'''',0
+                end
         end
 
 set @dateExecution = getdate()
@@ -347,12 +388,10 @@ while (select count(*) from logCentinella where status = 0 and convert(datetime,
                 where idCmdSql = @idCmdSql
 
                 BEGIN TRY
-
                         exec(@cmdSql)
                 END TRY
                 BEGIN CATCH
-                        
-                        select @cmdSql, ERROR_MESSAGE(); -- Muestra el mensaje del error
+                        select @cmdSql AS FailedCommand, ERROR_MESSAGE() AS ErrorMessage;
                 END CATCH
 
                 WAITFOR DELAY ''''00:00:01''''
@@ -387,8 +426,9 @@ while (select count(*) from logCentinella where status = 0 and convert(datetime,
                 where idCmdSql = @idCmdSql
         end
 
-delete userDatabases
-delete indexMaintenance'', 
+TRUNCATE TABLE master.dbo.userDatabases
+TRUNCATE TABLE master.dbo.indexMaintenance
+'', 
                 @database_name=N''master'', 
                 @flags=0
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
@@ -413,105 +453,186 @@ COMMIT TRANSACTION
 GOTO EndSave
 QuitWithRollback:
     IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION
-EndSave:'
-    EXEC(@sql)
-
-    set @process = 'CREATE JOB NuxibaShrink_tempdb_Weekly'
-    set @sql = 'USE [msdb]
-/****** Object:  Job [NuxibaShrink_tempdb_Weekly]    Script Date: 12/06/2025 10:28:25 a. m. ******/
-IF EXISTS (SELECT 1 FROM msdb.dbo.sysjobs WHERE name = N''NuxibaShrink_tempdb_Weekly'')
-BEGIN
-    EXEC msdb.dbo.sp_delete_job @job_name = N''NuxibaShrink_tempdb_Weekly'';
-END
-
-/****** Object:  Job [NuxibaShrink_tempdb_Weekly]    Script Date: 12/06/2025 10:28:25 a. m. ******/
-BEGIN TRANSACTION
-DECLARE @ReturnCode INT
-SELECT @ReturnCode = 0
-/****** Object:  JobCategory [[Uncategorized (Local)]]    Script Date: 12/06/2025 10:28:26 a. m. ******/
-IF NOT EXISTS (SELECT name FROM msdb.dbo.syscategories WHERE name=N''[Uncategorized (Local)]'' AND category_class=1)
-BEGIN
-EXEC @ReturnCode = msdb.dbo.sp_add_category @class=N''JOB'', @type=N''LOCAL'', @name=N''[Uncategorized (Local)]''
-IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
-
-END
-
-DECLARE @jobId BINARY(16)
-EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N''NuxibaShrink_tempdb_Weekly'', 
-                @enabled=1, 
-                @notify_level_eventlog=2, 
-                @notify_level_email=0, 
-                @notify_level_netsend=0, 
-                @notify_level_page=0, 
-                @delete_level=0, 
-                @description=N''Ejecuta SHRINK del log de tempdb y ajusta crecimiento a 256MB si aplica.'', 
-                @category_name=N''[Uncategorized (Local)]'', 
-                @owner_login_name=N''sa'', @job_id = @jobId OUTPUT
-IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
-/****** Object:  Step [Validar_y_Shrink_tempdb_log]    Script Date: 12/06/2025 10:28:27 a. m. ******/
-EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N''Validar_y_Shrink_tempdb_log'', 
-                @step_id=1, 
-                @cmdexec_success_code=0, 
-                @on_success_action=1, 
-                @on_success_step_id=0, 
-                @on_fail_action=2, 
-                @on_fail_step_id=0, 
-                @retry_attempts=0, 
-                @retry_interval=0, 
-                @os_run_priority=0, @subsystem=N''TSQL'', 
-                @command=N''
-DECLARE @log_size_mb FLOAT, @log_used_pct FLOAT;
-
--- Confirmar base activa
-PRINT ''''Base actual: '''' + DB_NAME();
-
--- Obtener uso actual del log
-SELECT 
-    @log_size_mb = total_log_size_in_bytes / 1024.0 / 1024.0,
-    @log_used_pct = used_log_space_in_percent
-FROM sys.dm_db_log_space_usage;
-
-PRINT ''''Tamaño actual del log de tempdb (MB): '''' + CAST(@log_size_mb AS VARCHAR(20));
-PRINT ''''Uso actual del log (%): '''' + CAST(@log_used_pct AS VARCHAR(10));
-
--- Validar si SHRINK aplica
---IF @log_size_mb > 1024 AND @log_used_pct < 10
---BEGIN
-    PRINT ''''✅ Ejecutando SHRINK del log de tempdb...'''';
-    DBCC SHRINKFILE (templog, 1024);
-    PRINT ''''✅ SHRINK completado.'''';
---END
-'', 
-                @database_name=N''tempdb'', 
-                @flags=0
-IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
-EXEC @ReturnCode = msdb.dbo.sp_update_job @job_id = @jobId, @start_step_id = 1
-IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
-EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N''NuxibaShrink_tempdb_Weekly'', 
-                @enabled=1, 
-                @freq_type=8, 
-                @freq_interval=64, 
-                @freq_subday_type=1, 
-                @freq_subday_interval=0, 
-                @freq_relative_interval=0, 
-                @freq_recurrence_factor=1, 
-                @active_start_date=20250612, 
-                @active_end_date=99991231, 
-                @active_start_time=43000, 
-                @active_end_time=235959 
-                
-IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
-EXEC @ReturnCode = msdb.dbo.sp_add_jobserver @job_id = @jobId, @server_name = N''(local)''
-IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
-COMMIT TRANSACTION
-GOTO EndSave
-QuitWithRollback:
-    IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION
 EndSave:
 '
     EXEC(@sql)
+        
+    set @process = 'CREATE JOB CW_Global_Maintenance_SafetyStop'
+    set @sql = 'USE [msdb]
 
-     set @process = 'CREATE JOB '
+-----------------------------------------------------------
+-- 1. Pre-cleanup: Delete existing job if it already exists
+-----------------------------------------------------------
+IF EXISTS (SELECT 1 FROM msdb.dbo.sysjobs WHERE name = N''CW_Global_Maintenance_SafetyStop'')
+BEGIN
+    EXEC msdb.dbo.sp_delete_job @job_name = N''CW_Global_Maintenance_SafetyStop'', @delete_unused_schedule = 1;
+END
+
+BEGIN TRANSACTION
+DECLARE @ReturnCode INT
+SET @ReturnCode = 0
+
+-----------------------------------------------------------
+-- 2. Ensure Nuxiba category exists
+-----------------------------------------------------------
+IF NOT EXISTS (SELECT name FROM msdb.dbo.syscategories WHERE name = N''Nuxiba'' AND category_class = 1)
+BEGIN
+    EXEC @ReturnCode = msdb.dbo.sp_add_category @class = N''JOB'', @type = N''LOCAL'', @name = N''Nuxiba'';
+    IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback;
+END
+
+-----------------------------------------------------------
+-- 3. Create the Parent Job
+-----------------------------------------------------------
+DECLARE @jobId BINARY(16);
+
+EXEC @ReturnCode = msdb.dbo.sp_add_job 
+    @job_name = N''CW_Global_Maintenance_SafetyStop'', 
+    @enabled = 1, 
+    @description = N''Safety job that checks every morning at 6 AM if maintenance jobs (DatabaseCentinella, CW Delete old records) are still running and stops them if necessary.'', 
+    @category_name = N''Nuxiba'', 
+    @owner_login_name = N''replication'', 
+    @notify_level_eventlog = 0, 
+    @delete_level = 0,
+    @job_id = @jobId OUTPUT;
+
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback;
+
+-----------------------------------------------------------
+-- 4. STEP 1: Check and Stop ''DatabaseCentinella''
+-----------------------------------------------------------
+EXEC @ReturnCode = msdb.dbo.sp_add_jobstep 
+    @job_id = @jobId, 
+    @step_name = N''Check and Stop DatabaseCentinella'', 
+    @step_id = 1,
+    @subsystem = N''TSQL'', 
+    @command = N''
+SET NOCOUNT ON;
+DECLARE @jobName NVARCHAR(128) = N''''DatabaseCentinella'''';
+DECLARE @isRunning BIT = 0;
+
+-- Check if the job is currently running
+IF EXISTS (
+    SELECT 1
+    FROM msdb.dbo.sysjobactivity AS a
+    INNER JOIN msdb.dbo.sysjobs AS b ON a.job_id = b.job_id
+    WHERE b.name = @jobName
+      AND a.start_execution_date IS NOT NULL
+      AND a.stop_execution_date IS NULL
+)
+BEGIN
+    SET @isRunning = 1;
+END
+
+IF @isRunning = 1
+BEGIN
+    PRINT ''''[SafetyStop] The job "'''' + @jobName + ''''" is currently running. Attempting to stop...'''';
+    BEGIN TRY
+        EXEC msdb.dbo.sp_stop_job @job_name = @jobName;
+        PRINT ''''[SafetyStop] SUCCESSFULLY STOPPED: "'''' + @jobName + ''''".'''';
+    END TRY
+    BEGIN CATCH
+        PRINT ''''[SafetyStop] ERROR attempting to stop: '''' + ERROR_MESSAGE();
+        -- We do not THROW here to allow the Safety Job to proceed to the next step/job.
+    END CATCH
+END
+ELSE
+BEGIN
+    PRINT ''''[SafetyStop] The job "'''' + @jobName + ''''" was not running. No action was taken.'''';
+END
+'', 
+    @database_name = N''master'', 
+    @on_success_action = 3, -- IMPORTANT: Go to the next step
+    @on_fail_action = 3;    -- IMPORTANT: Go to the next step even if this fails
+
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback;
+
+-----------------------------------------------------------
+-- 5. STEP 2: Check and Stop ''CW Delete old records''
+-----------------------------------------------------------
+EXEC @ReturnCode = msdb.dbo.sp_add_jobstep 
+    @job_id = @jobId, 
+    @step_name = N''Check and Stop CW Delete old records'', 
+    @step_id = 2,
+    @subsystem = N''TSQL'', 
+    @command = N''
+SET NOCOUNT ON;
+DECLARE @jobName NVARCHAR(128) = N''''CW Delete old records'''';
+DECLARE @isRunning BIT = 0;
+
+-- Check if the job is currently running
+IF EXISTS (
+    SELECT 1
+    FROM msdb.dbo.sysjobactivity AS a
+    INNER JOIN msdb.dbo.sysjobs AS b ON a.job_id = b.job_id
+    WHERE b.name = @jobName
+      AND a.start_execution_date IS NOT NULL
+      AND a.stop_execution_date IS NULL
+)
+BEGIN
+    SET @isRunning = 1;
+END
+
+IF @isRunning = 1
+BEGIN
+    PRINT ''''[SafetyStop] The job "'''' + @jobName + ''''" is currently running. Attempting to stop...'''';
+    BEGIN TRY
+        EXEC msdb.dbo.sp_stop_job @job_name = @jobName;
+        PRINT ''''[SafetyStop] SUCCESSFULLY STOPPED: "'''' + @jobName + ''''".'''';
+    END TRY
+    BEGIN CATCH
+        PRINT ''''[SafetyStop] ERROR attempting to stop: '''' + ERROR_MESSAGE();
+    END CATCH
+END
+ELSE
+BEGIN
+    PRINT ''''[SafetyStop] The job "'''' + @jobName + ''''" was not running. No action was taken.'''';
+END
+'', 
+    @database_name = N''master'', 
+    @on_success_action = 1, -- Quit with success
+    @on_fail_action = 2;    -- Quit with failure (if this last step fails, report it)
+
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback;
+
+-----------------------------------------------------------
+-- 6. Schedule: Every day at 6:00 a.m.
+-----------------------------------------------------------
+EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule 
+    @job_id = @jobId, 
+    @name = N''CW_Global_SafetyStop_Schedule'', 
+    @enabled = 1, 
+    @freq_type = 4,             -- Daily
+    @freq_interval = 1,         -- Every day
+    @active_start_time = 60000, -- 06:00:00
+    @active_start_date = 20251023;
+
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback;
+
+-----------------------------------------------------------
+-- 7. Assign job to local server
+-----------------------------------------------------------
+EXEC @ReturnCode = msdb.dbo.sp_add_jobserver 
+    @job_id = @jobId, 
+    @server_name = N''(local)'';
+
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback;
+
+-----------------------------------------------------------
+-- Final Commit
+-----------------------------------------------------------
+COMMIT TRANSACTION;
+PRINT ''Job [CW_Global_Maintenance_SafetyStop] created successfully.''
+GOTO EndSave;
+
+QuitWithRollback:
+    IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION;
+    PRINT ''Error creating job. Rollback performed.''
+EndSave:'
+    EXEC(@sql)
+
+
+    set @process = 'CREATE JOB '
     set @sql = ''
     EXEC(@sql)
 

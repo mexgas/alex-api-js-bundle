@@ -26001,7 +26001,7 @@ END'
 					declare @new_chat_id int;
 
 					if @OperationType not in (0,1,2,3,4,5,6,7,8,9,10,11)
-					    raiserror(''''Invalid Operation Type'''', 18, 1)
+					    raiserror(''Invalid Operation Type'', 18, 1)
 
 					if @OperationType=0
 					 begin

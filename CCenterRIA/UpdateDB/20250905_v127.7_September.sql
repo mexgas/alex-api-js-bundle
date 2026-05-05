@@ -25975,9 +25975,15 @@ BEGIN
 END
 END'
  EXEC(@sql)
-
  ------------------------------ BEGIN DEGD KM55000 ----------------------------------
- SET @process = 'The sp ccsp_RIAABCChat is removed if it exists. KM55000'
+    SET @process = 'Se agrega columna IsRead para identificar si los mensajes son leidos'
+    SET @sql = '
+         IF COL_LENGTH(''ccRIAChat_Log'', ''IsRead'') IS NULL
+         BEGIN
+                ALTER TABLE ccRIAChat_Log ADD IsRead bit NOT NULL DEFAULT 0
+        END;'
+    EXEC(@sql)
+    SET @process = 'The sp ccsp_RIAABCChat is removed if it exists. KM55000'
     SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIAABCChat'')
 			begin
 				DROP PROCEDURE ccsp_RIAABCChat;
@@ -26005,7 +26011,7 @@ END'
 
 					if @OperationType=0
 					 begin
-					    Declare @User_id_Adm2 smallint, @User_id_Agt2 smallint, @Fecha2 varchar(10), @Fecha3 varchar(10), @Fecha4 varchar(10)
+					    Declare @User_id_Adm2 smallint, @User_id_Agt2 smallint, @ Fecha2 varchar(10), @Fecha3 varchar(10), @Fecha4 varchar(10)
 					    CREATE TABLE #CHAT (id int identity, xmlType tinyint, User_id_Adm smallint, User_id_Agt smallint, date varchar(10),
 					     iniTime varchar(10), endTime varchar(10), TipoMsgChat tinyint, text varchar(1500), time varchar(10))
 
@@ -26312,13 +26318,6 @@ END'
 					 '
     EXEC(@sql)
 
-    SET @process = 'Se agrega columna IsRead para identificar si los mensajes son leidos'
-    SET @sql = '
-         IF COL_LENGTH(''ccRIAChat_Log'', ''IsRead'') IS NULL
-         BEGIN
-                ALTER TABLE ccRIAChat_Log ADD IsRead bit NOT NULL DEFAULT 0
-        END;'
-    EXEC(@sql)
   ------------------------------ END DEGD KM55000 ------------------------------------
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

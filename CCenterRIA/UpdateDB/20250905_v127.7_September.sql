@@ -26011,7 +26011,7 @@ END'
 
 					if @OperationType=0
 					 begin
-					    Declare @User_id_Adm2 smallint, @User_id_Agt2 smallint, @ Fecha2 varchar(10), @Fecha3 varchar(10), @Fecha4 varchar(10)
+					    Declare @User_id_Adm2 smallint, @User_id_Agt2 smallint, @Fecha2 varchar(10), @Fecha3 varchar(10), @Fecha4 varchar(10)
 					    CREATE TABLE #CHAT (id int identity, xmlType tinyint, User_id_Adm smallint, User_id_Agt smallint, date varchar(10),
 					     iniTime varchar(10), endTime varchar(10), TipoMsgChat tinyint, text varchar(1500), time varchar(10))
 

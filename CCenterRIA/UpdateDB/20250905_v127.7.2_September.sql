@@ -2401,8 +2401,8 @@ BEGIN
 END;'
     exec (@sql)
 
-    SET @process = 'ALTER PROCEDURE dbo.ccsp_DLRGetRotativeANIBatchInline'
-    SET @sql = 'ALTER PROCEDURE dbo.ccsp_DLRGetRotativeANIBatchInline
+    SET @process = 'CREATE PROCEDURE dbo.ccsp_DLRGetRotativeANIBatchInline'
+    SET @sql = 'CREATE PROCEDURE dbo.ccsp_DLRGetRotativeANIBatchInline
 (
     @Batch dbo.ANIBatchType READONLY,
     @cam_id INT,

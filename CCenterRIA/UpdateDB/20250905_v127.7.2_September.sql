@@ -6566,13 +6566,13 @@ END;
 -------------------------------------------------------------------------
 -- Actualizar ccoCallsOut para llamadas contestadas tipoResDial_id = 1
 -------------------------------------------------------------------------
-UPDATE CO WITH (ROWLOCK)
+UPDATE CO 
 SET CO.cal_puerto = T.Port,
     CO.cal_manual = CASE 
                         WHEN CO.cal_manual = 1 THEN 2 
                         ELSE CO.cal_manual 
                     END
-FROM dbo.ccoCallsOut CO
+FROM dbo.ccoCallsOut CO WITH (ROWLOCK)
 INNER JOIN dbo.ccoLogDialsTempData T WITH (NOLOCK)
     ON T.CallId = CO.cal_id
 WHERE T.DialId = 0
@@ -6583,9 +6583,9 @@ WHERE T.DialId = 0
 -------------------------------------------------------------------------
 -- Actualizar ccoCallsOut para tipoResDial_id = 11
 -------------------------------------------------------------------------
-UPDATE CO WITH (ROWLOCK)
+UPDATE CO 
 SET CO.cal_puerto = T.Port
-FROM dbo.ccoCallsOut CO
+FROM dbo.ccoCallsOut CO WITH (ROWLOCK)
 INNER JOIN dbo.ccoLogDialsTempData T WITH (NOLOCK)
     ON T.CallId = CO.cal_id
 WHERE T.DialId = 0
@@ -6872,9 +6872,9 @@ INNER JOIN dbo.ccoCallsOutSource COS WITH (NOLOCK)
 -------------------------------------------------------------------------
 IF @RecicleSIC = 1
 BEGIN
-    UPDATE WT WITH (ROWLOCK)
+    UPDATE WT 
     SET WT.tipoResDial_id = I.ResDialTypeId
-    FROM dbo.ccoWorkingTable WT
+    FROM dbo.ccoWorkingTable WT WITH (ROWLOCK)
     INNER JOIN #InsertedLogDials I
         ON I.CalloutId = WT.callout_id;
 END;
@@ -6885,12 +6885,12 @@ WHERE DialId = 0;
 END
 ELSE IF @Action=2 
 BEGIN
-    UPDATE LD WITH (ROWLOCK)
+    UPDATE LD 
     SET LD.tipoResDial_id = T.ResDialTypeId,
         LD.answerbit = T.IsAnswerbit,
         LD.canceledNoAgents = T.IsCanceledNoAgents,
         LD.disconnectCause = T.DisconnectCause
-    FROM dbo.ccoLogDials LD
+    FROM dbo.ccoLogDials LD WITH (ROWLOCK)
     INNER JOIN dbo.ccoLogDialsTempData T WITH (NOLOCK)
         ON T.DialId = LD.logdial_id
     WHERE T.DialId > 0;             

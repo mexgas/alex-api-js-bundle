@@ -183,8 +183,9 @@ SET @sql = N'
         [Ani] [varchar](32) NOT NULL,   
         [ManualCRM] [bit] NOT NULL,
         [Destination] [varchar](50) NOT NULL,
-        [DestinationName] [varchar](50) NOT NULL,
-        [DialId] [int] NOT NULL
+        [DestinationName] [varchar](50) NOT NULL,       
+        [DialId] [UNIQUEIDENTIFIER] NOT NULL,
+        [IsUpdate] [bit] NOT NULL
     ) ON [PRIMARY]
 
 END
@@ -6201,7 +6202,7 @@ END;
 
     SET @process = 'CREATE PROCEDURE dbo.ccsp_DLRSaveDialResultBulk'
     SET @sql = 'CREATE PROCEDURE dbo.ccsp_DLRSaveDialResultBulk(
- @Action TINYINT
+  @Action TINYINT
 )
 AS
 BEGIN
@@ -6250,8 +6251,8 @@ BEGIN
         T.Phone,
         CONVERT(TINYINT, LEN(T.Phone)) AS PhoneLength,
         CONVERT(VARCHAR(10), LEN(T.Phone)) AS LengthStr
-    FROM dbo.ccoLogDialsTempData T WITH (NOLOCK)
-    WHERE T.DialId = 0;
+    FROM dbo.ccoLogDialsTempData T WITH (NOLOCK)    
+    WHERE T.IsUpdate = 0
 
     -------------------------------------------------------------------------
     -- 2. Resultado de tipo de llamada por teléfono
@@ -6575,7 +6576,7 @@ SET CO.cal_puerto = T.Port,
 FROM dbo.ccoCallsOut CO WITH (ROWLOCK)
 INNER JOIN dbo.ccoLogDialsTempData T WITH (NOLOCK)
     ON T.CallId = CO.cal_id
-WHERE T.DialId = 0
+WHERE T.IsUpdate =0 
   AND T.CallId > 0
   AND T.ResDialTypeId = 1
   AND CO.cal_puerto = 0;
@@ -6583,12 +6584,12 @@ WHERE T.DialId = 0
 -------------------------------------------------------------------------
 -- Actualizar ccoCallsOut para tipoResDial_id = 11
 -------------------------------------------------------------------------
-UPDATE CO 
+UPDATE CO
 SET CO.cal_puerto = T.Port
-FROM dbo.ccoCallsOut CO WITH (ROWLOCK)
+FROM dbo.ccoCallsOut CO  WITH (ROWLOCK)
 INNER JOIN dbo.ccoLogDialsTempData T WITH (NOLOCK)
     ON T.CallId = CO.cal_id
-WHERE T.DialId = 0
+WHERE T.IsUpdate = 0
   AND T.CallId > 0
   AND T.ResDialTypeId = 11
   AND CO.cal_puerto = 0;
@@ -6617,7 +6618,7 @@ CREATE TABLE #DialingModePreview
         T.CallId AS CallIdOriginal,
         T.CamId
     FROM dbo.ccoLogDialsTempData T WITH (NOLOCK)
-    WHERE T.DialId = 0
+    WHERE T.IsUpdate = 0
 ),
 CallData AS
 (
@@ -6838,7 +6839,7 @@ INNER JOIN #PhoneTipoLlamada PTL
 LEFT JOIN #DialingModePreview DMP
     ON DMP.CalloutId = T.CalloutId
    AND DMP.Phone = T.Phone
-WHERE T.DialId = 0
+WHERE T.IsUpdate = 0
 ORDER BY T.CalloutId;
 
 
@@ -6872,31 +6873,35 @@ INNER JOIN dbo.ccoCallsOutSource COS WITH (NOLOCK)
 -------------------------------------------------------------------------
 IF @RecicleSIC = 1
 BEGIN
-    UPDATE WT 
+    UPDATE WT WITH (ROWLOCK)
     SET WT.tipoResDial_id = I.ResDialTypeId
-    FROM dbo.ccoWorkingTable WT WITH (ROWLOCK)
+    FROM dbo.ccoWorkingTable WT
     INNER JOIN #InsertedLogDials I
         ON I.CalloutId = WT.callout_id;
 END;
 
 DELETE FROM dbo.ccoLogDialsTempData
-WHERE DialId = 0;
+WHERE IsUpdate = 0
+
 
 END
 ELSE IF @Action=2 
 BEGIN
-    UPDATE LD 
+    UPDATE LD WITH (ROWLOCK)
     SET LD.tipoResDial_id = T.ResDialTypeId,
         LD.answerbit = T.IsAnswerbit,
         LD.canceledNoAgents = T.IsCanceledNoAgents,
         LD.disconnectCause = T.DisconnectCause
-    FROM dbo.ccoLogDials LD WITH (ROWLOCK)
+    FROM dbo.ccoLogDials LD
     INNER JOIN dbo.ccoLogDialsTempData T WITH (NOLOCK)
-        ON T.DialId = LD.logdial_id
-    WHERE T.DialId > 0;             
+        ON T.CalloutId=LD.callout_id 
+    and T.CallId=LD.cal_id
+    and T.CallTS = LD.call_TS
+    and T.DateNow = LD.fecha
+    WHERE IsUpdate >0
 
     DELETE FROM dbo.ccoLogDialsTempData
-    WHERE DialId > 0;
+    WHERE IsUpdate >0
 
 END
 
@@ -6931,12 +6936,12 @@ END
 ELSE IF @action = 5
 BEGIN
    SELECT
-    destination,
-    provider_name,
-    dest_length,
-    hash,
-    priority,
-    route_id
+    destination as Destination,
+    provider_name as ProviderName,
+    dest_length as DestLength,
+    hash as Hash,
+    priority as Priority,
+    route_id as RouteId
 FROM ccTrunkRouting WITH (NOLOCK)
 END
 ELSE IF @action = 6
@@ -6944,8 +6949,6 @@ BEGIN
    SELECT TrunkId, route_id
    FROM ccTrunkConfiguration WITH (NOLOCK)
 END
-
-
     SET NOCOUNT OFF;
 END;
 '

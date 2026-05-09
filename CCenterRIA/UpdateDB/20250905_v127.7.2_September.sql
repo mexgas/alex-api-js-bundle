@@ -6202,7 +6202,7 @@ END;
 
     SET @process = 'CREATE PROCEDURE dbo.ccsp_DLRSaveDialResultBulk'
     SET @sql = 'CREATE PROCEDURE dbo.ccsp_DLRSaveDialResultBulk(
-  @Action TINYINT
+ @Action TINYINT
 )
 AS
 BEGIN
@@ -6574,8 +6574,7 @@ SET CO.cal_puerto = T.Port,
                         ELSE CO.cal_manual 
                     END
 FROM dbo.ccoCallsOut CO WITH (ROWLOCK)
-INNER JOIN dbo.ccoLogDialsTempData T WITH (NOLOCK)
-    ON T.CallId = CO.cal_id
+INNER JOIN dbo.ccoLogDialsTempData T WITH (NOLOCK) ON T.CallId = CO.cal_id
 WHERE T.IsUpdate =0 
   AND T.CallId > 0
   AND T.ResDialTypeId = 1
@@ -6770,7 +6769,10 @@ CREATE TABLE #InsertedLogDials
     CalloutId INT NOT NULL,
     Phone VARCHAR(32) NOT NULL,
     ResDialTypeId TINYINT NOT NULL,
-    CallDate DATETIME NOT NULL
+    CallDate DATETIME NOT NULL,
+    CallId int NOT NULL,
+    tipoLlamada_id int NOT NULL,
+    Port int NOT NULL
 );
 
 INSERT INTO dbo.ccoLogDials WITH (ROWLOCK)
@@ -6802,14 +6804,20 @@ OUTPUT
     INSERTED.callout_id,
     INSERTED.Telefono,
     INSERTED.tipoResDial_id,
-    INSERTED.fecha
+    INSERTED.fecha,
+    INSERTED.cal_id,
+    INSERTED.tipoLlamada_id,
+    INSERTED.Puerto
 INTO #InsertedLogDials
 (
     LogDialId,
     CalloutId,
     Phone,
     ResDialTypeId,
-    CallDate
+    CallDate,
+    CallId,
+    tipoLlamada_id,
+    Port
 )
   SELECT
     T.CalloutId AS callout_id,
@@ -6834,11 +6842,8 @@ INTO #InsertedLogDials
     T.DestinationName as destination_name,
     ISNULL(DMP.ManualCRMBulk, 0) AS manualCRM
 FROM dbo.ccoLogDialsTempData T WITH (NOLOCK)
-INNER JOIN #PhoneTipoLlamada PTL
-    ON PTL.Phone = T.Phone
-LEFT JOIN #DialingModePreview DMP
-    ON DMP.CalloutId = T.CalloutId
-   AND DMP.Phone = T.Phone
+INNER JOIN #PhoneTipoLlamada PTL ON PTL.Phone = T.Phone
+LEFT JOIN #DialingModePreview DMP ON DMP.CalloutId = T.CalloutId AND DMP.Phone = T.Phone
 WHERE T.IsUpdate = 0
 ORDER BY T.CalloutId;
 
@@ -6880,6 +6885,18 @@ BEGIN
         ON I.CalloutId = WT.callout_id;
 END;
 
+if exists(select 1 from cstoTarifa)
+BEGIN
+    update cco
+    set cco.costo=csto.MinutoUno + case when ISNULL(cco.totalCall_Time,0) > 0 then((ceiling(( ISNULL(cco.totalCall_Time,0) ) / 60.0 )- 1) * csto.MinutoAdicional ) else 0 end
+    ,cco.provedor_id=cd.provedor_id
+    ,cco.tipoLlamada_id = T.tipoLlamada_id
+    from #InsertedLogDials T
+    INNER JOIN ccoCallsOut cco on cco.cal_id=T.CallId AND cco.cal_manual <> 1
+    INNER JOIN ccoDialers cd on T.Port = cd.Puerto
+    INNER JOIN cstoTarifa csto on csto.tipoLlamada_id = T.tipoLlamada_id AND CSTO.tipoLlamada_id = T.tipoLlamada_id
+    where T.CallId > 0 AND T.ResDialTypeId = 1
+END
 DELETE FROM dbo.ccoLogDialsTempData
 WHERE IsUpdate = 0
 

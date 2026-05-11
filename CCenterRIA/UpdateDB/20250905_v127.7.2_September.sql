@@ -191,6 +191,23 @@ SET @sql = N'
 END
 '
     exec (@sql)
+
+     SET @process = 'ALTER TABLE dbo.ccologDials.dialCorrelationId'
+    SET @sql = 'IF COL_LENGTH(''dbo.ccologDials'', ''dialCorrelationId'') IS NULL
+BEGIN
+    ALTER TABLE dbo.ccologDials
+ADD dialCorrelationId UNIQUEIDENTIFIER NULL;
+END;'
+    exec (@sql)
+
+    SET @process = 'ALTER TABLE dbo.IVRCallsIn.dialCorrelationId'
+    SET @sql = 'IF COL_LENGTH(''dbo.IVRCallsIn'', ''dialCorrelationId'') IS NULL
+BEGIN
+    ALTER TABLE dbo.IVRCallsIn
+ADD dialCorrelationId UNIQUEIDENTIFIER NULL;
+END;'
+    exec (@sql)
+
    
     SET @process = 'ALTER TABLE dbo.ccRotativeAniListDetail.Seq'
     SET @sql = 'IF COL_LENGTH(''dbo.ccRotativeAniListDetail'', ''Seq'') IS NULL
@@ -6921,6 +6938,25 @@ BEGIN
     WHERE IsUpdate >0
 
 END
+ELSE IF @Action=3 
+BEGIN
+    declare @today datetime
+    set @today=DATEADD(hh,-2,getdate())
+    set @today=CONVERT(date,@today,121)
+    
+    ;with relationIvr as(
+        select cld.logDial_id,IVR_id from IVRCallsIn ivr 
+        inner join ccologDials cld on ivr.dialCorrelationId=cld.dialCorrelationId  
+        where ivr.date>=@today AND ivr.dialCorrelationId IS NOT NULL
+    )
+    
+    update opt
+    set opt.cal_id=r.logDial_id
+    from IVROptions opt 
+    inner join relationIvr r on r.IVR_id=opt.IVR_id
+    where opt.cal_id=0
+
+END
 
     SET NOCOUNT OFF;
 END;'
@@ -6973,8 +7009,59 @@ END;
 
    
 
-    SET @process = ''
-    SET @sql = ''
+    SET @process = 'ALTER procedure [dbo].[ccsp_IVRInCalls] Add @dialCorrelationId'
+    SET @sql = 'ALTER procedure [dbo].[ccsp_IVRInCalls]
+@action tinyint = 0 ,
+@ani varchar(30) = null ,
+@idIvr int = 0 ,
+@option varchar(5)= null ,
+@saveType tinyInt = null,
+@dnis varchar(50) = null,
+@name varchar(50) = null,
+@questionId int = 0,
+@surveyId int = 0,
+@calId int = 0,
+@callout_id int = 0,
+@ttotalIVR int = 0,
+@callType tinyint = null,
+@callbackCamId int =0,
+@dialCorrelationId varchar(64) = ''''
+-- saveType 1 es menu 2 es dato
+-- accion 1 siempre @ani  -> @idIvr
+-- accion 2 siempre @idIvr @opcionDigitada -> nada
+AS
+IF @action = 1
+BEGIN
+        IF @ani IS NOT NULL
+        BEGIN
+                if @dialCorrelationId ='''' set @dialCorrelationId=null
+            
+                INSERT INTO IVRCallsIn(cal_ani,date,dnis,callout_id, dialCorrelationId) 
+                values(@ani,getDate(),isnull(@dnis,''''),@callout_id,@dialCorrelationId);
+                UPDATE ccCallsIn SET cal_whoHung = 2 WHERE cal_id = @callout_id
+        Select ''ID''=cast(scope_identity() as int)
+        END
+END
+ELSE IF @action = 2
+BEGIN
+        IF @option IS NOT NULL AND @idIvr IS NOT NULL
+        BEGIN
+                INSERT INTO IVROptions(IVR_id,selectedOption,date,saveType,name, questionId, surveyId, cal_id, callType) values (@idIvr,@option,getDate(),@saveType,@name,isnull(@questionId,0),isnull(@surveyId,0),isnull(@calId,0),isnull(@callType,0))
+                select 0
+        END
+        ELSE select -1
+END
+ELSE IF @action = 3
+BEGIN
+        UPDATE IVRCallsIn set tincall = @ttotalIVR where IVR_id = @idIvr and callout_id = @callout_id
+        if @callout_id > 0 begin
+                exec ccsp_EngineLogTransfers 4, @callout_id, 0, 0, null
+                UPDATE ccoCallsOut set cal_whoHung = 2 where cal_id = @callout_id
+        end
+        if @callbackCamId >0  begin
+                EXEC [ccsp_KolobUpdateCallback_AbandonIVR] @idIvr, @callbackCamId
+        end
+END'
     exec (@sql)
     
     SET @process = ''

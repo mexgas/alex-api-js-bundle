@@ -231,8 +231,6 @@ end
     
        If @command = 10 -- New ccTipoCalif_IA
                 begin
-                    declare @newId smallint
-
                     if @DestinyIVR_number IS NOT NULL AND @DestinyIVR_number <> ''
                         set @DirectoryNumberFlag = 0
                     else if @DestinyIVR_directory IS NOT NULL AND @DestinyIVR_directory <> 0

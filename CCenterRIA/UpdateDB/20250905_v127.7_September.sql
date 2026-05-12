@@ -44,6 +44,55 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
     BEGIN TRAN
     BEGIN TRY
 
+	-----------------------------BEGIN MACL---------------------------------------------
+	SET @process = 'KM47001 - Se crea campo para el tipo de ANI en llamada manual'
+	SET @sql = 'IF not exists (SELECT 1 FROM SYS.columns WHERE name=''ManualCallANIMode'' 
+AND OBJECT_ID = OBJECT_ID(''ccCampsExtend''))
+begin
+	ALTER TABLE ccCampsExtend
+	ADD ManualCallANIMode SMALLINT NULL;
+end'
+	EXEC(@sql)
+
+	SET @process = 'KM47001 - Se elimina el campo que ya no se va a utilizar'
+	SET @sql = 'IF exists (SELECT 1 FROM SYS.columns WHERE name=''selectRotationManualDialing'' 
+AND OBJECT_ID = OBJECT_ID(''ccCamps''))
+begin
+	ALTER TABLE ccCamps
+	DROP COLUMN selectRotationManualDialing
+end'
+	EXEC(@sql)
+
+	SET @process = 'KM47001 - Se agrega relación para identitificadores del log'
+	SET @sql = 'IF NOT EXISTS(select 1 from relationTableColumnIdentifiers 
+where tableName = ''cccampsextend'' and colunName = ''ManualCallANIMode'')
+BEGIN
+	INSERT INTO relationTableColumnIdentifiers(Identifiers, tableName, colunName)
+	VALUES(''OUT_MANUAL_CALL_ANI_MODE'', ''ccCampsExtend'', ''ManualCallANIMode'')
+END'
+	EXEC(@sql)
+	
+	SET @process = 'KM47001 - Se agregan etiquetas'
+	SET @sql = 'KM47001 -IF NOT EXISTS(select 1 from ccGalateaIdentifiers 
+where [Description] = ''OUT_MANUAL_CALL_ANI_MODE'')
+BEGIN
+	INSERT INTO ccGalateaIdentifiers([Description], TagEs, TagEn, TagPt) VALUES
+	(''OUT_MANUAL_CALL_ANI_MODE'', ''Asignación de ANI (llamada manual)'', ''ANI assignment (manual call)'', ''Atribuição de ANI (chamada manual)''),
+	(''OUT_MANUAL_CALL_ANI_MODE_SYSTEM'', ''Por sistema'', ''By system'', ''Pelo sistema''),
+	(''OUT_MANUAL_CALL_ANI_MODE_AGENT'', ''Por agente'', ''By agent'', ''Pelo agente''),
+	(''OUT_MANUAL_CALL_ANI_MODE_NONE'', ''Ninguna'', ''None'', ''Nenhuma'')
+END	'
+	EXEC(@sql)
+
+	SET @process = ''
+	SET @sql = ''
+	EXEC(@sql)
+
+	SET @process = ''
+	SET @sql = ''
+	EXEC(@sql)
+	------------------------------END MACL----------------------------------------------
+
 	--------------------Creación de tablas MAGV DEV3-1443 -----------------------------------
 	SET @process = 'DEV3-1443 Tabla nueva de bd para realizar la desasignación correctamente'
 	SET @sql = '
@@ -6291,6 +6340,11 @@ BEGIN
                     NULL END iZonaHoraria_verano5, list_id
         FROM ccoCallsOutSource WITH (INDEX (IX_ccoCallsOutSource_17), NOLOCK)
         WHERE cam_id = @camp_id AND (cal_status < 2 OR cal_status = 7) /*AND CONVERT(VARCHAR(10),cal_fechaDial, 103) >= CONVERT(VARCHAR(10), GETDATE(), 103)*/
+
+		--Se elimina de workingtable en caso de que no se hayan borrado correctamente no genere error al insertar nuevos registros
+		DELETE wt FROM ccoWorkingTable wt
+		INNER JOIN #tempCallsOutSource tcs on wt.callout_id = tcs.callout_id
+		WHERE wt.cam_id = @camp_id
 
         SELECT @rowstoInsert = COUNT(*) FROM #tempCallsOutSource
 
@@ -17064,7 +17118,7 @@ AS
 		-- Manual Rotation Dialing Configurations
 		ISNULL(a1.rotativeAlgorithmManual, 4) RotativeAlgorithmManual ,
 		ISNULL(a1.idAniListManual, 0) IdAniListManual ,
-		ISNULL(a1.selectRotationManualDialing, 0) SelectRotationManualDialing
+		ISNULL(campsExtention.ManualCallANIMode, 0) ManualCallANIMode
     FROM ccCamps a1
     INNER JOIN ccRIACampsGraph a2 ON (a1.cam_id = a2.cam_id)
     INNER JOIN ccRIAGraphics a3 ON (a2.graphic_id = a3.graphic_id)
@@ -17079,257 +17133,6 @@ AS
 ';
 	EXEC(@sql);
 
-	SET @process = 'KR234005 drop store procedure ccsp_GalateaGetOutboundConfiguration'
-	SET @sql = N'
-    If Exists (Select 1 From sys.procedures Where name = N''ccsp_GalateaGetOutboundConfiguration'')
-        Begin
-            DROP PROCEDURE ccsp_GalateaGetOutboundConfiguration
-        End';
-	EXEC(@sql);
-
-	SET @process = 'KR234005 create store procedure ccsp_GalateaGetOutboundConfiguration'
-	SET @sql = N'
-    CREATE PROCEDURE [dbo].[ccsp_GalateaGetOutboundConfiguration]
-    @adminID INT
-    ,@campID INT
-    AS
-    BEGIN
-
-        DECLARE @AllCampaigns TABLE (
-        cam_id SMALLINT
-        ,cam_Descripcion VARCHAR(60)
-        ,cam_tNotas SMALLINT
-        ,cam_ocupado SMALLINT
-        ,cam_noInt_ocupado SMALLINT
-        ,cam_inter_ocupado SMALLINT
-        ,cam_nocontesto SMALLINT
-        ,cam_noInt_nocontesto SMALLINT
-        ,cam_inter_nocontesto SMALLINT
-        ,cam_fax SMALLINT
-        ,cam_noInt_fax SMALLINT
-        ,cam_inter_fax SMALLINT
-        ,cam_modomanual SMALLINT
-        ,ANI VARCHAR(15)
-        ,cam_ShowCalifWnd BIT
-        ,cam_StartTimerOnHangUp BIT
-        ,editableCallKey BIT
-        ,cam_tNoContesta SMALLINT
-        ,iTipoDial SMALLINT
-        ,detectAnswerMachine SMALLINT
-        ,detectVoiceMail SMALLINT
-        ,compliance SMALLINT
-        ,cam_inter_graba SMALLINT
-        ,cam_noint_graba SMALLINT
-        ,progDial SMALLINT
-        ,excCallBack SMALLINT
-        ,dialOrder SMALLINT
-        ,dialPrefix VARCHAR(10)
-        ,dialPrefixMan VARCHAR(10)
-        ,dialPrefixXfe VARCHAR(10)
-        ,listenManualCall BIT
-        ,stopRecording BIT
-        ,abandonCallback BIT
-        ,frame SMALLINT
-        ,t_autoCB SMALLINT
-        ,id_anilist INT
-        ,tDialonWrapUp SMALLINT
-        ,viewMode TINYINT
-        ,queSize SMALLINT
-        ,DNCScrub INT
-        ,callerIdDesc VARCHAR(15)
-        ,timeZoneRule INT
-        ,callsBySurvey INT
-        ,ivrScript INT
-        ,surveyPctg INT
-        ,call_record SMALLINT
-        ,startStopRecording BIT
-        ,leaveRecMessage BIT
-        ,manualCallOnChat BIT
-        ,callBackSurveyAgent BIT
-        ,callBackSurveyClient BIT
-        ,isRelationSurvey BIT
-        ,funcEspDtmf INT
-        ,sipHdrFormat VARCHAR(255)
-        ,cam_inter_cancelled SMALLINT
-        ,prefijo VARCHAR(40)
-        ,enbleprefix BIT
-        ,exitAssisted BIT
-        ,previewDiscard BIT
-        ,CampType INT
-        ,conexionInfo VARCHAR(50)
-        ,connUser VARCHAR(15)
-        ,closeConversationTime INT
-        ,answerTimeoutClient INT
-        ,allowFileAttachments BIT
-        ,selectRotativeANI INT
-        ,rotativeAlgo TINYINT
-        ,autoStart BIT
-        ,messagingOrder BIT
-        ,CamTPreview SMALLINT
-        ,TimesPreview TINYINT
-        ,timesDiscard TINYINT
-        ,recordHold BIT
-        ,zipCodeSchedule BIT
-        ,RecordCalls tinyint
-        ,simultaneousRecs smallint
-        ,EditableContactData bit
-        ,internationalDialingPortsAssigned bit
-        ,AssignConversationSameAgent bit
-        ,maxLimitQueueConversations SMALLINT
-        ,MaxDaysPerWAConvo SMALLINT
-        ,RecordIvr BIT
-        ,CamCanceled INT
-        ,surveyCamId int
-        -- Outbound AI Campaign Special Settings
-        ,RescheduledSurveyAI BIT
-        ,ImmediateSurveyAI BIT
-        ,ApplyRescheduledSurveyForCompletedCallsAI BIT
-        ,EnableCallRecordingAI BIT
-		-- Manual Rotation Dialing Configurations
-		,rotativeAlgorithmManual SMALLINT
-		,idAniListManual SMALLINT
-		,selectRotationManualDialing BIT
-        )
-        DECLARE @numbers VARCHAR(max)
-
-        SELECT @numbers = COALESCE(@numbers + '','', '''')+ number
-        FROM ccWhatsAppNumbers
-        WHERE camp_id = 0
-        AND STATUS = 1
-
-        SELECT @numbers = COALESCE(@numbers + '','', '''')+ number
-        FROM ccMetaWhatsAppNumbers
-        WHERE Cam_Id = 0 or Cam_Id is null
-        AND STATUS = 1
-
-        INSERT INTO @AllCampaigns
-        EXEC ccsp_RIAConfCamp @adminID
-        ,@campID
-
-        -- consulta para extraer las variables del script
-        DECLARE @ScriptVariables NVARCHAR(MAX);
-        WITH RecursiveExtraction AS (
-            SELECT
-                CAST(SUBSTRING(scriptAgent, CHARINDEX(''{{'', scriptAgent) + 2,
-                CHARINDEX(''}}'', scriptAgent) - CHARINDEX(''{{'', scriptAgent) - 2) AS VARCHAR(MAX)) AS Variable,
-                CAST(STUFF(scriptAgent, CHARINDEX(''{{'', scriptAgent),
-                CHARINDEX(''}}'', scriptAgent) - CHARINDEX(''{{'', scriptAgent) + 2, '''') AS VARCHAR(MAX)) AS RemainingText
-            FROM dbo.ccVirtualAgent
-            WHERE CHARINDEX(''{{'', scriptAgent) > 0
-            AND idCampaign = @campID AND campType = 1
-
-            UNION ALL
-
-            SELECT
-                CAST(SUBSTRING(RemainingText, CHARINDEX(''{{'', RemainingText) + 2,
-                CHARINDEX(''}}'', RemainingText) - CHARINDEX(''{{'', RemainingText) - 2) AS VARCHAR(MAX)) AS Variable,
-                CAST(STUFF(RemainingText, CHARINDEX(''{{'', RemainingText),
-                CHARINDEX(''}}'', RemainingText) - CHARINDEX(''{{'', RemainingText) + 2, '''') AS VARCHAR(MAX)) AS RemainingText
-            FROM RecursiveExtraction
-            WHERE CHARINDEX(''{{'', RemainingText) > 0
-        )
-        SELECT @ScriptVariables = STUFF((
-            SELECT '', '' + Variable
-            FROM RecursiveExtraction
-            FOR XML PATH(''''), TYPE).value(''.'', ''NVARCHAR(MAX)''), 1, 2, '''');
-
-        SELECT
-        dialPrefixMan DialPrefixMan
-        ,dialPrefixXfe DialPrefixXfe
-        ,listenManualCall ListenManualCall
-        ,stopRecording StopRecording
-        ,abandonCallback AbandonCallBack
-        ,t_autoCB AutoCB
-        ,id_anilist IdIstANI
-        ,tDialonWrapUp TDialOnWrapup
-        ,queSize Quesize
-        ,DNCScrub
-        ,callerIdDesc CallerIdDesc
-        ,timeZoneRule TimeZoneRule
-        ,callsBySurvey CallsBySurvey
-        ,ivrScript IvrScript
-        ,surveyPctg SurveyPctg
-        ,call_record CallRecord
-        ,startStopRecording StartStopRecording
-        ,leaveRecMessage LeaveRecMessage
-        ,manualCallOnChat ManualCallOnChat
-        ,callBackSurveyClient CallBackSurveyClient
-        ,callBackSurveyAgent CallBackSurveyAgent
-        ,funcEspDtmf FuncEspDtmf
-        ,sipHdrFormat SipHdrsCfg
-        ,dialPrefix DialPrefix
-        ,prefijo Prefix
-        ,dialOrder DialOrder
-        ,progDial ProgDial
-        ,cam_Descripcion CamDescription
-        ,cam_tNotas CamTnotas
-        ,cam_ocupado CamBusy
-        ,cam_noInt_ocupado CamNoIntBusy
-        ,cam_inter_ocupado CamInterBusy
-        ,cam_nocontesto CamNoAnswer
-        ,cam_noInt_nocontesto CamNoIntNoAnswer
-        ,cam_inter_nocontesto CamInterNoAnswer
-        ,(cam_inter_cancelled / 60) CamInterCancelled
-        ,cam_fax CamFax
-        ,cam_noInt_fax CamNoIntFax
-        ,cam_inter_fax CamInterFax
-        ,cam_modomanual CamModoManual
-        ,ANI
-        ,cam_StartTimerOnHangUp CamStartTimerOnHangUp
-        ,editableCallKey EditableCallKey
-        ,cam_tNoContesta CamTNoAnswer
-        ,iTipoDial CamIntensiveDialing
-        ,detectAnswerMachine DetectAnswerMachine
-        ,detectVoiceMail DetectVoiceMail
-        ,compliance Compliance
-        ,cam_inter_graba CamInterRecord
-        ,cam_noint_graba CamNoIntRecord
-        ,excCallBack ExcCallBack
-        ,cam_ShowCalifWnd CamShowCalifWnd
-        ,frame Frame
-        ,exitAssisted ExitAssistedDialMode
-        ,previewDiscard PreviewDiscard
-        ,CampType
-        ,conexionInfo ConexionInfo
-        ,connUser ConnUser
-        ,closeConversationTime CloseConversationTime
-        ,answerTimeoutClient MUTimeOutClient
-        ,allowFileAttachments AllowFileAttachments
-        ,CamTPreview
-        ,CAST(TimesPreview AS SMALLINT) TimesPreview
-        ,@numbers AS FreeNumbers
-        ,selectRotativeANI SelectRotativeANIManualCall
-        ,rotativeAlgo RotativeAlgo
-        ,autoStart AutoStart
-        ,messagingOrder MessagingOrder
-        ,timesDiscard TimesDiscard
-        ,recordHold RecordHold
-        ,zipCodeSchedule ZipCodeSchedule
-        ,RecordCalls RecordCalls
-        ,simultaneousRecs SimultaneousRecs
-        ,EditableContactData EditableContactData
-        ,internationalDialingPortsAssigned internationalDialingPortsAssigned
-        ,AssignConversationSameAgent AssignConversationSameAgent
-        ,maxLimitQueueConversations MaxLimitQueueConversations
-        ,MaxDaysPerWAConvo DaysVisualConversationWhatsApp
-        ,RecordIvr
-        ,ISNULL(CamCanceled, 0) CamCanceled
-        ,surveyCamId SurveyCamId
-        -- Outbound AI Campaign Special Settings
-        ,RescheduledSurveyAI
-        ,ImmediateSurveyAI
-        ,ApplyRescheduledSurveyForCompletedCallsAI
-        ,EnableCallRecordingAI
-		-- Manual Rotation Dialing Configurations
-		,rotativeAlgorithmManual RotativeAlgorithmManual
-		,idAniListManual IdAniListManual
-		,selectRotationManualDialing SelectRotationManualDialing
-        ,@ScriptVariables AS ScriptVariables
-        FROM @AllCampaigns
-        WHERE cam_id = @campID
-    END';
-	EXEC(@sql);
-
 
 	SET @process = 'KR234005 drop store procedure ccsp_RIAUpdateCamConfig'
 	SET @sql = N'
@@ -17340,7 +17143,7 @@ AS
 	EXEC(@sql);
 
 	SET @process= 'KR234005 create store procedure ccsp_RIAUpdateCamConfig'
-	SET @sql ='CREATE PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
+	SET @sql ='ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
     @cam_id smallint,
     @cam_descripcion varchar(40) = null,
     @cam_tnotas smallint = null,
@@ -17510,8 +17313,7 @@ AS
         CamCanceled = ISNULL(@camCanceled, CamCanceled),
         recordIvr = isnull(@recordIvr, recordIvr),
 		rotativeAlgorithmManual = ISNULL(@rotativeAlgorithmManual, rotativeAlgorithmManual),
-		idAniListManual = ISNULL(@idAniListManual, idAniListManual),
-		selectRotationManualDialing = ISNULL(@selectRotationManualDialing, selectRotationManualDialing)
+		idAniListManual = ISNULL(@idAniListManual, idAniListManual)
         Where cam_id = @cam_id
 
             IF OBJECT_ID(N''tempdb..#ccCampsTable'') IS NOT NULL DROP TABLE #ccCampsTable
@@ -17546,6 +17348,7 @@ AS
                 DELETE FROM #ccCampsTable WHERE columnInfo IN (''cam_descripcion'');
                 IF EXISTS (SELECT 1 FROM #ccCampsTable where columnInfo in (''camCanceled'') and dataInfo = 4) DELETE FROM #ccCampsTable WHERE columnInfo IN (''camCanceled'');
                 IF EXISTS (SELECT 1 FROM #ccCampsTable where columnInfo in (''recordIvr'') and dataInfo = 1) DELETE FROM #ccCampsTable WHERE columnInfo IN (''recordIvr'');
+		        DELETE FROM #ccCampsTable WHERE identifierInfo =''OUT_ANI_MODE_MANUAL'' and dataInfo NOT IN (0,1,2,3); 
             END
 
             IF(@isCreating = 2)
@@ -17827,224 +17630,9 @@ AS
 
 	------------------------- END KR234005 Marco Garcia -----------------------------------
 
- ------------------------ BEGIN Marco Antonio Díaz KR234006------------------------
-       SET @process = 'KR234006 Drop procedure ccsp_ManualCallGetRotativeAni if exists'
-       SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_ManualCallGetRotativeAni'')
-                    BEGIN
-                        DROP PROCEDURE ccsp_ManualCallGetRotativeAni;
-                    END'
-        EXEC(@sql);
+ 
 
-        SET @process = 'KR234006 procedure to call rotation from the agent'
-        SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_ManualCallGetRotativeAni]
-                    @phones VARCHAR(MAX),
-                    @camId INT
-                    AS
-                    set nocount on
-
-                    DECLARE @aniId INT;
-                    DECLARE @rotativeAlgo INT;
-                    DECLARE @isManualRotationActive BIT;
-                    DECLARE @Anis TABLE(id INT, pid VARCHAR(2), phone VARCHAR(32), ani VARCHAR(32));
-
-                    SELECT @aniId = idAniListManual, @rotativeAlgo = rotativeAlgorithmManual, @isManualRotationActive = ISNULL(selectRotationManualDialing, 0) FROM ccCamps WHERE cam_id = @camId;
-
-                    IF (@isManualRotationActive = 1 AND @aniId IS NOT NULL) BEGIN
-                    INSERT @Anis
-                    EXEC ccsp_DLRGetRotativeANI @callout_id=0, @phones=@phones, @aniList=@aniId,@algo=@rotativeAlgo;
-                    END
-
-                    IF(SELECT COUNT(*) FROM @Anis) > 0 BEGIN
-                        SELECT TOP 1 ani FROM @Anis
-                    END ELSE IF EXISTS (SELECT valor FROM ccSettings WHERE setting_id = 177) BEGIN
-                        SELECT valor FROM ccSettings WHERE setting_id = 177
-                    END ELSE BEGIN
-                        SELECT ''''
-                    END
-
-                    set nocount off'
-        EXEC(@sql);
-
-       SET @process = 'KR234006 Drop procedure ccsp_ValidateManualRotation if exists'
-       SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_ValidateManualRotation'')
-                BEGIN
-                    DROP PROCEDURE ccsp_ValidateManualRotation;
-                END'
-          EXEC(@sql);
-
-          SET @process = 'KR234006 procedure to validate manual rotation'
-          SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_ValidateManualRotation]
-                @camId INT
-                AS
-                set nocount on
-
-                SELECT TOP 1 ISNULL(selectRotationManualDialing, 0) FROM ccCamps WHERE cam_id = @camId;
-
-                set nocount off'
-EXEC(@sql);
-    ------------------------ END Marco Antonio Díaz KR234006--------------------------
-
-
-	--------------------- BEGIN MAGV #6302 ----------------------------------
-	 SET @process = '#6302 Drop procedure ccsp_RIAUpdateCamConfigExtend if exists'
-     SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_RIAUpdateCamConfigExtend'')
-            BEGIN
-                DROP PROCEDURE ccsp_RIAUpdateCamConfigExtend;
-            END'
-     EXEC(@sql);
-
-	 SET @process = '#6302 CREATE PROCEDURE [ccsp_RIAUpdateCamConfigExtend]'
-	 SET  @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIAUpdateCamConfigExtend]
-        @cam_id SMALLINT,
-        @zipCodeSchedule BIT = NULL,
-        @userId SMALLINT = NULL,
-        @idArea SMALLINT = NULL,
-        @isCreating SMALLINT = NULL,
-        @simultaneousRecs SMALLINT = NULL,
-        @module INT = -1,
-        @recordCalls TINYINT = 1,
-        @editableContactData BIT = 1,
-        @assignConversationSameAgent BIT = 0,
-        @RescheduledSurveyAI BIT = 0,
-        @ImmediateSurveyAI BIT = 0,
-        @ApplyRescheduledSurveyForCompletedCallsAI BIT = 0,
-        @EnableCallRecordingAI BIT = 1
-    AS
-    BEGIN
-        SET NOCOUNT ON;
-        DECLARE @country INT = (SELECT valor FROM ccSettings WHERE setting_id = 104);
-        DECLARE @excludeIdentifier VARCHAR(255) = CASE WHEN @country = 4 THEN ''COMMON_INTERNATIONAL_RECORD_CALLS'' ELSE ''COMMON_USA_RECORD_CALLS'' END;
-
-        IF EXISTS (SELECT * FROM ccCampsExtend WHERE cam_id = @cam_id)
-        BEGIN
-            EXEC InsertLogAdminGalatea @action = 1, @tableName = ''ccCampsExtend'', @columnNameId = ''cam_id'', @valueId = @cam_id, @userId = @userId;
-
-            IF OBJECT_ID(N''tempdb..#ccCampsTable'') IS NOT NULL DROP TABLE #ccCampsTable;
-
-            CREATE TABLE #ccCampsExtendTable
-            (
-                columnInfo VARCHAR(255),
-                dataInfo VARCHAR(255),
-                identifierInfo VARCHAR(255)
-            );
-
-            DECLARE @Camptype INT = (SELECT [CampType] FROM ccCamps WHERE cam_id = @cam_id);
-            DECLARE @operation SMALLINT = CASE
-                WHEN @isCreating = 1 THEN
-                    CASE
-                        WHEN @Camptype = 6 THEN 44
-                        WHEN @Camptype = 5 THEN 46
-                        WHEN @Camptype = 4 OR @Camptype = 9 THEN 48 -- TODO: Delete MediaType 4
-                        WHEN @Camptype = 7 THEN 50
-                        ELSE 42
-                    END
-                ELSE
-                    CASE
-                        WHEN @Camptype = 6 THEN 55
-                        WHEN @Camptype = 5 THEN 56
-                        WHEN @Camptype = 4 OR @Camptype = 9 THEN 57 -- TODO: Delete MediaType 4
-                        WHEN @Camptype = 7 THEN 58
-                        ELSE 54
-                    END
-                END;
-
-            UPDATE ccCampsExtend
-            SET
-                zipCodeSchedule = ISNULL(@zipCodeSchedule, zipCodeSchedule),
-                simultaneousRecs = ISNULL(@simultaneousRecs, simultaneousRecs),
-                RecordCalls = ISNULL(@recordCalls, RecordCalls),
-                EditableContactData = ISNULL(@editableContactData, EditableContactData),
-                AssignConversationSameAgent = ISNULL(@assignConversationSameAgent, AssignConversationSameAgent),
-                -- Outbound AI Campaign Special Settings
-                RescheduledSurveyAI = ISNULL(@RescheduledSurveyAI, RescheduledSurveyAI),
-                ImmediateSurveyAI = ISNULL(@ImmediateSurveyAI, ImmediateSurveyAI),
-                ApplyRescheduledSurveyForCompletedCallsAI = ISNULL(@ApplyRescheduledSurveyForCompletedCallsAI, ApplyRescheduledSurveyForCompletedCallsAI),
-                EnableCallRecordingAI = ISNULL(@EnableCallRecordingAI, EnableCallRecordingAI)
-            WHERE cam_id = @cam_id;
-
-            IF (@isCreating > 0 AND @module > -1)
-                EXEC InsertLogAdminGalatea @action = 2, @tableName = ''ccCampsExtend'', @columnNameId = ''cam_id'', @valueId = @cam_id, @userId = @userId, @tableTemp = ''#ccCampsExtendTable'';
-
-            IF (@idArea IS NULL OR @idArea = -1)
-                SET @idArea = (SELECT [IDArea] FROM ccCamps WHERE cam_id = @cam_id);
-
-            IF (@isCreating = 1)
-                DELETE FROM #ccCampsExtendTable WHERE identifierInfo IN (''OUT_WHATS_ASSIGN_SAME_AGENT'') AND dataInfo = 0;
-
-            INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
-            SELECT
-                (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idArea),
-                GETDATE(),
-                (SELECT [Login] FROM ccUsers WHERE User_id = @userId),
-                @operation,
-                @module,
-                CCCE.identifierInfo,
-                CASE
-                    WHEN CCCE.identifierInfo IS NOT NULL AND CCCE.identifierInfo <> '''' THEN
-                        CASE
-                            WHEN CCCE.identifierInfo IN (''SETTINGS_CHANGED_AREAS_ZIP'', ''COMMON_INTERNATIONAL_RECORD_CALLS'', ''EDIT_CALL_DATASET'') THEN
-                                CASE WHEN CCCE.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
-                            WHEN @isCreating = 1 THEN
-                                CASE WHEN CCCE.identifierInfo IN (''OUT_WHATS_ASSIGN_SAME_AGENT'') THEN
-                                    CASE WHEN CCCE.dataInfo = 1 THEN ''COMMON_ENABLED'' END
-                                END
-                            WHEN @isCreating = 2 THEN
-                                CASE WHEN CCCE.identifierInfo IN (''OUT_WHATS_ASSIGN_SAME_AGENT'') THEN
-                                    CASE WHEN CCCE.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
-                                END
-                            WHEN CCCE.identifierInfo IN (''COMMON_USA_RECORD_CALLS'') THEN
-                                CASE
-                                    WHEN CCCE.dataInfo = 1 THEN ''COMMON_USA_RECORD_CALLS_MODE_ALL''
-                                    WHEN CCCE.dataInfo = 2 THEN ''COMMON_USA_RECORD_CALLS_MODE_AUTH''
-                                    WHEN CCCE.dataInfo = 4 THEN ''COMMON_USA_RECORD_CALLS_MODE_NOAUTH''
-                                    ELSE ''COMMON_DISABLED''
-                                END
-                            ELSE CCCE.dataInfo
-                        END
-                    ELSE ''''
-                END,
-                (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @cam_id)
-            FROM #ccCampsExtendTable AS CCCE WHERE CCCE.identifierInfo != @excludeIdentifier;
-
-            EXEC InsertLogAdminGalatea @action = 3, @tableName = ''ccCampsExtend'', @columnNameId = ''cam_id'', @valueId = @cam_id, @userId = @userId;
-
-            IF OBJECT_ID(N''tempdb..#ccCampsExtendTable'') IS NOT NULL DROP TABLE #ccCampsExtendTable;
-
-        END
-        ELSE
-        BEGIN
-            INSERT INTO ccCampsExtend (
-                cam_id,
-                zipCodeSchedule,
-                SimultaneousRecs,
-                RecordCalls,
-                AssignConversationSameAgent,
-                RescheduledSurveyAI,
-                ImmediateSurveyAI,
-                ApplyRescheduledSurveyForCompletedCallsAI,
-                EnableCallRecordingAI
-            )
-            VALUES (
-                ISNULL(@cam_id, 0),
-                ISNULL(@zipCodeSchedule, ''''),
-                ISNULL(@simultaneousRecs, 0),
-                ISNULL(@recordCalls, 0),
-                ISNULL(@assignConversationSameAgent, 0),
-                -- Outbound AI Campaign Special Settings
-                ISNULL(@RescheduledSurveyAI, 0),
-                ISNULL(@ImmediateSurveyAI, 0),
-                ISNULL(@ApplyRescheduledSurveyForCompletedCallsAI, 0),
-                ISNULL(@EnableCallRecordingAI, 1)
-            );
-
-            SET NOCOUNT OFF;
-        END
-        UPDATE ccCamps SET call_record = @recordCalls WHERE cam_id = @cam_id;
-    END'
-	EXEC(@sql)
-
-
-	--------------------- END MAGV #6302 ----------------------------------
+	
     --------------------- BEGIN DEGD ----------------------------------
 
     SET @process = 'Drop procedure ccsp_RIACampsManualCall if exists'
@@ -18056,62 +17644,319 @@ EXEC(@sql);
 
     SET @process = 'CREATE PROCEDURE [ccsp_RIACampsManualCall]'
     SET  @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIACampsManualCall]
-
-    @option int,
-		@UserID int = 0,
-		@onChat int = 0,
-		@campId int = 0
-		AS
-		set nocount on
-		if(@option = 1)
-		begin
-			if (@onChat = 0)
-			begin
-				declare @mod smallint
-				declare @IdArea smallint
-				declare @DialingMode tinyint
-				select @IdArea = IDArea, @DialingMode = DialingMode from ccUsers where User_id = @UserID
-				select @mod = defCampaing from ccRIACat_Areas A
-				where A.IDArea = @IdArea
-				select distinct c.cam_id, c.cam_descripcion, case when ca.cam_id=@mod then 1 else 0 end [isDefault],  g.graphic_id, c.cam_ModoManual,
-				isnull(c.selectRotativeANI, 0) selectRotativeANI
-				, CASE WHEN c.ivrScript <> 0 AND c.callsBySurvey <> 0 THEN 8 ELSE isnull(c.CampType,0) END as CampType,
-				CASE WHEN @DialingMode = 1 THEN (select count(1) from ccoWorkingTable nolock where cam_id = c.cam_id) ELSE 0 END AS countJobs,
-				isnull(c.timesPreview, 0) timesPreview,
-				isnull(ce.zipCodeSchedule, 0) AS zipCodeSchedule
-				from ccCamps c with(index(PK_ccCamps)) join ccCampsAgente ca on c.cam_id=ca.cam_id and c.IDArea = @IdArea
-				join ccRIACampsGraph g ON g.cam_id = c.cam_id
-				left join ccCampsExtend ce ON ce.cam_id = c.cam_id
-				where ca.user_id = @UserID
-					and cam_ModoManual = case when @DialingMode = 1 OR (@DialingMode = 0 AND cam_ModoManual in (1,3)) then cam_ModoManual else -1 end AND CampType = CASE WHEN @DialingMode = 1 THEN 6 ELSE CampType END
-				order by cam_descripcion
-			end
-			else
-			begin
-				select distinct c.cam_id, c.cam_descripcion,  g.graphic_id,  c.cam_ModoManual
-				, isnull(c.CampType,0) as CampType,
-				isnull(ce.zipCodeSchedule, 0) AS zipCodeSchedule
-				from ccCamps c with(index(PK_ccCamps)) join ccCampsAgente ca on c.cam_id=ca.cam_id
-				join ccRIACampsGraph g ON g.cam_id = c.cam_id
-				join ccCampsExtend ce ON ce.cam_id = c.cam_id
-				where ca.user_id = @UserID and manualCallOnChat = 1
-				order by cam_descripcion
-				SET NOCOUNT OFF;
-			end
-		end
-		if(@option = 2)
-		begin
-			declare @aniList int
-			declare @rotativeAniListId int
-			select @aniList = id_anilist, @rotativeAniListId  = rotativeAlgo from ccCamps where cam_id = @campId
-			if @rotativeAniListId >0 begin
-				select telAni from ccRotativeANIListDetail where id_RAniList = @aniList
-			end
-			else begin
-				select top 0 '''' telAni
-			end
-		end'
+@option int,
+@UserID int = 0,
+@onChat int = 0,
+@campId int = 0
+AS
+set nocount on
+if(@option = 1)
+begin
+	if (@onChat = 0)
+	begin
+		declare @mod smallint
+		declare @IdArea smallint
+		declare @DialingMode tinyint
+		select @IdArea = IDArea, @DialingMode = DialingMode from ccUsers where User_id = @UserID
+		select @mod = defCampaing from ccRIACat_Areas A
+		where A.IDArea = @IdArea 
+		select distinct c.cam_id, c.cam_descripcion, case when ca.cam_id=@mod then 1 else 0 end [isDefault],  g.graphic_id, c.cam_ModoManual, 
+		CASE WHEN isnull(ce.ManualCallANIMode, 0) = 2 THEN 1 ELSE 0 END as selectRotativeANI
+		, CASE WHEN c.ivrScript <> 0 AND c.callsBySurvey <> 0 THEN 8 ELSE isnull(c.CampType,0) END as CampType,
+		CASE WHEN @DialingMode = 1 THEN (select count(1) from ccoWorkingTable nolock where cam_id = c.cam_id) ELSE 0 END AS countJobs,
+		isnull(c.timesPreview, 0) timesPreview,
+		isnull(ce.zipCodeSchedule, 0) AS zipCodeSchedule,
+		ISNULL(rotativeAlgorithmManual,0) as ManualCallAniAlgorithm
+		from ccCamps c with(index(PK_ccCamps)) join ccCampsAgente ca on c.cam_id=ca.cam_id and c.IDArea = @IdArea
+		join ccRIACampsGraph g ON g.cam_id = c.cam_id
+		left join ccCampsExtend ce ON ce.cam_id = c.cam_id
+		where ca.user_id = @UserID  
+			and cam_ModoManual = case when @DialingMode = 1 OR (@DialingMode = 0 AND cam_ModoManual in (1,3)) then cam_ModoManual else -1 end AND CampType = CASE WHEN @DialingMode = 1 THEN 6 ELSE CampType END
+		order by cam_descripcion
+	end
+	else 
+	begin 
+		select distinct c.cam_id, c.cam_descripcion,  g.graphic_id,  c.cam_ModoManual
+		, isnull(c.CampType,0) as CampType,
+		isnull(ce.zipCodeSchedule, 0) AS zipCodeSchedule
+		from ccCamps c with(index(PK_ccCamps)) join ccCampsAgente ca on c.cam_id=ca.cam_id
+		join ccRIACampsGraph g ON g.cam_id = c.cam_id
+		join ccCampsExtend ce ON ce.cam_id = c.cam_id
+		where ca.user_id = @UserID and manualCallOnChat = 1
+		order by cam_descripcion
+		SET NOCOUNT OFF;
+	end
+end
+if(@option = 2)
+begin
+	declare @aniList int 
+	declare @rotativeAlgorithmManual int
+	select @aniList = idAniListManual, @rotativeAlgorithmManual  = rotativeAlgorithmManual from ccCamps where cam_id = @campId
+	if @rotativeAlgorithmManual > 0 begin
+		select telAni from ccRotativeANIListDetail where id_RAniList = @aniList
+	end
+	else BEGIN
+		if exists(select 1 from ccEstadosAni where id_AniList = @aniList and telAni != '''' ) BEGIN
+			select telAni from ccEstadosAni where id_AniList = @aniList and telAni != ''''
+		END
+		ELSE BEGIN
+			select top 0 '''' telAni 
+		END
+	END			
+end
+'
 		exec (@sql);
+
+	SET @process = 'KR234005 drop store procedure ccsp_GalateaGetOutboundConfiguration'
+	SET @sql = N'
+    If Exists (Select 1 From sys.procedures Where name = N''ccsp_GalateaGetOutboundConfiguration'')
+        Begin
+            DROP PROCEDURE ccsp_GalateaGetOutboundConfiguration
+        End';
+	EXEC(@sql);
+
+	SET @process = 'KR234005 create store procedure ccsp_GalateaGetOutboundConfiguration'
+	SET @sql = N'    ALTER PROCEDURE [dbo].[ccsp_GalateaGetOutboundConfiguration]
+    @adminID INT
+    ,@campID INT
+    AS
+    BEGIN
+
+        DECLARE @AllCampaigns TABLE (
+        cam_id SMALLINT
+        ,cam_Descripcion VARCHAR(60)
+        ,cam_tNotas SMALLINT
+        ,cam_ocupado SMALLINT
+        ,cam_noInt_ocupado SMALLINT
+        ,cam_inter_ocupado SMALLINT
+        ,cam_nocontesto SMALLINT
+        ,cam_noInt_nocontesto SMALLINT
+        ,cam_inter_nocontesto SMALLINT
+        ,cam_fax SMALLINT
+        ,cam_noInt_fax SMALLINT
+        ,cam_inter_fax SMALLINT
+        ,cam_modomanual SMALLINT
+        ,ANI VARCHAR(15)
+        ,cam_ShowCalifWnd BIT
+        ,cam_StartTimerOnHangUp BIT
+        ,editableCallKey BIT
+        ,cam_tNoContesta SMALLINT
+        ,iTipoDial SMALLINT
+        ,detectAnswerMachine SMALLINT
+        ,detectVoiceMail SMALLINT
+        ,compliance SMALLINT
+        ,cam_inter_graba SMALLINT
+        ,cam_noint_graba SMALLINT
+        ,progDial SMALLINT
+        ,excCallBack SMALLINT
+        ,dialOrder SMALLINT
+        ,dialPrefix VARCHAR(10)
+        ,dialPrefixMan VARCHAR(10)
+        ,dialPrefixXfe VARCHAR(10)
+        ,listenManualCall BIT
+        ,stopRecording BIT
+        ,abandonCallback BIT
+        ,frame SMALLINT
+        ,t_autoCB SMALLINT
+        ,id_anilist INT
+        ,tDialonWrapUp SMALLINT
+        ,viewMode TINYINT
+        ,queSize SMALLINT
+        ,DNCScrub INT
+        ,callerIdDesc VARCHAR(15)
+        ,timeZoneRule INT
+        ,callsBySurvey INT
+        ,ivrScript INT
+        ,surveyPctg INT
+        ,call_record SMALLINT
+        ,startStopRecording BIT
+        ,leaveRecMessage BIT
+        ,manualCallOnChat BIT
+        ,callBackSurveyAgent BIT
+        ,callBackSurveyClient BIT
+        ,isRelationSurvey BIT
+        ,funcEspDtmf INT
+        ,sipHdrFormat VARCHAR(255)
+        ,cam_inter_cancelled SMALLINT
+        ,prefijo VARCHAR(40)
+        ,enbleprefix BIT
+        ,exitAssisted BIT
+        ,previewDiscard BIT
+        ,CampType INT
+        ,conexionInfo VARCHAR(50)
+        ,connUser VARCHAR(15)
+        ,closeConversationTime INT
+        ,answerTimeoutClient INT
+        ,allowFileAttachments BIT
+        ,selectRotativeANI INT
+        ,rotativeAlgo TINYINT
+        ,autoStart BIT
+        ,messagingOrder BIT
+        ,CamTPreview SMALLINT
+        ,TimesPreview TINYINT
+        ,timesDiscard TINYINT
+        ,recordHold BIT
+        ,zipCodeSchedule BIT
+        ,RecordCalls tinyint
+        ,simultaneousRecs smallint
+        ,EditableContactData bit
+        ,internationalDialingPortsAssigned bit
+        ,AssignConversationSameAgent bit
+        ,maxLimitQueueConversations SMALLINT
+        ,MaxDaysPerWAConvo SMALLINT
+        ,RecordIvr BIT
+        ,CamCanceled INT
+        ,surveyCamId int
+        -- Outbound AI Campaign Special Settings
+        ,RescheduledSurveyAI BIT
+        ,ImmediateSurveyAI BIT
+        ,ApplyRescheduledSurveyForCompletedCallsAI BIT
+        ,EnableCallRecordingAI BIT
+		-- Manual Rotation Dialing Configurations
+		,rotativeAlgorithmManual SMALLINT
+		,idAniListManual SMALLINT
+		,ManualCallANIMode SMALLINT
+        )
+        DECLARE @numbers VARCHAR(max)
+
+        SELECT @numbers = COALESCE(@numbers + '','', '''')+ number
+        FROM ccWhatsAppNumbers
+        WHERE camp_id = 0
+        AND STATUS = 1
+
+        SELECT @numbers = COALESCE(@numbers + '','', '''')+ number
+        FROM ccMetaWhatsAppNumbers
+        WHERE Cam_Id = 0 or Cam_Id is null
+        AND STATUS = 1
+
+        INSERT INTO @AllCampaigns
+        EXEC ccsp_RIAConfCamp @adminID
+        ,@campID
+
+        -- consulta para extraer las variables del script
+        DECLARE @ScriptVariables NVARCHAR(MAX);
+        WITH RecursiveExtraction AS (
+            SELECT
+                CAST(SUBSTRING(scriptAgent, CHARINDEX(''{{'', scriptAgent) + 2,
+                CHARINDEX(''}}'', scriptAgent) - CHARINDEX(''{{'', scriptAgent) - 2) AS VARCHAR(MAX)) AS Variable,
+                CAST(STUFF(scriptAgent, CHARINDEX(''{{'', scriptAgent),
+                CHARINDEX(''}}'', scriptAgent) - CHARINDEX(''{{'', scriptAgent) + 2, '''') AS VARCHAR(MAX)) AS RemainingText
+            FROM dbo.ccVirtualAgent
+            WHERE CHARINDEX(''{{'', scriptAgent) > 0
+            AND idCampaign = @campID AND campType = 1
+
+            UNION ALL
+
+            SELECT
+                CAST(SUBSTRING(RemainingText, CHARINDEX(''{{'', RemainingText) + 2,
+                CHARINDEX(''}}'', RemainingText) - CHARINDEX(''{{'', RemainingText) - 2) AS VARCHAR(MAX)) AS Variable,
+                CAST(STUFF(RemainingText, CHARINDEX(''{{'', RemainingText),
+                CHARINDEX(''}}'', RemainingText) - CHARINDEX(''{{'', RemainingText) + 2, '''') AS VARCHAR(MAX)) AS RemainingText
+            FROM RecursiveExtraction
+            WHERE CHARINDEX(''{{'', RemainingText) > 0
+        )
+        SELECT @ScriptVariables = STUFF((
+            SELECT '', '' + Variable
+            FROM RecursiveExtraction
+            FOR XML PATH(''''), TYPE).value(''.'', ''NVARCHAR(MAX)''), 1, 2, '''');
+
+        SELECT
+        dialPrefixMan DialPrefixMan
+        ,dialPrefixXfe DialPrefixXfe
+        ,listenManualCall ListenManualCall
+        ,stopRecording StopRecording
+        ,abandonCallback AbandonCallBack
+        ,t_autoCB AutoCB
+        ,id_anilist IdIstANI
+        ,tDialonWrapUp TDialOnWrapup
+        ,queSize Quesize
+        ,DNCScrub
+        ,callerIdDesc CallerIdDesc
+        ,timeZoneRule TimeZoneRule
+        ,callsBySurvey CallsBySurvey
+        ,ivrScript IvrScript
+        ,surveyPctg SurveyPctg
+        ,call_record CallRecord
+        ,startStopRecording StartStopRecording
+        ,leaveRecMessage LeaveRecMessage
+        ,manualCallOnChat ManualCallOnChat
+        ,callBackSurveyClient CallBackSurveyClient
+        ,callBackSurveyAgent CallBackSurveyAgent
+        ,funcEspDtmf FuncEspDtmf
+        ,sipHdrFormat SipHdrsCfg
+        ,dialPrefix DialPrefix
+        ,prefijo Prefix
+        ,dialOrder DialOrder
+        ,progDial ProgDial
+        ,cam_Descripcion CamDescription
+        ,cam_tNotas CamTnotas
+        ,cam_ocupado CamBusy
+        ,cam_noInt_ocupado CamNoIntBusy
+        ,cam_inter_ocupado CamInterBusy
+        ,cam_nocontesto CamNoAnswer
+        ,cam_noInt_nocontesto CamNoIntNoAnswer
+        ,cam_inter_nocontesto CamInterNoAnswer
+        ,(cam_inter_cancelled / 60) CamInterCancelled
+        ,cam_fax CamFax
+        ,cam_noInt_fax CamNoIntFax
+        ,cam_inter_fax CamInterFax
+        ,cam_modomanual CamModoManual
+        ,ANI
+        ,cam_StartTimerOnHangUp CamStartTimerOnHangUp
+        ,editableCallKey EditableCallKey
+        ,cam_tNoContesta CamTNoAnswer
+        ,iTipoDial CamIntensiveDialing
+        ,detectAnswerMachine DetectAnswerMachine
+        ,detectVoiceMail DetectVoiceMail
+        ,compliance Compliance
+        ,cam_inter_graba CamInterRecord
+        ,cam_noint_graba CamNoIntRecord
+        ,excCallBack ExcCallBack
+        ,cam_ShowCalifWnd CamShowCalifWnd
+        ,frame Frame
+        ,exitAssisted ExitAssistedDialMode
+        ,previewDiscard PreviewDiscard
+        ,CampType
+        ,conexionInfo ConexionInfo
+        ,connUser ConnUser
+        ,closeConversationTime CloseConversationTime
+        ,answerTimeoutClient MUTimeOutClient
+        ,allowFileAttachments AllowFileAttachments
+        ,CamTPreview
+        ,CAST(TimesPreview AS SMALLINT) TimesPreview
+        ,@numbers AS FreeNumbers
+        ,selectRotativeANI SelectRotativeANIManualCall
+        ,rotativeAlgo RotativeAlgo
+        ,autoStart AutoStart
+        ,messagingOrder MessagingOrder
+        ,timesDiscard TimesDiscard
+        ,recordHold RecordHold
+        ,zipCodeSchedule ZipCodeSchedule
+        ,RecordCalls RecordCalls
+        ,simultaneousRecs SimultaneousRecs
+        ,EditableContactData EditableContactData
+        ,internationalDialingPortsAssigned internationalDialingPortsAssigned
+        ,AssignConversationSameAgent AssignConversationSameAgent
+        ,maxLimitQueueConversations MaxLimitQueueConversations
+        ,MaxDaysPerWAConvo DaysVisualConversationWhatsApp
+        ,RecordIvr
+        ,ISNULL(CamCanceled, 0) CamCanceled
+        ,surveyCamId SurveyCamId
+        -- Outbound AI Campaign Special Settings
+        ,RescheduledSurveyAI
+        ,ImmediateSurveyAI
+        ,ApplyRescheduledSurveyForCompletedCallsAI
+        ,EnableCallRecordingAI
+		-- Manual Rotation Dialing Configurations
+		,ISNULL(rotativeAlgorithmManual, 4) RotativeAlgorithmManual
+		,idAniListManual IdAniListManual
+		,ManualCallANIMode ManualCallANIMode
+        ,@ScriptVariables AS ScriptVariables
+        FROM @AllCampaigns
+        WHERE cam_id = @campID
+    END
+';
+	EXEC(@sql);
 
     SET @process = 'Drop procedure ccsp_Limpia if exists'
     SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_Limpia'')
@@ -18620,6 +18465,242 @@ EXEC(@sql);
 	exec (@sql);
 
     --------------------- END DEGD ------------------------------
+
+	--------------------- BEGIN MAGV #6302 y MACL - KM47001 ----------------------------------
+	 SET @process = '#6302 Drop procedure ccsp_RIAUpdateCamConfigExtend if exists'
+     SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_RIAUpdateCamConfigExtend'')
+            BEGIN
+                DROP PROCEDURE ccsp_RIAUpdateCamConfigExtend;
+            END'
+     EXEC(@sql);
+
+	 SET @process = '#6302 CREATE PROCEDURE [ccsp_RIAUpdateCamConfigExtend]'
+	 SET  @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIAUpdateCamConfigExtend]
+        @cam_id SMALLINT,
+        @zipCodeSchedule BIT = NULL,
+        @userId SMALLINT = NULL,
+        @idArea SMALLINT = NULL,
+        @isCreating SMALLINT = NULL,
+        @simultaneousRecs SMALLINT = NULL,
+        @module INT = -1,
+        @recordCalls TINYINT = 1,
+        @editableContactData BIT = 1,
+        @assignConversationSameAgent BIT = 0,
+        @RescheduledSurveyAI BIT = 0,
+        @ImmediateSurveyAI BIT = 0,
+        @ApplyRescheduledSurveyForCompletedCallsAI BIT = 0,
+        @EnableCallRecordingAI BIT = 1,
+	@ManualCallANIMode SMALLINT = 0
+    AS
+    BEGIN
+        SET NOCOUNT ON;
+        DECLARE @country INT = (SELECT valor FROM ccSettings WHERE setting_id = 104);
+        DECLARE @excludeIdentifier VARCHAR(255) = CASE WHEN @country = 4 THEN ''''COMMON_INTERNATIONAL_RECORD_CALLS'''' ELSE ''''COMMON_USA_RECORD_CALLS'''' END;
+
+        IF EXISTS (SELECT * FROM ccCampsExtend WHERE cam_id = @cam_id)
+        BEGIN
+            EXEC InsertLogAdminGalatea @action = 1, @tableName = ''''ccCampsExtend'''', @columnNameId = ''''cam_id'''', @valueId = @cam_id, @userId = @userId;
+
+            IF OBJECT_ID(N''''tempdb..#ccCampsExtendTable'''') IS NOT NULL DROP TABLE #ccCampsExtendTable;
+
+            CREATE TABLE #ccCampsExtendTable
+            (
+                columnInfo VARCHAR(255),
+                dataInfo VARCHAR(255),
+                identifierInfo VARCHAR(255)
+            );
+
+            DECLARE @Camptype INT = (SELECT [CampType] FROM ccCamps WHERE cam_id = @cam_id);
+            DECLARE @operation SMALLINT = CASE
+                WHEN @isCreating = 1 THEN
+                    CASE
+                        WHEN @Camptype = 6 THEN 44
+                        WHEN @Camptype = 5 THEN 46
+                        WHEN @Camptype = 4 OR @Camptype = 9 THEN 48 -- TODO: Delete MediaType 4
+                        WHEN @Camptype = 7 THEN 50
+                        ELSE 42
+                    END
+                ELSE
+                    CASE
+                        WHEN @Camptype = 6 THEN 55
+                        WHEN @Camptype = 5 THEN 56
+                        WHEN @Camptype = 4 OR @Camptype = 9 THEN 57 -- TODO: Delete MediaType 4
+                        WHEN @Camptype = 7 THEN 58
+                        ELSE 54
+                    END
+                END;
+
+            UPDATE ccCampsExtend
+            SET
+                zipCodeSchedule = ISNULL(@zipCodeSchedule, zipCodeSchedule),
+                simultaneousRecs = ISNULL(@simultaneousRecs, simultaneousRecs),
+                RecordCalls = ISNULL(@recordCalls, RecordCalls),
+                EditableContactData = ISNULL(@editableContactData, EditableContactData),
+                AssignConversationSameAgent = ISNULL(@assignConversationSameAgent, AssignConversationSameAgent),
+                -- Outbound AI Campaign Special Settings
+                RescheduledSurveyAI = ISNULL(@RescheduledSurveyAI, RescheduledSurveyAI),
+                ImmediateSurveyAI = ISNULL(@ImmediateSurveyAI, ImmediateSurveyAI),
+                ApplyRescheduledSurveyForCompletedCallsAI = ISNULL(@ApplyRescheduledSurveyForCompletedCallsAI, ApplyRescheduledSurveyForCompletedCallsAI),
+                EnableCallRecordingAI = ISNULL(@EnableCallRecordingAI, EnableCallRecordingAI),
+		ManualCallANIMode = ISNULL(@ManualCallANIMode, ManualCallANIMode)
+            WHERE cam_id = @cam_id;
+
+            IF (@isCreating > 0 AND @module > -1)
+                EXEC InsertLogAdminGalatea @action = 2, @tableName = ''''ccCampsExtend'''', @columnNameId = ''''cam_id'''', @valueId = @cam_id, @userId = @userId, @tableTemp = ''''#ccCampsExtendTable'''';
+
+            IF (@idArea IS NULL OR @idArea = -1)
+                SET @idArea = (SELECT [IDArea] FROM ccCamps WHERE cam_id = @cam_id);
+
+            IF (@isCreating = 1) BEGIN
+                DELETE FROM #ccCampsExtendTable WHERE identifierInfo IN (''''OUT_WHATS_ASSIGN_SAME_AGENT'''') AND dataInfo = 0;
+		DELETE FROM #ccCampsExtendTable WHERE identifierInfo IN (''''OUT_ANI_MODE_MANUAL'''') 
+	    END
+            INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+            SELECT
+                (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idArea),
+                GETDATE(),
+                (SELECT [Login] FROM ccUsers WHERE User_id = @userId),
+                @operation,
+                @module,
+                CCCE.identifierInfo,
+                CASE
+                    WHEN CCCE.identifierInfo IS NOT NULL AND CCCE.identifierInfo <> '''''''' THEN
+                        CASE
+			    WHEN CCCE.identifierInfo = ''''OUT_MANUAL_CALL_ANI_MODE'''' THEN
+				CASE
+					WHEN @ManualCallANIMode = 0 THEN ''''OUT_MANUAL_CALL_ANI_MODE_NONE''''
+					WHEN @ManualCallANIMode = 1 THEN ''''OUT_MANUAL_CALL_ANI_MODE_SYSTEM''''
+					WHEN @ManualCallANIMode = 2 THEN ''''OUT_MANUAL_CALL_ANI_MODE_AGENT''''
+					ELSE ''''''''
+				END
+                            WHEN CCCE.identifierInfo IN (''''SETTINGS_CHANGED_AREAS_ZIP'''', ''''COMMON_INTERNATIONAL_RECORD_CALLS'''', ''''EDIT_CALL_DATASET'''') THEN
+                                CASE WHEN CCCE.dataInfo = 1 THEN ''''COMMON_ENABLED'''' ELSE ''''COMMON_DISABLED'''' END
+                            WHEN @isCreating = 1 THEN
+                                CASE WHEN CCCE.identifierInfo IN (''''OUT_WHATS_ASSIGN_SAME_AGENT'''') THEN
+                                    CASE WHEN CCCE.dataInfo = 1 THEN ''''COMMON_ENABLED'''' END
+                                END
+                            WHEN @isCreating = 2 THEN
+                                CASE WHEN CCCE.identifierInfo IN (''''OUT_WHATS_ASSIGN_SAME_AGENT'''') THEN
+                                    CASE WHEN CCCE.dataInfo = 1 THEN ''''COMMON_ENABLED'''' ELSE ''''COMMON_DISABLED'''' END
+                                END
+                            WHEN CCCE.identifierInfo IN (''''COMMON_USA_RECORD_CALLS'''') THEN
+                                CASE
+                                    WHEN CCCE.dataInfo = 1 THEN ''''COMMON_USA_RECORD_CALLS_MODE_ALL''''
+                                    WHEN CCCE.dataInfo = 2 THEN ''''COMMON_USA_RECORD_CALLS_MODE_AUTH''''
+                                    WHEN CCCE.dataInfo = 4 THEN ''''COMMON_USA_RECORD_CALLS_MODE_NOAUTH''''
+                                    ELSE ''''COMMON_DISABLED''''
+                                END
+                            ELSE CCCE.dataInfo
+                        END
+                    ELSE ''''''''
+                END,
+                (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @cam_id)
+            FROM #ccCampsExtendTable AS CCCE WHERE CCCE.identifierInfo != @excludeIdentifier;
+
+            EXEC InsertLogAdminGalatea @action = 3, @tableName = ''''ccCampsExtend'''', @columnNameId = ''''cam_id'''', @valueId = @cam_id, @userId = @userId;
+
+            IF OBJECT_ID(N''''tempdb..#ccCampsExtendTable'''') IS NOT NULL DROP TABLE #ccCampsExtendTable;
+
+        END
+        ELSE
+        BEGIN
+            INSERT INTO ccCampsExtend (
+                cam_id,
+                zipCodeSchedule,
+                SimultaneousRecs,
+                RecordCalls,
+                AssignConversationSameAgent,
+                RescheduledSurveyAI,
+                ImmediateSurveyAI,
+                ApplyRescheduledSurveyForCompletedCallsAI,
+                EnableCallRecordingAI,
+		ManualCallANIMode
+            )
+            VALUES (
+                ISNULL(@cam_id, 0),
+                ISNULL(@zipCodeSchedule, ''''''''),
+                ISNULL(@simultaneousRecs, 0),
+                ISNULL(@recordCalls, 0),
+                ISNULL(@assignConversationSameAgent, 0),
+                -- Outbound AI Campaign Special Settings
+                ISNULL(@RescheduledSurveyAI, 0),
+                ISNULL(@ImmediateSurveyAI, 0),
+                ISNULL(@ApplyRescheduledSurveyForCompletedCallsAI, 0),
+                ISNULL(@EnableCallRecordingAI, 1),
+		ISNULL(@ManualCallANIMode, 0)
+            );
+
+            SET NOCOUNT OFF;
+        END
+        UPDATE ccCamps SET call_record = @recordCalls WHERE cam_id = @cam_id;
+    END
+'
+	EXEC(@sql)
+
+
+	--------------------- END MAGV #6302 ----------------------------------
+
+	------------------------ BEGIN Marco Antonio Díaz KR234006------------------------
+       SET @process = 'KR234006 Drop procedure ccsp_ManualCallGetRotativeAni if exists'
+       SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_ManualCallGetRotativeAni'')
+                    BEGIN
+                        DROP PROCEDURE ccsp_ManualCallGetRotativeAni;
+                    END'
+        EXEC(@sql);
+
+        SET @process = 'KR234006 procedure to call rotation from the agent'
+        SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_ManualCallGetRotativeAni]
+@phones VARCHAR(MAX),
+@camId INT
+AS
+set nocount on
+DECLARE @ManualCallANIMode SMALLINT
+
+SELECT @ManualCallANIMode = ISNULL(ManualCallANIMode, 0) FROM ccCampsExtend WHERE cam_id = @camId;
+
+IF(@ManualCallANIMode > 0) BEGIN
+	DECLARE @aniId INT;
+	DECLARE @rotativeAlgo INT;
+	DECLARE @Anis TABLE(id INT, pid VARCHAR(2), phone VARCHAR(32), ani VARCHAR(32));
+
+	SELECT @aniId = [idAniListManual], @rotativeAlgo = [rotativeAlgorithmManual] FROM ccCamps WHERE cam_id = @camId;
+
+	INSERT @Anis
+	EXEC ccsp_DLRGetRotativeANI @callout_id=0, @phones=@phones, @aniList=@aniId,@algo=@rotativeAlgo;
+
+	IF(SELECT COUNT(*) FROM @Anis) > 0 BEGIN
+		SELECT TOP 1 ani FROM @Anis
+	END ELSE IF EXISTS (SELECT valor FROM ccSettings WHERE setting_id = 177) BEGIN
+		SELECT * FROM ccSettings WHERE setting_id = 177
+	END ELSE BEGIN
+		SELECT ''''
+	END
+END
+ELSE BEGIN
+	SELECT ''''
+END
+set nocount off'
+        EXEC(@sql);
+
+       SET @process = 'KR234006 Drop procedure ccsp_ValidateManualRotation if exists'
+       SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_ValidateManualRotation'')
+                BEGIN
+                    DROP PROCEDURE ccsp_ValidateManualRotation;
+                END'
+          EXEC(@sql);
+
+          SET @process = 'KR234006 procedure to validate manual rotation'
+          SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_ValidateManualRotation]
+                @camId INT
+                AS
+                set nocount on
+
+                SELECT TOP 1 ISNULL(selectRotationManualDialing, 0) FROM ccCamps WHERE cam_id = @camId;
+
+                set nocount off'
+EXEC(@sql);
+    ------------------------ END Marco Antonio Díaz KR234006--------------------------
+
     --------------------- BEGIN UGMV ----------------------------
     SET @process = '#5690 Actualizacion ccStatusLLamada para traduccion en reportes de llamada'
 

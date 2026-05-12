@@ -18495,13 +18495,13 @@ end
     BEGIN
         SET NOCOUNT ON;
         DECLARE @country INT = (SELECT valor FROM ccSettings WHERE setting_id = 104);
-        DECLARE @excludeIdentifier VARCHAR(255) = CASE WHEN @country = 4 THEN ''''COMMON_INTERNATIONAL_RECORD_CALLS'''' ELSE ''''COMMON_USA_RECORD_CALLS'''' END;
+        DECLARE @excludeIdentifier VARCHAR(255) = CASE WHEN @country = 4 THEN ''COMMON_INTERNATIONAL_RECORD_CALLS'' ELSE ''COMMON_USA_RECORD_CALLS'' END;
 
         IF EXISTS (SELECT * FROM ccCampsExtend WHERE cam_id = @cam_id)
         BEGIN
-            EXEC InsertLogAdminGalatea @action = 1, @tableName = ''''ccCampsExtend'''', @columnNameId = ''''cam_id'''', @valueId = @cam_id, @userId = @userId;
+            EXEC InsertLogAdminGalatea @action = 1, @tableName = ''ccCampsExtend'', @columnNameId = ''cam_id'', @valueId = @cam_id, @userId = @userId;
 
-            IF OBJECT_ID(N''''tempdb..#ccCampsExtendTable'''') IS NOT NULL DROP TABLE #ccCampsExtendTable;
+            IF OBJECT_ID(N''tempdb..#ccCampsExtendTable'') IS NOT NULL DROP TABLE #ccCampsExtendTable;
 
             CREATE TABLE #ccCampsExtendTable
             (
@@ -18546,14 +18546,14 @@ end
             WHERE cam_id = @cam_id;
 
             IF (@isCreating > 0 AND @module > -1)
-                EXEC InsertLogAdminGalatea @action = 2, @tableName = ''''ccCampsExtend'''', @columnNameId = ''''cam_id'''', @valueId = @cam_id, @userId = @userId, @tableTemp = ''''#ccCampsExtendTable'''';
+                EXEC InsertLogAdminGalatea @action = 2, @tableName = ''ccCampsExtend'', @columnNameId = ''cam_id'', @valueId = @cam_id, @userId = @userId, @tableTemp = ''#ccCampsExtendTable'';
 
             IF (@idArea IS NULL OR @idArea = -1)
                 SET @idArea = (SELECT [IDArea] FROM ccCamps WHERE cam_id = @cam_id);
 
             IF (@isCreating = 1) BEGIN
-                DELETE FROM #ccCampsExtendTable WHERE identifierInfo IN (''''OUT_WHATS_ASSIGN_SAME_AGENT'''') AND dataInfo = 0;
-		DELETE FROM #ccCampsExtendTable WHERE identifierInfo IN (''''OUT_ANI_MODE_MANUAL'''') 
+                DELETE FROM #ccCampsExtendTable WHERE identifierInfo IN (''OUT_WHATS_ASSIGN_SAME_AGENT'') AND dataInfo = 0;
+		DELETE FROM #ccCampsExtendTable WHERE identifierInfo IN (''OUT_ANI_MODE_MANUAL'') 
 	    END
             INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
             SELECT
@@ -18564,42 +18564,42 @@ end
                 @module,
                 CCCE.identifierInfo,
                 CASE
-                    WHEN CCCE.identifierInfo IS NOT NULL AND CCCE.identifierInfo <> '''''''' THEN
+                    WHEN CCCE.identifierInfo IS NOT NULL AND CCCE.identifierInfo <> '''' THEN
                         CASE
-			    WHEN CCCE.identifierInfo = ''''OUT_MANUAL_CALL_ANI_MODE'''' THEN
+			    WHEN CCCE.identifierInfo = ''OUT_MANUAL_CALL_ANI_MODE'' THEN
 				CASE
-					WHEN @ManualCallANIMode = 0 THEN ''''OUT_MANUAL_CALL_ANI_MODE_NONE''''
-					WHEN @ManualCallANIMode = 1 THEN ''''OUT_MANUAL_CALL_ANI_MODE_SYSTEM''''
-					WHEN @ManualCallANIMode = 2 THEN ''''OUT_MANUAL_CALL_ANI_MODE_AGENT''''
-					ELSE ''''''''
+					WHEN @ManualCallANIMode = 0 THEN ''OUT_MANUAL_CALL_ANI_MODE_NONE''
+					WHEN @ManualCallANIMode = 1 THEN ''OUT_MANUAL_CALL_ANI_MODE_SYSTEM''
+					WHEN @ManualCallANIMode = 2 THEN ''OUT_MANUAL_CALL_ANI_MODE_AGENT''
+					ELSE ''''
 				END
-                            WHEN CCCE.identifierInfo IN (''''SETTINGS_CHANGED_AREAS_ZIP'''', ''''COMMON_INTERNATIONAL_RECORD_CALLS'''', ''''EDIT_CALL_DATASET'''') THEN
-                                CASE WHEN CCCE.dataInfo = 1 THEN ''''COMMON_ENABLED'''' ELSE ''''COMMON_DISABLED'''' END
+                            WHEN CCCE.identifierInfo IN (''SETTINGS_CHANGED_AREAS_ZIP'', ''COMMON_INTERNATIONAL_RECORD_CALLS'', ''EDIT_CALL_DATASET'') THEN
+                                CASE WHEN CCCE.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
                             WHEN @isCreating = 1 THEN
-                                CASE WHEN CCCE.identifierInfo IN (''''OUT_WHATS_ASSIGN_SAME_AGENT'''') THEN
-                                    CASE WHEN CCCE.dataInfo = 1 THEN ''''COMMON_ENABLED'''' END
+                                CASE WHEN CCCE.identifierInfo IN (''OUT_WHATS_ASSIGN_SAME_AGENT'') THEN
+                                    CASE WHEN CCCE.dataInfo = 1 THEN ''COMMON_ENABLED'' END
                                 END
                             WHEN @isCreating = 2 THEN
-                                CASE WHEN CCCE.identifierInfo IN (''''OUT_WHATS_ASSIGN_SAME_AGENT'''') THEN
-                                    CASE WHEN CCCE.dataInfo = 1 THEN ''''COMMON_ENABLED'''' ELSE ''''COMMON_DISABLED'''' END
+                                CASE WHEN CCCE.identifierInfo IN (''OUT_WHATS_ASSIGN_SAME_AGENT'') THEN
+                                    CASE WHEN CCCE.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
                                 END
-                            WHEN CCCE.identifierInfo IN (''''COMMON_USA_RECORD_CALLS'''') THEN
+                            WHEN CCCE.identifierInfo IN (''COMMON_USA_RECORD_CALLS'') THEN
                                 CASE
-                                    WHEN CCCE.dataInfo = 1 THEN ''''COMMON_USA_RECORD_CALLS_MODE_ALL''''
-                                    WHEN CCCE.dataInfo = 2 THEN ''''COMMON_USA_RECORD_CALLS_MODE_AUTH''''
-                                    WHEN CCCE.dataInfo = 4 THEN ''''COMMON_USA_RECORD_CALLS_MODE_NOAUTH''''
-                                    ELSE ''''COMMON_DISABLED''''
+                                    WHEN CCCE.dataInfo = 1 THEN ''COMMON_USA_RECORD_CALLS_MODE_ALL''
+                                    WHEN CCCE.dataInfo = 2 THEN ''COMMON_USA_RECORD_CALLS_MODE_AUTH''
+                                    WHEN CCCE.dataInfo = 4 THEN ''COMMON_USA_RECORD_CALLS_MODE_NOAUTH''
+                                    ELSE ''COMMON_DISABLED''
                                 END
                             ELSE CCCE.dataInfo
                         END
-                    ELSE ''''''''
+                    ELSE ''''
                 END,
                 (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @cam_id)
             FROM #ccCampsExtendTable AS CCCE WHERE CCCE.identifierInfo != @excludeIdentifier;
 
-            EXEC InsertLogAdminGalatea @action = 3, @tableName = ''''ccCampsExtend'''', @columnNameId = ''''cam_id'''', @valueId = @cam_id, @userId = @userId;
+            EXEC InsertLogAdminGalatea @action = 3, @tableName = ''ccCampsExtend'', @columnNameId = ''cam_id'', @valueId = @cam_id, @userId = @userId;
 
-            IF OBJECT_ID(N''''tempdb..#ccCampsExtendTable'''') IS NOT NULL DROP TABLE #ccCampsExtendTable;
+            IF OBJECT_ID(N''tempdb..#ccCampsExtendTable'') IS NOT NULL DROP TABLE #ccCampsExtendTable;
 
         END
         ELSE
@@ -18618,7 +18618,7 @@ end
             )
             VALUES (
                 ISNULL(@cam_id, 0),
-                ISNULL(@zipCodeSchedule, ''''''''),
+                ISNULL(@zipCodeSchedule, ''''),
                 ISNULL(@simultaneousRecs, 0),
                 ISNULL(@recordCalls, 0),
                 ISNULL(@assignConversationSameAgent, 0),

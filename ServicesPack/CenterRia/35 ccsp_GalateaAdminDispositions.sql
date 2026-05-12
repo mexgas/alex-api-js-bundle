@@ -277,10 +277,7 @@ end
                         return(0)
                     end
 
-                    select @calif_id = isnull(max(calif_id), 0) + 1 from cctipoCalif_IA
-
                     insert into cctipoCalif_IA (
-                        calif_id,
                         Name_cal,
                         Description_cal,
                         CanReprogram,
@@ -301,7 +298,6 @@ end
                     )
                     output inserted.calif_id into @inserted
                     values (
-                        @calif_id,
                         @Name_cal,
                         @Description_cal,
                         isnull(@canReprogram, 0),
@@ -317,7 +313,7 @@ end
                         isnull(@AplExtDate, 0),
                         @ExtDescription,
                         isnull(@AplBlackList, 0),
-                        1,                                  
+                        1,
                         isnull(@DirectoryNumberFlag, 1)
                     )
 

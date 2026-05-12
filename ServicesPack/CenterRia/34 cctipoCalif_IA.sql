@@ -2,7 +2,7 @@ USE [CCenterRIA]
 
 CREATE TABLE cctipoCalif_IA
 	(
-		calif_id smallint NOT NULL,  -- Sin identity
+		calif_id smallint IDENTITY(1,1) NOT NULL,
 		Name_cal varchar(150) NULL,
 		Description_cal varchar(100) NULL,
 		CanReprogram bit DEFAULT 0,

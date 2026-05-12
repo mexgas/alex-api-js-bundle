@@ -131,6 +131,7 @@ set @idInt=@idInt+1
 insert into publicationTableCCenterRIA(publicationName,status) values(N'SpecialAVRS',0)	
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccinbound',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'cctipocalif',@idInt,0)
+insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'cctipoCalif_IA',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccUsers',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccUsers_Consulta',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'cccamps',@idInt,0)
@@ -140,6 +141,9 @@ insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'cc
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccCamps_consulta',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccInbound_consulta',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccVirtualAgent',@idInt,0)
+insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccCallsInDispositionIA',@idInt,0)
+insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccoCallsOutDispositionIA',@idInt,0)
+
 
 
 

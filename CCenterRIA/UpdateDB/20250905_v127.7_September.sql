@@ -73,7 +73,7 @@ END'
 	EXEC(@sql)
 	
 	SET @process = 'KM47001 - Se agregan etiquetas'
-	SET @sql = 'KM47001 -IF NOT EXISTS(select 1 from ccGalateaIdentifiers 
+	SET @sql = 'IF NOT EXISTS(select 1 from ccGalateaIdentifiers 
 where [Description] = ''OUT_MANUAL_CALL_ANI_MODE'')
 BEGIN
 	INSERT INTO ccGalateaIdentifiers([Description], TagEs, TagEn, TagPt) VALUES

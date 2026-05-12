@@ -17143,7 +17143,7 @@ AS
 	EXEC(@sql);
 
 	SET @process= 'KR234005 create store procedure ccsp_RIAUpdateCamConfig'
-	SET @sql ='ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
+	SET @sql ='CREATE PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
     @cam_id smallint,
     @cam_descripcion varchar(40) = null,
     @cam_tnotas smallint = null,
@@ -17716,7 +17716,7 @@ end
 	EXEC(@sql);
 
 	SET @process = 'KR234005 create store procedure ccsp_GalateaGetOutboundConfiguration'
-	SET @sql = N'    ALTER PROCEDURE [dbo].[ccsp_GalateaGetOutboundConfiguration]
+	SET @sql = N'CREATE PROCEDURE [dbo].[ccsp_GalateaGetOutboundConfiguration]
     @adminID INT
     ,@campID INT
     AS

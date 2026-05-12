@@ -17,7 +17,7 @@ IF(@ManualCallANIMode > 0) BEGIN
 	INSERT @Anis
 	EXEC ccsp_DLRGetRotativeANI @callout_id=0, @phones=@phones, @aniList=@aniId,@algo=@rotativeAlgo;
 
-	IF(SELECT COUNT(*) FROM @Anis) > 0 BEGIN
+	IF EXISTS(SELECT 1 FROM @Anis) BEGIN
 		SELECT TOP 1 ani FROM @Anis
 	END ELSE IF EXISTS (SELECT valor FROM ccSettings WHERE setting_id = 177) BEGIN
 		SELECT * FROM ccSettings WHERE setting_id = 177

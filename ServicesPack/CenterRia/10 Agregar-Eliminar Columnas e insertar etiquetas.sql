@@ -23,7 +23,7 @@ IF NOT EXISTS(select 1 from ccGalateaIdentifiers
 where [Description] = 'OUT_MANUAL_CALL_ANI_MODE')
 BEGIN
 	INSERT INTO ccGalateaIdentifiers([Description], TagEs, TagEn, TagPt) VALUES
-	('OUT_MANUAL_CALL_ANI_MODE', 'Asignación de ANI (llamada manual)', 'ANI assignment (manual call)', 'Atribuição de ANI (chamada manual)'),
+	('OUT_MANUAL_CALL_ANI_MODE', 'AsignaciÃ³n de ANI (llamada manual)', 'ANI assignment (manual call)', 'AtribuiÃ§Ã£o de ANI (chamada manual)'),
 	('OUT_MANUAL_CALL_ANI_MODE_SYSTEM', 'Por sistema', 'By system', 'Pelo sistema'),
 	('OUT_MANUAL_CALL_ANI_MODE_AGENT', 'Por agente', 'By agent', 'Pelo agente'),
 	('OUT_MANUAL_CALL_ANI_MODE_NONE', 'Ninguna', 'None', 'Nenhuma')

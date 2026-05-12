@@ -11677,6 +11677,18 @@ SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_CreateNodeMultimedia] @conversationId B
 		END;'
 EXEC(@sql);
 -------------------------------------------------------------- End Bryan ------------------------------------------------------------
+
+------------------------------------------ BEGIN Rod Salazar  ------------------------------
+
+SET @process = 'CW-10215 Drop procedure SaveDispositionsAI'
+	SET @sql = 'IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N''dbo.ccoCallsOutDispositionIA'') AND name = N''name_cal'')
+				BEGIN
+					ALTER TABLE dbo.ccoCallsOutDispositionIA ADD name_cal VARCHAR(150) NULL;         
+				END'
+	EXEC(@sql);
+
+------------------------------------------ END Rod Salazar  ------------------------------
+
 ------------------------------------------ BEGIN MAGV 20250905.0.2   ------------------------------
 SET @process = 'CW-10215 Drop procedure SaveDispositionsAI'
 	SET @sql = 'IF EXISTS (SELECT * FROM sysobjects WHERE name=''SaveDispositionsAI'')
@@ -11705,6 +11717,7 @@ BEGIN
 	DECLARE @cal_telefono varchar(19);
 	DECLARE @inbound_id smallint = NULL;
 	DECLARE @CanReprogram smallint  = null
+	declare @name_cal varchar(150) = '';
 
 	-- Validacion del Status del Setting 289
 	DECLARE @trans_status BIT = NULL;
@@ -11726,18 +11739,20 @@ BEGIN
 
 	IF @action = 1  -- Outbound
 	BEGIN
+		select @name_cal = isnull(Name_cal, ''N/A'') from cctipoCalif_IA where Description_cal = @Qualification
 		IF EXISTS (SELECT 1 FROM ccoCallsOutDispositionIA WHERE call_id = @call_Id)
         BEGIN
             UPDATE ccoCallsOutDispositionIA
             SET Qualification = @Qualification,
+				name_cal = @name_cal,
                 result = @result,
                 Observations = @Observations
             WHERE call_id = @call_Id;
         END
         ELSE
         BEGIN
-            INSERT INTO ccoCallsOutDispositionIA (call_id, Qualification, result, Observations, disposition_id)
-            VALUES (@call_Id, @Qualification, @result, @Observations, @disposition_Id);
+            INSERT INTO ccoCallsOutDispositionIA (call_id, name_cal, Qualification, result, Observations, disposition_id)
+            VALUES (@call_Id, @name_cal, @Qualification, @result, @Observations, @disposition_Id);
         END
 
 		IF EXISTS (SELECT 1 FROM ccTipoCalif WHERE calif_id = @disposition_Id)

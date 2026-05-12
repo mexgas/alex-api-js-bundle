@@ -24918,6 +24918,284 @@ set nocount off
 
 
 	------ END MAGV ----------------------
+    ------------------------------------------ BEGIN Pavel Martinez ---------------------------------------------
+
+SET @process = 'Cambio para las HU KM56000 GalateaAdminPortsManagement'
+SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminPortsManagement]
+@action SMALLINT,
+@dialer_id INT = 0,
+@cam_id SMALLINT = 0,
+@list_dialier_id varchar(max) ='''',
+@user_id SMALLINT = 0
+AS
+SET NOCOUNT ON;
+DECLARE @transtate BIT
+IF @@TRANCOUNT = 0
+BEGIN
+    SET @transtate = 1
+BEGIN TRANSACTION transtate
+END
+BEGIN TRY
+	
+	IF @action IN (3,4) -- activity log
+	BEGIN
+		DECLARE @login VARCHAR(50) = '''',
+				@camp VARCHAR(40) = ''''
+		DECLARE @dialerSource TABLE (dialer_id INT)
+
+		IF @list_dialier_id = ''''
+			INSERT INTO @dialerSource VALUES (@dialer_id)
+		ELSE
+			INSERT INTO @dialerSource
+			SELECT Value FROM fn_RIASplitDelimited(@list_dialier_id, '','')
+			
+		SELECT 
+			@login = cu.Login
+		FROM ccUsers cu
+		WHERE cu.User_id = @user_id
+
+		SELECT 
+			@camp = cc.cam_descripcion
+		FROM ccCamps cc WHERE cc.cam_id = @cam_id
+
+		-- activity log
+		INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+		SELECT
+			''Default'',
+			GETDATE(),
+			@login,
+			CASE WHEN @action = 3 THEN 135 ELSE 136 END,
+			14,
+			cd.Descripcion,
+			'''',
+			@camp
+		FROM ccoDialers cd
+		WHERE cd.dialer_id IN (SELECT dialer_id FROM @dialerSource)
+	END
+
+    IF @action = 1 --return all ports
+    BEGIN
+        SELECT Dialers.dialer_id AS DialerId, Dialers.Descripcion AS PortDescription, Provedor.Descrip AS ProviderDescription, Dialers.Puerto, XferType, DialingType, case when DialingType = 1 then 0 else IdCode end AS DialingCode
+        FROM [CCenterRIA].[dbo].[ccoDialers] AS Dialers INNER JOIN [CCenterRIA].[dbo].[cstoProvedor] AS Provedor 
+        ON Dialers.provedor_id = Provedor.provedor_id
+    END;
+    IF @action = 2 --return ports for camp
+    BEGIN
+        SELECT dialer_id AS DialerId, cam_id AS CampId FROM [CCenterRIA].[dbo].[ccoDialerCamp] ORDER BY cam_id
+    END;
+    IF @action = 3 --insert port
+    BEGIN
+        IF @list_dialier_id = ''''
+        BEGIN
+            IF NOT EXISTS (SELECT dialer_id, cam_id FROM [CCenterRIA].[dbo].[ccoDialerCamp]
+                WHERE dialer_id=@dialer_id AND cam_id=@cam_id)
+            BEGIN
+                INSERT INTO [CCenterRIA].[dbo].[ccoDialerCamp](dialer_id, cam_id) VALUES (@dialer_id, @cam_id)
+            END;
+        END
+        ELSE
+        BEGIN
+			INSERT INTO [CCenterRIA].[dbo].[ccoDialerCamp](dialer_id, cam_id)
+			SELECT dialer_id,@cam_id 
+			FROM ccoDialers 
+			WHERE dialer_id NOT IN (
+				SELECT dialer_id FROM [CCenterRIA].[dbo].[ccoDialerCamp]
+				WHERE dialer_id IN (SELECT dialer_id FROM @dialerSource WHERE dialer_id > 0) 
+				AND cam_id=@cam_id
+			) 
+			AND dialer_id IN (SELECT dialer_id FROM @dialerSource)
+        END;
+    END;
+    IF @action = 4 --delete port
+    BEGIN
+        IF @list_dialier_id = ''''
+		BEGIN
+            DELETE FROM [CCenterRIA].[dbo].[ccoDialerCamp] WITH(ROWLOCK) WHERE cam_id = @cam_id AND dialer_id = @dialer_id
+		END
+        ELSE
+        BEGIN
+            DELETE FROM [CCenterRIA].[dbo].[ccoDialerCamp] WITH(ROWLOCK) 
+			WHERE cam_id = @cam_id AND dialer_id IN (
+				SELECT dialer_id 
+                FROM @dialerSource 
+                WHERE dialer_id > 0
+			)
+        END;
+    END;
+
+    IF @action = 5 --return ports for single camp
+    BEGIN
+        SELECT dialer_id AS DialerId, cam_id AS CampId FROM [CCenterRIA].[dbo].[ccoDialerCamp] WHERE cam_id = @cam_id ORDER BY cam_id
+    END;
+
+    IF @transtate = 1 AND XACT_STATE() = 1
+    BEGIN
+        COMMIT TRANSACTION transtate
+    END;
+END TRY
+BEGIN CATCH
+DECLARE @error INT, @message VARCHAR(4000), @xstate INT;
+SELECT @error = ERROR_NUMBER(), @message = ERROR_MESSAGE(), @xstate = XACT_STATE();
+IF @xstate = -1
+    ROLLBACK;
+IF @xstate = 1
+    ROLLBACK
+IF @xstate = 1
+    ROLLBACK TRANSACTION ccsp_GalateaAdminPortsManagement;
+RAISERROR (''ccsp_GalateaAdminPortsManagement: %d: %s'', 16, 1, @error, @message) ;
+END CATCH;'
+EXEC(@sql)
+
+SET @process = 'Cambio para las HU KM56000 GalateaDialer'
+SET @sql = '    ALTER PROCEDURE [dbo].[ccsp_GalateaDialer]
+    @Description varchar(40)='''',
+    @DialerId int = 0,
+    @PortNumber int = 0,
+    @Status varchar(1)='''',
+    @action smallint=0,
+    @Provider smallint=0,
+    @XferType smallint=0,
+    @PortEnd int = 0,
+    @CampId smallint = 0,
+    @dialer_ids varchar(max)='''',
+    @DialingType tinyint = 0,
+    @idDialingCode int = 0
+    AS
+    set nocount on
+    if @action=1
+    begin
+        select provedor_id as ProviderId, descrip as ProviderName  from cstoProvedor
+    end
+    if @action=2 --Insert
+    begin
+        create table #tempPortTable( portId int primary key)
+        if @PortEnd>0 begin
+            begin transaction
+                while @PortNumber<=@portEnd begin
+                insert into #tempPortTable values(@PortNumber)
+                set @PortNumber=@PortNumber+1
+                end
+            commit transaction
+        end
+        else begin
+            insert into #tempPortTable values(@PortNumber)
+        end
+
+        if exists(select Puerto from ccoDialers where Puerto in (select portId from #tempPortTable))
+        begin
+            drop table #tempPortTable
+            select -1 as ResponseCode
+            return(0)
+        end
+        Insert ccoDialers (Descripcion, Puerto, Status, provedor_id, xfertype, DialingType, IdCode)
+        Select @Description+''_''+CAST(portId as varchar(5)), portId, @Status, @Provider, @XferType, case @DialingType when 2 then 0 else @DialingType end, @idDialingCode from #tempPortTable t
+        select 200 as ResponseCode, dialer_id as DialerId, Descripcion as PortDescription,
+        p.descrip as ProviderDescription, Puerto, XferType, DialingType, IdCode as DialingCode
+        from ccoDialers d
+        inner join cstoProvedor p on p.provedor_id=d.provedor_id
+        where Puerto in (select portId from #tempPortTable)
+        drop table #tempPortTable
+    end
+    if @action=3 --Update
+    begin
+        if exists(select Puerto from ccoDialers where Puerto=@PortNumber and dialer_id <> @DialerId)
+        begin
+            select -1 as ResponseCode ---Port already exists
+            return(0)
+        end
+        Update ccoDialers set Descripcion=case @Description when '''' then Descripcion else @Description+''_''+cast(@PortNumber as varchar(5)) end,
+        Puerto=case @PortNumber when '''' then Puerto else @PortNumber end, Status=case @Status when '''' then Status else @status end,
+        provedor_id=case @Provider when '''' then provedor_id else @Provider end,
+        xfertype = case @XferType when 0 then xfertype else @XferType end,
+        DialingType = case when @DialingType = 0 then DialingType when @DialingType = 2 then 0 else @DialingType end,
+        IdCode = case when @DialingType = 1 then 0 when @idDialingCode != IdCode then @idDialingCode else IdCode end
+        where Dialer_id=cast(@DialerId as int)
+
+        select 200 as ResponseCode, dialer_id as DialerId, Descripcion as PortDescription,
+        p.descrip as ProviderDescription, Puerto, XferType, DialingType, case when DialingType = 1 then 0 else IdCode end as DialingCode
+        from ccoDialers d
+        inner join cstoProvedor p on p.provedor_id=d.provedor_id
+        where dialer_id=@DialerId
+    end
+    if @action=4 --Delete
+    begin
+        if exists(select Dialer_id from ccoDialerCamp where
+            Dialer_id in (select Value from dbo.fn_RIASplitDelimited (@dialer_ids, '','')))
+        begin
+            select -2 as ResponseCode --Existe alguna campaña que esta utilizando este dialer
+            return(0)
+        end
+        declare @portsDelete table(DialerId int, Port int,PortDescription varchar(15))
+        insert @portsDelete (DialerId,Port,PortDescription)
+        select Value, Puerto,Descripcion from dbo.fn_RIASplitDelimited (@dialer_ids, '','')
+        inner join ccoDialers on dialer_id=Value
+        delete from ccoDialers Where Dialer_id in (select DialerId from @portsDelete)
+
+        select 200 as ResponseCode, DialerId, PortDescription
+        from @portsDelete
+    end
+    if @action=5 --Ports Info
+    begin
+        select dc.cam_id as CampId, c.cam_descripcion as CampName, graphic_id as Frame, c.IDArea, a.AreaName
+        from ccoDialerCamp dc
+        inner join ccCamps c on c.cam_id=dc.cam_id
+        inner join ccRIACat_Areas a on a.IDArea=c.IDArea
+        inner join ccRIACampsGraph cg on c.cam_id=cg.cam_id
+        where dc.dialer_id=@DialerId
+        return(0)
+    end
+    if @action = 6
+begin
+    select dialer_id as PortId, Descripcion as PortName from ccoDialers where dialer_id in (select Value from dbo.fn_RIASplitDelimited(@dialer_ids, '',''))
+    return(0)
+end
+
+if @action = 7
+begin
+    select cam_descripcion from ccCamps where @CampId = cam_id
+    return(0)
+end
+
+if @action = 8
+begin
+    select
+        case
+            when @Description <> '''' and @Description + ''_'' + CAST(d.Puerto as varchar) <> d.Descripcion then cast(1 as bit)
+            else cast(0 as bit)
+        end as NameChanged,
+
+        case
+            when @XferType <> 0 and @XferType <> d.xfertype then cast(1 as bit)
+            else cast(0 as bit)
+        end as XferTypeChanged,
+
+        case
+            when @Provider <> 0 and @Provider <> d.provedor_id then cast(1 as bit)
+            else cast(0 as bit)
+        end as ProviderChanged,
+
+        case
+            when @PortNumber <> 0 and @PortNumber <> d.Puerto then cast(1 as bit)
+            else cast(0 as bit)
+        end as PortNumberChanged,
+
+        d.Descripcion as PortName,
+
+        p.descrip as ProviderName,
+
+        x.description as XferName
+
+    from ccoDialers d
+    left join cstoProvedor p on p.provedor_id = @Provider
+    left join ccoXferType x on x.XferType_id = @XferType
+    where d.dialer_id = @DialerId
+
+    return(0)
+end
+    set nocount off'
+EXEC(@sql)
+
+------------------------------------------ END Pavel Martinez ---------------------------------------------
 
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

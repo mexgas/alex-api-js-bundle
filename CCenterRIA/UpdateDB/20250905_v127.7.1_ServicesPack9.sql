@@ -4620,7 +4620,7 @@ EXEC(@sql)
     
 ------------------------------------------ END Ulises ---------------------------------------------
 
-      SET @process = ''
+    SET @process = 'CREATE TABLE dbo.ccCalifCampIA'
     SET @sql = 'IF not exists(select * from sys.tables where name=''ccCalifCampIA'') begin
     CREATE TABLE dbo.ccCalifCampIA (
         calif_id smallint NOT NULL,
@@ -4629,10 +4629,7 @@ EXEC(@sql)
         CONSTRAINT PK_ccCalifCampIA PRIMARY KEY (calif_id, cam_id, tipo)
     );  
 end'
-    exec (@sql)
-
-
-  
+    exec (@sql)  
     
 
     SET @process = 'insert ccGalateaOperations 175,176,177'

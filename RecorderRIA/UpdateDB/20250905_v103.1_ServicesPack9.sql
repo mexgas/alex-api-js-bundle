@@ -1,3 +1,5 @@
+use CCRecorderRIA
+
 set nocount on
 declare @Version int
 declare @Version_Actual int

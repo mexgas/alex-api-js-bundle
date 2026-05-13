@@ -2294,16 +2294,149 @@ BEGIN
 END'
     exec (@sql)
 
-    SET @process = ''
-    SET @sql = ''
+    SET @process = 'CREATE TABLE RepAgentHistory 2140'
+    SET @sql = 'IF NOT EXISTS (
+	   SELECT * 
+	   FROM INFORMATION_SCHEMA.TABLES 
+	   WHERE TABLE_NAME = ''RepAgentHistory''
+	)
+	BEGIN
+	   CREATE TABLE RepAgentHistory
+	(
+	   [AgentName] NVARCHAR(100) NOT NULL,
+	   [date] DATETIME NOT NULL,
+	   [EstadoAgente] NVARCHAR(100) NOT NULL,
+	   [TiempoEstado] varchar(20) NOT NULL,
+	   [Campaign] NVARCHAR(200) NOT NULL,
+	   [CallKey] NVARCHAR(50) NOT NULL,
+	   [userId] smallint not null,
+	   [areaId] smallint not null
+	);
+
+	CREATE INDEX IX_RepAgentHistory ON RepAgentHistory(date);
+	END'
     exec (@sql)
 
-     SET @process = ''
-    SET @sql = ''
+    SET @process = 'DROP ccspRepAgentHistory 2140'
+    SET @sql = 'if exists (select * from sys.procedures where name = N''ccspRepAgentHistory'')
+	begin
+			DROP PROCEDURE ccspRepAgentHistory;
+	end'
     exec (@sql)
 
-    SET @process = ''
-    SET @sql = ''
+    SET @process = 'CREATE ccspRepAgentHistory 2140'
+    SET @sql = 'CREATE PROCEDURE [dbo].[ccspRepAgentHistory]
+	(
+		@action TINYINT,
+		@from   DATETIME = NULL,
+		@to     DATETIME = NULL
+	)
+	AS
+	BEGIN
+		SET NOCOUNT ON;
+
+		IF @from IS NULL
+			SET @from = CONVERT(date, GETDATE());
+
+		IF @to IS NULL
+			SET @to = GETDATE();
+
+		SET @from = CONVERT(date, @from);
+
+		IF @action = 1
+		BEGIN
+
+			DELETE FROM RepAgentHistory WHERE [date] >= @from AND [date] < @to;
+
+			;WITH eventos AS
+			(
+				SELECT
+					cl.User_id,
+					cu.Login,
+					cu.IDArea,
+					cl.Fecha AS FechaEvento,
+					cl.TipoMov,
+					LAG(cl.Fecha) OVER
+					(
+						PARTITION BY cl.User_id
+						ORDER BY cl.Fecha
+					) AS FechaAnterior,
+					
+					LAG(cl.TipoMov) OVER
+					(
+						PARTITION BY cl.User_id
+						ORDER BY cl.Fecha
+					) AS TipoMovAnterior
+					
+				FROM ccLogLogin cl
+				INNER JOIN ccUsers cu
+					ON cl.User_id = cu.User_id
+				WHERE cl.Fecha >= DATEADD(DAY, -1, @from)
+				  AND cl.Fecha < @to
+				  AND cu.TipoUser_id = 1
+			)
+
+			INSERT INTO RepAgentHistory
+			(
+				AgentName,
+				[date],
+				EstadoAgente,
+				TiempoEstado,
+				Campaign,
+				CallKey,
+				userId,
+				AreaId
+			)
+			SELECT
+				Login,
+				FechaAnterior,
+				''Disconnect'',
+				CONVERT
+				( CHAR(8),DATEADD ( SECOND, DATEDIFF(SECOND, FechaAnterior, FechaEvento), 0 ),108),
+				''N/A'',
+				''N/A'',
+				User_id,
+				IDArea
+			FROM eventos
+			WHERE TipoMov = 1
+			  AND TipoMovAnterior = 0
+			  AND FechaAnterior IS NOT NULL
+			  AND FechaEvento >= @from
+			  AND FechaEvento < @to;
+
+			INSERT INTO RepAgentHistory
+			(
+				AgentName,
+				[date],
+				EstadoAgente,
+				TiempoEstado,
+				Campaign,
+				CallKey,
+				userId,
+				AreaId
+			)
+			SELECT
+				u.Login,
+				lad.fecha,
+				tsa.descripcion,
+				CONVERT ( CHAR(8), DATEADD(SECOND, CAST(lad.tStatus AS INT), 0), 108),
+				ISNULL ( NULLIF(LTRIM(cin.descripcion), ''''), ISNULL(LTRIM(c.cam_descripcion), ''N/A'') ),
+				ISNULL( NULLIF(LTRIM(co.cal_key), ''''), ISNULL(LTRIM(ci.cal_key), ''N/A'')),
+				lad.User_id,
+				u.IdArea
+
+			FROM ccLogAgentesDia lad
+			INNER JOIN ccUsers u ON lad.User_id = u.User_id
+			INNER JOIN ccTipoStatusAgente tsa ON lad.TipoStatusAge_id = tsa.TipoStatusAge_id
+			LEFT JOIN ccCamps c ON lad.IdCampEsp = c.cam_id
+			LEFT JOIN ccInbound cin ON lad.IdCampEsp = cin.Inbound_id
+			LEFT JOIN ccoCallsOut co ON lad.callID = co.cal_id
+			LEFT JOIN ccCallsIn ci ON lad.callID = ci.cal_id
+			WHERE lad.fecha >= @from
+			  AND lad.fecha < @to
+			  AND lad.TipoStatusAge_id IN (1,2,3,4,5,6,7,9,21,23,24,30,32,33,34,36,37,38);
+		END
+	END'
     exec (@sql)
 
      SET @process = ''

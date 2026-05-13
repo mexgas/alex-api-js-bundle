@@ -5426,7 +5426,7 @@ END'
     exec (@sql)
 
     SET @process = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminDispositions]'
-    SET @sql = '    ALTER PROCEDURE [dbo].[ccsp_GalateaAdminDispositions]
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminDispositions]
     @command int,
     @calif_id smallint = null,
     @califIdLst varchar(8000) = null,
@@ -5889,20 +5889,36 @@ WHERE calif_id IN (SELECT calif_id FROM @ToDelete)
     -- Parcial
     IF EXISTS (SELECT 1 FROM @Active)
     BEGIN  
+        --SELECT 
+        --    -28 AS ResponseCode,  
+        --    ''Partial Success. Some dispositions are active.'' AS ResponseCodeDescription,
+        --    STRING_AGG(CAST(calif_id AS VARCHAR), '','') AS CalifIdLst
+        --FROM @ToDelete
         SELECT 
-            -28 AS ResponseCode,  
-            ''Partial Success. Some dispositions are active.'' AS ResponseCodeDescription,
-            STRING_AGG(CAST(calif_id AS VARCHAR), '','') AS CalifIdLst
-        FROM @ToDelete
+        -28 AS ResponseCode,  
+        ''Partial Success. Some dispositions are active.'' AS ResponseCodeDescription,
+        STUFF((
+            SELECT '','' + CAST(td.calif_id AS VARCHAR(20))
+            FROM @ToDelete td
+            FOR XML PATH(''''), TYPE
+        ).value(''.'', ''VARCHAR(MAX)''), 1, 1, '''') AS CalifIdLst
         RETURN  
     END  
 
     -- Éxito total
+    --SELECT 
+    --    200 AS ResponseCode,  
+    --    ''SUCCESS'' AS ResponseCodeDescription,
+    --    STRING_AGG(CAST(calif_id AS VARCHAR), '','') AS CalifIdLst
+    --FROM @ToDelete
     SELECT 
-        200 AS ResponseCode,  
-        ''SUCCESS'' AS ResponseCodeDescription,
-        STRING_AGG(CAST(calif_id AS VARCHAR), '','') AS CalifIdLst
-    FROM @ToDelete
+    200 AS ResponseCode,  
+    ''SUCCESS'' AS ResponseCodeDescription,
+    STUFF((
+        SELECT '','' + CAST(td.calif_id AS VARCHAR(20))
+        FROM @ToDelete td
+        FOR XML PATH(''''), TYPE
+    ).value(''.'', ''VARCHAR(MAX)''), 1, 1, '''') AS CalifIdLst
 
 END TRY  
 BEGIN CATCH  
@@ -5946,7 +5962,7 @@ BEGIN
 SELECT tel FROM dbo.telefonosTransferencia where numtra_id = @directoryId 
 END
 
-SET NOCOUNT OFF '
+SET NOCOUNT OFF'
     exec (@sql)
     
 

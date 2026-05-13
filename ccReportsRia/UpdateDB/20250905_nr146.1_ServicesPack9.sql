@@ -13,6 +13,8 @@ Required version: 146
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
+USE CCReportsRIA
+
 SET NOCOUNT ON --
 
 DECLARE @version INT, @versionFix INT
@@ -40,6 +42,13 @@ BEGIN
 
 		--- BEGIN Services Pack 1-8 --
 
+     SET @process = 'DROP VIEW dbo.RepViewOutCallsDetail;'
+    SET @sql = 'IF OBJECT_ID(''dbo.RepViewOutCallsDetail'', ''V'') IS NOT NULL
+BEGIN
+    DROP VIEW dbo.RepViewOutCallsDetail;
+END;'
+    exec (@sql)
+
     SET @process = 'ALTER TABLE RepOutCallsDetail ADD callStatusId tinyint NULL;'
     SET @sql = 'IF NOT EXISTS (
     SELECT TOP 1 1 
@@ -52,7 +61,7 @@ BEGIN
 END'
     exec (@sql)
 
-    SET @process = ''
+    SET @process = 'CREATE VIEW [dbo].[RepViewOutCallsDetail] AS'
     SET @sql = 'CREATE VIEW [dbo].[RepViewOutCallsDetail] AS 
     SELECT
     [date],
@@ -959,7 +968,6 @@ END
     --- BEGIN Carlos Muñoz ---
 SET @process = 'KM52000 Calculo de información de columna de posiciones en reporte de llamadas contestadas por campaña.' 
 
-IF 
 SET @sql = '
 IF NOT EXISTS (SELECT 1 FROM GroupByReports WHERE id = 4030)
 BEGIN

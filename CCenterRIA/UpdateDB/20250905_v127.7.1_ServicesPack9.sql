@@ -128,6 +128,17 @@ SET @sql = N'
             End';
     EXEC(@sql);
 
+    ------------------------------------------ BEGIN Rod Salazar  ------------------------------
+
+SET @process = 'CW-10215 Drop procedure SaveDispositionsAI'
+    SET @sql = 'IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N''dbo.ccoCallsOutDispositionIA'') AND name = N''name_cal'')
+                BEGIN
+                    ALTER TABLE dbo.ccoCallsOutDispositionIA ADD name_cal VARCHAR(150) NULL;         
+                END'
+    EXEC(@sql);
+
+------------------------------------------ END Rod Salazar  ------------------------------
+
 
 	SET @process = 'CREATE TABLE dbo.ccDNCQueue'
 	SET @sql = 'IF OBJECT_ID(''dbo.ccDNCQueue'', ''U'') IS NULL

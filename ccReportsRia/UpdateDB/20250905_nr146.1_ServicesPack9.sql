@@ -984,16 +984,16 @@ EXEC(@sql)
 	--- END Services Pack 1-8 ----
 
 
-    SET @process = 'INSERT INTO ReportsFilters calltypes 4020'
+    SET @process = 'Se agrega filtro calltypes a reporte 4020'
     SET @sql = 'IF NOT EXISTS (
     SELECT TOP 1 1 
     FROM ReportsFilters 
     WHERE ReportName = ''Answered Calls Detail'' 
-      AND FilterType = ''calltypes'' 
+      AND FilterName = ''calltypes'' 
       AND FilterValue = 4020
 )
 BEGIN
-    INSERT INTO ReportsFilters (ReportName, FilterType, FilterValue)
+    INSERT INTO ReportsFilters (ReportName, FilterName, FilterValue)
     VALUES (''Answered Calls Detail'', ''calltypes'', 4020)
 END'
     exec (@sql)

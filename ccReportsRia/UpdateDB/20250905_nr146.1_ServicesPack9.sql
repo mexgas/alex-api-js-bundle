@@ -959,7 +959,6 @@ END
     --- BEGIN Carlos Muñoz ---
 SET @process = 'KM52000 Calculo de información de columna de posiciones en reporte de llamadas contestadas por campaña.' 
 
-IF 
 SET @sql = '
 IF NOT EXISTS (SELECT 1 FROM GroupByReports WHERE id = 4030)
 BEGIN

@@ -8,6 +8,8 @@ Database: CCenterRia
 Required version: 127.2
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
+USE CCenterRIA;
+
 SET NOCOUNT ON
 DECLARE @version INT, @versionFix INT
 DECLARE @actualVersion INT, @actualVersionFix INT

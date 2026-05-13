@@ -4646,6 +4646,7 @@ set @sql='        ALTER procedure [dbo].[ccsp_GalateaAreas]
         
     SET NOCOUNT ON;'
 EXEC(@sql)
+
 ------------------------------------------ END Pavel Martinez ---------------------------------------------
 
     

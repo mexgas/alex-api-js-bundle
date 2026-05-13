@@ -38,9 +38,10 @@ insert into articleTableCCRecorderRIA(articleName,publicationId,status) values(N
 set @idInt=@idInt+1
 insert into publicationTableCCRecorderRIA(publicationName,status) values(N'AVRSRecordings',0)	
 insert into articleTableCCRecorderRIA(articleName,publicationId,status) values(N'RIA_GRABACION',@idInt,0)
+-- insert into articleTableCCRecorderRIA(articleName,publicationId,status) values(N'RIA_GRABACIONCONSULTA',@idInt,0)
 
 set @idInt=@idInt+1
-insert into publicationTableCCRecorderRIA(publicationName,status) values(N'RecordEvaluation',0)
+insert into publicationTableCCRecorderRIA(publicationName,status) values(N'RecordingEvaluation',0)
 insert into articleTableCCRecorderRIA(articleName,publicationId,status) values(N'RECORDERRIA_RECORDINGEVALUATION',@idInt,0)
 insert into articleTableCCRecorderRIA(articleName,publicationId,status) values(N'RECORDERRIA_CONCEPTQUESTIONS',@idInt,0)
 insert into articleTableCCRecorderRIA(articleName,publicationId,status) values(N'RECORDERRIA_EVALUATIONFORMATS',@idInt,0)
@@ -52,7 +53,7 @@ print('----------------------------- subcripcionTableCCReportsRIA --------------
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'AVRSRecordings',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'AVRSTemplates',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'AVRSTemplatesRate',0)
-insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'RecordEvaluation',0)
+insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'RecordingEvaluation',0)
 
 
 print('----------------------------- publicationTableCCenterRIA --------------')
@@ -61,6 +62,7 @@ insert into publicationTableCCenterRIA(publicationName,status) values('AVRSCampE
 insert into publicationTableCCenterRIA(publicationName,status) values('AVRSGraphs',0)
 insert into publicationTableCCenterRIA(publicationName,status) values('AVRSSettings',0)
 insert into publicationTableCCenterRIA(publicationName,status) values('SpecialAVRS',0)
+
 insert into publicationTableCCenterRIA(publicationName,status) values('Chats',0)
 insert into publicationTableCCenterRIA(publicationName,status) values('OutIn',0)
 insert into publicationTableCCenterRIA(publicationName,status) values('ConversationMail',0)

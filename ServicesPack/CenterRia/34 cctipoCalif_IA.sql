@@ -1,4 +1,5 @@
-USE [CCenterRIA]
+if not exists (select 1 from sys.tables where name='cctipoCalif_IA' )
+begin
 
 CREATE TABLE cctipoCalif_IA
 	(
@@ -22,3 +23,4 @@ CREATE TABLE cctipoCalif_IA
 		DirectoryNumberFlag bit DEFAULT 1,
 		CONSTRAINT cctipoCalifIA PRIMARY KEY CLUSTERED (calif_id)
 	);
+END

@@ -44,7 +44,7 @@ insert into publicationTableCCenterRIA(publicationName,status) values(N'CallsPre
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccoCallsPreviewData',@idInt,0)
 
 set @idInt=@idInt+1
-insert into publicationTableCCenterRIA(publicationName,status) values(N'ProcessPrevRecord',0)	
+insert into publicationTableCCenterRIA(publicationName,status) values(N'RegProcessPreviewRecord',0)	
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'RegProcessPreviewRecord',@idInt,0)
 	
 set @idInt=@idInt+1
@@ -114,7 +114,7 @@ insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'cc
 
 
 set @idInt=@idInt+1
-insert into publicationTableCCenterRIA(publicationName,status) values(N'LogAgtsDia_Dialog',0)	
+insert into publicationTableCCenterRIA(publicationName,status) values(N'LogAgentesDia_Dialog',0)	
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccLogAgentesDia_Dialog',@idInt,0)
 
 set @idInt=@idInt+1
@@ -131,6 +131,7 @@ set @idInt=@idInt+1
 insert into publicationTableCCenterRIA(publicationName,status) values(N'SpecialAVRS',0)	
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccinbound',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'cctipocalif',@idInt,0)
+insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'cctipoCalif_IA',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccUsers',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccUsers_Consulta',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'cccamps',@idInt,0)
@@ -140,6 +141,11 @@ insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'cc
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccCamps_consulta',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccInbound_consulta',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccVirtualAgent',@idInt,0)
+insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccCallsInDispositionIA',@idInt,0)
+insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccoCallsOutDispositionIA',@idInt,0)
+
+
+
 
 set @idInt=@idInt+1
 insert into publicationTableCCenterRIA(publicationName,status) values(N'AVRSCampEsp',0)	
@@ -166,7 +172,7 @@ insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'me
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'messageUnAssigned',@idInt,0)
 
 set @idInt=@idInt+1
-insert into publicationTableCCenterRIA(publicationName,status) values(N'ConverWhatsApp',0)	
+insert into publicationTableCCenterRIA(publicationName,status) values(N'ConversationWhatsApp',0)	
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccWhatsAppConversations',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccWhatsAppSpam',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccWAMessagesConversations',@idInt,0)
@@ -174,7 +180,7 @@ insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'cc
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'contactMeanIn',@idInt,0)	
 
 set @idInt=@idInt+1
-insert into publicationTableCCenterRIA(publicationName,status) values(N'ConvrWhatsAppOut',0)	
+insert into publicationTableCCenterRIA(publicationName,status) values(N'ConversationWhatsAppOut',0)	
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccWhatsAppConversationsOut',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccWAMessagesConversationsOut',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccWhatsAppConversationsRelationshipOut',@idInt,0)
@@ -210,7 +216,7 @@ insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'LogAge
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'Hold',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'CallsOutSource',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'CallsPreviewData',0)
-insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'ProcessPrevRecord',0)
+insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'RegProcessPreviewRecord',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'CallsOut',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'CallsIn',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'OutIn',0)
@@ -218,16 +224,17 @@ insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'Users'
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'Activity',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'IVR',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'Catalogs',0)
-insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'LogAgtsDia_Dialog',0)
+insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'LogAgentesDia_Dialog',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'Callbacks',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'SpecialAVRS',0)
+
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'AVRSCampEsp',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'Chats',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'ConversationMail',0)
 
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'AVRSGraphs',0)
-insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'ConverWhatsApp',0)
-insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'ConvrWhatsAppOut',0)
+insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'ConversationWhatsApp',0)
+insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'ConversationWhatsAppOut',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'SMS',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'AuxiliarReady',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'SpecialDownload',0)
@@ -237,6 +244,7 @@ insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'Specia
 print('----------------------------- subcripcionTableCCRecorderRIA --------------')
 
 insert into  subcripcionTableCCRecorderRIA (publicationName,status) values(N'SpecialAVRS',0)
+
 insert into  subcripcionTableCCRecorderRIA (publicationName,status) values(N'AVRSCampEsp',0)
 insert into  subcripcionTableCCRecorderRIA (publicationName,status) values(N'AVRSGraphs',0)
 insert into  subcripcionTableCCRecorderRIA (publicationName,status) values(N'AVRSSettings',0)

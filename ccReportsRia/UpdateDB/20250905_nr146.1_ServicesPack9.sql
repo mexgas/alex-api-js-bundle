@@ -990,10 +990,10 @@ EXEC(@sql)
     FROM ReportsFilters 
     WHERE ReportName = ''Answered Calls Detail'' 
       AND FilterName = ''calltypes'' 
-      AND FilterValue = 4020
+      AND id = 4020
 )
 BEGIN
-    INSERT INTO ReportsFilters (ReportName, FilterName, FilterValue)
+    INSERT INTO ReportsFilters (ReportName, FilterName, id)
     VALUES (''Answered Calls Detail'', ''calltypes'', 4020)
 END'
     exec (@sql)
@@ -2300,6 +2300,15 @@ BEGIN
         EXEC SupportReportCallInIVR 1, @from, @to;
     END
 END'
+    exec (@sql)
+
+    SET @process = 'INSERT ReportsFiltersMenus 2140'
+    SET @sql = 'INSERT INTO ReportsFiltersMenus(idReport,filterMenuName,showFilter) VALUES(2140,''date'',1),(2140,''filterby'',1)'
+    exec (@sql)
+    
+
+    SET @process = 'INSERT ReportsFilters 2140'
+    SET @sql = 'INSERT INTO ReportsFilters(reportName,filterName,id) VALUES(''Agent History'',''users'',2140),(''Agent History'',''areas'',2140)'
     exec (@sql)
 
     SET @process = 'CREATE TABLE RepAgentHistory 2140'

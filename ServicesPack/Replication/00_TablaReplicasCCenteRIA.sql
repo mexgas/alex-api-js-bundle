@@ -110,7 +110,6 @@ insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'cc
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccTypeProcessPreview',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccHorarios',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccInboundHorarios',@idInt,0)
-insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccTipoStatusAgente',@idInt,0)
 
 
 

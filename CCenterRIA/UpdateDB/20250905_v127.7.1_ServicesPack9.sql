@@ -57,6 +57,34 @@ begin
 end'
 	EXEC(@sql)
 
+    SET @process = 'Agregar columna CapturedData a tablas de Disposición IA';
+
+SET @sql = '
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE Name = N''CapturedData'' AND Object_ID = Object_ID(N''dbo.ccoCallsOutDispositionIA''))
+BEGIN
+    ALTER TABLE dbo.ccoCallsOutDispositionIA ADD CapturedData VARCHAR(MAX) DEFAULT '''' WITH VALUES;
+END
+
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE Name = N''CapturedData'' AND Object_ID = Object_ID(N''dbo.ccCallsInDispositionIA''))
+BEGIN
+    ALTER TABLE dbo.ccCallsInDispositionIA ADD CapturedData VARCHAR(MAX) DEFAULT '''' WITH VALUES;
+END
+'
+EXEC(@sql);
+
+    SET @process = ' ALTER TABLE ccCampsExtend ADD IsCallTranscriptionEnabled BIT NULL'
+    SET @sql = '
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''IsCallTranscriptionEnabled'' AND Object_ID = Object_ID(N''ccCampsExtend''))
+BEGIN
+    ALTER TABLE ccCampsExtend ADD IsCallTranscriptionEnabled BIT NULL
+END
+
+IF NOT EXISTS(SELECT * FROM relationTableColumnIdentifiers WHERE Identifiers = ''IN_CALL_IA_CALL_TRANSCRIPTION'' AND tableName = ''ccCampsExtend'') BEGIN 
+    INSERT INTO relationTableColumnIdentifiers (Identifiers, tableName, colunName)
+    VALUES (''IN_CALL_IA_CALL_TRANSCRIPTION'',''ccCampsExtend'',''IsCallTranscriptionEnabled'')
+END'
+    exec (@sql)
+
 	SET @process = 'KM47001 - Se elimina el campo que ya no se va a utilizar'
 	SET @sql = 'IF exists (SELECT 1 FROM SYS.columns WHERE name=''selectRotationManualDialing'' 
 AND OBJECT_ID = OBJECT_ID(''ccCamps''))
@@ -7503,33 +7531,7 @@ END
 EXEC(@sql);
 
 ------------------------------------ BEGIN Ajuste Tablas DispositionIA ------------------------------------
-SET @process = 'Agregar columna CapturedData a tablas de Disposición IA';
 
-SET @sql = '
-IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE Name = N''CapturedData'' AND Object_ID = Object_ID(N''dbo.ccoCallsOutDispositionIA''))
-BEGIN
-    ALTER TABLE dbo.ccoCallsOutDispositionIA ADD CapturedData VARCHAR(MAX) DEFAULT '''' WITH VALUES;
-END
-
-IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE Name = N''CapturedData'' AND Object_ID = Object_ID(N''dbo.ccCallsInDispositionIA''))
-BEGIN
-    ALTER TABLE dbo.ccCallsInDispositionIA ADD CapturedData VARCHAR(MAX) DEFAULT '''' WITH VALUES;
-END
-'
-EXEC(@sql);
-
-    SET @process = ' ALTER TABLE ccCampsExtend ADD IsCallTranscriptionEnabled BIT NULL'
-    SET @sql = '
-IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''IsCallTranscriptionEnabled'' AND Object_ID = Object_ID(N''ccCampsExtend''))
-BEGIN
-    ALTER TABLE ccCampsExtend ADD IsCallTranscriptionEnabled BIT NULL
-END
-
-IF NOT EXISTS(SELECT * FROM relationTableColumnIdentifiers WHERE Identifiers = ''IN_CALL_IA_CALL_TRANSCRIPTION'' AND tableName = ''ccCampsExtend'') BEGIN 
-    INSERT INTO relationTableColumnIdentifiers (Identifiers, tableName, colunName)
-    VALUES (''IN_CALL_IA_CALL_TRANSCRIPTION'',''ccCampsExtend'',''IsCallTranscriptionEnabled'')
-END'
-    exec (@sql)
     
 
     SET @process = 'ALTER PROCEDURE [dbo].[ccsp_RIAConfCamp]'
@@ -9016,16 +9018,6 @@ SET NOCOUNT OFF';
     EXEC(@sql);
 
    
-    SET @process = 'INSERT ReportsFiltersMenus 2140'
-    SET @sql = 'INSERT INTO ReportsFiltersMenus(idReport,filterMenuName,showFilter) VALUES(2140,''date'',1),(2140,''filterby'',1)'
-    exec (@sql)
-    
-
-    SET @process = 'INSERT ReportsFilters 2140'
-    SET @sql = 'INSERT INTO ReportsFilters(reportName,filterName,id) VALUES(''Agent History'',''users'',2140),(''Agent History'',''areas'',2140)'
-    exec (@sql)
-
-    
     SET @process = 'INSERT ccMenus 2140'
     SET @sql = 'INSERT INTO ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release) VALUES (2140,''Historico de Agentes|Agent History'',2000,''B'',2,3,'''',''5b93455cb709b0d0e530e8c721d1a8d4e39ec732890faa5e326f078f203e910e96bf09cfe811ecf0150db2af792c3401'');'
     exec (@sql)

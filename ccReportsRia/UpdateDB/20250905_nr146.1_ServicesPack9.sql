@@ -2302,6 +2302,15 @@ BEGIN
 END'
     exec (@sql)
 
+    SET @process = 'INSERT ReportsFiltersMenus 2140'
+    SET @sql = 'INSERT INTO ReportsFiltersMenus(idReport,filterMenuName,showFilter) VALUES(2140,''date'',1),(2140,''filterby'',1)'
+    exec (@sql)
+    
+
+    SET @process = 'INSERT ReportsFilters 2140'
+    SET @sql = 'INSERT INTO ReportsFilters(reportName,filterName,id) VALUES(''Agent History'',''users'',2140),(''Agent History'',''areas'',2140)'
+    exec (@sql)
+
     SET @process = 'CREATE TABLE RepAgentHistory 2140'
     SET @sql = 'IF NOT EXISTS (
 	   SELECT * 

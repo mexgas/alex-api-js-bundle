@@ -990,10 +990,10 @@ EXEC(@sql)
     FROM ReportsFilters 
     WHERE ReportName = ''Answered Calls Detail'' 
       AND FilterName = ''calltypes'' 
-      AND FilterValue = 4020
+      AND id = 4020
 )
 BEGIN
-    INSERT INTO ReportsFilters (ReportName, FilterName, FilterValue)
+    INSERT INTO ReportsFilters (ReportName, FilterName, id)
     VALUES (''Answered Calls Detail'', ''calltypes'', 4020)
 END'
     exec (@sql)

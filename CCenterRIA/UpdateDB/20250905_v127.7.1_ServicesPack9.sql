@@ -8445,10 +8445,16 @@ set nocount off'
 	EXEC(@sql)
     
 
-    SET @process = 'ALTER sp ccsp_RIAOUTInsertNewJOBS_WT_Camp Sears mejora en el proceso de carga';
-    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAOUTInsertNewJOBS_WT_Camp] @camp_id AS INT, @reciclar AS INT = 1, @top AS INT = 3000
+    SET @process = 'ALTER sp ccsp_RIAOUTInsertNewJOBS_WT_Camp se toma ultimo cambio de Uli y se agrega validación antes de inserción a working table';
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAOUTInsertNewJOBS_WT_Camp] @camp_id AS INT, @reciclar AS INT = 1, @top AS INT = 3000   
 AS
 SET NOCOUNT ON
+SET XACT_ABORT ON
+
+DECLARE @HadError BIT = 0
+DECLARE @ErrMsg NVARCHAR(4000) = NULL
+DECLARE @ErrSeverity INT = 16
+DECLARE @ErrState INT = 1
 
 DECLARE @prioridad VARCHAR(8)
 DECLARE @batchsizeIni AS INT
@@ -8458,6 +8464,7 @@ DECLARE @rowstoInsert AS INT
 DECLARE @campType AS INT
 DECLARE @recordsQuantitySetting VARCHAR(8)
 DECLARE @settingValueP1 VARCHAR(25)
+DECLARE @InsertedRows INT = 0;
 
 SET @rowstoInsert = 0
 SET @batchsizeIni = 0
@@ -8491,6 +8498,9 @@ BEGIN
         CREATE TABLE #smsoutIdSource (smsout_id INT NOT NULL PRIMARY KEY)
 
         CREATE TABLE #smsoutIdSource2 (smsout_id INT NOT NULL PRIMARY KEY)
+
+        CREATE TABLE #claimSmsIds (smsout_id INT NOT NULL PRIMARY KEY, old_sms_status TINYINT)
+
         --UPDATING TABLES BEFORE LOADING
         DECLARE @date datetime = GETDATE()
         UPDATE smsOutSource SET sms_status = 2 where sms_dateDialEnd < @date and isSegmentLoad = 1
@@ -8515,28 +8525,42 @@ BEGIN
         FROM dbo.smsOutSource AS sos WITH (INDEX (IX_smsOutSource_1), NOLOCK)
         WHERE sos.sms_status IN (0, 1, 7) AND cam_id = @camp_id
 
+        BEGIN TRY
+        BEGIN TRAN
+
+        INSERT INTO #claimSmsIds(smsout_id, old_sms_status)
+        SELECT smsout_id, old_sms_status
+        FROM (
+            UPDATE TOP(@top) sos WITH (UPDLOCK, READPAST, ROWLOCK)
+            SET sms_status = 4
+            OUTPUT inserted.smsout_id, deleted.sms_status
+            FROM dbo.smsOutSource AS sos
+            WHERE sos.cam_id = @camp_id AND (sos.sms_status < 2 OR sos.sms_status = 7)
+        ) AS X(smsout_id, old_sms_status);
+
+
         INSERT #tempsmsOutSource(smsout_id, cam_id, sms_phoneNumber, sms_status, sms_dateDial, cal_keyw, iTimeZone,
         iTimeZone_summer, iTimeZone2, iTimeZone_summer2, iTimeZone3, iTimeZone_summer3, iTimeZone4,
             iTimeZone_summer4, iTimeZone5, iTimeZone_summer5, list_id, sms_dateDialEnd, isSegmentLoad)
-        SELECT TOP(@top) smsout_id, cam_id, RTRIM(LEFT(LTRIM(sms_phoneNumber + ''        '' + sms_phoneNumber2 + ''         ''
-        + sms_phoneNumber3 + ''         '' + sms_phoneNumber4 + ''         '' + sms_phoneNumber5 + ''         ''), 13)) AS sms_phoneNumber,
-            CASE sms_status WHEN 7 THEN 1 ELSE sms_status END sms_status, sms_dateDial, callkey,
-            CASE WHEN LEN(sms_phoneNumber) > 0 THEN iTimeZone ELSE NULL END iTimeZone,
-            CASE WHEN LEN(sms_phoneNumber) > 0 THEN iTimeZone_summer ELSE NULL END iTimeZone_summer,
-            CASE WHEN LEN(sms_phoneNumber2) > 0 THEN iTimeZone2 ELSE NULL END iTimeZone2,
-            CASE WHEN LEN(sms_phoneNumber2) > 0 THEN iTimeZone_summer2 ELSE NULL END iTimeZone_summer2,
-            CASE WHEN LEN(sms_phoneNumber3) > 0 THEN iTimeZone3 ELSE NULL END iTimeZone3,
-            CASE WHEN LEN(sms_phoneNumber3) > 0 THEN iTimeZone_summer3 ELSE NULL END iTimeZone_summer3,
-            CASE WHEN LEN(sms_phoneNumber4) > 0 THEN iTimeZone4 ELSE NULL END iTimeZone4,
-            CASE WHEN LEN(sms_phoneNumber4) > 0 THEN iTimeZone_summer4 ELSE NULL END iTimeZone_summer4,
-            CASE WHEN LEN(sms_phoneNumber5) > 0 THEN iTimeZone5 ELSE NULL END iTimeZone5,
-            CASE WHEN LEN(sms_phoneNumber5) > 0 THEN iTimeZone_summer5 ELSE
-                    NULL END iTimeZone_summer5, list_id, sms_dateDialEnd, ISNULL(isSegmentLoad, 0)
-        FROM dbo.smsOutSource  WITH (INDEX (IX_smsOutSource_1), NOLOCK)
-        WHERE cam_id = @camp_id AND (sms_status < 2 OR sms_status = 7)
+        SELECT TOP(@top) sos.smsout_id, sos.cam_id, RTRIM(LEFT(LTRIM(sos.sms_phoneNumber + ''        '' + sos.sms_phoneNumber2 + ''         ''
+        + sos.sms_phoneNumber3 + ''         '' + sos.sms_phoneNumber4 + ''         '' + sos.sms_phoneNumber5 + ''         ''), 13)) AS sms_phoneNumber,
+            CASE c.old_sms_status WHEN 7 THEN 1 ELSE c.old_sms_status END sms_status, sos.sms_dateDial, sos.callkey,
+            CASE WHEN LEN(sos.sms_phoneNumber) > 0 THEN sos.iTimeZone ELSE NULL END iTimeZone,
+            CASE WHEN LEN(sos.sms_phoneNumber) > 0 THEN sos.iTimeZone_summer ELSE NULL END iTimeZone_summer,
+            CASE WHEN LEN(sos.sms_phoneNumber2) > 0 THEN sos.iTimeZone2 ELSE NULL END iTimeZone2,
+            CASE WHEN LEN(sos.sms_phoneNumber2) > 0 THEN sos.iTimeZone_summer2 ELSE NULL END iTimeZone_summer2,
+            CASE WHEN LEN(sos.sms_phoneNumber3) > 0 THEN sos.iTimeZone3 ELSE NULL END iTimeZone3,
+            CASE WHEN LEN(sos.sms_phoneNumber3) > 0 THEN sos.iTimeZone_summer3 ELSE NULL END iTimeZone_summer3,
+            CASE WHEN LEN(sos.sms_phoneNumber4) > 0 THEN sos.iTimeZone4 ELSE NULL END iTimeZone4,
+            CASE WHEN LEN(sos.sms_phoneNumber4) > 0 THEN sos.iTimeZone_summer4 ELSE NULL END iTimeZone_summer4,
+            CASE WHEN LEN(sos.sms_phoneNumber5) > 0 THEN sos.iTimeZone5 ELSE NULL END iTimeZone5,
+            CASE WHEN LEN(sos.sms_phoneNumber5) > 0 THEN sos.iTimeZone_summer5 ELSE
+                    NULL END iTimeZone_summer5, sos.list_id, sos.sms_dateDialEnd, ISNULL(sos.isSegmentLoad, 0)
+        FROM dbo.smsOutSource AS sos
+        INNER JOIN #claimSmsIds c ON c.smsout_id = sos.smsout_id
+        WHERE sos.cam_id = @camp_id
 
         SELECT @rowstoInsert = COUNT(*) FROM #tempsmsOutSource AS tos;
-
 
         IF EXISTS(SELECT * FROM #tempsmsOutSource)
         BEGIN
@@ -8547,7 +8571,7 @@ BEGIN
 
             WHILE 1 = 1
             BEGIN
-                -- Nuevos Jobs
+             -- Nuevos Jobs
                INSERT INTO dbo.smsWorkingTable  WITH (ROWLOCK)
                 (smsout_id, cam_id, sms_phoneNumber, sms_status, sms_dateDial, attemps, user_id,cal_keyw, iTimeZone, iTimeZone_summer, iTimeZone2, iTimeZone_summer2, iTimeZone3, iTimeZone_summer3, iTimeZone4, iTimeZone_summer4, iTimeZone5, iTimeZone_summer5, list_id, sms_dateDialEnd, isSegmentLoad)
                 SELECT t.smsout_id, t.cam_id, t.sms_phoneNumber, t.sms_status, t.sms_dateDial, 0, 0
@@ -8556,9 +8580,9 @@ BEGIN
                 FROM #tempsmsOutSource t
                 WHERE id > @batchsizeIni AND id <= @batchsizeFin
                 AND NOT EXISTS (
-                    SELECT 1 FROM smsWorkingTable swt WHERE swt.smsout_id = t.smsout_id
+                    SELECT 1 FROM smsWorkingTable swt WITH (UPDLOCK, HOLDLOCK) WHERE swt.smsout_id = t.smsout_id
                 )
-
+                SET @InsertedRows += @@ROWCOUNT;
                 IF @batchsizeFin > @rowstoInsert
                     BREAK
                 ELSE
@@ -8570,14 +8594,20 @@ BEGIN
 
             UPDATE dbo.smsOutSource
             SET sms_status = 2
-            FROM dbo.smsOutSource AS sos WITH (NOLOCK), #smsoutIdSource2  cis3 WITH (NOLOCK)
-            WHERE sos.smsout_id = cis3.smsout_id
+            FROM dbo.smsOutSource AS sos
+            INNER JOIN #claimSmsIds c ON sos.smsout_id = c.smsout_id
         END
 
+        COMMIT
+        END TRY
+BEGIN CATCH
+    IF @@TRANCOUNT > 0 ROLLBACK;
+    RAISERROR(@ErrMsg, @ErrSeverity, @ErrState);
+END CATCH
+
+        DROP TABLE #claimSmsIds
         DROP TABLE #smsoutIdSource
-
         DROP TABLE #smsoutIdSource2
-
         DROP TABLE #tempsmsOutSource
 END
 ELSE IF(@campType = 5)
@@ -8588,10 +8618,25 @@ BEGIN
 
     CREATE TABLE #WAIdSource (WAOut_Id INT NOT NULL PRIMARY KEY)
 
+    CREATE TABLE #claimWAIds (WAOut_Id INT NOT NULL PRIMARY KEY, old_Status INT)
+
     INSERT INTO #WAIdSource
     SELECT top(@top) cwaos.WAOut_Id
         FROM dbo.ccWhatsAppOutSource AS cwaos WITH (INDEX (IX_WASource_1), NOLOCK)
         WHERE cwaos.Status IN (0) AND cwaos.camId = @camp_id
+
+    BEGIN TRY
+    BEGIN TRAN
+
+    INSERT INTO #claimWAIds(WAOut_Id, old_Status)
+    SELECT WAOut_Id, old_Status
+    FROM (
+        UPDATE TOP(@top) cwaos WITH (UPDLOCK, READPAST, ROWLOCK)
+        SET Status = 4
+        OUTPUT inserted.WAOut_Id, deleted.Status
+        FROM dbo.ccWhatsAppOutSource AS cwaos
+        WHERE cwaos.camId = @camp_id AND cwaos.Status = 0
+    ) AS X(WAOut_Id, old_Status);
 
     INSERT INTO #tempWhatsAppOutSource
     (
@@ -8607,12 +8652,13 @@ BEGIN
         dateDial
     )
         SELECT TOP(@top) cwaos.WAOut_Id, cwaos.CallKey,cwaos.camId, RTRIM(LEFT(LTRIM(cwaos.PhoneNumber + ''        '' ), 13)) AS phoneNumber,
-            cwaos.Status AS WAStatus,
+            c.old_Status AS WAStatus,
             CASE WHEN cwaos.TimeZone = 0 THEN  dbo.fnGetTimeZone(cwaos.PhoneNumber,0) ELSE cwaos.TimeZone END,
             CASE WHEN cwaos.TimeZone_Summer = 0 THEN  dbo.fnGetTimeZone(cwaos.PhoneNumber,1) ELSE cwaos.TimeZone_Summer END,
             list_id, cwaos.User_id, cwaos.dateDial
-        FROM dbo.ccWhatsAppOutSource AS cwaos  WITH (INDEX (IX_WASource_1), NOLOCK)
-        WHERE cwaos.camId = @camp_id AND (cwaos.Status = 0)
+        FROM dbo.ccWhatsAppOutSource AS cwaos
+        INNER JOIN #claimWAIds c ON c.WAOut_Id = cwaos.WAOut_Id
+        WHERE cwaos.camId = @camp_id
 
     SELECT @rowstoInsert = COUNT(*) FROM #tempWhatsAppOutSource AS tos;
 
@@ -8625,11 +8671,11 @@ BEGIN
 
             WHILE 1 = 1
             BEGIN
-                -- Nuevos Jobs
                 INSERT INTO dbo.ccoWAWorkingTable(WAOut_id, PhoneNumber, Callkey, CamId, WaStatus, dateDial, UserId,TimeZone, TimeZone_Summer)
                 SELECT WAOut_Id, PhoneNumber, CallKey, camId, Status, dateDial , User_id, TimeZone ,TimeZone_Summer
                 FROM #tempWhatsAppOutSource
                 WHERE id > @batchsizeIni AND id <= @batchsizeFin
+                SET @InsertedRows += @@ROWCOUNT;
 
                 IF @batchsizeFin > @rowstoInsert
                     BREAK
@@ -8645,12 +8691,20 @@ BEGIN
             Status = 2,
             TimeZone = cis3.TimeZone,
             TimeZone_Summer = cis3.TimeZone_Summer
-            FROM dbo.ccWhatsAppOutSource AS cwaos  WITH (NOLOCK), #tempWhatsAppOutSource  cis3 WITH (NOLOCK)
-            WHERE cwaos.WAOut_Id = cis3.WAOut_Id
+            FROM dbo.ccWhatsAppOutSource AS cwaos
+            INNER JOIN #tempWhatsAppOutSource  cis3 ON cwaos.WAOut_Id = cis3.WAOut_Id
         END
 
-        DROP TABLE #WAIdSource
+    COMMIT
+    END TRY
+BEGIN CATCH
+    IF @@TRANCOUNT > 0 ROLLBACK;
 
+    RAISERROR(@ErrMsg, @ErrSeverity, @ErrState);
+END CATCH
+
+        DROP TABLE #claimWAIds
+        DROP TABLE #WAIdSource
         DROP TABLE #tempWhatsAppOutSource
 END
 ELSE
@@ -8666,6 +8720,8 @@ BEGIN
         CREATE TABLE #calloutIdSource (callout_id INT NOT NULL PRIMARY KEY)
 
         CREATE TABLE #calloutIdSource2 (callout_id INT NOT NULL PRIMARY KEY)
+
+        CREATE TABLE #claimCallIds (callout_id INT NOT NULL PRIMARY KEY, old_cal_status TINYINT)
 
         INSERT INTO #calloutIdSource
         SELECT top(@top) cs.callout_id
@@ -8705,36 +8761,51 @@ BEGIN
                     )
         END
 
+        BEGIN TRY
+        BEGIN TRAN
+
+        INSERT INTO #claimCallIds(callout_id, old_cal_status)
+        SELECT callout_id, old_cal_status
+        FROM (
+            UPDATE TOP(@top) cs WITH (UPDLOCK, READPAST, ROWLOCK)
+            SET cal_status = 4
+            OUTPUT inserted.callout_id, deleted.cal_status
+            FROM ccoCallsOutSource cs
+            WHERE cs.cam_id = @camp_id AND (cs.cal_status < 2 OR cs.cal_status = 7)
+        ) AS X(callout_id, old_cal_status);
+
+
         INSERT #tempCallsOutSource (callout_id, cam_id, cal_telefono, cal_status, cal_fechaDial, cal_keyw, iZonaHoraria,
         iZonaHoraria_verano, iZonaHoraria2, iZonaHoraria_verano2, iZonaHoraria3, iZonaHoraria_verano3, iZonaHoraria4,
             iZonaHoraria_verano4, iZonaHoraria5, iZonaHoraria_verano5, list_id)
-        SELECT TOP(@top) callout_id, cam_id, CASE WHEN ISNULL(recycleType, 1) = 0 THEN
+        SELECT TOP(@top) cs.callout_id, cs.cam_id, CASE WHEN ISNULL(cs.recycleType, 1) = 0 THEN
         CASE
-            WHEN recyclePhone = 1 THEN cal_telefono
-            WHEN recyclePhone = 2 THEN cal_telefono2
-            WHEN recyclePhone = 3 THEN cal_telefono3
-            WHEN recyclePhone = 4 THEN cal_telefono4
-            else cal_telefono5
+            WHEN cs.recyclePhone = 1 THEN cs.cal_telefono
+            WHEN cs.recyclePhone = 2 THEN cs.cal_telefono2
+            WHEN cs.recyclePhone = 3 THEN cs.cal_telefono3
+            WHEN cs.recyclePhone = 4 THEN cs.cal_telefono4
+            else cs.cal_telefono5
         END
-        ELSE rtrim(left(ltrim(cal_telefono + ''        '' + cal_telefono2 + ''         ''
-            + cal_telefono3 + ''         '' + cal_telefono4 + ''         '' + cal_telefono5 + ''         ''), 13))
+        ELSE rtrim(left(ltrim(cs.cal_telefono + ''        '' + cs.cal_telefono2 + ''         ''
+            + cs.cal_telefono3 + ''         '' + cs.cal_telefono4 + ''         '' + cs.cal_telefono5 + ''         ''), 13))
         END AS cal_telefono,
-            CASE cal_status WHEN 7 THEN 1 ELSE cal_status END cal_status, cal_fechaDial, cal_key,
-            CASE WHEN LEN(cal_telefono) > 0 THEN iZonaHoraria ELSE NULL END iZonaHoraria,
-            CASE WHEN LEN(cal_telefono) > 0 THEN iZonaHoraria_verano ELSE NULL END iZonaHoraria_verano,
-            CASE WHEN LEN(cal_telefono2) > 0 THEN iZonaHoraria2 ELSE NULL END iZonaHoraria2,
-            CASE WHEN LEN(cal_telefono2) > 0 THEN iZonaHoraria_verano2 ELSE NULL END iZonaHoraria_verano2,
-            CASE WHEN LEN(cal_telefono3) > 0 THEN iZonaHoraria3 ELSE NULL END iZonaHoraria3,
-            CASE WHEN LEN(cal_telefono3) > 0 THEN iZonaHoraria_verano3 ELSE NULL END iZonaHoraria_verano3,
-            CASE WHEN LEN(cal_telefono4) > 0 THEN iZonaHoraria4 ELSE NULL END iZonaHoraria4,
-            CASE WHEN LEN(cal_telefono4) > 0 THEN iZonaHoraria_verano4 ELSE NULL END iZonaHoraria_verano4,
-            CASE WHEN LEN(cal_telefono5) > 0 THEN iZonaHoraria5 ELSE NULL END iZonaHoraria5,
-            CASE WHEN LEN(cal_telefono5) > 0 THEN iZonaHoraria_verano5 ELSE
-                    NULL END iZonaHoraria_verano5, list_id
-        FROM ccoCallsOutSource WITH (INDEX (IX_ccoCallsOutSource_17), NOLOCK)
-        WHERE cam_id = @camp_id AND (cal_status < 2 OR cal_status = 7) /*AND CONVERT(VARCHAR(10),cal_fechaDial, 103) >= CONVERT(VARCHAR(10), GETDATE(), 103)*/
-
-		--Se elimina de workingtable en caso de que no se hayan borrado correctamente no genere error al insertar nuevos registros
+            CASE c.old_cal_status WHEN 7 THEN 1 ELSE c.old_cal_status END cal_status, cs.cal_fechaDial, cs.cal_key,
+            CASE WHEN LEN(cs.cal_telefono) > 0 THEN cs.iZonaHoraria ELSE NULL END iZonaHoraria,
+            CASE WHEN LEN(cs.cal_telefono) > 0 THEN cs.iZonaHoraria_verano ELSE NULL END iZonaHoraria_verano,
+            CASE WHEN LEN(cs.cal_telefono2) > 0 THEN cs.iZonaHoraria2 ELSE NULL END iZonaHoraria2,
+            CASE WHEN LEN(cs.cal_telefono2) > 0 THEN cs.iZonaHoraria_verano2 ELSE NULL END iZonaHoraria_verano2,
+            CASE WHEN LEN(cs.cal_telefono3) > 0 THEN cs.iZonaHoraria3 ELSE NULL END iZonaHoraria3,
+            CASE WHEN LEN(cs.cal_telefono3) > 0 THEN cs.iZonaHoraria_verano3 ELSE NULL END iZonaHoraria_verano3,
+            CASE WHEN LEN(cs.cal_telefono4) > 0 THEN cs.iZonaHoraria4 ELSE NULL END iZonaHoraria4,
+            CASE WHEN LEN(cs.cal_telefono4) > 0 THEN cs.iZonaHoraria_verano4 ELSE NULL END iZonaHoraria_verano4,
+            CASE WHEN LEN(cs.cal_telefono5) > 0 THEN cs.iZonaHoraria5 ELSE NULL END iZonaHoraria5,
+            CASE WHEN LEN(cs.cal_telefono5) > 0 THEN cs.iZonaHoraria_verano5 ELSE
+                    NULL END iZonaHoraria_verano5, cs.list_id
+        FROM ccoCallsOutSource cs
+        INNER JOIN #claimCallIds c ON c.callout_id = cs.callout_id
+        WHERE cs.cam_id = @camp_id
+	
+	--Se elimina de workingtable en caso de que no se hayan borrado correctamente no genere error al insertar nuevos registros
 		DELETE wt FROM ccoWorkingTable wt
 		INNER JOIN #tempCallsOutSource tcs on wt.callout_id = tcs.callout_id
 		WHERE wt.cam_id = @camp_id
@@ -8750,7 +8821,6 @@ BEGIN
 
             WHILE 1 = 1
             BEGIN
-                -- Nuevos Jobs
                  INSERT INTO ccoWorkingTable  WITH (ROWLOCK)
                 (callout_id, cam_id, cal_telefono, cal_status, cal_fechaDial, cal_keyw, iZonaHoraria, iZonaHoraria_verano, iZonaHoraria2, iZonaHoraria_verano2, iZonaHoraria3, iZonaHoraria_verano3, iZonaHoraria4, iZonaHoraria_verano4, iZonaHoraria5, iZonaHoraria_verano5, list_id)
                 SELECT t.callout_id, t.cam_id, t.cal_telefono, t.cal_status, t.cal_fechaDial, t.cal_keyw,
@@ -8760,9 +8830,10 @@ BEGIN
                 FROM #tempCallsOutSource t
                 WHERE t.id > @batchsizeIni AND t.id <= @batchsizeFin
                   AND NOT EXISTS (
-                    SELECT 1 FROM ccoWorkingTable w WHERE w.callout_id = t.callout_id
+                    SELECT 1 FROM ccoWorkingTable w WITH (UPDLOCK, HOLDLOCK) WHERE w.callout_id = t.callout_id
                 );
 
+                SET @InsertedRows += @@ROWCOUNT;
 
                 IF @batchsizeFin > @rowstoInsert
                     BREAK
@@ -8775,20 +8846,34 @@ BEGIN
 
             UPDATE ccoCallsOutSource
             SET cal_status = 2, nOcupado = 0, nNoContesta = 0, nFax = 0, nContestadora = 0, nShortCall = 0, nOtro = 0
-            FROM ccoCallsOutSource co WITH (NOLOCK), #calloutIdSource2 cis3 WITH (NOLOCK)
-            WHERE co.callout_id = cis3.callout_id
+            FROM ccoCallsOutSource co
+            INNER JOIN #claimCallIds c ON co.callout_id = c.callout_id
         END
 
+        COMMIT
+        END TRY
+BEGIN CATCH
+    IF @@TRANCOUNT > 0 ROLLBACK;
+    RAISERROR(@ErrMsg, @ErrSeverity, @ErrState);
+END CATCH
+        DROP TABLE #claimCallIds
         DROP TABLE #calloutIdSource
-
         DROP TABLE #calloutIdSource2
-
         DROP TABLE #tempCallsOutSource
 END
 
+_FIN:
 UPDATE ccCampsNvosCB
 SET dateUpdate = NULL
 WHERE id = @camp_id
+
+IF @HadError = 1
+BEGIN
+    RAISERROR(@ErrMsg, @ErrSeverity, @ErrState);
+END
+
+SELECT @InsertedRows AS InsertedRows;
+RETURN 0;
 
 SET NOCOUNT OFF';
     EXEC(@sql);

@@ -9573,7 +9573,7 @@ BEGIN
     
                 delete A from ccAVRSTransfer A
                 inner join @tempCalls t on A.id=t.avrsId
-                where t.user_id=0 and t.IsVoicemail=0
+                where t.user_id=0 and t.virtualAgentId=0 and t.IsVoicemail=0
         END
 
     -- Si no hay registros con IsVoicemail, simplemente devolver los resultados de la variable tipo tabla

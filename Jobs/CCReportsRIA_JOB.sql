@@ -500,7 +500,6 @@ IF EXISTS (SELECT 1 FROM msdb.dbo.sysjobs WHERE name = N''JOB_UpdateDataAreaId_B
 BEGIN
     EXEC msdb.dbo.sp_delete_job @job_name = N''JOB_UpdateDataAreaId_Batch'';
 END
-GO
 
 /****** Object:  Job [JOB_UpdateDataAreaId_Batch]    Script Date: 26/03/2026 03:56:34 p. m. ******/
 BEGIN TRANSACTION
@@ -514,7 +513,6 @@ IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 
 END
 
-DECLARE @jobId BINARY(16)
 EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N''JOB_UpdateDataAreaId_Batch'', 
         @enabled=1, 
         @notify_level_eventlog=2, 
@@ -825,7 +823,6 @@ IF EXISTS (SELECT 1 FROM msdb.dbo.sysjobs WHERE name = N''JOB_UpdateSystemApiId_
 BEGIN
     EXEC msdb.dbo.sp_delete_job @job_name = N''JOB_UpdateSystemApiId_Batch'';
 END
-GO
 
 /****** Object:  Job [JOB_UpdateSystemApiId_Batch]    Script Date: 26/03/2026 03:56:34 p. m. ******/
 BEGIN TRANSACTION
@@ -839,7 +836,6 @@ IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 
 END
 
-DECLARE @jobId BINARY(16)
 EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N''JOB_UpdateSystemApiId_Batch'', 
         @enabled=1, 
         @notify_level_eventlog=2, 

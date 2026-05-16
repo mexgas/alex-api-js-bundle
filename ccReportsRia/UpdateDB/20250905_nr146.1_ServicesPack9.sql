@@ -255,6 +255,131 @@ ON [dbo].[tmpTimesOutboundData] ([cal_manual])
 INCLUDE ([timegroup],[User_id],[nabnd_xfer],[nabnd_ring],[tdialog],[tnotes],[cal_id])
 end
 
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes i
+    WHERE i.name = ''IX_ccoLogDials_cal_id_logDial''
+      AND i.object_id = OBJECT_ID(''dbo.ccoLogDials'')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX [IX_ccoLogDials_cal_id_logDial]
+    ON [dbo].[ccoLogDials] ([cal_id] desc)
+    INCLUDE ([logDial_id])
+END
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes i
+    WHERE i.name = ''IX_ccoLogDials_fecha_repOutDialDetail''
+      AND i.object_id = OBJECT_ID(''dbo.ccoLogDials'')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX IX_ccoLogDials_fecha_repOutDialDetail
+    ON dbo.ccoLogDials
+    (
+        fecha ASC
+    )
+    INCLUDE
+    (
+        logDial_id,
+        callout_id,
+        cam_id,
+        tipoResDial_id,
+        Telefono,
+        Puerto,
+        tDialing,
+        tBusy,
+        answerbit,
+        TipoDialingMode,
+        cal_id,
+        canceledNoAgents,
+        disconnectCause,
+        tipoLlamada_id,
+        manualCRM
+    );
+END
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes i
+    WHERE i.name = ''IX_ccoLogDialsData_logDial_repOutDialDetail''
+      AND i.object_id = OBJECT_ID(''dbo.ccoLogDialsData'')
+)
+BEGIN
+
+    CREATE NONCLUSTERED INDEX IX_ccoLogDialsData_logDial_repOutDialDetail
+    ON dbo.ccoLogDialsData
+    (
+        logDial_id
+    )
+    INCLUDE
+    (
+        Data1,
+        Data2,
+        Data3,
+        Data4,
+        Data5
+    );
+END
+
+IF NOT EXISTS (
+    SELECT 1 
+    FROM sys.indexes 
+    WHERE name = ''CIX_RepOutDialDetail_date''
+    AND object_id = OBJECT_ID(''RepOutDialDetail'')
+)
+BEGIN
+    CREATE CLUSTERED INDEX CIX_RepOutDialDetail_date
+    ON dbo.RepOutDialDetail([date]);
+END
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes i
+    WHERE i.name = ''IX_ccoCallsOut_cal_id_repOutDialDetail''
+      AND i.object_id = OBJECT_ID(''dbo.ccoCallsOut'')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX IX_ccoCallsOut_cal_id_repOutDialDetail
+    ON dbo.ccoCallsOut
+    (
+        cal_id
+    )
+    INCLUDE
+    (
+        callout_id,
+        User_id,
+        cal_key,
+        calif_id,
+        califSub_id,
+        cal_manual,
+        file_moved
+    );
+END
+
+IF NOT EXISTS (
+    SELECT 1 
+    FROM sys.indexes 
+    WHERE name = ''IX_smsoutSourceMessage_smsout_id''
+    AND object_id = OBJECT_ID(''smsoutSourceMessage'')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX IX_smsoutSourceMessage_smsout_id
+    ON dbo.smsoutSourceMessage (smsout_id)
+    INCLUDE ([message]);
+END
+
+IF NOT EXISTS (
+    SELECT 1 
+    FROM sys.indexes 
+    WHERE name = ''IX_smsccoLogDial_smsDate''
+    AND object_id = OBJECT_ID(''smsccoLogDial'')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX IX_smsccoLogDial_smsDate
+    ON dbo.smsccoLogDial (smsDate)
+    INCLUDE (smsout_id, cam_id, phone, [Message], statusSystemsId, Bill, logId, registryClient)
+END
 
 /**************************** INDICES Reportes *******************************/
 set @column=''date''
@@ -2302,13 +2427,18 @@ BEGIN
 END'
     exec (@sql)
 
-    SET @process = 'INSERT ReportsFiltersMenus 2140'
-    SET @sql = 'INSERT INTO ReportsFiltersMenus(idReport,filterMenuName,showFilter) VALUES(2140,''date'',1),(2140,''filterby'',1)'
+	SET @process = 'INSERT ReportsFiltersMenus 2140'
+	SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ReportsFiltersMenus WHERE idReport = 2140)
+	BEGIN
+			INSERT INTO ReportsFiltersMenus(idReport,filterMenuName,showFilter) VALUES(2140,''date'',1),(2140,''filterby'',1);
+	END'
     exec (@sql)
-    
-
-    SET @process = 'INSERT ReportsFilters 2140'
-    SET @sql = 'INSERT INTO ReportsFilters(reportName,filterName,id) VALUES(''Agent History'',''users'',2140),(''Agent History'',''areas'',2140)'
+	
+	SET @process = 'INSERT ReportsFilters 2140'
+	SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ReportsFilters WHERE id = 2140)
+	BEGIN
+			INSERT INTO ReportsFilters(reportName,filterName,id) VALUES(''Agent History'',''users'',2140),(''Agent History'',''areas'',2140)
+	END'
     exec (@sql)
 
     SET @process = 'CREATE TABLE RepAgentHistory 2140'
@@ -2340,6 +2470,15 @@ END'
 			DROP PROCEDURE ccspRepAgentHistory;
 	end'
     exec (@sql)
+	
+	
+	SET @process = 'INSERT ccMenus 2140'
+	SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccMenus WHERE menu_id = 2140)
+	BEGIN
+			INSERT INTO ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release) VALUES (2140,''Historico de Agentes|Agent History'',2000,''B'',2,3,'''',''5b93455cb709b0d0e530e8c721d1a8d4e39ec732890faa5e326f078f203e910e96bf09cfe811ecf0150db2af792c3401'');
+	END'
+    exec (@sql)
+
 
     SET @process = 'CREATE ccspRepAgentHistory 2140'
     SET @sql = 'CREATE PROCEDURE [dbo].[ccspRepAgentHistory]

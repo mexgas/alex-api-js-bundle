@@ -488,23 +488,31 @@ VALUES (''''delete TOP (@batchSize) from ccoCallsOutData where callDate < @date'
 INSERT INTO #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated) 
 VALUES (''''delete TOP (@batchSize) from ccoLogDialsData where callDate < @date'''', 0, 1);
 
-INSERT INTO #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated) 
-VALUES (''''delete TOP (@batchSize) a from cchistoriallistanegra as a inner join #ccoCallsOutSourceIds as b on a.callout_id = b.callout_id and A.fecha<@date'''', 0, 0);
+insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
+values (''''delete a from cchistoriallistanegra as a inner join #ccoCallsOutSourceIds as b on a.callout_id = b.callout_id and A.fecha<@date'''', 0, 0)
 
-INSERT INTO #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated) 
-VALUES (''''delete TOP (@batchSize) a from ccoWorkingTable as a inner join #ccoCallsOutSourceIds as b on a.callout_id = b.callout_id and cal_fechaDial<@date'''', 0, 0);
+insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
+values (''''delete a from ccoWorkingTable as a inner join #ccoCallsOutSourceIds as b on a.callout_id = b.callout_id and cal_fechaDial<@date'''', 0, 0)
 
-INSERT INTO #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated) 
-VALUES (''''delete TOP (@batchSize) a from ccocallbacks as a inner join #ccoCallsOutSourceIds as b on a.callout_id = b.callout_id where cal_fecha<@date'''', 0, 1);
+insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
+values (''''delete a from ccocallbacks as a, #ccoCallsOutSourceIds as b where a.callout_id = b.callout_id and cal_fecha<@date'''', 0, 1)
 
-INSERT INTO #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated) 
-VALUES (''''delete TOP (@batchSize) a from ccoCallsOut as a inner join #ccoCallsOutSourceIds b on a.callout_id = b.callout_id where a.cal_Inicio<@date'''', 0, 1);
+insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
+values (''''delete a from ccoCallsOut as a  inner join #ccoCallsOutSourceIds b on  a.callout_id = b.callout_id where a.cal_Inicio<@date'''', 0, 1)
 
-INSERT INTO #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated) 
-VALUES (''''delete TOP (@batchSize) a from ccoCallsOutSource a inner join #ccoCallsOutSourceIds b on a.callout_id = b.callout_id and cal_fechaDial<@date'''', 0, 1);
+--quita los calloutId que existen registros recientes
+insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
+values ('''';with logDialsMax as(
+select b.callout_id,MAX(b.fecha) fecha from #ccoCallsOutSourceIds A
+inner join ccoLogDials b on A.callout_id = b.callout_id
+group by b.callout_id
+)
+delete B from logDialsMax A
+inner join #ccoCallsOutSourceIds B on A.callout_id=B.callout_id
+where A.fecha>@date'''', 0, 1)
 
-INSERT INTO #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated) 
-VALUES (''''delete TOP (@batchSize) a from ccoCallPriorityOrder a inner join #ccoCallsOutSourceIds b on a.callout_id = b.callout_id'''', 0, 1);
+insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
+values (''''delete a from ccoCallsOutSource a inner join #ccoCallsOutSourceIds b on a.callout_id = b.callout_id and cal_fechaDial<@date'''', 0, 1)
 
 INSERT INTO #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated) 
 VALUES (''''delete TOP (@batchSize) A from ccoCallPriorityOrder A left join ccoCallsOutSource B on A.callout_id=B.callout_id where B.callout_id is null'''', 0, 1);

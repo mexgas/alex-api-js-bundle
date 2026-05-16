@@ -48,6 +48,15 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 
 	--- BEGIN Services Pack 1-8 --
 
+    SET @process = 'KM47001 - Se crea campo para el tipo de ANI en llamada manual'
+	SET @sql = 'if not exists(select top 1 1 from cctipoResultadodial where tipoResDial_id=15)
+        begin
+            insert cctipoResultadodial (tipoResDial_id,
+            descripcion,
+            descTranslate) values (15, ''Máquina/Buzón (post‑conexión)'', ''systemTranslated_QuantumVoicemail'')
+        end'
+	EXEC(@sql)
+
 		SET @process = 'KM47001 - Se crea campo para el tipo de ANI en llamada manual'
 	SET @sql = 'IF not exists (SELECT 1 FROM SYS.columns WHERE name=''ManualCallANIMode'' 
 AND OBJECT_ID = OBJECT_ID(''ccCampsExtend''))

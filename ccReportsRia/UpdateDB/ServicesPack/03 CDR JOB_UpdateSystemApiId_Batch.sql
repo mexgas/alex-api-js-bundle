@@ -1,5 +1,4 @@
 USE msdb
-GO
 
 DECLARE @jobId BINARY(16);
 
@@ -182,5 +181,3 @@ GOTO EndSave
 QuitWithRollback:
     IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION
 EndSave:
-GO
-

@@ -255,6 +255,131 @@ ON [dbo].[tmpTimesOutboundData] ([cal_manual])
 INCLUDE ([timegroup],[User_id],[nabnd_xfer],[nabnd_ring],[tdialog],[tnotes],[cal_id])
 end
 
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes i
+    WHERE i.name = ''IX_ccoLogDials_cal_id_logDial''
+      AND i.object_id = OBJECT_ID(''dbo.ccoLogDials'')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX [IX_ccoLogDials_cal_id_logDial]
+    ON [dbo].[ccoLogDials] ([cal_id] desc)
+    INCLUDE ([logDial_id])
+END
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes i
+    WHERE i.name = ''IX_ccoLogDials_fecha_repOutDialDetail''
+      AND i.object_id = OBJECT_ID(''dbo.ccoLogDials'')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX IX_ccoLogDials_fecha_repOutDialDetail
+    ON dbo.ccoLogDials
+    (
+        fecha ASC
+    )
+    INCLUDE
+    (
+        logDial_id,
+        callout_id,
+        cam_id,
+        tipoResDial_id,
+        Telefono,
+        Puerto,
+        tDialing,
+        tBusy,
+        answerbit,
+        TipoDialingMode,
+        cal_id,
+        canceledNoAgents,
+        disconnectCause,
+        tipoLlamada_id,
+        manualCRM
+    );
+END
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes i
+    WHERE i.name = ''IX_ccoLogDialsData_logDial_repOutDialDetail''
+      AND i.object_id = OBJECT_ID(''dbo.ccoLogDialsData'')
+)
+BEGIN
+
+    CREATE NONCLUSTERED INDEX IX_ccoLogDialsData_logDial_repOutDialDetail
+    ON dbo.ccoLogDialsData
+    (
+        logDial_id
+    )
+    INCLUDE
+    (
+        Data1,
+        Data2,
+        Data3,
+        Data4,
+        Data5
+    );
+END
+
+IF NOT EXISTS (
+    SELECT 1 
+    FROM sys.indexes 
+    WHERE name = ''CIX_RepOutDialDetail_date''
+    AND object_id = OBJECT_ID(''RepOutDialDetail'')
+)
+BEGIN
+    CREATE CLUSTERED INDEX CIX_RepOutDialDetail_date
+    ON dbo.RepOutDialDetail([date]);
+END
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes i
+    WHERE i.name = ''IX_ccoCallsOut_cal_id_repOutDialDetail''
+      AND i.object_id = OBJECT_ID(''dbo.ccoCallsOut'')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX IX_ccoCallsOut_cal_id_repOutDialDetail
+    ON dbo.ccoCallsOut
+    (
+        cal_id
+    )
+    INCLUDE
+    (
+        callout_id,
+        User_id,
+        cal_key,
+        calif_id,
+        califSub_id,
+        cal_manual,
+        file_moved
+    );
+END
+
+IF NOT EXISTS (
+    SELECT 1 
+    FROM sys.indexes 
+    WHERE name = ''IX_smsoutSourceMessage_smsout_id''
+    AND object_id = OBJECT_ID(''smsoutSourceMessage'')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX IX_smsoutSourceMessage_smsout_id
+    ON dbo.smsoutSourceMessage (smsout_id)
+    INCLUDE ([message]);
+END
+
+IF NOT EXISTS (
+    SELECT 1 
+    FROM sys.indexes 
+    WHERE name = ''IX_smsccoLogDial_smsDate''
+    AND object_id = OBJECT_ID(''smsccoLogDial'')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX IX_smsccoLogDial_smsDate
+    ON dbo.smsccoLogDial (smsDate)
+    INCLUDE (smsout_id, cam_id, phone, [Message], statusSystemsId, Bill, logId, registryClient)
+END
 
 /**************************** INDICES Reportes *******************************/
 set @column=''date''

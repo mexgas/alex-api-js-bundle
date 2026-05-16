@@ -3747,7 +3747,7 @@ end
 DECLARE @aniIdx varchar(500), @aniCnt smallint, @aniCurList int, @usedAniCnt int, @phoneCnt int, @ani varchar(32), @idx varchar(8)
 DECLARE @id_phone INT, @phone varchar(32), @usedAni varchar(30)
 
-if exists(select top 1 1 FROM ccRotativeAniListDetail with(nolock) WHERE id_RAniList = @aniList)
+if exists(select top 1 1 FROM ccRotativeAniListDetail with(nolock) WHERE id_RAniList = @aniList) OR @algo = 0
 begin
     set @aniCnt= case when @algo = 3 then 2 else 1 end
 end
@@ -7956,8 +7956,8 @@ IF(@ManualCallANIMode > 0) BEGIN
 
 	IF EXISTS(SELECT 1 FROM @Anis) BEGIN
 		SELECT TOP 1 ani FROM @Anis
-	END ELSE IF EXISTS (SELECT valor FROM ccSettings WHERE setting_id = 177) BEGIN
-		SELECT * FROM ccSettings WHERE setting_id = 177
+	END ELSE IF EXISTS (SELECT valor FROM ccSettings WHERE setting_id = 177 and valor != '''') BEGIN
+		SELECT valor as ani FROM ccSettings WHERE setting_id = 177
 	END ELSE BEGIN
 		SELECT ''''
 	END

@@ -3356,14 +3356,7 @@ BEGIN
 
     IF @test = 1
     BEGIN
-        SET @sql += NCHAR(13) + N''
-        delete A from ccAniRecordState A
-        inner join  #NEW_JOBS B on A.callout_id = B.callout_id
-
-        delete A from ccAniPrefixState A
-        inner join  #NEW_JOBS B on A.callout_id = B.callout_id
-
-        delete A from ccAniA3State A
+        SET @sql += NCHAR(13) + N''delete A from ccAniA3State A
         inner join  #NEW_JOBS B on A.callout_id = B.callout_id
         '';
     END
@@ -4156,16 +4149,7 @@ BEGIN
         
         SET @Rows = @@ROWCOUNT;
         IF @Rows > 0
-        BEGIN
-            DELETE s
-            FROM dbo.ccAniRecordState AS s
-            INNER JOIN #DeletedCallouts AS d
-                ON d.callout_id = s.callout_id                
-
-            DELETE s
-            FROM dbo.ccAniPrefixState AS s
-            INNER JOIN #DeletedCallouts AS d
-                ON d.callout_id = s.callout_id                
+        BEGIN                    
 
             DELETE s
             FROM dbo.ccAniA3State AS s
@@ -5504,15 +5488,15 @@ BEGIN
         -- 4. Limpiar ANI viejo antes de insertar nuevamente en ccoWorkingTable
         --    Se limpia solo por callout_id.
         ---------------------------------------------------------------------
-        DELETE s
-        FROM dbo.ccAniRecordState AS s
-        INNER JOIN #tempCallsOutSource AS t
-            ON t.callout_id = s.callout_id;
+        -- DELETE s
+        -- FROM dbo.ccAniRecordState AS s
+        -- INNER JOIN #tempCallsOutSource AS t
+        --     ON t.callout_id = s.callout_id;
 
-        DELETE s
-        FROM dbo.ccAniPrefixState AS s
-        INNER JOIN #tempCallsOutSource AS t
-            ON t.callout_id = s.callout_id;
+        -- DELETE s
+        -- FROM dbo.ccAniPrefixState AS s
+        -- INNER JOIN #tempCallsOutSource AS t
+        --     ON t.callout_id = s.callout_id;
 
         DELETE s
         FROM dbo.ccAniA3State AS s
@@ -7073,8 +7057,15 @@ END'
     exec (@sql)
      
 
-    SET @process = ''
-    SET @sql = ''
+    SET @process = 'exec ccspRotativeAniListSequence'
+    SET @sql = 'exec ccspRotativeAniListSequence @action=1,@anilistId=0
+    exec ccspRotativeAniListSequence @action=1,@anilistId=0
+    exec ccspRotativeAniListSequence @action=2,@anilistId=0
+    exec ccspRotativeAniListSequence @action=3,@anilistId=0
+    exec ccspRotativeAniListSequence @action=4,@anilistId=0
+    exec ccspRotativeAniListSequence @action=5,@anilistId=0
+    exec ccspRotativeAniListSequence @action=6,@anilistId=0
+    '
     exec (@sql)
 
     SET @process = ''

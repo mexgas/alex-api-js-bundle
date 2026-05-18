@@ -5673,15 +5673,15 @@ BEGIN
         ---------------------------------------------------------------------
         -- 2. Limpiar ANI viejo antes de insertar a WT
         ---------------------------------------------------------------------
-        DELETE s
-        FROM dbo.ccAniRecordState AS s
-        INNER JOIN #CalloutsToInsert AS c
-            ON c.callout_id = s.callout_id;
+        -- DELETE s
+        -- FROM dbo.ccAniRecordState AS s
+        -- INNER JOIN #CalloutsToInsert AS c
+        --     ON c.callout_id = s.callout_id;
 
-        DELETE s
-        FROM dbo.ccAniPrefixState AS s
-        INNER JOIN #CalloutsToInsert AS c
-            ON c.callout_id = s.callout_id;
+        -- DELETE s
+        -- FROM dbo.ccAniPrefixState AS s
+        -- INNER JOIN #CalloutsToInsert AS c
+        --     ON c.callout_id = s.callout_id;
 
         DELETE s
         FROM dbo.ccAniA3State AS s
@@ -5837,15 +5837,15 @@ BEGIN
     -------------------------------------------------------------------------
     -- 2. Limpiar ANI viejo antes de meter nuevamente el callout_id a WT
     -------------------------------------------------------------------------
-    DELETE s
-    FROM dbo.ccAniRecordState AS s
-    INNER JOIN #CalloutsToInsert AS c
-        ON c.callout_id = s.callout_id;
+    -- DELETE s
+    -- FROM dbo.ccAniRecordState AS s
+    -- INNER JOIN #CalloutsToInsert AS c
+    --     ON c.callout_id = s.callout_id;
 
-    DELETE s
-    FROM dbo.ccAniPrefixState AS s
-    INNER JOIN #CalloutsToInsert AS c
-        ON c.callout_id = s.callout_id;
+    -- DELETE s
+    -- FROM dbo.ccAniPrefixState AS s
+    -- INNER JOIN #CalloutsToInsert AS c
+    --     ON c.callout_id = s.callout_id;
 
     DELETE s
     FROM dbo.ccAniA3State AS s
@@ -6120,15 +6120,15 @@ BEGIN
         ---------------------------------------------------------------------
         -- 2. Limpiar ANI viejo antes de insertar nuevamente en ccoWorkingTable
         ---------------------------------------------------------------------
-        DELETE s
-        FROM dbo.ccAniRecordState AS s
-        INNER JOIN #BatchSource AS b
-            ON b.callout_id = s.callout_id;
+        -- DELETE s
+        -- FROM dbo.ccAniRecordState AS s
+        -- INNER JOIN #BatchSource AS b
+        --     ON b.callout_id = s.callout_id;
 
-        DELETE s
-        FROM dbo.ccAniPrefixState AS s
-        INNER JOIN #BatchSource AS b
-            ON b.callout_id = s.callout_id;
+        -- DELETE s
+        -- FROM dbo.ccAniPrefixState AS s
+        -- INNER JOIN #BatchSource AS b
+        --     ON b.callout_id = s.callout_id;
 
         DELETE s
         FROM dbo.ccAniA3State AS s

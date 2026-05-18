@@ -10423,6 +10423,35 @@ CREATE PROCEDURE [dbo].[ccsp_Limpia]
 
 EXEC(@sql);
 -----------------------END Esmeralda Garcia------------------------------
+------------------------ BEGIN Hugo Longoria ------------------------------
+SET @process = 'CREATE/UPDATE STATUS 20'
+SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccStatusLLamada WHERE statusCall_id = 20 )
+    BEGIN
+        INSERT INTO ccStatusLLamada
+        (
+            statusCall_id,
+            descripcion,
+            inAbandonConfig,
+            descTranslated
+        )
+        VALUES
+        (
+            20,
+            ''Voicemail (post-connection)'',
+            0,
+            ''systemTranslated_status_vm_postcnx''
+        );
+    END
+    ELSE
+    BEGIN
+        UPDATE ccStatusLLamada
+        SET 
+            descripcion = ''Voicemail (post-connection)'',
+            descTranslated = ''systemTranslated_status_vm_postcnx''
+        WHERE statusCall_id = 20;
+    END;'
+exec (@sql)
+------------------------ END Hugo Longoria ------------------------------
 	
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

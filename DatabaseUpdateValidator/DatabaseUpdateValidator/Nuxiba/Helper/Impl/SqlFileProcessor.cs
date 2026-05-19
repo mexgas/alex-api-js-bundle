@@ -7,7 +7,7 @@ namespace DatabaseUpdateValidator.Nuxiba.Helper.Impl
     {
         public List<string> GetOrderedSqlFiles(string directoryPath, string pattern)
         {
-            Regex regex = new Regex(pattern);
+            Regex regex = new Regex(pattern, RegexOptions.IgnoreCase);
             var sqlFiles = Directory.GetFiles(directoryPath, "*.sql")
                 .Select(file => new
                 {
@@ -18,9 +18,10 @@ namespace DatabaseUpdateValidator.Nuxiba.Helper.Impl
                 .Select(file => new
                 {
                     FileName = file.FileName,
-                    Version = file.Match.Groups[1].Value
+                    Version = GetVersionKey(file.Match)
                 })
                 .OrderBy(file => file.Version)
+                .ThenBy(file => file.FileName)
                 .Select(file => file.FileName)
                 .ToList();
 
@@ -30,28 +31,11 @@ namespace DatabaseUpdateValidator.Nuxiba.Helper.Impl
         public SortedList<long, string> MapVersionFile(List<string> sqlFiles, string pattern, long currentVersion)
         {
             SortedList<long, string> fileList = new SortedList<long, string>();
-            Regex regex = new Regex(pattern);
+            Regex regex = new Regex(pattern, RegexOptions.IgnoreCase);
             foreach (var sqlFile in sqlFiles)
             {
-                Match match = regex.Match(sqlFile);
-                int versionFile = Convert.ToInt32(match.Groups["version"].Value);
-                int versionFileFix = 0;
-                int patchVersion = 0;
-
-                if (match.Groups["versionFix"].Length > 0)
-                {
-                    versionFileFix = Convert.ToInt32(match.Groups["versionFix"].Value);
-                }
-
-                // Capturar patch opcional (ej: .1, .2 en v1.1.1)
-                if (match.Groups["patch"].Length > 0)
-                {
-                    patchVersion = Convert.ToInt32(match.Groups["patch"].Value);
-                }
-
-                // Cálculo: (version * 1000000) + (versionFix * 1000) + patch
-                // Ej: v1.1.1 = (1 * 1000000) + (1 * 1000) + 1 = 1001001
-                long versionFinal = ((long)versionFile * 1000000) + ((long)versionFileFix * 1000) + patchVersion;
+                Match match = regex.Match(Path.GetFileName(sqlFile));
+                long versionFinal = GetVersionKey(match);
 
                 if (versionFinal >= currentVersion)
                 {
@@ -59,6 +43,21 @@ namespace DatabaseUpdateValidator.Nuxiba.Helper.Impl
                 }
             }
             return fileList;
+        }
+
+        private static long GetVersionKey(Match match)
+        {
+            int versionFile = GetIntGroupValue(match, "version");
+            int versionFileFix = GetIntGroupValue(match, "versionFix");
+            int patchVersion = GetIntGroupValue(match, "patch");
+
+            return ((long)versionFile * 1000000) + ((long)versionFileFix * 1000) + patchVersion;
+        }
+
+        private static int GetIntGroupValue(Match match, string groupName)
+        {
+            Group group = match.Groups[groupName];
+            return group.Success ? Convert.ToInt32(group.Value) : 0;
         }
     }
 }

@@ -44,7 +44,7 @@ namespace DatabaseUpdateValidator.Nuxiba.Repository.Impl
         }
 
         // Method to read and execute the SQL files
-        public void ExecuteFiles(SortedList<double, string> filePaths, string connectionString, DatabaseDto databaseDto)
+        public void ExecuteFiles(SortedList<long, string> filePaths, string connectionString, DatabaseDto databaseDto)
         {
             int currentVersion = (int)_sqlExecutor.ExecuteScalar(connectionString, databaseDto.VersionQuery);
             int versionFix = 0;
@@ -53,7 +53,9 @@ namespace DatabaseUpdateValidator.Nuxiba.Repository.Impl
                 versionFix = (int)_sqlExecutor.ExecuteScalar(connectionString, databaseDto.VersionQueryFix);
             }
 
-            int currentVersioFinal = (currentVersion * 1000) + versionFix;
+            // Cálculo: (version * 1000000) + (versionFix * 1000) + patch
+            // Ej: v1.1 = (1 * 1000000) + (1 * 1000) + 0 = 1001000
+            long currentVersioFinal = ((long)currentVersion * 1000000) + ((long)versionFix * 1000);
             var sortFile = filePaths.Where(f => f.Key >= currentVersioFinal).OrderBy(o => o.Key).ToList();
 
 
@@ -71,6 +73,8 @@ namespace DatabaseUpdateValidator.Nuxiba.Repository.Impl
                         if (fileNameFinal.Value == filePath.Value)
                         {
                             ValidateDuplicateObjectsDirect(sqlScript);
+                            ValidateDuplicateDynamicSql(sqlScript);
+                            ValidateSql2012Compatibility(sqlScript);
                         }
 
                         // Execute the script in the database
@@ -134,6 +138,112 @@ namespace DatabaseUpdateValidator.Nuxiba.Repository.Impl
             {
                 var listaDuplicados = string.Join(Environment.NewLine + "- ", duplicated);
                 throw new Exception($"Duplicate objects found: {listaDuplicados}");
+            }
+        }
+
+        private void ValidateDuplicateDynamicSql(string contenidoSql)
+        {
+            var dynamicSqlAssignments = new Dictionary<string, int>();
+            var lines = contenidoSql.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+            int lineNumber = 0;
+
+            foreach (var linea in lines)
+            {
+                lineNumber++;
+                var trimmedLine = linea.Trim();
+
+                // Buscar asignaciones de SQL dinámico: SET @sql = ...
+                if (trimmedLine.StartsWith("SET", StringComparison.OrdinalIgnoreCase) && trimmedLine.Contains("@"))
+                {
+                    // Extraer el valor después del = 
+                    var setPattern = new Regex(
+                        @"SET\s+@(\w+)\s*=\s*(.+?)(?:;|$)",
+                        RegexOptions.IgnoreCase | RegexOptions.Singleline
+                    );
+
+                    var match = setPattern.Match(trimmedLine);
+                    if (match.Success)
+                    {
+                        string variableName = match.Groups[1].Value.ToUpper();
+                        string sqlValue = match.Groups[2].Value.Trim();
+
+                        // Normalizar el valor para comparación (eliminar espacios extra)
+                        string normalizedValue = Regex.Replace(sqlValue, @"\s+", " ");
+
+                        string key = $"{variableName}={normalizedValue}";
+
+                        if (dynamicSqlAssignments.ContainsKey(key))
+                        {
+                            Logger.Warn($"Duplicate SET @sql assignment detected at line {lineNumber}: {key}");
+                            dynamicSqlAssignments[key]++;
+                        }
+                        else
+                        {
+                            dynamicSqlAssignments[key] = 1;
+                        }
+                    }
+                }
+            }
+
+            // Verificar si hay duplicados significativos
+            var duplicates = dynamicSqlAssignments.Where(x => x.Value > 1).ToList();
+            if (duplicates.Any())
+            {
+                var duplicateList = string.Join(Environment.NewLine + "- ", 
+                    duplicates.Select(d => $"Repeated {d.Value} times: {d.Key.Split('=')[0]}"));
+                throw new Exception($"Duplicate dynamic SQL assignments found (same SET @sql repeated):{Environment.NewLine}- {duplicateList}");
+            }
+        }
+
+        private void ValidateSql2012Compatibility(string contenidoSql)
+        {
+            var incompatibleFeatures = new List<string>();
+            var lines = contenidoSql.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+            int lineNumber = 0;
+
+            // Características no compatibles con SQL Server 2012
+            var incompatibilityPatterns = new Dictionary<Regex, string>
+            {
+                { new Regex(@"STRING_SPLIT\s*\(", RegexOptions.IgnoreCase), "STRING_SPLIT (added in SQL Server 2016)" },
+                { new Regex(@"DROP\s+TABLE\s+IF\s+EXISTS\s+", RegexOptions.IgnoreCase), "DROP TABLE IF EXISTS (added in SQL Server 2016)" },
+                { new Regex(@"DROP\s+VIEW\s+IF\s+EXISTS\s+", RegexOptions.IgnoreCase), "DROP VIEW IF EXISTS (added in SQL Server 2016)" },
+                { new Regex(@"DROP\s+PROCEDURE\s+IF\s+EXISTS\s+", RegexOptions.IgnoreCase), "DROP PROCEDURE IF EXISTS (added in SQL Server 2016)" },
+                { new Regex(@"DROP\s+FUNCTION\s+IF\s+EXISTS\s+", RegexOptions.IgnoreCase), "DROP FUNCTION IF EXISTS (added in SQL Server 2016)" },
+                { new Regex(@"CONCAT_WS\s*\(", RegexOptions.IgnoreCase), "CONCAT_WS (added in SQL Server 2017)" },
+                { new Regex(@"JSON_QUERY\s*\(", RegexOptions.IgnoreCase), "JSON_QUERY (added in SQL Server 2016)" },
+                { new Regex(@"JSON_VALUE\s*\(", RegexOptions.IgnoreCase), "JSON_VALUE (added in SQL Server 2016)" },
+                { new Regex(@"JSON_MODIFY\s*\(", RegexOptions.IgnoreCase), "JSON_MODIFY (added in SQL Server 2016)" },
+                { new Regex(@"JSON_EXTRACT\s*\(", RegexOptions.IgnoreCase), "JSON_EXTRACT (added in SQL Server 2017)" },
+                { new Regex(@"FORMAT\s*\(", RegexOptions.IgnoreCase), "FORMAT (added in SQL Server 2012 SP1 - may have compatibility issues)" },
+                { new Regex(@"TRIM\s*\(", RegexOptions.IgnoreCase), "TRIM (added in SQL Server 2017)" },
+                { new Regex(@"TRANSLATE\s*\(", RegexOptions.IgnoreCase), "TRANSLATE (added in SQL Server 2017)" }
+            };
+
+            foreach (var linea in lines)
+            {
+                lineNumber++;
+                var trimmedLine = linea.Trim();
+
+                // Skip comments
+                if (trimmedLine.StartsWith("--", StringComparison.Ordinal) || trimmedLine.StartsWith("/*", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                foreach (var pattern in incompatibilityPatterns)
+                {
+                    if (pattern.Key.IsMatch(trimmedLine))
+                    {
+                        incompatibleFeatures.Add($"Line {lineNumber}: {pattern.Value}");
+                    }
+                }
+            }
+
+            if (incompatibleFeatures.Any())
+            {
+                var featureList = string.Join(Environment.NewLine + "- ", incompatibleFeatures);
+                Logger.Warn($"SQL Server 2012 compatibility issues found:{Environment.NewLine}- {featureList}");
+                throw new Exception($"SQL Server 2012 incompatible features detected:{Environment.NewLine}- {featureList}");
             }
         }
     }

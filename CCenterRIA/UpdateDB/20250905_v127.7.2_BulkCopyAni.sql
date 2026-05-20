@@ -45,7 +45,7 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
     BEGIN TRY
 
 
-	--- BEGIN Services Pack 1-8 --
+    --- BEGIN Services Pack 1-8 --
 
     SET @process = 'Drop Procedure [dbo].[ccspRotativeAniListSequence]';
 SET @sql = N'
@@ -1840,7 +1840,7 @@ BEGIN
            1. Normalizar batch
            ========================================================= */
 
-        DROP TABLE IF EXISTS #BatchPhones;
+        IF OBJECT_ID(''tempdb..#BatchPhones'') IS NOT NULL DROP TABLE #BatchPhones;
 
         CREATE TABLE #BatchPhones
         (
@@ -1905,7 +1905,7 @@ BEGIN
            2. Resolver prefijo aplicable
            ========================================================= */
 
-        DROP TABLE IF EXISTS #ResolvedPool;
+        IF OBJECT_ID(''tempdb..#ResolvedPool'') IS NOT NULL DROP TABLE #ResolvedPool;
 
         CREATE TABLE #ResolvedPool
         (
@@ -1970,8 +1970,8 @@ BEGIN
         /* =========================================================
            3. Necesidad por callout
            ========================================================= */
-
-        DROP TABLE IF EXISTS #CalloutNeed;
+        
+        IF OBJECT_ID(''tempdb..#CalloutNeed'') IS NOT NULL DROP TABLE #CalloutNeed;
 
         SELECT
             callout_id,
@@ -2044,8 +2044,8 @@ BEGIN
         /* =========================================================
            5. Leer estado bloqueado
            ========================================================= */
-
-        DROP TABLE IF EXISTS #State;
+        
+        IF OBJECT_ID(''tempdb..#State'') IS NOT NULL DROP TABLE #State;
 
         SELECT
             s.callout_id,
@@ -2074,7 +2074,7 @@ BEGIN
               Se elimina UPDATE posterior sobre #Work.
            ========================================================= */
 
-        DROP TABLE IF EXISTS #Work;
+        IF OBJECT_ID(''tempdb..#Work'') IS NOT NULL DROP TABLE #Work;
 
         SELECT
             z.callout_id,
@@ -2162,7 +2162,7 @@ BEGIN
            7. Asignaciones
            ========================================================= */
 
-        DROP TABLE IF EXISTS #AssignedAni;
+        IF OBJECT_ID(''tempdb..#AssignedAni'') IS NOT NULL DROP TABLE #AssignedAni;
 
         CREATE TABLE #AssignedAni
         (
@@ -2342,7 +2342,7 @@ BEGIN
            8. Agregados para estado
            ========================================================= */
 
-        DROP TABLE IF EXISTS #WorkAgg;
+        IF OBJECT_ID(''tempdb..#WorkAgg'') IS NOT NULL DROP TABLE #WorkAgg;
 
         SELECT
             w.callout_id,
@@ -2361,7 +2361,7 @@ BEGIN
         CREATE UNIQUE CLUSTERED INDEX IX_WorkAgg
             ON #WorkAgg(callout_id, id_RAniList);
 
-        DROP TABLE IF EXISTS #LastAssigned;
+        IF OBJECT_ID(''tempdb..#LastAssigned'') IS NOT NULL DROP TABLE #LastAssigned;
 
         SELECT
             x.callout_id,
@@ -2390,7 +2390,7 @@ BEGIN
         CREATE UNIQUE CLUSTERED INDEX IX_LastAssigned
             ON #LastAssigned(callout_id, id_RAniList);
 
-        DROP TABLE IF EXISTS #StateUpdate;
+        IF OBJECT_ID(''tempdb..#StateUpdate'') IS NOT NULL DROP TABLE #StateUpdate;
 
         SELECT
             st.callout_id,
@@ -7125,7 +7125,7 @@ END'
 
     
 
-	
+    
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
         EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)

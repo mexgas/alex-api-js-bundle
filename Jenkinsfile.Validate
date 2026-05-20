@@ -116,15 +116,35 @@ pipeline {
         stage('Compare Schema') {
             steps {
                 script {
+                    def compareDatabaseWithRetry = { String databaseName ->
+                        int maxAttempts = 3
+
+                        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+                            try {
+                                echo "Compare ${databaseName}: intento ${attempt} de ${maxAttempts}"
+                                bat "\"./CompareDatabse.bat\" ${databaseName} ${databaseName}"
+                                break
+                            } catch (Exception err) {
+                                if (attempt == maxAttempts) {
+                                    echo "Compare ${databaseName}: fallo despues de ${maxAttempts} intentos"
+                                    throw err
+                                }
+
+                                echo "Compare ${databaseName}: fallo el intento ${attempt}. Reintentando en 5 segundos..."
+                                sleep(time: 5, unit: 'SECONDS')
+                            }
+                        }
+                    }
+
                     parallel(                        
                         'Compare CCenterRIA': {
-                            bat '"./CompareDatabse.bat" CCenterRIA CCenterRIA'
+                            compareDatabaseWithRetry('CCenterRIA')
                         },
                         'Compare CCRecorderRIA': {
-                            bat '"./CompareDatabse.bat" CCRecorderRIA CCRecorderRIA'
+                            compareDatabaseWithRetry('CCRecorderRIA')
                         },
                         'Compare CCReportsRIA': {
-                            bat '"./CompareDatabse.bat" CCReportsRIA CCReportsRIA'
+                            compareDatabaseWithRetry('CCReportsRIA')
                         }
                     )
                 }

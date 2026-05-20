@@ -67,7 +67,7 @@ if exist "%folderOriDacpac%" rmdir /s /q "%folderOriDacpac%"
 
 REM Extraer el esquema de la base de datos de destino a un archivo DACPAC
 echo Generando archivo DACPAC de la base de datos de destino: %OriDacpac%...
-"%SqlPackagePath%" /Action:Extract /SourceConnectionString:"%OriConnectionString%" /SourceTimeout:%ConnectionTimeout% /p:CommandTimeout=%CommandTimeout% /TargetFile:"%OriDacpac%" /OverwriteFiles:True
+"%SqlPackagePath%" /Action:Extract /SourceConnectionString:"%OriConnectionString%" /p:CommandTimeout=%CommandTimeout% /TargetFile:"%OriDacpac%" /OverwriteFiles:True
 if errorlevel 1 (
     echo Error al generar el archivo DACPAC de destino: %OriDacpac%
     exit /b 1
@@ -79,7 +79,7 @@ if not exist "%OriDacpac%" (
 
 REM Extraer el esquema de la base de datos de origen a un archivo DACPAC
 echo Generando archivo DACPAC de la base de datos de Pr: %PrDacpac%...
-"%SqlPackagePath%" /Action:Extract /SourceConnectionString:"%PrConnectionString%" /SourceTimeout:%ConnectionTimeout% /p:CommandTimeout=%CommandTimeout% /TargetFile:"%PrDacpac%" /OverwriteFiles:True
+"%SqlPackagePath%" /Action:Extract /SourceConnectionString:"%PrConnectionString%" /p:CommandTimeout=%CommandTimeout% /TargetFile:"%PrDacpac%" /OverwriteFiles:True
 if errorlevel 1 (
     echo Error al generar el archivo DACPAC de Pr: %PrDacpac%
     exit /b 1
@@ -90,7 +90,7 @@ if not exist "%PrDacpac%" (
 )
 
 
-unpackdacpac unpack "%PrDacpac%" "%folderPrDacpac%" --deploy-script-exclude-object-type Users --deploy-script-exclude-object-type Logins --deploy-script-exclude-object-type RoleMembership
+unpackdacpac unpack "%PrDacpac%" "%folderPrDacpac%" --clean-output-path --deploy-script-exclude-object-type Users --deploy-script-exclude-object-type Logins --deploy-script-exclude-object-type RoleMembership
 if errorlevel 1 (
     echo Error al desempaquetar el archivo DACPAC de Pr: %PrDacpac%
     exit /b 1
@@ -100,7 +100,7 @@ if not exist "%folderPrDacpac%\model.sql" (
     exit /b 1
 )
 
-unpackdacpac unpack "%OriDacpac%" "%folderOriDacpac%" --deploy-script-exclude-object-type Users --deploy-script-exclude-object-type Logins --deploy-script-exclude-object-type RoleMembership
+unpackdacpac unpack "%OriDacpac%" "%folderOriDacpac%" --clean-output-path --deploy-script-exclude-object-type Users --deploy-script-exclude-object-type Logins --deploy-script-exclude-object-type RoleMembership
 if errorlevel 1 (
     echo Error al desempaquetar el archivo DACPAC de destino: %OriDacpac%
     exit /b 1

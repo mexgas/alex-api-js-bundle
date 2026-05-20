@@ -165,7 +165,7 @@ pipeline {
 
             // Agregar callback HTTP al final del build
             script {
-                bat 'docker-compose down'
+                // bat 'docker-compose down'
 
                 def sonarProjectKey = "${SONAR_NAME}"
                 def buildResult = currentBuild.currentResult ?: 'SUCCESS'

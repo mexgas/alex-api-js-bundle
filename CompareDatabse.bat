@@ -5,6 +5,15 @@ REM Define la ruta a SqlPackage.exe
 set "SqlPackagePath=C:\Devops\sqlpackage-win-x64-en-162.4.92.3\SqlPackage.exe"
 set "ConnectionTimeout=300"
 set "CommandTimeout=300"
+set "MainServer=%SQL_SERVER_SERVER_MAIN%"
+set "PrServer=%SQL_SERVER_SERVER_PR%"
+set "SqlUser=%SQL_SERVER_USER%"
+set "SqlPassword=%SQL_SERVER_PASSWORD%"
+
+if "%MainServer%"=="" set "MainServer=192.168.1.59,1436"
+if "%PrServer%"=="" set "PrServer=192.168.1.59,1437"
+if "%SqlUser%"=="" set "SqlUser=sa"
+if "%SqlPassword%"=="" set "SqlPassword=Nuxiba2024_"
 
 REM Verifica si se pasaron los nombres de las bases de datos como parámetros
 if "%~1"=="" (
@@ -31,8 +40,10 @@ if not errorlevel 1 (
 )
 
 REM Define los detalles de conexión, con el parámetro TrustServerCertificate en la cadena de conexión
-set "OriConnectionString=Data Source=192.168.1.59,1436;Initial Catalog=%DestDatabaseName%;User Id=sa;Password=Nuxiba2024_;Encrypt=False;TrustServerCertificate=True;Connect Timeout=%ConnectionTimeout%"
-set "PrConnectionString=Data Source=192.168.1.59,1437;Initial Catalog=%PrDatabaseName%;User Id=sa;Password=Nuxiba2024_;Encrypt=False;TrustServerCertificate=True;Connect Timeout=%ConnectionTimeout%"
+set "OriConnectionString=Data Source=%MainServer%;Initial Catalog=%DestDatabaseName%;User Id=%SqlUser%;Password=%SqlPassword%;Encrypt=False;TrustServerCertificate=True;Connect Timeout=%ConnectionTimeout%"
+set "PrConnectionString=Data Source=%PrServer%;Initial Catalog=%PrDatabaseName%;User Id=%SqlUser%;Password=%SqlPassword%;Encrypt=False;TrustServerCertificate=True;Connect Timeout=%ConnectionTimeout%"
+echo Servidor destino/main: %MainServer%
+echo Servidor Pr: %PrServer%
 
 REM Define los archivos DACPAC donde se guardarán los esquemas extraídos
 set "PrDacpac=%PrDatabaseName%_Pr.dacpac"

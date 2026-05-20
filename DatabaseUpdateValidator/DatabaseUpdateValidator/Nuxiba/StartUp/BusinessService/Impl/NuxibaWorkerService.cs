@@ -98,7 +98,7 @@ EXEC sp_detach_db 'CCReportsRIA';"
 
             var list = new List<DatabaseDto>
             {
-                CCenterRIA//, CCRecorderRIA, CCReportsRIA
+                CCenterRIA, CCRecorderRIA, CCReportsRIA
             };
 
             startUpService.Start(list);

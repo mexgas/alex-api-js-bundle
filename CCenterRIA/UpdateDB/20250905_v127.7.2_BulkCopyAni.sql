@@ -6451,7 +6451,11 @@ BEGIN
                     THEN SUBSTRING(N.NormalizedPhone, 3, 4)
                 ELSE SUBSTRING(N.NormalizedPhone, 4, 3)
             END AS Serie,
-            TRY_CONVERT(INT, RIGHT(N.NormalizedPhone, 4)) AS Numeracion
+            CASE
+                WHEN RIGHT(N.NormalizedPhone, 4) NOT LIKE ''%[^0-9]%''
+                    THEN CONVERT(INT, RIGHT(N.NormalizedPhone, 4))
+                ELSE NULL
+            END AS Numeracion
         FROM #Phones P
         CROSS APPLY
         (
@@ -6887,23 +6891,23 @@ INNER JOIN dbo.ccoCallsOutSource COS WITH (NOLOCK)
 -------------------------------------------------------------------------
 IF @RecicleSIC = 1
 BEGIN
-    UPDATE WT WITH (ROWLOCK)
+    UPDATE WT
     SET WT.tipoResDial_id = I.ResDialTypeId
-    FROM dbo.ccoWorkingTable WT
+    FROM dbo.ccoWorkingTable WT WITH (ROWLOCK)
     INNER JOIN #InsertedLogDials I
         ON I.CalloutId = WT.callout_id;
 END;
 
-if exists(select 1 from cstoTarifa)
+IF EXISTS (SELECT 1 FROM dbo.cstoTarifa)
 BEGIN
     update cco
     set cco.costo=csto.MinutoUno + case when ISNULL(cco.totalCall_Time,0) > 0 then((ceiling(( ISNULL(cco.totalCall_Time,0) ) / 60.0 )- 1) * csto.MinutoAdicional ) else 0 end
     ,cco.provedor_id=cd.provedor_id
     ,cco.tipoLlamada_id = T.tipoLlamada_id
-    from #InsertedLogDials T
-    INNER JOIN ccoCallsOut cco on cco.cal_id=T.CallId AND cco.cal_manual <> 1
-    INNER JOIN ccoDialers cd on T.Port = cd.Puerto
-    INNER JOIN cstoTarifa csto on csto.tipoLlamada_id = T.tipoLlamada_id AND CSTO.tipoLlamada_id = T.tipoLlamada_id
+    FROM #InsertedLogDials T
+    INNER JOIN dbo.ccoCallsOut cco on cco.cal_id=T.CallId AND cco.cal_manual <> 1
+    INNER JOIN dbo.ccoDialers cd on T.Port = cd.Puerto
+    INNER JOIN dbo.cstoTarifa csto on csto.tipoLlamada_id = T.tipoLlamada_id AND CSTO.tipoLlamada_id = T.tipoLlamada_id
     where T.CallId > 0 AND T.ResDialTypeId = 1
 END
 DELETE FROM dbo.ccoLogDialsTempData
@@ -6913,21 +6917,21 @@ WHERE IsUpdate = 0
 END
 ELSE IF @Action=2 
 BEGIN
-    UPDATE LD WITH (ROWLOCK)
+    UPDATE LD
     SET LD.tipoResDial_id = T.ResDialTypeId,
         LD.answerbit = T.IsAnswerbit,
         LD.canceledNoAgents = T.IsCanceledNoAgents,
         LD.disconnectCause = T.DisconnectCause
-    FROM dbo.ccoLogDials LD
+    FROM dbo.ccoLogDials LD WITH (ROWLOCK)
     INNER JOIN dbo.ccoLogDialsTempData T WITH (NOLOCK)
         ON T.CalloutId=LD.callout_id 
     and T.CallId=LD.cal_id
     and T.CallTS = LD.call_TS
     and T.DateNow = LD.fecha
-    WHERE IsUpdate >0
+    WHERE T.IsUpdate > 0
 
     DELETE FROM dbo.ccoLogDialsTempData
-    WHERE IsUpdate >0
+    WHERE IsUpdate > 0
 
 END
 ELSE IF @Action=3 
@@ -6937,15 +6941,16 @@ BEGIN
     set @today=CONVERT(date,@today,121)
     
     ;with relationIvr as(
-        select cld.logDial_id,IVR_id from IVRCallsIn ivr 
-        inner join ccologDials cld on ivr.dialCorrelationId=cld.dialCorrelationId  
+        SELECT cld.logDial_id, ivr.IVR_id
+        FROM dbo.IVRCallsIn ivr 
+        INNER JOIN dbo.ccoLogDials cld on ivr.dialCorrelationId=cld.dialCorrelationId  
         where ivr.date>=@today AND ivr.dialCorrelationId IS NOT NULL
     )
     
-    update opt
-    set opt.cal_id=r.logDial_id
-    from IVROptions opt 
-    inner join relationIvr r on r.IVR_id=opt.IVR_id
+    UPDATE opt
+    SET opt.cal_id = r.logDial_id
+    FROM dbo.IVROptions opt 
+    INNER JOIN relationIvr r on r.IVR_id=opt.IVR_id
     where opt.cal_id=0
 
 END

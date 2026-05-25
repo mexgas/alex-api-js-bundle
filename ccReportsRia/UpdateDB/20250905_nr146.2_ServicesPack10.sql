@@ -2594,8 +2594,120 @@ END'
 		END
 	END'
     exec (@sql)
+
+     SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+    SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+     SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+    SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+     SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+    SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+    SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+     SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+    SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+     SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+    SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+     SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+    SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+     SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+    SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+     SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+    SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+    SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+     SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+    SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+     SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+    SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+     SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+    SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+     SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+    SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+     SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+    SET @process = ''
+    SET @sql = ''
+    exec (@sql)
   
-    IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version
+    	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version
 
 		COMMIT TRAN
 	END TRY

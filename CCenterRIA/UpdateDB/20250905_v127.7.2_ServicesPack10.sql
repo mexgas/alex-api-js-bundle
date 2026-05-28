@@ -793,9 +793,194 @@ END'
         end'
     exec (@sql)    
 
-    SET @process = ''
-    SET @sql = ''
-    exec (@sql)
+------------------------ BEGIN Giovanni Martinez ------------------------
+set @process = 'Se altera fGet_CampAcd_Area para mostrar totales de whatsapp'
+set @sql = '
+ALTER FUNCTION fGet_CampAcd_Area (@user int, @tipo int)  
+RETURNS @camps TABLE (cam_id int)  
+AS  
+BEGIN  
+    IF (SELECT login FROM ccUsers WHERE user_id = @user) = ''root''        
+        SET @user = 0  --solo se corrigio para el usuario root  
+    
+    IF @tipo = 3 AND @user = 0   
+        SET @tipo = 1  
+    IF @tipo = 4 AND @user = 0   
+        SET @tipo = 2    
+    
+    IF @tipo = 1 BEGIN        
+        INSERT @camps SELECT DISTINCT c.cam_id         
+        FROM ccUsers u JOIN ccCamps c ON u.IDArea = c.IDArea         
+        WHERE ISNULL(u.user_id, 0) = CASE WHEN @user > 0 THEN @user ELSE ISNULL(u.user_id, 0) END        
+    END    
+    ELSE IF @tipo = 2 BEGIN        
+        INSERT @camps SELECT DISTINCT c.Inbound_id         
+        FROM ccUsers u JOIN ccInbound c ON u.IDArea = c.IDArea         
+        WHERE ISNULL(u.user_id, 0) = CASE WHEN @user > 0 THEN @user ELSE ISNULL(u.user_id, 0) END        
+    END  
+    
+    IF @tipo = 3 BEGIN --Solo trae los seleccionados en el wg        
+        INSERT @camps SELECT DISTINCT wgCamAcd.IdCampEsp        
+        FROM ccUsers u WITH(NOLOCK)     
+        INNER JOIN ccCamps c WITH(NOLOCK) ON u.IDArea = c.IDArea     
+        INNER JOIN ccRIAWorkGroupUsers wg WITH(INDEX(IX_ccRIAWorkGroupUsers_I), NOLOCK) ON wg.User_id = u.User_id     
+        INNER JOIN ccRIACampEspWG wgCamAcd WITH(INDEX(IX_ccRIACampEspWG_2), NOLOCK) ON wgCamAcd.IDWG = wg.IDWG AND tipo = 1        
+        WHERE u.User_id = @user        
+    END    
+    ELSE IF @tipo = 4 BEGIN --Solo trae los seleccionados en el wg        
+        INSERT @camps SELECT DISTINCT wgCamAcd.IdCampEsp cam_id 
+        FROM ccUsers u WITH(NOLOCK)        
+        INNER JOIN ccInbound c WITH(NOLOCK) ON c.IDArea = c.IDArea        
+        INNER JOIN ccRIAWorkGroupUsers wg WITH(INDEX(IX_ccRIAWorkGroupUsers_I), NOLOCK) ON wg.User_id = u.User_id        
+        INNER JOIN ccRIACampEspWG wgCamAcd WITH(INDEX(IX_ccRIACampEspWG_2), NOLOCK) ON wgCamAcd.IDWG = wg.IDWG AND tipo = 0              
+        WHERE u.User_id = @user         
+    END  
+    ELSE IF @tipo = 5 BEGIN --Seleccionados en el wg y que son campañas de whatsApp de salida
+        IF @user = 0
+        BEGIN
+            -- root: trae todas las campañas WhatsApp
+            INSERT @camps 
+            SELECT DISTINCT c.cam_id
+            FROM ccCamps c
+            WHERE c.CampType = 5
+        END
+        ELSE
+        BEGIN
+            -- usuario normal: filtra por workgroup
+            INSERT @camps 
+            SELECT IdCampEsp 
+            FROM ccRIAWorkGroupUsers wgu
+            INNER JOIN ccRIACampEspWG wgc ON wgc.IDWG = wgu.IDWG
+            INNER JOIN ccCamps c ON c.cam_id = wgc.IdCampEsp
+            WHERE wgu.User_id = @user AND c.CampType = 5
+        END
+    END  
+    
+    RETURN  
+END
+'
+EXEC(@sql)
+
+set @process = 'Se modifica ccsp_AgentGetEspecialidadesActivas para tomar horarios correctamente'
+set @sql = '
+ALTER PROCEDURE [dbo].[ccsp_AgentGetEspecialidadesActivas]
+    @userID INT,
+    @current INT = 0
+    AS
+    BEGIN
+        SET NOCOUNT ON;
+        SET DATEFIRST 1; -- Asegura que el primer día de la semana sea lunes
+
+        DECLARE @fecha DATETIME = GETDATE();
+        DECLARE @dia SMALLINT = DATEPART(dw, @fecha);
+        DECLARE @hora SMALLINT = DATEPART(HOUR, @fecha);
+        DECLARE @minuto SMALLINT = DATEPART(MINUTE, @fecha);
+        DECLARE @value INT = (SELECT valor FROM ccSettings WHERE setting_id = 191);
+
+        IF @value = 0
+        BEGIN
+            -- Consulta cuando @value es 0
+            SELECT -8 AS inbound_id, ''Survey'' AS name, 1 AS frame
+            UNION
+            SELECT -1 AS inbound_id, ''IVR'' AS name, 1 AS frame
+            UNION
+            SELECT inb.inbound_id AS inbound_id, descripcion AS name, graphic.graphic_id AS frame
+            FROM ccInbound inb
+            LEFT JOIN ccRIAInboundGraph graphic ON inb.Inbound_id = graphic.Inbound_id
+            WHERE inb.inbound_id IN (
+                SELECT inbound_id
+                FROM ccInboundHorarios
+                WHERE horario_id IN (
+                    SELECT horario_id
+                    FROM ccHorarios
+                    WHERE (@hora > HoraInicio OR (@hora = HoraInicio AND @minuto >= MinInicio))
+                      AND (@hora < HoraFin OR (@hora = HoraFin AND @minuto <= MinFin))
+                      AND (
+                        (Lunes = 1 AND @dia = 1) OR
+                        (Martes = 1 AND @dia = 2) OR
+                        (Miercoles = 1 AND @dia = 3) OR
+                        (Jueves = 1 AND @dia = 4) OR
+                        (Viernes = 1 AND @dia = 5) OR
+                        (Sabado = 1 AND @dia = 6) OR
+                        (Domingo = 1 AND @dia = 7)
+                      )
+                )
+            )
+            AND inb.inbound_id <> @current
+            AND status <> 0
+            ORDER BY 1;
+        END
+        ELSE IF @value = 1
+        BEGIN
+            IF @current <> 0
+            BEGIN
+                -- Consulta cuando @value es 1 y @current no es 0
+                SELECT -1 AS inbound_id, ''IVR'' AS name, 1 AS frame
+                UNION
+                SELECT inb.inbound_id AS inbound_id, descripcion AS name, graphic.graphic_id AS frame
+                FROM ccInbound inb
+                LEFT JOIN ccRIAInboundGraph graphic ON inb.Inbound_id = graphic.Inbound_id
+                WHERE inb.inbound_id IN (
+                    SELECT inbound_id
+                    FROM ccInboundHorarios
+                    WHERE horario_id IN (
+                        SELECT horario_id
+                        FROM ccHorarios
+                        WHERE (@hora > HoraInicio OR (@hora = HoraInicio AND @minuto >= MinInicio))
+                          AND (@hora < HoraFin OR (@hora = HoraFin AND @minuto <= MinFin))
+                          AND (
+                        (Lunes = 1 AND @dia = 1) OR
+                        (Martes = 1 AND @dia = 2) OR
+                        (Miercoles = 1 AND @dia = 3) OR
+                        (Jueves = 1 AND @dia = 4) OR
+                        (Viernes = 1 AND @dia = 5) OR
+                        (Sabado = 1 AND @dia = 6) OR
+                        (Domingo = 1 AND @dia = 7)
+                          )
+                    )
+                )
+                AND inb.inbound_id <> @current
+                AND status <> 0
+                AND IDArea IN (SELECT cu.IDArea FROM ccUsers cu WHERE cu.User_id = @current)
+                ORDER BY 2;
+            END
+            ELSE
+            BEGIN
+                -- Consulta cuando @value es 1 y @current es 0
+                SELECT -1 AS inbound_id, ''IVR'' AS name, 1 AS frame
+                UNION
+                SELECT inb.inbound_id AS inbound_id, descripcion AS name, graphic.graphic_id AS frame
+                FROM ccInbound inb
+                LEFT JOIN ccRIAInboundGraph graphic ON inb.Inbound_id = graphic.Inbound_id
+                WHERE inb.inbound_id IN (
+                    SELECT inbound_id
+                    FROM ccInboundHorarios
+                    WHERE horario_id IN (
+                        SELECT horario_id
+                        FROM ccHorarios
+                        WHERE (@hora > HoraInicio OR (@hora = HoraInicio AND @minuto >= MinInicio))
+                          AND (@hora < HoraFin OR (@hora = HoraFin AND @minuto <= MinFin))
+                          AND (
+                        (Lunes = 1 AND @dia = 1) OR
+                        (Martes = 1 AND @dia = 2) OR
+                        (Miercoles = 1 AND @dia = 3) OR
+                        (Jueves = 1 AND @dia = 4) OR
+                        (Viernes = 1 AND @dia = 5) OR
+                        (Sabado = 1 AND @dia = 6) OR
+                        (Domingo = 1 AND @dia = 7)
+                          )
+                    )
+                )
+                AND inb.inbound_id <> @current
+                AND status <> 0
+                AND IDArea IN (SELECT IDArea FROM ccUsers WHERE User_id = @userID)
+                ORDER BY 2;
+            END
+        END
+    END
+'
+EXEC(@sql)
+------------------------ END Giovanni Martinez --------------------------
 
     SET @process = ''
     SET @sql = ''

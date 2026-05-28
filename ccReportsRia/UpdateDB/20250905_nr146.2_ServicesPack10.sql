@@ -7440,8 +7440,24 @@ N''Minuto correspondiente a la fecha de solicitud.'';
 '
     exec (@sql)
 
-    SET @process = ''
-    SET @sql = ''
+    SET @process = 'Actualizacion de ReportsTotals en reporte 7150 para corregir el tlog'
+    SET @sql = '
+        IF EXISTS (
+            SELECT 1 
+            FROM ReportsTotals 
+            WHERE Id = 7150
+            AND TotalColumns LIKE ''%convert(float,(sum(tlog)*100))%''
+        )
+        BEGIN
+            UPDATE ReportsTotals 
+            SET TotalColumns = REPLACE(
+                TotalColumns,
+                ''convert(float,(sum(tlog)*100))'',
+                ''(convert(float,sum(tlog))*100)''
+            )
+            WHERE Id = 7150
+        END'
+        
     exec (@sql)
 
      SET @process = ''

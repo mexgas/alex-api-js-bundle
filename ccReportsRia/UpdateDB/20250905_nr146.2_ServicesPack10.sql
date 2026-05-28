@@ -7439,15 +7439,16 @@ EXEC dbo.usp_SetColumnDescription N''dbo'', N''RepWhatsConversationsUnassigned''
 N''Minuto correspondiente a la fecha de solicitud.'';
 '
     exec (@sql)
-
+------------------------ BEGIN Giovanni Martinez ------------------------
     SET @process = 'Actualizacion de ReportsTotals en reporte 7150 para corregir el tlog'
+    
     SET @sql = '
-        IF EXISTS (
-            SELECT 1 
-            FROM ReportsTotals 
-            WHERE Id = 7150
-            AND TotalColumns LIKE ''%convert(float,(sum(tlog)*100))%''
-        )
+        IF NOT EXISTS (SELECT 1 FROM ReportsTotals WHERE Id = 7150)
+        BEGIN
+            INSERT INTO ReportsTotals (Id, TotalColumns)
+            VALUES (7150, ''special:avrAnswer:(case when sum(acdCalls)>0 then sum(tresp)/sum(acdCalls) else 0 end)|special:avgAbandonTime:(case when sum(abandonedCalls)>0 then sum(tabnd)/sum(abandonedCalls) else 0 end)|sum:acdCalls|special:tPromACD:(case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end)|special:tPromACW:(case when sum(nacw)>0 then sum(tacw)/sum(nacw) else 0 end)|sum:abandonedCalls|max:maxDelay|sum:entryFlow|sum:outFlow|sum:callsOutExt|special:tPromSalidaExt:(case when sum(callsOutExt)>0 then sum(tprosalext)/sum(callsOutExt) else 0 end)|sum:callsDeleteQue|special:tPromElimCola:(case when sum(callsDeleteQue)>0 then sum(tcalque)/sum(callsDeleteQue) else 0 end)|special:avrTimeACD:(case when (case when count(distinct accountUserId)>0 then (((convert(float,sum(tlog))*100)/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end)>0 then (case when convert(decimal(15,2),((sum(acdCalls) * case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end) / convert(float,(((case when (count(distinct accountUserId))>0 then (((convert(float,sum(tlog))*100)/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end))*CONVERT(float_TIMEGROUP))))*100)>100 then 100         else convert(decimal(15,2),((sum(acdCalls) * case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end) / convert(float,(((case when count(distinct accountUserId)>0 then (((convert(float,sum(tlog))*100)/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end))*CONVERT(float_TIMEGROUP))))*100) end)    else 0 end)|special:avrCallsAnswer:(isnull(case when (sum(acdCalls)+sum(abandonedCalls))>0 then convert(decimal(15,2),(convert(float,sum(acdCalls))*100)/(convert(float,sum(acdCalls))+convert(float,sum(abandonedCalls)))) else 0 end,0))'')
+        END
+        ELSE
         BEGIN
             UPDATE ReportsTotals 
             SET TotalColumns = REPLACE(
@@ -7456,9 +7457,10 @@ N''Minuto correspondiente a la fecha de solicitud.'';
                 ''(convert(float,sum(tlog))*100)''
             )
             WHERE Id = 7150
+            AND TotalColumns LIKE ''%convert(float,(sum(tlog)*100))%''
         END'
-        
     exec (@sql)
+------------------------ END Giovanni Martinez ------------------------
 
      SET @process = ''
     SET @sql = ''

@@ -8,6 +8,6 @@ namespace DatabaseUpdateValidator.Nuxiba.Repository.Impl
 
         void ExecuteScript(string sqlScript, string connectionString, string createDatabase);
 
-        void ExecuteFiles(SortedList<double, string> filePaths, string connectionString, DatabaseDto databaseDto);
+        void ExecuteFiles(SortedList<long, string> filePaths, string connectionString, DatabaseDto databaseDto);
     }
 }

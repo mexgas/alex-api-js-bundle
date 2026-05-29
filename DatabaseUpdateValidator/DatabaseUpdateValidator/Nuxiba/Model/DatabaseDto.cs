@@ -8,7 +8,7 @@ namespace DatabaseUpdateValidator.Nuxiba.Model
         public string Server { get; set; }
         public string UserName { get; set; }
         public string Password { get; set; }
-        public double VersionDb { get; set; }
+        public long VersionDb { get; set; }
         public string DirectoryPath { get; set; }
         public string Pattern { get; set; }
         public string QueryAttaach { get; set; }

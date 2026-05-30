@@ -7563,8 +7563,7 @@ N''Minuto correspondiente a la fecha de solicitud.'';
 				end'
     exec (@sql)
 ------------------------------- END MACL-------------------------------
-
-    DROP TABLE dbo.RepTwitterGeneral;
+    
     SET @process = 'DROP TABLE dbo.RepTwitterACD,RepTwitterAgente,RepTwitterDetail y '
     SET @sql = 'IF OBJECT_ID(''dbo.RepTwitterACD'', ''U'') IS NOT NULL
     DROP TABLE dbo.RepTwitterACD;

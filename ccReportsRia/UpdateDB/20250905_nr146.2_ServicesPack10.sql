@@ -7462,9 +7462,107 @@ N''Minuto correspondiente a la fecha de solicitud.'';
     exec (@sql)
 ------------------------ END Giovanni Martinez ------------------------
 
-     SET @process = ''
-    SET @sql = ''
+------------------------------ BEGIN MACL------------------------------
+     SET @process = 'Fix #8914 - Alter ccspRepWhatsAppByCampaignIn'
+    SET @sql = 'ALTER procedure [dbo].[ccspRepWhatsAppByCampaignIn]
+				@action as tinyint,
+				@from as datetime = null,
+				@to as datetime = null
+
+				AS
+				IF @FROM IS NULL
+					--Se Agrega la fecha de inicio del día anterior, iniciando a las 00:00:00 para tomar todo el día
+					SELECT @from = convert(DATETIME, convert(VARCHAR(11), getdate()-1))
+				IF @to IS NULL
+					SELECT @to = GETDATE()
+
+				SET @from = convert(DATETIME, convert(VARCHAR(11), @from))--valida que la hora siempre inicie en 00:00:00
+				
+				if @action = 1	begin
+
+					delete from RepWhatsAppByCampaignIn with(rowlock)	where date >= @from AND date < @to ;
+	
+					WITH conv
+					AS (
+						SELECT convert(date, A.requestDate) AS [date]
+						,A.inboundId AS inboundid
+						,B.descripcion as campaign		 
+						,A.phoneACD AS associatedPhoneNumberWhatsApp
+						,dbo.GetCountryWhatsApp(A.clientId) contactCountry
+						,count(DISTINCT clientId) totalContactsWhatsApp------
+						,count(A.requestDate) AS totalConversationsWhatsApp
+						,count(CASE 
+									WHEN agentId > 0
+										THEN 1
+									ELSE NULL
+									END) numberAssignedMessagesWhatsApp
+						,ISNULL(MAX(CASE WHEN tQueue > 0 THEN tQueue ELSE NULL END),0) as maxWaitTimeWhatsApp
+						,ISNULL(ROUND(AVG(CASE WHEN tQueue > 0 THEN tQueue ELSE NULL END), 4),0) as avgWaitTimeWhatsApp
+						,count(CASE 
+									WHEN conversationStatus = 13
+										THEN 1
+									ELSE NULL
+									END) spamWhatsApp
+						,0 as serviceLevelWhats
+						,count(CASE 
+									WHEN conversationStatus = 17
+										THEN 1
+									ELSE NULL
+									END) contactFinishedConversationsWhatApp
+						,count(CASE 
+									WHEN conversationStatus = 11
+										THEN 1
+									ELSE NULL
+									END) agentFinishedConversationsWhatApp
+						,count(CASE 
+									WHEN conversationStatus = 17
+										THEN 1
+									ELSE NULL
+									END) systemFinishedConversationsWhatsApp
+						,COUNT(conversationDate) receivedConversations
+						,COUNT(CASE WHEN DATEDIFF(SECOND, assignDate , FirstMessageAgent) <= (ISNULL(C.defaultServiceLevelParameter, 2) * 60) THEN 1 ELSE NULL END) lessThanDefault
+						FROM ccWhatsAppConversations A
+						inner join ccinbound B on A.inboundId=B.Inbound_id
+						LEFT JOIN contactMeanIn C on A.inboundId = c.inboundId 
+						WHERE A.requestDate 
+							BETWEEN @from
+								AND @to
+						GROUP BY convert(DATE, A.requestDate), A.inboundId, B.descripcion, A.phoneACD, dbo.GetCountryWhatsApp(A.clientId)
+						), numSentMsg
+					AS (
+						SELECT convert(DATE, conv.requestDate) date, conv.inboundId, conv.phoneACD associatedPhoneNumberWhatsApp, count(CASE 
+									WHEN Msg.originType IN (''Agent'', ''Admin'')
+										THEN 1
+									ELSE NULL
+									END) numberMsgClientConversation, count(CASE 
+									WHEN Msg.originType IN (''Client'')
+										THEN 1
+									ELSE NULL
+									END) numberMsgReceivedWhats--,
+									,dbo.GetCountryWhatsApp(conv.clientId) contactCountry
+						FROM ccWAMessagesConversations Msg
+						INNER JOIN ccWhatsAppConversations conv ON Msg.conversationId = conv.conversationId	
+						WHERE conv.conversationDate BETWEEN @from
+								AND @to
+
+						GROUP BY convert(DATE, conv.requestDate), conv.inboundId, conv.phoneACD, dbo.GetCountryWhatsApp(conv.clientId)
+						)
+
+					INSERT INTO RepWhatsAppByCampaignIn
+						SELECT A.date, A.inboundid, A.campaign, A.associatedPhoneNumberWhatsApp, ISNULL(B.numberMsgClientConversation,0) numberSentMessagesWhatsApp, A.totalContactsWhatsApp, ISNULL(B.numberMsgReceivedWhats,0), A.contactCountry, A.totalConversationsWhatsApp, A.numberAssignedMessagesWhatsApp, A.maxWaitTimeWhatsApp, A.avgWaitTimeWhatsApp,
+							   A.spamWhatsApp, CASE WHEN A.receivedConversations = 0 THEN 0 ELSE ROUND(((A.lessThanDefault*1.0) / A.receivedConversations) * 100, 2) END serviceLevelWhats, A.contactFinishedConversationsWhatApp, A.agentFinishedConversationsWhatApp, A.systemFinishedConversationsWhatsApp ,DATEPART(yyyy,A.[DATE]) [year]
+							,datepart(mm,A.[DATE]) [month]
+							,datepart(dd,A.[DATE]) [day]
+							,0 [hour]
+							,0 [minutes]
+						FROM conv A
+						LEFT JOIN numSentMsg B ON A.DATE = B.DATE
+							AND A.inboundId = B.inboundId
+							AND A.associatedPhoneNumberWhatsApp = B.associatedPhoneNumberWhatsApp
+							AND A.contactCountry = b.contactCountry
+				end'
     exec (@sql)
+------------------------------- END MACL-------------------------------
 
     SET @process = ''
     SET @sql = ''

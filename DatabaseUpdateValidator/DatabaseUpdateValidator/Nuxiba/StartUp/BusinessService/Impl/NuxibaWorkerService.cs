@@ -40,7 +40,7 @@ namespace DatabaseUpdateValidator.Nuxiba.StartUp.BusinessService.Impl
                 Password = password,
                 Server = server,
                 DirectoryPath = Path.Combine(path, "./CCenterRIA/UpdateDB/"),
-                Pattern = @"^.+_nr(?<version>\d+)(?:\.(?<versionFix>\d+))?(?:\.(?<patch>\d+))?_.+\.sql$",
+                Pattern = @"^.+_v(?<version>\d+)(?:\.(?<versionFix>\d+))?(?:\.(?<patch>\d+))?_.+\.sql$",
                 VersionQuery = @"ccsp_getVersion 'BD'",
                 VersionQueryFix = @"declare @version varchar(max);
                     select @version =valor from ccsettings where setting_id=77;
@@ -83,7 +83,7 @@ EXEC sp_detach_db 'CCRecorderRIA';"
                 Password = password,
                 Server = server,
                 DirectoryPath = Path.Combine(path, "./ccReportsRia/UpdateDB/"),
-                Pattern = @"^.+_v(?<version>\d+)(?:\.(?<versionFix>\d+))?(?:\.(?<patch>\d+))?_.+\.sql$",
+                Pattern = @"^.+_nr(?<version>\d+)(?:\.(?<versionFix>\d+))?(?:\.(?<patch>\d+))?_.+\.sql$",
                 VersionQuery = "select cast(substring(valor, 1, charindex('.', valor)-1) as int) from ccSettings where setting_id = 24",
                 QueryAttaach = @"
 if not exists(select * from sys.databases where name='CCReportsRIA') begin
@@ -99,7 +99,8 @@ EXEC sp_detach_db 'CCReportsRIA';"
 
             var list = new List<DatabaseDto>
             {
-                CCenterRIA, CCRecorderRIA, CCReportsRIA
+                //CCenterRIA, CCRecorderRIA, CCReportsRIA
+                CCReportsRIA
             };
 
             startUpService.Start(list);

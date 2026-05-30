@@ -7564,12 +7564,36 @@ N''Minuto correspondiente a la fecha de solicitud.'';
     exec (@sql)
 ------------------------------- END MACL-------------------------------
 
-    SET @process = ''
-    SET @sql = ''
+    DROP TABLE dbo.RepTwitterGeneral;
+    SET @process = 'DROP TABLE dbo.RepTwitterACD,RepTwitterAgente,RepTwitterDetail y '
+    SET @sql = 'IF OBJECT_ID(''dbo.RepTwitterACD'', ''U'') IS NOT NULL
+    DROP TABLE dbo.RepTwitterACD;
+
+IF OBJECT_ID(''dbo.RepTwitterAgente'', ''U'') IS NOT NULL
+    DROP TABLE dbo.RepTwitterAgente;
+
+IF OBJECT_ID(''dbo.RepTwitterDetail'', ''U'') IS NOT NULL
+    DROP TABLE dbo.RepTwitterDetail;
+
+IF OBJECT_ID(''dbo.RepTwitterGeneral'', ''U'') IS NOT NULL
+    DROP TABLE dbo.RepTwitterGeneral;
+
+'
     exec (@sql)
 
-     SET @process = ''
-    SET @sql = ''
+     SET @process = 'DROP PROCEDURE dbo.ccspRepTwitterACD, ccspRepTwitterAgente, ccspRepTwitterDetail, ccspRepTwitterGeneral'
+    SET @sql = '
+IF OBJECT_ID(''dbo.ccspRepTwitterACD'', ''P'') IS NOT NULL
+    DROP PROCEDURE dbo.ccspRepTwitterACD;
+
+IF OBJECT_ID(''dbo.ccspRepTwitterAgente'', ''P'') IS NOT NULL
+    DROP PROCEDURE dbo.ccspRepTwitterAgente;
+
+IF OBJECT_ID(''dbo.ccspRepTwitterDetail'', ''P'') IS NOT NULL
+    DROP PROCEDURE dbo.ccspRepTwitterDetail;
+
+IF OBJECT_ID(''dbo.ccspRepTwitterGeneral'', ''P'') IS NOT NULL
+    DROP PROCEDURE dbo.ccspRepTwitterGeneral;'
     exec (@sql)
 
     SET @process = ''

@@ -113,7 +113,7 @@ pipeline {
             }
         }
        
-        stage('Compare Schema') {
+       stage('Compare Schema') {
             steps {
                 script {
                     def compareDatabaseWithRetry = { String databaseName ->
@@ -136,17 +136,9 @@ pipeline {
                         }
                     }
 
-                    parallel(                        
-                        'Compare CCenterRIA': {
-                            compareDatabaseWithRetry('CCenterRIA')
-                        },
-                        'Compare CCRecorderRIA': {
-                            compareDatabaseWithRetry('CCRecorderRIA')
-                        },
-                        'Compare CCReportsRIA': {
-                            compareDatabaseWithRetry('CCReportsRIA')
-                        }
-                    )
+                    compareDatabaseWithRetry('CCenterRIA')
+                    compareDatabaseWithRetry('CCRecorderRIA')
+                    compareDatabaseWithRetry('CCReportsRIA')
                 }
             }
         }

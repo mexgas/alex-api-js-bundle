@@ -112,56 +112,33 @@ pipeline {
                 }
             }
         }
-
-        // stage('Checkout Schema') {
-        //     steps {
-        //         dir('save-schema-db') {
-        //             checkout([$class: 'GitSCM', branches: [[name: "develop"]], extensions: [],
-        //             userRemoteConfigs: [[credentialsId: '57291e5b-bac5-434d-92ce-c2faff96584e',
-        //             url: "git@bitbucket.org:nuxibatechnologies/save-schema-db.git"]]])
-
-        //             script {
-        //                 bat '"%NUGET_PATH%" restore %PROJECT_NAME_BASE_SCH%.Solution.sln'
-        //                 bat "\"${msbuild}\\msbuild\" %PROJECT_NAME_BASE_SCH%.Solution.sln /p:Configuration=Debug /t:clean;rebuild"
-        //                 bat '"SaveSchemaDbServices/bin/Debug/NuxibaSaveSchemaDbServices.exe" "%SQL_SERVER_SERVER_PR%" "%SQL_SERVER_USER%" "%SQL_SERVER_PASSWORD%" CCenterRia CCRecorderRIA ccReportsRia'
-        //             }
-        //         }
-        //     }
-        // }
-
-        // stage('SonarQube Analysis') {
-        //     steps {
-        //         script {      
-        //             bat '"copyschemabd.bat"'
-        //             def scannerHome = tool name: 'SonarQubeScanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
-        //             echo "${scannerHome}"
-        //             withSonarQubeEnv('SonarLinux_1.56') {
-        //                 bat """
-        //                     ${scannerHome}/bin/sonar-scanner.bat ^
-        //                     -Dsonar.projectKey=${env.SONAR_NAME} ^
-        //                     -Dsonar.projectName=${env.SONAR_NAME} ^
-        //                     -Dsonar.projectVersion=${env.BUILD_ID} ^
-        //                     -Dsonar.sources=./SCHEMA_BD ^
-        //                 """
-        //             }
-        //         }
-        //     }
-        // }
-
-        stage('Compare Schema') {
+       
+       stage('Compare Schema') {
             steps {
                 script {
-                    parallel(                        
-                        'Compare CCenterRIA': {
-                            bat '"./CompareDatabse.bat" CCenterRIA CCenterRIA'
-                        },
-                        'Compare CCRecorderRIA': {
-                            bat '"./CompareDatabse.bat" CCRecorderRIA CCRecorderRIA'
-                        },
-                        'Compare CCReportsRIA': {
-                            bat '"./CompareDatabse.bat" CCReportsRIA CCReportsRIA'
+                    def compareDatabaseWithRetry = { String databaseName ->
+                        int maxAttempts = 3
+
+                        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+                            try {
+                                echo "Compare ${databaseName}: intento ${attempt} de ${maxAttempts}"
+                                bat "\"./CompareDatabse.bat\" ${databaseName} ${databaseName}"
+                                break
+                            } catch (Exception err) {
+                                if (attempt == maxAttempts) {
+                                    echo "Compare ${databaseName}: fallo despues de ${maxAttempts} intentos"
+                                    throw err
+                                }
+
+                                echo "Compare ${databaseName}: fallo el intento ${attempt}. Reintentando en 5 segundos..."
+                                sleep(time: 5, unit: 'SECONDS')
+                            }
                         }
-                    )
+                    }
+
+                    compareDatabaseWithRetry('CCenterRIA')
+                    compareDatabaseWithRetry('CCRecorderRIA')
+                    compareDatabaseWithRetry('CCReportsRIA')
                 }
             }
         }

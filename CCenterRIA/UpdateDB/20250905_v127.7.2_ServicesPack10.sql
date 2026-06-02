@@ -1132,658 +1132,658 @@ END;'
     exec (@sql)
 
     SET @process = 'Descripciones de objetos'
-    SET @sql = 'EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccMenus'', @Description=N''Menus para la version xion y los reportes para Kolob y XION. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 1.'';
+    SET @sql = 'EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccMenus'', @Description=N''Menus para reportes'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccRIACat_Areas'', @Description=N''Tabla documentada en el diccionario de datos CCenterRIA. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 2.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccRIACat_Areas'', @Description=N''Catalogo de areas.'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @Description=N''En esta tabla se almacenan todos los usuarios que se van dando de alta en el sistema, ya sean Administradores o Agentes. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 2.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @Description=N''Usuarios que se van dando de alta en el sistema, ya sean Administradores o Agentes.'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @Description=N''Tabla documentada en el diccionario de datos CCenterRIA. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 4.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @Description=N''Campañas de entrada(Voz, IA, Chat, Email).'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccinboundagentes'', @Description=N''En esta tabla se encuentran las relaciones de los agentes y campañas de entrada, es decir, qué agentes están asignados a cada una de las campañas de entrada. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 8.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccinboundagentes'', @Description=N''Relaciones de los agentes y campañas de entrada.'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @Description=N''Campañas de salida (Voz, IA, SMS , Vista previa, etc…) Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 9.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @Description=N''Campañas de salida (Voz, IA, SMS , Vista previa, voz)'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''cccampsExtend'', @Description=N''Tabla documentada en el diccionario de datos CCenterRIA. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 15.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''cccampsExtend'', @Description=N''Configuraciones de campaña de salida extras.'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccCampsAgente'', @Description=N''Tabla documentada en el diccionario de datos CCenterRIA. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 16.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccCampsAgente'', @Description=N''Relaciones de los agentes y campañas de salida.'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalif'', @Description=N''En esta tabla se registran todas las calificaciones configuradas en el sistema para campañas de Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 17.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalif'', @Description=N''Catalogo de calificaciones configuradas en el sistema para campañas de entrada.'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifout'', @Description=N''En esta tabla se registran todas las calificaciones configuradas en el sistema para las campañas Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 17.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifout'', @Description=N''Catalogo de calificaciones configuradas en el sistema para campañas de salida.'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsub'', @Description=N''Catalo para las sub-calificaciones de campañas de entrada Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 18.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsub'', @Description=N''Catalogo de sub-calificaciones de campañas de entrada'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccCalifCamp'', @Description=N''Tabla para relacionar las calificaciones con las campañas de entrada o salida Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 19.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccCalifCamp'', @Description=N''Relacionar las calificaciones con las campañas de salida'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsubout'', @Description=N''Catalo para las sub-calificaciones de campañas de salida Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 19.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsubout'', @Description=N''Catalogo para las sub-calificaciones de campañas de salida'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccBaseXDB'', @Description=N''Tabla para guardar la información de las bases dadas de alta en BaseXServer Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 20.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccBaseXDB'', @Description=N''Tabla para guardar la información de las bases dadas de alta en BaseXServer'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccFinderServices'', @Description=N''Tabla donde se guarda los servicios y la relación con el nombre del nodo Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 20.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccFinderServices'', @Description=N''Tabla donde se guarda los servicios y la relación con el nombre del nodo'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''cctiponotready'', @Description=N''En esta tabla se guardan todos los tipos de No disponible dados de alta en el sistema. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 21.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''cctiponotready'', @Description=N''Catalogo de no disponible dados de alta en el sistema.'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccTipoStatusAgente'', @Description=N''Tabla para saber la definicion del cambio de estado Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 21.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccTipoStatusAgente'', @Description=N''Catalogo estados de los agentes y su definicion'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''messageStatus'', @Description=N''Catalo para los mensajes de email, twitter, WhatsApp Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 21.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''messageStatus'', @Description=N''Catalogo para los mensajes de email, twitter, WhatsApp'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccPosicion'', @Description=N''Tabla documentada en el diccionario de datos CCenterRIA. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 22.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccPosicion'', @Description=N''Catalogo de extensiones de los agentes.'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccriacat_workgroup'', @Description=N''En esta tabla se van guardando los Grupos de Trabajo que se dan de alta en el sistema. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 22.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccriacat_workgroup'', @Description=N''Catalogo de grupos de Trabajo que se dan de alta en el sistema.'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia'', @Description=N''En esta tabla se registran los cambios de estado de todos los agentes. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 23.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia'', @Description=N''En esta tabla se registran los cambios de estado de todos los agentes.'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia_Dialog'', @Description=N''Tabla documentada en el diccionario de datos CCenterRIA. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 23.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia_Dialog'', @Description=N''Registra tiempo de disponible y dialogo.'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccriaareaworkgroup'', @Description=N''En esta tabla se guarda las relaciones entre Áreas y Grupos de Trabajo. Recordar que un grupo de trabajo solo puede estar asignado a una Área, pero un Área puede tener varios grupos de Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 23.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccriaareaworkgroup'', @Description=N''Relaciones entre Áreas y Grupos de Trabajo.'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''cclogagentesnotready'', @Description=N''En esta tabla se registran los estados de No Disponible de todos los agentes. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 24.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''cclogagentesnotready'', @Description=N''En esta tabla se registran los estados de No Disponible de todos los agentes.'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccloglogin'', @Description=N''Guarda el inicio de sesion y finalizacion de sesion de los agentes Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 25.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccloglogin'', @Description=N''Guarda el inicio de sesion y finalizacion de sesion de los agentes'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccriaworkgroupusers'', @Description=N''Tabla documentada en el diccionario de datos CCenterRIA. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 25.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccriaworkgroupusers'', @Description=N''Relacion de grupos de trabajo y usuarios.'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''contactMeanIn'', @Description=N''Tabla para algunas configuracion de campañas de entrada y salida para los multimedios Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 25.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''contactMeanIn'', @Description=N''Tabla para algunas configuracion de campañas de entrada y salida para los multimedios'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccSettings2'', @Description=N''Tabla documentada en el diccionario de datos CCenterRIA. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 26.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccSettings2'', @Description=N''Tabla de configuracion generales.'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccoCallsOutData'', @Description=N''Tabla documentada en el diccionario de datos CCenterRIA. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 27.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccoCallsOutData'', @Description=N''Relacion con la llamada transferida al agente y los datos 1-5.'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccoLogDialsData'', @Description=N''Tabla documentada en el diccionario de datos CCenterRIA. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 27.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccoLogDialsData'', @Description=N''Relacion con intento de marcacion con datos 1-5.'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccoCallsOut'', @Description=N''Tabla documentada en el diccionario de datos CCenterRIA. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 28.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccoCallsOut'', @Description=N''En esta tabla se almacenan solo los registros contactados (o llamadas contestadas) cuando se realizan por medio del predictivo, si una llamada es realizada de forma manual aunque no se conteste se almacena en esta tabla.'';
 
-EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccGalateaModulesyccGalateaOperations'', @Description=N''Kolob - Etiquetas Desarrollo(CW) Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 31.'';
+EXEC dbo.usp_SetObjectDescription @SchemaName=N''dbo'', @ObjectName=N''ccGalateaModulesyccGalateaOperations'', @Description=N''Kolob - Etiquetas Desarrollo(CW)'';
 
 
 /* Descripciones de columnas */
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccMenus'', @ColumnName=N''menu_id'', @Description=N''Id del menú. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 1.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccMenus'', @ColumnName=N''menu_id'', @Description=N''Id del menú. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccMenus'', @ColumnName=N''menu_descrip'', @Description=N''Descripción del menú. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 1.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccMenus'', @ColumnName=N''menu_descrip'', @Description=N''Descripción del menú. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccMenus'', @ColumnName=N''parent'', @Description=N''Padre del menú al que va a pertenecer. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 1.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccMenus'', @ColumnName=N''parent'', @Description=N''Padre del menú al que va a pertenecer. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccMenus'', @ColumnName=N''Nivel'', @Description=N''Nivel de opción que se presentara en el menú. Tipo documentado: char. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 1.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccMenus'', @ColumnName=N''Nivel'', @Description=N''Nivel de opción que se presentara en el menú. Tipo documentado: char.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccMenus'', @ColumnName=N''ordengral'', @Description=N''Orden en que se presentara el menú. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 2.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccMenus'', @ColumnName=N''ordengral'', @Description=N''Orden en que se presentara el menú. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccMenus'', @ColumnName=N''type'', @Description=N''Define para asignar menú 1. Sitio de Administrador 2. Sitio de CCreports 3. Sitio de CCreportsRIA. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 2.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccMenus'', @ColumnName=N''type'', @Description=N''Define para asignar menú 1. Sitio de Administrador 2. Sitio de CCreports 3. Sitio de CCreportsRIA. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccMenus'', @ColumnName=N''HelpSWF'', @Description=N''Inhabilitar. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 2.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccMenus'', @ColumnName=N''HelpSWF'', @Description=N''Inhabilitar. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccRIACat_Areas'', @ColumnName=N''IDArea'', @Description=N''Identificador del Área, consecutivo y único. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 2.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccRIACat_Areas'', @ColumnName=N''IDArea'', @Description=N''Identificador del Área, consecutivo y único. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccRIACat_Areas'', @ColumnName=N''AreaName'', @Description=N''Nombre del área. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 2.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccRIACat_Areas'', @ColumnName=N''AreaName'', @Description=N''Nombre del área. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccRIACat_Areas'', @ColumnName=N''StatusArea'', @Description=N''Status del área activo o inactivo. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 2.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccRIACat_Areas'', @ColumnName=N''StatusArea'', @Description=N''Status del área activo o inactivo. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccRIACat_Areas'', @ColumnName=N''maxMails'', @Description=N''Máximo número de mails. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 2.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccRIACat_Areas'', @ColumnName=N''maxMails'', @Description=N''Máximo número de mails. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccRIACat_Areas'', @ColumnName=N''maxChats'', @Description=N''Máximo número de chats. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 2.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccRIACat_Areas'', @ColumnName=N''maxChats'', @Description=N''Máximo número de chats. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccRIACat_Areas'', @ColumnName=N''maxTweets'', @Description=N''Máximo número de tweets. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 2.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccRIACat_Areas'', @ColumnName=N''maxTweets'', @Description=N''Máximo número de tweets. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccRIACat_Areas'', @ColumnName=N''defCampaing'', @Description=N''Campaña default para llamada manual. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 2.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccRIACat_Areas'', @ColumnName=N''defCampaing'', @Description=N''Campaña default para llamada manual. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccRIACat_Areas'', @ColumnName=N''CreateDate'', @Description=N''Fecha de creacion de la campaña. Tipo documentado: datetime. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 2.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccRIACat_Areas'', @ColumnName=N''CreateDate'', @Description=N''Fecha de creacion de la campaña. Tipo documentado: datetime.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccRIACat_Areas'', @ColumnName=N''maxWhats'', @Description=N''Máximo número de WhatsApp. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 2.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccRIACat_Areas'', @ColumnName=N''maxWhats'', @Description=N''Máximo número de WhatsApp. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''User_id'', @Description=N''Identificador único de usuario, auto numérico. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 2.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''User_id'', @Description=N''Identificador único de usuario, auto numérico. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''Login'', @Description=N''Login o nombre de usuario con el que se firman al sistema, ya sea agente o administrador. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 2.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''Login'', @Description=N''Login o nombre de usuario con el que se firman al sistema, ya sea agente o administrador. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''Nombres'', @Description=N''Nombre del usuario.. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 2.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''Nombres'', @Description=N''Nombre del usuario.. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''ApellidoPaterno'', @Description=N''Apellido paterno del usuario.. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 3.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''ApellidoPaterno'', @Description=N''Apellido paterno del usuario.. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''ApellidoMaterno'', @Description=N''Apellido materno del usuario.. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 3.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''ApellidoMaterno'', @Description=N''Apellido materno del usuario.. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''TipoStatusAge_id'', @Description=N''Estado del agente, referirse a ccTipoStatusAgente.. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 3.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''TipoStatusAge_id'', @Description=N''Estado del agente, referirse a ccTipoStatusAgente.. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''Password'', @Description=N''Contraseña del usuario.. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 3.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''Password'', @Description=N''Contraseña del usuario.. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''TipoUser_id'', @Description=N''Perfil del usuario, referirse a la tabla ccTipoUser.. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 3.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''TipoUser_id'', @Description=N''Perfil del usuario, referirse a la tabla ccTipoUser.. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''Status'', @Description=N''Estado del usuario 1 activado 0 desactivado.. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 3.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''Status'', @Description=N''Estado del usuario 1 activado 0 desactivado.. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''TipoLLamadas'', @Description=N''Qué tipo de llamadas puede recibir el agente (CW4): 1 Inbound 2 Outbound 3 Ambas. Para CW (V, Xion) siempre es 3. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 3.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''TipoLLamadas'', @Description=N''Qué tipo de llamadas puede recibir el agente (CW4): 1 Inbound 2 Outbound 3 Ambas. Para CW (V, Xion) siempre es 3. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''Sexo'', @Description=N''Sexo del usuario, true hombre, false mujer. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 3.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''Sexo'', @Description=N''Sexo del usuario, true hombre, false mujer. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''filter'', @Description=N''Inhabilitar.. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 3.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''filter'', @Description=N''Inhabilitar.. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''CanChangeStatus'', @Description=N''Permite si el agente se puede poner en estado No Disponible en Outbound. True permite, False no. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 3.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''CanChangeStatus'', @Description=N''Permite si el agente se puede poner en estado No Disponible en Outbound. True permite, False no. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''fCreate'', @Description=N''Fecha y hora de cuando se creó el usuario. Tipo documentado: smalldatetime. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 3.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''fCreate'', @Description=N''Fecha y hora de cuando se creó el usuario. Tipo documentado: smalldatetime.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''DialMask'', @Description=N''Para restringir llamadas (celular, local, lada). Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 3.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''DialMask'', @Description=N''Para restringir llamadas (celular, local, lada). Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''XferMask'', @Description=N''Para permitir transferencia. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 3.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''XferMask'', @Description=N''Para permitir transferencia. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''LastPasswordChange'', @Description=N''Fecha en la cual el usuario cambio por última vez su contraseña. Tipo documentado: smalldatetime. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 3.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''LastPasswordChange'', @Description=N''Fecha en la cual el usuario cambio por última vez su contraseña. Tipo documentado: smalldatetime.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''IDArea'', @Description=N''Id del área. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 3.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''IDArea'', @Description=N''Id del área. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''NotReadyRestricted'', @Description=N''Habilitar opciones de No Disponible durante la llamada de salida (Agente). Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 3.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''NotReadyRestricted'', @Description=N''Habilitar opciones de No Disponible durante la llamada de salida (Agente). Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''XferAgents'', @Description=N''Permiso recibir transferencias. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 4.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''XferAgents'', @Description=N''Permiso recibir transferencias. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''viewAgents'', @Description=N''Permiso del admin para solo monitoreo. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 4.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''viewAgents'', @Description=N''Permiso del admin para solo monitoreo. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''onLine'', @Description=N''Revisa si la conexión de socket sigue viva en los Administradores. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 4.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''onLine'', @Description=N''Revisa si la conexión de socket sigue viva en los Administradores. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''startStopRecording'', @Description=N''Permiso para iniciar o detener grabaciones. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 4.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''startStopRecording'', @Description=N''Permiso para iniciar o detener grabaciones. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''reconnectMsg'', @Description=N''Códi de mensaje de error para reconexión del agente. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 4.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccUsers'', @ColumnName=N''reconnectMsg'', @Description=N''Códi de mensaje de error para reconexión del agente. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''cli_id'', @Description=N''Identificador del cliente al que se asoció la especialidad. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 4.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''cli_id'', @Description=N''Identificador del cliente al que se asoció la especialidad. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''Inbound_id'', @Description=N''Identificador de la Campaña de entrada. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 4.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''Inbound_id'', @Description=N''Identificador de la Campaña de entrada. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''Status'', @Description=N''Estado de la campaña de entrada, 1. activa 2. inhabilitar. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 4.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''Status'', @Description=N''Estado de la campaña de entrada, 1. activa 2. inhabilitar. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''dnis'', @Description=N''Inhabilitar.. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 4.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''dnis'', @Description=N''Inhabilitar.. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''standby'', @Description=N''Inhabilitar.. Tipo documentado: sm. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 4.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''standby'', @Description=N''Inhabilitar.. Tipo documentado: sm.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''tNotas'', @Description=N''Tiempo de notas de la especialidad, en segundos. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 5.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''tNotas'', @Description=N''Tiempo de notas de la especialidad, en segundos. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''tMaxWaitCall'', @Description=N''Tiempo máximo de una llamada en cola de espera antes de ser desbordada, en segundos.. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 5.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''tMaxWaitCall'', @Description=N''Tiempo máximo de una llamada en cola de espera antes de ser desbordada, en segundos.. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''nMaxQue'', @Description=N''Número máximo de llamadas en cola de espera antes de ser desbordadas.. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 5.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''nMaxQue'', @Description=N''Número máximo de llamadas en cola de espera antes de ser desbordadas.. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''Msg_id'', @Description=N''Inhabilitar. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 5.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''Msg_id'', @Description=N''Inhabilitar. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''tel_maxwait'', @Description=N''Teléfono al cual se transferirán las llamadas por desborde de tiempo máximo de espera.. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 5.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''tel_maxwait'', @Description=N''Teléfono al cual se transferirán las llamadas por desborde de tiempo máximo de espera.. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''tel_maxqueue'', @Description=N''Teléfono al cual se transferirán las llamadas por desborde de número máximo de llamadas en cola de espera.. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 5.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''tel_maxqueue'', @Description=N''Teléfono al cual se transferirán las llamadas por desborde de número máximo de llamadas en cola de espera.. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''tel_outservice'', @Description=N''Teléfono al cual se transferirán las llamadas que entren a la especialidad al estar desactivada o fuera de servicio.. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 5.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''tel_outservice'', @Description=N''Teléfono al cual se transferirán las llamadas que entren a la especialidad al estar desactivada o fuera de servicio.. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''tel_noct'', @Description=N''Teléfono al cual se transferirán las llamadas que entren en la especialidad al estar fuera de horario.. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 5.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''tel_noct'', @Description=N''Teléfono al cual se transferirán las llamadas que entren en la especialidad al estar fuera de horario.. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''bnocturno'', @Description=N''Inhabilitar. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 5.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''bnocturno'', @Description=N''Inhabilitar. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''tMaxQueueCallBack'', @Description=N''Tiempo maximo para generar callback. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 7.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''tMaxQueueCallBack'', @Description=N''Tiempo maximo para generar callback. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''stopRecording'', @Description=N''Permiso para detener grabaciones. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 7.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''stopRecording'', @Description=N''Permiso para detener grabaciones. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''DialPrefixOverflow'', @Description=N''Prefijo al numero a marcar cuando se realiza desborde. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 7.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''DialPrefixOverflow'', @Description=N''Prefijo al numero a marcar cuando se realiza desborde. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''OpriorityT'', @Description=N''Inhabilitar. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 7.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''OpriorityT'', @Description=N''Inhabilitar. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''callerIdDesc'', @Description=N''Personaliza el callerId para desbode a numeros extenos. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 7.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''callerIdDesc'', @Description=N''Personaliza el callerId para desbode a numeros extenos. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''chat'', @Description=N''Modos de ACD 0 Llamadas 2 Inhabilitada 1 Chat 3 Email 4 Twitter 5 WhatsApp. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 7.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''chat'', @Description=N''Modos de ACD 0 Llamadas 2 Inhabilitada 1 Chat 3 Email 4 Twitter 5 WhatsApp. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''inactiveChatTime'', @Description=N''Tiempo para cerrar el chat. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 7.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''inactiveChatTime'', @Description=N''Tiempo para cerrar el chat. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''maxChats'', @Description=N''Máximo numero de chats por Agente. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 7.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''maxChats'', @Description=N''Máximo numero de chats por Agente. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''chatDomain'', @Description=N''Dominio del chat para diferenciarlos de otros ACD. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 8.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''chatDomain'', @Description=N''Dominio del chat para diferenciarlos de otros ACD. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''chatQueueOverflow'', @Description=N''Numero Máximo en la cola para desbordar el Chat. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 8.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''chatQueueOverflow'', @Description=N''Numero Máximo en la cola para desbordar el Chat. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''chatTimeOverflow'', @Description=N''Tiempo máximo desbordar el chat. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 8.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''chatTimeOverflow'', @Description=N''Tiempo máximo desbordar el chat. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''startStopRecording'', @Description=N''Permiso para iniciar o detener grabación. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 8.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''startStopRecording'', @Description=N''Permiso para iniciar o detener grabación. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''callBackSurveyAgent'', @Description=N''Permiso para desbordar al IVR después de colgar la llamada. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 8.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''callBackSurveyAgent'', @Description=N''Permiso para desbordar al IVR después de colgar la llamada. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''callBackSurveyClient'', @Description=N''Permiso para generar callback para contestar encuentra. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 8.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''callBackSurveyClient'', @Description=N''Permiso para generar callback para contestar encuentra. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''editableDtmf'', @Description=N''Permiso para poder enviar varios DTMF. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 8.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinbound'', @ColumnName=N''editableDtmf'', @Description=N''Permiso para poder enviar varios DTMF. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinboundagentes'', @ColumnName=N''User_id'', @Description=N''Identificador del usuario.. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 8.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinboundagentes'', @ColumnName=N''User_id'', @Description=N''Identificador del usuario.. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinboundagentes'', @ColumnName=N''Inbound_id'', @Description=N''Identificador de la especialidad.. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 9.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinboundagentes'', @ColumnName=N''Inbound_id'', @Description=N''Identificador de la especialidad.. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinboundagentes'', @ColumnName=N''cli_id'', @Description=N''Identificador del cliente al que está asociado la especialidad.. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 9.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinboundagentes'', @ColumnName=N''cli_id'', @Description=N''Identificador del cliente al que está asociado la especialidad.. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinboundagentes'', @ColumnName=N''prioridad'', @Description=N''Prioridad con la que se asignarán las llamadas al agente.. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 9.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinboundagentes'', @ColumnName=N''prioridad'', @Description=N''Prioridad con la que se asignarán las llamadas al agente.. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinboundagentes'', @ColumnName=N''skill'', @Description=N''Identificador del Skill que se le asignó al agente. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 9.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinboundagentes'', @ColumnName=N''skill'', @Description=N''Identificador del Skill que se le asignó al agente. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinboundagentes'', @ColumnName=N''rel_id'', @Description=N''Clave Primaria. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 9.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinboundagentes'', @ColumnName=N''rel_id'', @Description=N''Clave Primaria. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinboundagentes'', @ColumnName=N''IDWG'', @Description=N''Identificador del grupo de trabajo la cual pertenece la especialidad y los agentes.. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 9.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccinboundagentes'', @ColumnName=N''IDWG'', @Description=N''Identificador del grupo de trabajo la cual pertenece la especialidad y los agentes.. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_id'', @Description=N''Identificador de la Campaña salida, auto numérico y único.. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 9.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_id'', @Description=N''Identificador de la Campaña salida, auto numérico y único.. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cli_id'', @Description=N''Identificador del cliente al que está asociada la campaña salida.. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 9.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cli_id'', @Description=N''Identificador del cliente al que está asociada la campaña salida.. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_descripcion'', @Description=N''Nombre de la campaña.. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 9.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_descripcion'', @Description=N''Nombre de la campaña.. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_activo'', @Description=N''Indica si la campaña está activa (1) o deshabilitada (0). Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 9.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_activo'', @Description=N''Indica si la campaña está activa (1) o deshabilitada (0). Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_ModoManual'', @Description=N''Indica si se permiten llamadas manuales, 0 deshabilitar, 1 Via Teclado e historial, 2 Via Historial de llamadas, 3 Via teclado. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 9.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_ModoManual'', @Description=N''Indica si se permiten llamadas manuales, 0 deshabilitar, 1 Via Teclado e historial, 2 Via Historial de llamadas, 3 Via teclado. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_modpredictivo'', @Description=N''Indica si se realizará marcación predictiva en la campaña, 1 habilitar, 0 deshabilitar.. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 9.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_modpredictivo'', @Description=N''Indica si se realizará marcación predictiva en la campaña, 1 habilitar, 0 deshabilitar.. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_TipoJobs'', @Description=N''Qué tipo de registro se marcaran mediante el predictivo; 2 nuevos, 1 callbacks, 0 ambos.. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 9.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_TipoJobs'', @Description=N''Qué tipo de registro se marcaran mediante el predictivo; 2 nuevos, 1 callbacks, 0 ambos.. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_tNoContesta'', @Description=N''Tiempo en segundos que se esperará respuesta a cada llamada antes de calificarla como "No contesta". Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 9.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_tNoContesta'', @Description=N''Tiempo en segundos que se esperará respuesta a cada llamada antes de calificarla como "No contesta". Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_SortColumns'', @Description=N''Inhabilitar.. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 9.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_SortColumns'', @Description=N''Inhabilitar.. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_ocupado'', @Description=N''Bandera para reintentar llamada en caso de que este ocupado el número, 1 habilitar, 0 deshabilitar.. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 10.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_ocupado'', @Description=N''Bandera para reintentar llamada en caso de que este ocupado el número, 1 habilitar, 0 deshabilitar.. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_nocontesto'', @Description=N''Bandera para reintentar llamada en caso de que no conteste el número, 1 habilitar, 0 deshabilitar.. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 10.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_nocontesto'', @Description=N''Bandera para reintentar llamada en caso de que no conteste el número, 1 habilitar, 0 deshabilitar.. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_graba'', @Description=N''Bandera que indica si está habilitada la opción de maquina contestadora, 1 habilitar, 0 inhabilitar.. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 10.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_graba'', @Description=N''Bandera que indica si está habilitada la opción de maquina contestadora, 1 habilitar, 0 inhabilitar.. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_fax'', @Description=N''Bandera que indica si está habilitada la opción de fax/modem, 1 habilitar, 0 inhabilitar.. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 10.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_fax'', @Description=N''Bandera que indica si está habilitada la opción de fax/modem, 1 habilitar, 0 inhabilitar.. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_callratio'', @Description=N''Inhabilitar.. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 10.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_callratio'', @Description=N''Inhabilitar.. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_inter_ocupado'', @Description=N''Intervalo de tiempo en segundos que esperara entre cada remarcado por ocupado.. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 10.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_inter_ocupado'', @Description=N''Intervalo de tiempo en segundos que esperara entre cada remarcado por ocupado.. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_inter_nocontesto'', @Description=N''Intervalo de tiempo en segundos que esperará entre cada remarcado por no contesta.. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 10.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_inter_nocontesto'', @Description=N''Intervalo de tiempo en segundos que esperará entre cada remarcado por no contesta.. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_inter_graba'', @Description=N''Intervalo de tiempo en segundos que esperará entre cada remarcado al contestar una grabadora.. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 10.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_inter_graba'', @Description=N''Intervalo de tiempo en segundos que esperará entre cada remarcado al contestar una grabadora.. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_inter_fax'', @Description=N''Intervalo de tiempo en segundos que esperará entre cada remarcado al contestar un fax.. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 10.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_inter_fax'', @Description=N''Intervalo de tiempo en segundos que esperará entre cada remarcado al contestar un fax.. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_NoInt_ocupado'', @Description=N''Número de intentos de remarcado si la llamada dio como resultado ocupado.. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 10.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_NoInt_ocupado'', @Description=N''Número de intentos de remarcado si la llamada dio como resultado ocupado.. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_NoInt_nocontesto'', @Description=N''Número de intentos de remarcado si la llamada no fue contestada.. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 10.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_NoInt_nocontesto'', @Description=N''Número de intentos de remarcado si la llamada no fue contestada.. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_NoInt_graba'', @Description=N''Número de intentos de remarcado si la llamada fue contestada por una grabadora.. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 10.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_NoInt_graba'', @Description=N''Número de intentos de remarcado si la llamada fue contestada por una grabadora.. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_NoInt_fax'', @Description=N''Número de intentos de remarcado si la llamada fue contestada por un fax.. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 10.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_NoInt_fax'', @Description=N''Número de intentos de remarcado si la llamada fue contestada por un fax.. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_procesando'', @Description=N''Indica si la campaña está iniciada (1) o si está detenida (0). Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 10.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_procesando'', @Description=N''Indica si la campaña está iniciada (1) o si está detenida (0). Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_MaxDlrXage'', @Description=N''Número máximo de Díalers por agente para la marcación predictiva.. Tipo documentado: decimal. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 12.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_MaxDlrXage'', @Description=N''Número máximo de Díalers por agente para la marcación predictiva.. Tipo documentado: decimal.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''ani'', @Description=N''Ani que se mostrará en el identificador de llamadas del cliente al recibir la llamada del CallCenter, para poder utilizar esta función se depende si es soportado por el carrier. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 12.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''ani'', @Description=N''Ani que se mostrará en el identificador de llamadas del cliente al recibir la llamada del CallCenter, para poder utilizar esta función se depende si es soportado por el carrier. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''IDArea'', @Description=N''Clave del área de trabajo. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 12.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''IDArea'', @Description=N''Clave del área de trabajo. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''EditableCallKey'', @Description=N''Editar el callkey 0 no lo permite editar y 1 lo permite editar. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 12.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''EditableCallKey'', @Description=N''Editar el callkey 0 no lo permite editar y 1 lo permite editar. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''iTipoDial'', @Description=N''Marcación Intensiva. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 12.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''iTipoDial'', @Description=N''Marcación Intensiva. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''detectAnswerMachine'', @Description=N''Detección Maquina contestadora, lo hace después de haberse contestado la llamada (humano/maquina) 0 No detecta 1 Rápida 2 Ligera 3 Exacta -1 Deshabilita CPA. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 12.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''detectAnswerMachine'', @Description=N''Detección Maquina contestadora, lo hace después de haberse contestado la llamada (humano/maquina) 0 No detecta 1 Rápida 2 Ligera 3 Exacta -1 Deshabilita CPA. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''detectVoiceMail'', @Description=N''Detección de buzón de voz, aplica antes de que se conteste la llamada (buzón),. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 12.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''detectVoiceMail'', @Description=N''Detección de buzón de voz, aplica antes de que se conteste la llamada (buzón),. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''compliance'', @Description=N''Solo se habilita para USA para el huso de horarios. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 12.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''compliance'', @Description=N''Solo se habilita para USA para el huso de horarios. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''progDial'', @Description=N''función para habilitar la marcacion progresiva, selectiva o des-habilitar ambas.(Función para encuesta) 0 deshabilitado 1 progresiva 2 selectiva 3 vista previa. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 12.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''progDial'', @Description=N''función para habilitar la marcacion progresiva, selectiva o des-habilitar ambas.(Función para encuesta) 0 deshabilitado 1 progresiva 2 selectiva 3 vista previa. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''excCallBack'', @Description=N''Call Back exclusivo por agente. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 12.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''excCallBack'', @Description=N''Call Back exclusivo por agente. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''keepDial'', @Description=N''Seguir marcando 0 Inhabilitar y habilitado. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 13.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''keepDial'', @Description=N''Seguir marcando 0 Inhabilitar y habilitado. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''aggressionFactor'', @Description=N''Detecta voicemail 0 desactivado y 1 activado. Tipo documentado: float. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 13.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''aggressionFactor'', @Description=N''Detecta voicemail 0 desactivado y 1 activado. Tipo documentado: float.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''DialOrder'', @Description=N''Habilitar Compliance. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 13.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''DialOrder'', @Description=N''Habilitar Compliance. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''DialPrefix'', @Description=N''Marcación Progresiva. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 13.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''DialPrefix'', @Description=N''Marcación Progresiva. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''listenManualCall'', @Description=N''Call back Exclusivo. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 13.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''listenManualCall'', @Description=N''Call back Exclusivo. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''stopRecording'', @Description=N''Permiso para detener grabacion. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 13.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''stopRecording'', @Description=N''Permiso para detener grabacion. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''abandonCallback'', @Description=N''Ascendente. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 13.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''abandonCallback'', @Description=N''Ascendente. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''t_autoCB'', @Description=N''Descendente. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 13.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''t_autoCB'', @Description=N''Descendente. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''id_anilist'', @Description=N''Prefijo de marcación (Predictivo). Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 13.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''id_anilist'', @Description=N''Prefijo de marcación (Predictivo). Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''DialPrefixMan'', @Description=N''Activa cuando se está escuchando una llamada desde el administrador se siga monitoreando las llamadas manuales.. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 13.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''DialPrefixMan'', @Description=N''Activa cuando se está escuchando una llamada desde el administrador se siga monitoreando las llamadas manuales.. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''DialPrefixXfe'', @Description=N''Permitir pausar y continuar grabación. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 13.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''DialPrefixXfe'', @Description=N''Permitir pausar y continuar grabación. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''tDialonWrapUp'', @Description=N''Reprogramar evento fallido. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 13.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''tDialonWrapUp'', @Description=N''Reprogramar evento fallido. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_maxqueue'', @Description=N''Asocia un lista de Ani para enmascarar partir de la lada de marcación. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 13.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''cam_maxqueue'', @Description=N''Asocia un lista de Ani para enmascarar partir de la lada de marcación. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''DNCScrub'', @Description=N''Prefijo de marcación(Manual). Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 13.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''DNCScrub'', @Description=N''Prefijo de marcación(Manual). Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''callerIdDesc'', @Description=N''Prefijo de marcación(Transferencia). Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 13.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''callerIdDesc'', @Description=N''Prefijo de marcación(Transferencia). Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''timeZoneRule'', @Description=N''Marcar antes de que termine el tiempo de notas. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 13.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''timeZoneRule'', @Description=N''Marcar antes de que termine el tiempo de notas. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''surveyCamId'', @Description=N''Id de campaña para asociar una campaña normal a una encuesta. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 14.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''surveyCamId'', @Description=N''Id de campaña para asociar una campaña normal a una encuesta. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''callsBySurvey'', @Description=N''Personalizar ID de llamada. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 14.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''callsBySurvey'', @Description=N''Personalizar ID de llamada. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''ivrScript'', @Description=N''Habilita si valida el número telefónico en llamadas manuales. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 14.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''ivrScript'', @Description=N''Habilita si valida el número telefónico en llamadas manuales. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''surveyPctg'', @Description=N''Porcentaje de llamadas de encuesta que se van a realizar. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 14.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''surveyPctg'', @Description=N''Porcentaje de llamadas de encuesta que se van a realizar. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''call_record'', @Description=N''Tipo de campaña. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 14.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''call_record'', @Description=N''Tipo de campaña. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''startStopRecording'', @Description=N''Habilitar opcion de detener y continuar grabación del lado del agente. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 14.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''startStopRecording'', @Description=N''Habilitar opcion de detener y continuar grabación del lado del agente. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''leaveRecMessage'', @Description=N''Habilitar la opcion de dejar (en el agente) mensaje en maquina contestadora. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 14.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''leaveRecMessage'', @Description=N''Habilitar la opcion de dejar (en el agente) mensaje en maquina contestadora. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''manualCallOnChat'', @Description=N''Id del Script del IVR donde va comenzar cuando está en modo encuesta. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 14.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''manualCallOnChat'', @Description=N''Id del Script del IVR donde va comenzar cuando está en modo encuesta. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''callBackSurveyAgent'', @Description=N''Porcentaje de llamadas que se realizara cuando esta modo encuesta. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 14.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''callBackSurveyAgent'', @Description=N''Porcentaje de llamadas que se realizara cuando esta modo encuesta. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''callBackSurveyClient'', @Description=N''Permiso para no grabar las llamadas esta solo habilitado para USA. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 14.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''callBackSurveyClient'', @Description=N''Permiso para no grabar las llamadas esta solo habilitado para USA. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''funcEspDtmf'', @Description=N''Permiso para iniciar o detener la grabación de la llamada. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 14.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''funcEspDtmf'', @Description=N''Permiso para iniciar o detener la grabación de la llamada. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''prefijo'', @Description=N''Este sirve para poder poner subfijo en las grabaciones. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 14.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''prefijo'', @Description=N''Este sirve para poder poner subfijo en las grabaciones. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''holdCall'', @Description=N''Saber si debe grabar. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 14.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''holdCall'', @Description=N''Saber si debe grabar. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''CampType'', @Description=N''0 Voz 2 4 IA 5 WhatsApp 6 Vista Previa 7 Campaña SMS. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 15.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''CampType'', @Description=N''0 Voz 2 4 IA 5 WhatsApp 6 Vista Previa 7 Campaña SMS. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''recordHold'', @Description=N''1 graba hold de las llamadas, 0 no graba el hold. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 15.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccamps'', @ColumnName=N''recordHold'', @Description=N''1 graba hold de las llamadas, 0 no graba el hold. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccampsExtend'', @ColumnName=N''Cam_id'', @Description=N''Habilitar opción de asignar la conversación de WhatsApp de salida al agente que previamente la atendió. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 15.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccampsExtend'', @ColumnName=N''Cam_id'', @Description=N''Habilitar opción de asignar la conversación de WhatsApp de salida al agente que previamente la atendió. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccampsExtend'', @ColumnName=N''ZipCodeSchedule'', @Description=N''Validar zona horaria por códi postal. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 16.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccampsExtend'', @ColumnName=N''ZipCodeSchedule'', @Description=N''Validar zona horaria por códi postal. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccampsExtend'', @ColumnName=N''cam_DiasMax'', @Description=N''Parámetro que permite configurar la cantidad de días máximos que el agente puede buscar de histórico de una conversación. K020140-Cantidad de días máximos a buscar por conversación WhatsApp de salida en histórico - Documentación por Producto - Playbook - Confluence (atlassian.net). Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 16.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccampsExtend'', @ColumnName=N''cam_DiasMax'', @Description=N''Parámetro que permite configurar la cantidad de días máximos que el agente puede buscar de histórico de una conversación. K020140-Cantidad de días máximos a buscar por conversación WhatsApp de salida en histórico - Documentación por Producto - Playbook - Confluence (atlassian.net). Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccampsExtend'', @ColumnName=N''EditableContactData'', @Description=N''Poder editar los datos. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 16.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccampsExtend'', @ColumnName=N''EditableContactData'', @Description=N''Poder editar los datos. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccampsExtend'', @ColumnName=N''AssignConversationSameAgent'', @Description=N''Habilitar opción de asignar la conversación de WhatsApp de salida al agente que previamente la atendió. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 16.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cccampsExtend'', @ColumnName=N''AssignConversationSameAgent'', @Description=N''Habilitar opción de asignar la conversación de WhatsApp de salida al agente que previamente la atendió. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccCampsAgente'', @ColumnName=N''user_id'', @Description=N''Identificador único del agente, referirse a ccUsers.. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 16.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccCampsAgente'', @ColumnName=N''user_id'', @Description=N''Identificador único del agente, referirse a ccUsers.. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccCampsAgente'', @ColumnName=N''cam_id'', @Description=N''Identificador único de la campaña, referirse a ccCamps.. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 16.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccCampsAgente'', @ColumnName=N''cam_id'', @Description=N''Identificador único de la campaña, referirse a ccCamps.. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccCampsAgente'', @ColumnName=N''prioridad'', @Description=N''Prioridad configurada al agente desde el administrador.. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 16.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccCampsAgente'', @ColumnName=N''prioridad'', @Description=N''Prioridad configurada al agente desde el administrador.. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccCampsAgente'', @ColumnName=N''skill'', @Description=N''Skill configurador al agente desde el administrador.. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 16.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccCampsAgente'', @ColumnName=N''skill'', @Description=N''Skill configurador al agente desde el administrador.. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccCampsAgente'', @ColumnName=N''rel_id'', @Description=N''Identificador único y auto numérico de la relación. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 16.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccCampsAgente'', @ColumnName=N''rel_id'', @Description=N''Identificador único y auto numérico de la relación. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccCampsAgente'', @ColumnName=N''IDWG'', @Description=N''Identificador único del grupo de trabajo a la que pertenece la relación.. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 16.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccCampsAgente'', @ColumnName=N''IDWG'', @Description=N''Identificador único del grupo de trabajo a la que pertenece la relación.. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalif'', @ColumnName=N''calif_id'', @Description=N''Identificador de la calificación campañas de entrada. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 17.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalif'', @ColumnName=N''calif_id'', @Description=N''Identificador de la calificación campañas de entrada. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalif'', @ColumnName=N''Description'', @Description=N''Nombre de la calificación. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 17.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalif'', @ColumnName=N''Description'', @Description=N''Nombre de la calificación. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalif'', @ColumnName=N''orden'', @Description=N''Orden en el que aparecerán las calificaciones en el combo box del agente. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 17.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalif'', @ColumnName=N''orden'', @Description=N''Orden en el que aparecerán las calificaciones en el combo box del agente. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalif'', @ColumnName=N''CanReprogram'', @Description=N''Si puede seguir marcando. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 17.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalif'', @ColumnName=N''CanReprogram'', @Description=N''Si puede seguir marcando. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalif'', @ColumnName=N''Calif_Status'', @Description=N''Estatus de la calificación 0 desactivado y 1 activado. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 17.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalif'', @ColumnName=N''Calif_Status'', @Description=N''Estatus de la calificación 0 desactivado y 1 activado. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalif'', @ColumnName=N''EndConversation'', @Description=N''Conversaciones finalizada (1). Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 17.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalif'', @ColumnName=N''EndConversation'', @Description=N''Conversaciones finalizada (1). Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifout'', @ColumnName=N''calif_id'', @Description=N''Identificador de la calificación campañas de salida. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 17.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifout'', @ColumnName=N''calif_id'', @Description=N''Identificador de la calificación campañas de salida. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifout'', @ColumnName=N''Description'', @Description=N''Nombre de la calificación. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 17.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifout'', @ColumnName=N''Description'', @Description=N''Nombre de la calificación. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifout'', @ColumnName=N''autoTime'', @Description=N''Inhabilitar.. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 17.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifout'', @ColumnName=N''autoTime'', @Description=N''Inhabilitar.. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifout'', @ColumnName=N''CanReprogram'', @Description=N''Habilita la opción de reprogramar, 1 habilitado, 0 inhabilitar. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 17.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifout'', @ColumnName=N''CanReprogram'', @Description=N''Habilita la opción de reprogramar, 1 habilitado, 0 inhabilitar. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifout'', @ColumnName=N''orden'', @Description=N''Especifica el orden en que aparecerán las calificaciones en la lista del agente. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 18.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifout'', @ColumnName=N''orden'', @Description=N''Especifica el orden en que aparecerán las calificaciones en la lista del agente. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifout'', @ColumnName=N''idTipoLista'', @Description=N''Utilizado en versiones anteriores a CenterWareV. Tipo de lista negra, para los casos en que se desea que por medio de caificacion se pase a lista negra el número marcado. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 18.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifout'', @ColumnName=N''idTipoLista'', @Description=N''Utilizado en versiones anteriores a CenterWareV. Tipo de lista negra, para los casos en que se desea que por medio de caificacion se pase a lista negra el número marcado. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifout'', @ColumnName=N''CalifOut_Status'', @Description=N''Estatus de la subcalificacion 0 desactivado y 1 activado. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 18.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifout'', @ColumnName=N''CalifOut_Status'', @Description=N''Estatus de la subcalificacion 0 desactivado y 1 activado. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifout'', @ColumnName=N''keepDial'', @Description=N''Seguir marcando. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 18.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifout'', @ColumnName=N''keepDial'', @Description=N''Seguir marcando. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifout'', @ColumnName=N''autoCallback'', @Description=N''SI el sistema genera un callback automático. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 18.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifout'', @ColumnName=N''autoCallback'', @Description=N''SI el sistema genera un callback automático. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifout'', @ColumnName=N''contactOwner'', @Description=N''Para agregar reporte si contabilizara. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 18.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifout'', @ColumnName=N''contactOwner'', @Description=N''Para agregar reporte si contabilizara. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifout'', @ColumnName=N''finishPreview'', @Description=N''permiso para que cuando la campaña este en modo selectivo permita regresar al agente a Disponible.. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 18.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifout'', @ColumnName=N''finishPreview'', @Description=N''permiso para que cuando la campaña este en modo selectivo permita regresar al agente a Disponible.. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsub'', @ColumnName=N''califSub_id'', @Description=N''Identificador de subcalificación campañas de entrada. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 18.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsub'', @ColumnName=N''califSub_id'', @Description=N''Identificador de subcalificación campañas de entrada. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsub'', @ColumnName=N''califSubDesc'', @Description=N''Nombre de la subcalificación. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 18.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsub'', @ColumnName=N''califSubDesc'', @Description=N''Nombre de la subcalificación. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsub'', @ColumnName=N''orden'', @Description=N''Orden en la que se visualizara la subcalificacion. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 18.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsub'', @ColumnName=N''orden'', @Description=N''Orden en la que se visualizara la subcalificacion. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsub'', @ColumnName=N''canReprogram'', @Description=N''SI se puede realizar reprogramación. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 18.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsub'', @ColumnName=N''canReprogram'', @Description=N''SI se puede realizar reprogramación. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsub'', @ColumnName=N''califSub_Status'', @Description=N''Estatus de la subcalificacion 0 desactivado y 1 activado. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 19.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsub'', @ColumnName=N''califSub_Status'', @Description=N''Estatus de la subcalificacion 0 desactivado y 1 activado. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsub'', @ColumnName=N''EndConversation'', @Description=N''Función para Email y Twitter para definir si la conversación se terminó o sigue abierta. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 19.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsub'', @ColumnName=N''EndConversation'', @Description=N''Función para Email y Twitter para definir si la conversación se terminó o sigue abierta. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsubout'', @ColumnName=N''califSub_id'', @Description=N''IIdentificador de subcalificación campañas de salida. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 19.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsubout'', @ColumnName=N''califSub_id'', @Description=N''IIdentificador de subcalificación campañas de salida. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsubout'', @ColumnName=N''califSubDesc'', @Description=N''Nombre de la subcalificacion. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 19.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsubout'', @ColumnName=N''califSubDesc'', @Description=N''Nombre de la subcalificacion. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsubout'', @ColumnName=N''canReprogram'', @Description=N''SI se puede realizar reprogramación. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 19.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsubout'', @ColumnName=N''canReprogram'', @Description=N''SI se puede realizar reprogramación. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsubout'', @ColumnName=N''orden'', @Description=N''Orden en la que se presentara la subcalificacion. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 19.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsubout'', @ColumnName=N''orden'', @Description=N''Orden en la que se presentara la subcalificacion. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsubout'', @ColumnName=N''idTipoLista'', @Description=N''Inhablitar. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 19.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsubout'', @ColumnName=N''idTipoLista'', @Description=N''Inhablitar. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsubout'', @ColumnName=N''califSubOut_Status'', @Description=N''Si está habilitada para usar en el calificaciones del agente. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 19.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsubout'', @ColumnName=N''califSubOut_Status'', @Description=N''Si está habilitada para usar en el calificaciones del agente. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsubout'', @ColumnName=N''keepDial'', @Description=N''Seguir marcando. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 19.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsubout'', @ColumnName=N''keepDial'', @Description=N''Seguir marcando. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsubout'', @ColumnName=N''autoCallback'', @Description=N''Que se programa la llamada de manera automática para callback. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 19.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsubout'', @ColumnName=N''autoCallback'', @Description=N''Que se programa la llamada de manera automática para callback. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsubout'', @ColumnName=N''contactOwner'', @Description=N''Si pondrá en un reporte agrupación por calificación. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 19.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctipocalifsubout'', @ColumnName=N''contactOwner'', @Description=N''Si pondrá en un reporte agrupación por calificación. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccCalifCamp'', @ColumnName=N''calif_id'', @Description=N''Identificador único de la calificación referirse a ccTipoCalif y ccTipoCalifOut. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 19.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccCalifCamp'', @ColumnName=N''calif_id'', @Description=N''Identificador único de la calificación referirse a ccTipoCalif y ccTipoCalifOut. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccCalifCamp'', @ColumnName=N''cam_id'', @Description=N''Identificador único de la campaña o de la especialidad, referirse a ccCamps y ccInbound.. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 19.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccCalifCamp'', @ColumnName=N''cam_id'', @Description=N''Identificador único de la campaña o de la especialidad, referirse a ccCamps y ccInbound.. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccCalifCamp'', @ColumnName=N''tipo'', @Description=N''Si es 0, la relación es de una especialidad, si es 1 la relación es de campaña.. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 19.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccCalifCamp'', @ColumnName=N''tipo'', @Description=N''Si es 0, la relación es de una especialidad, si es 1 la relación es de campaña.. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccBaseXDB'', @ColumnName=N''id'', @Description=N''Identificador de la tabla. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 20.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccBaseXDB'', @ColumnName=N''id'', @Description=N''Identificador de la tabla. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccBaseXDB'', @ColumnName=N''serviceId'', @Description=N''ccFinderServices.id. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 20.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccBaseXDB'', @ColumnName=N''serviceId'', @Description=N''ccFinderServices.id. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccBaseXDB'', @ColumnName=N''dateStart'', @Description=N''Fecha de creación de la base. Tipo documentado: datetime. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 20.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccBaseXDB'', @ColumnName=N''dateStart'', @Description=N''Fecha de creación de la base. Tipo documentado: datetime.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccBaseXDB'', @ColumnName=N''dateEnd'', @Description=N''Fechar de cierre de la base. Tipo documentado: datetime. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 20.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccBaseXDB'', @ColumnName=N''dateEnd'', @Description=N''Fechar de cierre de la base. Tipo documentado: datetime.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccBaseXDB'', @ColumnName=N''Xname'', @Description=N''Nombre de la base de datos de base x. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 20.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccBaseXDB'', @ColumnName=N''Xname'', @Description=N''Nombre de la base de datos de base x. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccBaseXDB'', @ColumnName=N''isFull'', @Description=N''Indica si la base de datos está llena para crear una nueva. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 20.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccBaseXDB'', @ColumnName=N''isFull'', @Description=N''Indica si la base de datos está llena para crear una nueva. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccFinderServices'', @ColumnName=N''id'', @Description=N''Identificador de la tabla. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 20.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccFinderServices'', @ColumnName=N''id'', @Description=N''Identificador de la tabla. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccFinderServices'', @ColumnName=N''name'', @Description=N''Nombre del servicio. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 20.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccFinderServices'', @ColumnName=N''name'', @Description=N''Nombre del servicio. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccFinderServices'', @ColumnName=N''ref'', @Description=N''Nombre del nodo (R01,R02,…). Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 20.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccFinderServices'', @ColumnName=N''ref'', @Description=N''Nombre del nodo (R01,R02,…). Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccFinderServices'', @ColumnName=N''tableName'', @Description=N''Nombre de la tabla que guardara la información de los nodos. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 20.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccFinderServices'', @ColumnName=N''tableName'', @Description=N''Nombre de la tabla que guardara la información de los nodos. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccFinderServices'', @ColumnName=N''tableNameHistory'', @Description=N''Nombre de la tabla que guardara la información de los nodos históricos. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 20.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccFinderServices'', @ColumnName=N''tableNameHistory'', @Description=N''Nombre de la tabla que guardara la información de los nodos históricos. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccFinderServices'', @ColumnName=N''columnId'', @Description=N''Nombre de la columna que se identifica en la tablas para. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 20.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccFinderServices'', @ColumnName=N''columnId'', @Description=N''Nombre de la columna que se identifica en la tablas para. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccFinderServices'', @ColumnName=N''isActive'', @Description=N''Revisa si el servicio esta activo. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 21.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccFinderServices'', @ColumnName=N''isActive'', @Description=N''Revisa si el servicio esta activo. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''messageStatus'', @ColumnName=N''messageStatusId'', @Description=N''Identificador de la tabla. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 21.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''messageStatus'', @ColumnName=N''messageStatusId'', @Description=N''Identificador de la tabla. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''messageStatus'', @ColumnName=N''name'', @Description=N''Nombre del estado. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 21.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''messageStatus'', @ColumnName=N''name'', @Description=N''Nombre del estado. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''messageStatus'', @ColumnName=N''description'', @Description=N''Descripción del estado. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 21.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''messageStatus'', @ColumnName=N''description'', @Description=N''Descripción del estado. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''messageStatus'', @ColumnName=N''isFinished'', @Description=N''Si la conversacion es finalizada (solo email). Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 21.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''messageStatus'', @ColumnName=N''isFinished'', @Description=N''Si la conversacion es finalizada (solo email). Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccTipoStatusAgente'', @ColumnName=N''TipoStatusAge_id'', @Description=N''Identificador de la tabla. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 21.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccTipoStatusAgente'', @ColumnName=N''TipoStatusAge_id'', @Description=N''Identificador de la tabla. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctiponotready'', @ColumnName=N''TipoNotReady_id'', @Description=N''Identificador del tipo de no disponible, auto numérico y único. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 21.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctiponotready'', @ColumnName=N''TipoNotReady_id'', @Description=N''Identificador del tipo de no disponible, auto numérico y único. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctiponotready'', @ColumnName=N''Time_Acum'', @Description=N''Tiempo máximo acumulado del tipo de no disponible, en segundos.. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 22.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctiponotready'', @ColumnName=N''Time_Acum'', @Description=N''Tiempo máximo acumulado del tipo de no disponible, en segundos.. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctiponotready'', @ColumnName=N''Time_xEv'', @Description=N''Tiempo máximo por evento, en segundos. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 22.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctiponotready'', @ColumnName=N''Time_xEv'', @Description=N''Tiempo máximo por evento, en segundos. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctiponotready'', @ColumnName=N''Pas_Sup'', @Description=N''Indica si el tipo de no disponible requerirá contraseña de supervisor, 1 activado, 0 inhabilitar.. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 22.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctiponotready'', @ColumnName=N''Pas_Sup'', @Description=N''Indica si el tipo de no disponible requerirá contraseña de supervisor, 1 activado, 0 inhabilitar.. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctiponotready'', @ColumnName=N''NextStatus'', @Description=N''Especifica el siguiente estado al que pasará el agente al terminarse el tiempo por evento o acumulado, -1 Disponible, >0 Identificador del siguiente tipo no disponible.. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 22.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctiponotready'', @ColumnName=N''NextStatus'', @Description=N''Especifica el siguiente estado al que pasará el agente al terminarse el tiempo por evento o acumulado, -1 Disponible, >0 Identificador del siguiente tipo no disponible.. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctiponotready'', @ColumnName=N''IsSup'', @Description=N''Si requiere que se ponga contraseña de administrador. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 22.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctiponotready'', @ColumnName=N''IsSup'', @Description=N''Si requiere que se ponga contraseña de administrador. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctiponotready'', @ColumnName=N''StatusTipoNotReady'', @Description=N''Status de tipo no disponible. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 22.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cctiponotready'', @ColumnName=N''StatusTipoNotReady'', @Description=N''Status de tipo no disponible. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccPosicion'', @ColumnName=N''pos_id'', @Description=N''Id de la posición. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 22.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccPosicion'', @ColumnName=N''pos_id'', @Description=N''Id de la posición. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccPosicion'', @ColumnName=N''Computer'', @Description=N''Nombre de la computadora. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 22.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccPosicion'', @ColumnName=N''Computer'', @Description=N''Nombre de la computadora. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccPosicion'', @ColumnName=N''ext_id'', @Description=N''Id de la extensión. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 22.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccPosicion'', @ColumnName=N''ext_id'', @Description=N''Id de la extensión. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccPosicion'', @ColumnName=N''user_id'', @Description=N''Id del usuario. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 22.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccPosicion'', @ColumnName=N''user_id'', @Description=N''Id del usuario. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccPosicion'', @ColumnName=N''Status'', @Description=N''Status de la posición. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 22.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccPosicion'', @ColumnName=N''Status'', @Description=N''Status de la posición. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccPosicion'', @ColumnName=N''tipoConexion'', @Description=N''0 Ip 1 Live Connect. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 22.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccPosicion'', @ColumnName=N''tipoConexion'', @Description=N''0 Ip 1 Live Connect. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccPosicion'', @ColumnName=N''IP'', @Description=N''Ip de la maquina. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 22.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccPosicion'', @ColumnName=N''IP'', @Description=N''Ip de la maquina. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccriacat_workgroup'', @ColumnName=N''IDWG'', @Description=N''Identificador de la tabla. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 23.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccriacat_workgroup'', @ColumnName=N''IDWG'', @Description=N''Identificador de la tabla. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccriacat_workgroup'', @ColumnName=N''WGName'', @Description=N''Nombre del Grupo de Trabajo. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 23.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccriacat_workgroup'', @ColumnName=N''WGName'', @Description=N''Nombre del Grupo de Trabajo. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccriacat_workgroup'', @ColumnName=N''StatusWorkGroup'', @Description=N''Grupo de trabajo activo. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 23.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccriacat_workgroup'', @ColumnName=N''StatusWorkGroup'', @Description=N''Grupo de trabajo activo. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccriaareaworkgroup'', @ColumnName=N''IDWG'', @Description=N''ccriacat_workgroup.IDWG. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 23.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccriaareaworkgroup'', @ColumnName=N''IDWG'', @Description=N''ccriacat_workgroup.IDWG. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccriaareaworkgroup'', @ColumnName=N''IDArea'', @Description=N''Identificador del Área. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 23.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccriaareaworkgroup'', @ColumnName=N''IDArea'', @Description=N''Identificador del Área. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia'', @ColumnName=N''User_id'', @Description=N''Identificador único del agente, referirse a ccUsers.. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 23.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia'', @ColumnName=N''User_id'', @Description=N''Identificador único del agente, referirse a ccUsers.. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia'', @ColumnName=N''TipoStatusAge_id'', @Description=N''Identificador del estado del agente, referirse a ccTipoStatusAgente.. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 23.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia'', @ColumnName=N''TipoStatusAge_id'', @Description=N''Identificador del estado del agente, referirse a ccTipoStatusAgente.. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia'', @ColumnName=N''tStatus'', @Description=N''Tiempo en segundos que el agente estuvo en ese estado. Tipo documentado: float. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 23.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia'', @ColumnName=N''tStatus'', @Description=N''Tiempo en segundos que el agente estuvo en ese estado. Tipo documentado: float.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia'', @ColumnName=N''fecha'', @Description=N''Fecha hora en la cual el agente cambió al siguiente estado.. Tipo documentado: datetime. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 23.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia'', @ColumnName=N''fecha'', @Description=N''Fecha hora en la cual el agente cambió al siguiente estado.. Tipo documentado: datetime.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia'', @ColumnName=N''IdCampEsp'', @Description=N''Id de la campaña o especialidad. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 23.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia'', @ColumnName=N''IdCampEsp'', @Description=N''Id de la campaña o especialidad. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia'', @ColumnName=N''Tipo'', @Description=N''Tipo. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 23.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia'', @ColumnName=N''Tipo'', @Description=N''Tipo. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia'', @ColumnName=N''currentStatus'', @Description=N''El estado que está actualmente el agente. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 23.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia'', @ColumnName=N''currentStatus'', @Description=N''El estado que está actualmente el agente. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia'', @ColumnName=N''callID'', @Description=N''Id de la llamada. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 23.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia'', @ColumnName=N''callID'', @Description=N''Id de la llamada. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia_Dialog'', @ColumnName=N''Log_DialId'', @Description=N''Identificador único de la tabla. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 23.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia_Dialog'', @ColumnName=N''Log_DialId'', @Description=N''Identificador único de la tabla. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia_Dialog'', @ColumnName=N''User_id'', @Description=N''Identificador único del agente, referirse a ccUsers.. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 23.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia_Dialog'', @ColumnName=N''User_id'', @Description=N''Identificador único del agente, referirse a ccUsers.. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia_Dialog'', @ColumnName=N''Cam_id'', @Description=N''Identificador de campañas. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 24.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia_Dialog'', @ColumnName=N''Cam_id'', @Description=N''Identificador de campañas. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia_Dialog'', @ColumnName=N''fecha_Calc_ms'', @Description=N''Tiempo en milisegundos. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 24.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia_Dialog'', @ColumnName=N''fecha_Calc_ms'', @Description=N''Tiempo en milisegundos. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia_Dialog'', @ColumnName=N''tStatus_Dispo'', @Description=N''Tiempo en segundos de disponible. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 24.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia_Dialog'', @ColumnName=N''tStatus_Dispo'', @Description=N''Tiempo en segundos de disponible. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia_Dialog'', @ColumnName=N''fecha_Dispo'', @Description=N''Fecha del Tiempo Disponible. Tipo documentado: datetime. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 24.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia_Dialog'', @ColumnName=N''fecha_Dispo'', @Description=N''Fecha del Tiempo Disponible. Tipo documentado: datetime.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia_Dialog'', @ColumnName=N''tStatus_Dialog'', @Description=N''Tiempo en segundos en dialo. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 24.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia_Dialog'', @ColumnName=N''tStatus_Dialog'', @Description=N''Tiempo en segundos en dialo. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia_Dialog'', @ColumnName=N''fecha_Dialog'', @Description=N''Fecha del Tiempo Dialo. Tipo documentado: datetime. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 24.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccLogAgentesDia_Dialog'', @ColumnName=N''fecha_Dialog'', @Description=N''Fecha del Tiempo Dialo. Tipo documentado: datetime.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cclogagentesnotready'', @ColumnName=N''User_id'', @Description=N''Identificador único del agente, referirse a ccUsers.. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 24.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cclogagentesnotready'', @ColumnName=N''User_id'', @Description=N''Identificador único del agente, referirse a ccUsers.. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cclogagentesnotready'', @ColumnName=N''TipoNotReady_id'', @Description=N''Identificador único del tipo de no disponible, referirse a ccTipoNotReady. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 24.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cclogagentesnotready'', @ColumnName=N''TipoNotReady_id'', @Description=N''Identificador único del tipo de no disponible, referirse a ccTipoNotReady. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cclogagentesnotready'', @ColumnName=N''tStatus'', @Description=N''Tiempo en segundos que duró el agente en estado no disponible.. Tipo documentado: float. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 24.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cclogagentesnotready'', @ColumnName=N''tStatus'', @Description=N''Tiempo en segundos que duró el agente en estado no disponible.. Tipo documentado: float.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cclogagentesnotready'', @ColumnName=N''fecha'', @Description=N''Fecha hora en la cual el agente salió del estado no disponible.. Tipo documentado: datetime. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 24.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cclogagentesnotready'', @ColumnName=N''fecha'', @Description=N''Fecha hora en la cual el agente salió del estado no disponible.. Tipo documentado: datetime.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cclogagentesnotready'', @ColumnName=N''separado'', @Description=N''Bandera que indica cuando un evento No disponible estuvo en horas diferentes (1), cuando el tipo no disponible estuvo en la misma hora tiene valor de (0). Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 24.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cclogagentesnotready'', @ColumnName=N''separado'', @Description=N''Bandera que indica cuando un evento No disponible estuvo en horas diferentes (1), cuando el tipo no disponible estuvo en la misma hora tiene valor de (0). Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cclogagentesnotready'', @ColumnName=N''IdCampEsp'', @Description=N''Id de la campaña o ACD. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 24.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cclogagentesnotready'', @ColumnName=N''IdCampEsp'', @Description=N''Id de la campaña o ACD. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cclogagentesnotready'', @ColumnName=N''Tipo'', @Description=N''Tipo. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 24.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''cclogagentesnotready'', @ColumnName=N''Tipo'', @Description=N''Tipo. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccloglogin'', @ColumnName=N''User_id'', @Description=N''Identificador único del agente, referirse a ccUsers.. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 25.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccloglogin'', @ColumnName=N''User_id'', @Description=N''Identificador único del agente, referirse a ccUsers.. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccloglogin'', @ColumnName=N''Extension'', @Description=N''Número de extensión en la cual se encuentra el agente, en caso de ser IP, es el identificador de la posición, referirse a ccPosicion.. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 25.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccloglogin'', @ColumnName=N''Extension'', @Description=N''Número de extensión en la cual se encuentra el agente, en caso de ser IP, es el identificador de la posición, referirse a ccPosicion.. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccloglogin'', @ColumnName=N''TipoMov'', @Description=N''Tipo de movimiento que realizó, 1 inicio de sesión, 0 cierre de sesión. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 25.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccloglogin'', @ColumnName=N''TipoMov'', @Description=N''Tipo de movimiento que realizó, 1 inicio de sesión, 0 cierre de sesión. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccloglogin'', @ColumnName=N''fecha'', @Description=N''Fecha hora en la cual se realizó el movimiento.. Tipo documentado: datetime. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 25.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccloglogin'', @ColumnName=N''fecha'', @Description=N''Fecha hora en la cual se realizó el movimiento.. Tipo documentado: datetime.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccriaworkgroupusers'', @ColumnName=N''IDWG'', @Description=N''Identificador del grupo de trabajo, referirse a ccriacat_workgroup.IDWG. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 25.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccriaworkgroupusers'', @ColumnName=N''IDWG'', @Description=N''Identificador del grupo de trabajo, referirse a ccriacat_workgroup.IDWG. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccriaworkgroupusers'', @ColumnName=N''User_id'', @Description=N''Identificador único del agente, referirse a ccUsers.. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 25.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccriaworkgroupusers'', @ColumnName=N''User_id'', @Description=N''Identificador único del agente, referirse a ccUsers.. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''contactMeanIn'', @ColumnName=N''meanContactTypeId'', @Description=N''Identificador de la tabla. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 25.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''contactMeanIn'', @ColumnName=N''meanContactTypeId'', @Description=N''Identificador de la tabla. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''contactMeanIn'', @ColumnName=N''name'', @Description=N''Nombre de la conexión. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 25.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''contactMeanIn'', @ColumnName=N''name'', @Description=N''Nombre de la conexión. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''contactMeanIn'', @ColumnName=N''conexionInfo'', @Description=N''Datos de la conexión. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 25.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''contactMeanIn'', @ColumnName=N''conexionInfo'', @Description=N''Datos de la conexión. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''contactMeanIn'', @ColumnName=N''inboundId'', @Description=N''ccinbound.Inbound_id. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 25.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''contactMeanIn'', @ColumnName=N''inboundId'', @Description=N''ccinbound.Inbound_id. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''contactMeanIn'', @ColumnName=N''connUser'', @Description=N''Nombre usuario. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 25.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''contactMeanIn'', @ColumnName=N''connUser'', @Description=N''Nombre usuario. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''contactMeanIn'', @ColumnName=N''ConnPass'', @Description=N''Contraseña. Tipo documentado: varchar. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 25.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''contactMeanIn'', @ColumnName=N''ConnPass'', @Description=N''Contraseña. Tipo documentado: varchar.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''contactMeanIn'', @ColumnName=N''numMessages'', @Description=N''Numero de mensajes. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 25.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''contactMeanIn'', @ColumnName=N''numMessages'', @Description=N''Numero de mensajes. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''contactMeanIn'', @ColumnName=N''timeAlertMessage'', @Description=N''Tiempo para salir una alerta (email). Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 25.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''contactMeanIn'', @ColumnName=N''timeAlertMessage'', @Description=N''Tiempo para salir una alerta (email). Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''contactMeanIn'', @ColumnName=N''answerTimeOut'', @Description=N''Tiempo cerrar conversación( Email y Twitter). Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 26.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''contactMeanIn'', @ColumnName=N''answerTimeOut'', @Description=N''Tiempo cerrar conversación( Email y Twitter). Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''contactMeanIn'', @ColumnName=N''isActive'', @Description=N''Si esta activo la cuenta. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 26.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''contactMeanIn'', @ColumnName=N''isActive'', @Description=N''Si esta activo la cuenta. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''contactMeanIn'', @ColumnName=N''closeConversationTime'', @Description=N''Tiempo para cerrar la conversación. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 26.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''contactMeanIn'', @ColumnName=N''closeConversationTime'', @Description=N''Tiempo para cerrar la conversación. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''contactMeanIn'', @ColumnName=N''answerTimeoutClient'', @Description=N''Tiempo para cerrar conversación si el cliente no contesta. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 26.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''contactMeanIn'', @ColumnName=N''answerTimeoutClient'', @Description=N''Tiempo para cerrar conversación si el cliente no contesta. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''contactMeanIn'', @ColumnName=N''defaultServiceLevelParameter'', @Description=N''Modo de medir el nivel de servicio. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 26.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''contactMeanIn'', @ColumnName=N''defaultServiceLevelParameter'', @Description=N''Modo de medir el nivel de servicio. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''contactMeanIn'', @ColumnName=N''allowFileAttachments'', @Description=N''Si tiene permitido envió de Archivos adjuntos. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 26.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''contactMeanIn'', @ColumnName=N''allowFileAttachments'', @Description=N''Si tiene permitido envió de Archivos adjuntos. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccSettings2'', @ColumnName=N''setting_id'', @Description=N''Identificador único referente al setting. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 26.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccSettings2'', @ColumnName=N''setting_id'', @Description=N''Identificador único referente al setting. Tipo documentado: smallint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccSettings2'', @ColumnName=N''valor'', @Description=N''Valor del setting. Tipo documentado: varchar(300). Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 26.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccSettings2'', @ColumnName=N''valor'', @Description=N''Valor del setting. Tipo documentado: varchar(300).'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccSettings2'', @ColumnName=N''Status'', @Description=N''Status. Tipo documentado: tinyint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 26.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccSettings2'', @ColumnName=N''Status'', @Description=N''Status. Tipo documentado: tinyint.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccSettings2'', @ColumnName=N''Tipo'', @Description=N''Tipo de setting GRL: General, ADM: Administrador, AGT: Agente. Tipo documentado: varchar(3). Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 26.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccSettings2'', @ColumnName=N''Tipo'', @Description=N''Tipo de setting GRL: General, ADM: Administrador, AGT: Agente. Tipo documentado: varchar(3).'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccSettings2'', @ColumnName=N''detalle'', @Description=N''Detalle del setting. Tipo documentado: varchar(600). Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 26.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccSettings2'', @ColumnName=N''detalle'', @Description=N''Detalle del setting. Tipo documentado: varchar(600).'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccSettings2'', @ColumnName=N''description'', @Description=N''Descripción del setting en inglés. Tipo documentado: varchar(600). Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 26.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccSettings2'', @ColumnName=N''description'', @Description=N''Descripción del setting en inglés. Tipo documentado: varchar(600).'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccSettings2'', @ColumnName=N''bLoadSettings'', @Description=N''Para saber si lo carga el admin. Tipo documentado: bit. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 26.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccSettings2'', @ColumnName=N''bLoadSettings'', @Description=N''Para saber si lo carga el admin. Tipo documentado: bit.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccSettings2'', @ColumnName=N''validate'', @Description=N''No se ocupa en Kolob. Tipo documentado: varchar(255). Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 27.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccSettings2'', @ColumnName=N''validate'', @Description=N''No se ocupa en Kolob. Tipo documentado: varchar(255).'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoCallsOutData'', @ColumnName=N''cal_id'', @Description=N''Identificador único referente, viene de la tabla ccoCallsOut. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 27.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoCallsOutData'', @ColumnName=N''cal_id'', @Description=N''Identificador único referente, viene de la tabla ccoCallsOut. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoCallsOutData'', @ColumnName=N''callout_id'', @Description=N''Id del registro marcado, viene de la tabla ccoCallsOutSource. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 27.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoCallsOutData'', @ColumnName=N''callout_id'', @Description=N''Id del registro marcado, viene de la tabla ccoCallsOutSource. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoCallsOutData'', @ColumnName=N''Data1'', @Description=N''Dato 1 del registro marcado. Tipo documentado: varchar(255). Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 27.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoCallsOutData'', @ColumnName=N''Data1'', @Description=N''Dato 1 del registro marcado. Tipo documentado: varchar(255).'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoCallsOutData'', @ColumnName=N''Data2'', @Description=N''Dato 1 del registro marcado. Tipo documentado: varchar(255). Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 27.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoCallsOutData'', @ColumnName=N''Data2'', @Description=N''Dato 1 del registro marcado. Tipo documentado: varchar(255).'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoCallsOutData'', @ColumnName=N''Data3'', @Description=N''Dato 1 del registro marcado. Tipo documentado: varchar(255). Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 27.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoCallsOutData'', @ColumnName=N''Data3'', @Description=N''Dato 1 del registro marcado. Tipo documentado: varchar(255).'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoCallsOutData'', @ColumnName=N''Data4'', @Description=N''Dato 1 del registro marcado. Tipo documentado: varchar(255). Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 27.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoCallsOutData'', @ColumnName=N''Data4'', @Description=N''Dato 1 del registro marcado. Tipo documentado: varchar(255).'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoCallsOutData'', @ColumnName=N''Data5'', @Description=N''Dato 1 del registro marcado. Tipo documentado: varchar(255). Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 27.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoCallsOutData'', @ColumnName=N''Data5'', @Description=N''Dato 1 del registro marcado. Tipo documentado: varchar(255).'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoCallsOutData'', @ColumnName=N''callDate'', @Description=N''Fecha de marcación. Tipo documentado: datetime. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 27.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoCallsOutData'', @ColumnName=N''callDate'', @Description=N''Fecha de marcación. Tipo documentado: datetime.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoLogDialsData'', @ColumnName=N''logDial_id'', @Description=N''Identificador único referente, viene de la tabla ccoLogDials. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 27.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoLogDialsData'', @ColumnName=N''logDial_id'', @Description=N''Identificador único referente, viene de la tabla ccoLogDials. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoLogDialsData'', @ColumnName=N''callout_id'', @Description=N''Id del registro marcado, viene de la tabla ccoCallsOutSource. Tipo documentado: int. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 27.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoLogDialsData'', @ColumnName=N''callout_id'', @Description=N''Id del registro marcado, viene de la tabla ccoCallsOutSource. Tipo documentado: int.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoLogDialsData'', @ColumnName=N''Data1'', @Description=N''Dato 1 del registro marcado. Tipo documentado: varchar(255). Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 27.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoLogDialsData'', @ColumnName=N''Data1'', @Description=N''Dato 1 del registro marcado. Tipo documentado: varchar(255).'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoLogDialsData'', @ColumnName=N''Data2'', @Description=N''Dato 1 del registro marcado. Tipo documentado: varchar(255). Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 27.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoLogDialsData'', @ColumnName=N''Data2'', @Description=N''Dato 1 del registro marcado. Tipo documentado: varchar(255).'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoLogDialsData'', @ColumnName=N''Data3'', @Description=N''Dato 1 del registro marcado. Tipo documentado: varchar(255). Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 28.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoLogDialsData'', @ColumnName=N''Data3'', @Description=N''Dato 1 del registro marcado. Tipo documentado: varchar(255).'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoLogDialsData'', @ColumnName=N''Data4'', @Description=N''Dato 1 del registro marcado. Tipo documentado: varchar(255). Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 28.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoLogDialsData'', @ColumnName=N''Data4'', @Description=N''Dato 1 del registro marcado. Tipo documentado: varchar(255).'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoLogDialsData'', @ColumnName=N''Data5'', @Description=N''Dato 1 del registro marcado. Tipo documentado: varchar(255). Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 28.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoLogDialsData'', @ColumnName=N''Data5'', @Description=N''Dato 1 del registro marcado. Tipo documentado: varchar(255).'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoLogDialsData'', @ColumnName=N''callDate'', @Description=N''Fecha de marcación. Tipo documentado: datetime. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 28.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoLogDialsData'', @ColumnName=N''callDate'', @Description=N''Fecha de marcación. Tipo documentado: datetime.'';
 
-EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoCallsOut'', @ColumnName=N''cal_whoHung'', @Description=N''Los valores más actuales se encuentran en el telephony y son los siguientes: 0 Cliente 1 Agente 2 Encuesta 3 Agente de IA 4 Transferencia a campaña de entrada En versiones anteriores, usando engine 0 Cliente 1 Agente 3 Agente y lo manda a encuesta. Tipo documentado: smallint. Fuente: CW-Diccionario datos CCenterRIA-250526-052505.pdf, pagina 28.'';
+EXEC dbo.usp_SetColumnDescription @SchemaName=N''dbo'', @ObjectName=N''ccoCallsOut'', @ColumnName=N''cal_whoHung'', @Description=N''Los valores más actuales se encuentran en el telephony y son los siguientes: 0 Cliente 1 Agente 2 Encuesta 3 Agente de IA 4 Transferencia a campaña de entrada En versiones anteriores, usando engine 0 Cliente 1 Agente 3 Agente y lo manda a encuesta. Tipo documentado: smallint.'';
 '
     exec (@sql)
     
 
-    SET @process = 'Descripciones de tablas Chat'
+    SET @process = 'Descripciones de tablas Finder'
     SET @sql = '
 
 EXEC dbo.usp_SetObjectDescription
@@ -1801,6 +1801,11 @@ EXEC dbo.usp_SetObjectDescription
 EXEC dbo.usp_SetObjectDescription
     @SchemaName = N''dbo'',
     @ObjectName = N''ccChatsNode'',
+    @Description = N''Tabla para almacenar nodos XML de conversaciones de chat que serán enviados a BaseXServer. Incluye fechas de creación, salida y estado de envío.'';
+
+EXEC dbo.usp_SetObjectDescription
+    @SchemaName = N''dbo'',
+    @ObjectName = N''ccEmailNode'',
     @Description = N''Tabla para almacenar nodos XML de conversaciones de chat que serán enviados a BaseXServer. Incluye fechas de creación, salida y estado de envío.'';
 
 
@@ -3970,6 +3975,11 @@ EXEC dbo.usp_SetObjectDescription
     @SchemaName = N''dbo'',
     @ObjectName = N''ccWhatsAppNodeHistoryOut'',
     @Description = N''Tabla histórica para guardar nodos de WhatsApp de salida que se pasarán a BaseXServer.'';
+
+EXEC dbo.usp_SetObjectDescription
+    @SchemaName = N''dbo'',
+    @ObjectName = N''ccAVRSTransfer'',
+    @Description = N''Relacion de registros llamadas de entrada y salida con el cal_id para pasar al finder.'';    
 
 '
     exec (@sql)

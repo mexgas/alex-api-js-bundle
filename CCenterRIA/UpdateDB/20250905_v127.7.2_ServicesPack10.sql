@@ -7064,25 +7064,229 @@ IF OBJECT_ID(''dbo.ccspADMaddConversationTweet'', ''P'') IS NOT NULL
     exec (@sql)
     
 
-    SET @process = ''
-    SET @sql = ''
+    SET @process = 'DROP TABLE ccPosicion'
+    SET @sql = 'IF EXISTS (SELECT * from sys.tables where name = N''ccPosicion'')
+	BEGIN
+		DROP TABLE ccPosicion
+	END' 
     exec (@sql)
-    SET @process = ''
-    SET @sql = ''
+	
+    SET @process = 'CREATE TABLE ccPosicion'
+    SET @sql = 'CREATE TABLE [dbo].[ccPosicion]( [pos_id] [int] NOT NULL, 
+	[Computer] [varchar](20) NOT NULL, [ext_id] [smallint] NOT NULL,
+	[user_id] [smallint] NOT NULL, [Status] [varchar](8) NOT NULL,
+	[tipoConexion] [tinyint] NOT NULL, [IP] [varchar](50) NULL, 
+	[publicIp] [varchar](15) NULL, 
+	CONSTRAINT [PK_ccPosicion]
+	PRIMARY KEY CLUSTERED ( [pos_id] ASC ) ON [PRIMARY] ) ON [PRIMARY]
+	ALTER TABLE [dbo].[ccPosicion] ADD CONSTRAINT [DF_ccPosicion_user_id] DEFAULT (0) FOR [user_id]
+	ALTER TABLE [dbo].[ccPosicion] ADD CONSTRAINT [DF_ccPosicion_Status] DEFAULT (1) FOR [Status]
+	ALTER TABLE [dbo].[ccPosicion] ADD DEFAULT (0) FOR [tipoConexion]
+	ALTER TABLE [dbo].[ccPosicion] ADD DEFAULT ('''') FOR [IP]
+	ALTER TABLE [dbo].[ccPosicion] WITH NOCHECK ADD CONSTRAINT [FK_ccPosicion_ccMonitorExt] FOREIGN KEY([ext_id]) REFERENCES [dbo].[ccMonitorExt] ([ext_id])
+	ALTER TABLE [dbo].[ccPosicion] CHECK CONSTRAINT [FK_ccPosicion_ccMonitorExt]'
+    exec (@sql)
+    
+
+    SET @process = 'CREATE INDIXES on ccPosicion'
+    SET @sql = '
+	------------------------------------------------------------
+	-- IX_ccPosicion (Computer)
+	------------------------------------------------------------
+	IF NOT EXISTS (
+		SELECT 1 
+		FROM sys.indexes 
+		WHERE name = ''IX_ccPosicion''
+		AND object_id = OBJECT_ID(''dbo.ccPosicion'')
+	)
+	BEGIN
+		CREATE NONCLUSTERED INDEX IX_ccPosicion
+		ON dbo.ccPosicion (Computer);
+	END
+
+	------------------------------------------------------------
+	-- IX_ccPosicion_1 (ext_id)
+	------------------------------------------------------------
+	IF NOT EXISTS (
+		SELECT 1 
+		FROM sys.indexes 
+		WHERE name = ''IX_ccPosicion_1''
+		AND object_id = OBJECT_ID(''dbo.ccPosicion'')
+	)
+	BEGIN
+		CREATE NONCLUSTERED INDEX IX_ccPosicion_1
+		ON dbo.ccPosicion (ext_id);
+	END
+
+	------------------------------------------------------------
+	-- IX_ccPosicion_2 (user_id, Computer)
+	------------------------------------------------------------
+	IF NOT EXISTS (
+		SELECT 1 
+		FROM sys.indexes 
+		WHERE name = ''IX_ccPosicion_2''
+		AND object_id = OBJECT_ID(''dbo.ccPosicion'')
+	)
+	BEGIN
+		CREATE NONCLUSTERED INDEX IX_ccPosicion_2
+		ON dbo.ccPosicion (user_id, Computer);
+	END
+
+	------------------------------------------------------------
+	-- PK_ccPosicion (pos_id)
+	------------------------------------------------------------
+	IF NOT EXISTS (
+		SELECT 1 
+		FROM sys.key_constraints 
+		WHERE name = ''PK_ccPosicion''
+	)
+	BEGIN
+		ALTER TABLE dbo.ccPosicion
+		ADD CONSTRAINT PK_ccPosicion
+		PRIMARY KEY CLUSTERED (pos_id);
+	END
+	'
+    exec (@sql)
+
+    SET @process = 'DROP PROCEDURE ccsp_RIAChecaLogin'
+    SET @sql = 'IF EXISTS (SELECT * from sys.procedures WHERE name = N''ccsp_RIAChecaLogin'')
+        BEGIN
+            DROP PROCEDURE dbo.ccsp_RIAChecaLogin;
+        END'
     exec (@sql)
     
 
     SET @process = ''
-    SET @sql = ''
-    exec (@sql)
+    SET @sql = '
+	CREATE PROCEDURE [dbo].[ccsp_RIAChecaLogin]
+    @login             VARCHAR(40),
+	@password          VARCHAR(40),
+	@computer          VARCHAR(20),
+	@passwordLwC       VARCHAR(40)=NULL
+	AS
+    DECLARE @loginOK TINYINT,@pswdOK TINYINT,@compuOK TINYINT,@extenOK TINYINT,@teclaOK TINYINT,@xferAgents TINYINT
 
-    SET @process = ''
-    SET @sql = ''
-    exec (@sql)
-    
+    DECLARE @nombre VARCHAR(60),@extension VARCHAR(15),@userID SMALLINT,@cCServer VARCHAR(20),@dialingMode INT
 
-    SET @process = ''
-    SET @sql = ''
+    DECLARE @passwordDb VARCHAR(33)
+
+    DECLARE @crmxActive TINYINT
+
+    DECLARE @passSecure INT
+
+	/*************************
+	Para posiciones ip, by ODC
+	*************************/
+
+    DECLARE @ext_id INT,@pos_id INT,@isIP BIT,@ipExtension VARCHAR(15)
+
+    DECLARE @tipoConexion SMALLINT
+
+	/***************************************************************
+	 Para live connected Tipo de conexion: 0 normal, 1 liveconnected
+	***************************************************************/
+
+    SELECT @loginOK=0,@pswdOK=0,@compuOK=0,@extenOK=0,@teclaOK=0,@xferAgents=0,@extension='' '',@userID=0,@nombre='' '',
+    @tipoConexion=0,@ipExtension='''',@isIP=0,@cCServer=''127.0.0.1'',@dialingMode=0,@crmxActive=0,@passSecure=0
+
+    SELECT @userID=User_id,@passwordDb=Password FROM ccUsers WITH(NOLOCK) WHERE Login = @login AND STATUS > 0 AND tipoUser_id = 1
+
+    IF @userID > 0
+    BEGIN
+        SET @loginOK=1
+    END
+
+    IF @loginOK = 1 AND (
+        @passwordDb = @password OR 
+        @passwordDb = dbo.md5(@password) OR 
+        dbo.md5(@passwordDb) = @password OR 
+        @passwordDb = @passwordLwC OR 
+        @passwordDb = dbo.md5(@passwordLwC) OR 
+        dbo.md5(@passwordDb) = @passwordLwC)
+    BEGIN
+        SET @pswdOK=1
+    END
+    IF @pswdOK = 1 AND NOT EXISTS
+                            (
+                               SELECT pos_id FROM ccPosicion WITH(NOLOCK)
+                               WHERE STATUS = ''1'' AND pos_id=@userID
+                            )
+    BEGIN
+        INSERT INTO ccposicion(pos_id,computer,ext_id,user_id,IP) VALUES(@userID,@computer,0,@userID,@computer)
+    END
+    ELSE
+    BEGIN
+        UPDATE ccposicion set computer=@computer,ext_id=0,user_id=@userID,IP=@computer where pos_id=@userID
+    END
+    SET @compuOK=1
+    IF @pswdOK = 1
+    BEGIN
+        IF EXISTS
+               (
+                  SELECT Computer
+                  FROM ccPosicion AS P
+                  JOIN ccMonitorExt AS M ON P.ext_id = M.ext_id
+                  WHERE p.STATUS = ''1'' AND M.STATUS = ''1'' AND Computer = @computer
+               )
+        SET @extenOK=1
+
+        SELECT @extension=Extension,@ext_id=p.ext_id,@pos_id=p.pos_id,@tipoConexion=p.tipoConexion,@isIP=isIP
+        FROM ccPosicion AS P
+        INNER JOIN ccMonitorExt AS M ON P.ext_id = M.ext_id
+        WHERE Computer = @computer
+
+        SELECT @teclaOK=COUNT(*)
+        FROM ccTeclaExtensionPuerto AS T
+        INNER JOIN ccMonitorExt AS M ON T.ext_id = M.ext_id
+        WHERE M.Extension = @extension
+
+        SELECT @nombre=Nombres + '' '' + ISNULL(ApellidoPaterno,'''') + '' '' + ISNULL(ApellidoMaterno,''''),@xferAgents=XferAgents,
+        @dialingMode=DialingMode
+        FROM ccUsers
+        WHERE User_id = @userID
+
+	/******************************************************************************************
+	Para posiciones ip, by ODC
+	 No verifica ccTeclaExtensionPuerto, @TeclaOK =1
+	 Regresa un extension ''virtual''.  Debe ser diferente a cualquiera de ccMonitorExt.Extension
+	******************************************************************************************/
+
+        IF @ext_id = 0
+        BEGIN
+           SELECT @teclaOK=1,@extension=CAST(@pos_id * -1 AS VARCHAR(15))
+        END
+
+	/*****************************************************************************************
+	-Por OAYC IPExtension, extension, para cuando es posición IP con alguna extension asignada
+	*****************************************************************************************/
+
+        ELSE
+        IF @ext_id > 0 AND @isIP = 1
+        BEGIN
+           SELECT @teclaOK=1,@ipExtension=@extension,@extension=CAST(@pos_id * -1 AS VARCHAR(15))
+        END
+
+        IF @tipoConexion = 1
+        SET @teclaOK=1
+
+        SELECT @cCServer=valor
+        FROM ccSettings
+        WHERE setting_id = 7
+
+        SELECT @crmxActive=valor
+        FROM ccsettings
+        WHERE setting_id = 168
+
+        SELECT @passSecure=valor
+        FROM ccSettings
+        WHERE setting_id = 207
+
+    END
+
+    SELECT @loginOK AS LoginOK,@pswdOK AS PswdOK,@compuOK AS CompuOK,@extenOK AS ExtenOK,@extension AS Extension,@userID AS
+    UserID,@nombre AS Nombre,@cCServer AS CCServer,@teclaOK AS TeclaOK,@tipoConexion AS TipoConexion,@ipExtension AS
+    ipExtension,@xferAgents AS XferAgents,@crmxActive AS CRMx,@passSecure AS passSecure,@dialingMode AS dialingMode
+	'
     exec (@sql)
 
 

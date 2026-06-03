@@ -7563,18 +7563,103 @@ N''Minuto correspondiente a la fecha de solicitud.'';
 				end'
     exec (@sql)
 ------------------------------- END MACL-------------------------------
+    
+    SET @process = 'DROP TABLE dbo.RepTwitterACD,RepTwitterAgente,RepTwitterDetail y '
+    SET @sql = 'IF OBJECT_ID(''dbo.RepTwitterACD'', ''U'') IS NOT NULL
+    DROP TABLE dbo.RepTwitterACD;
 
-    SET @process = ''
-    SET @sql = ''
+IF OBJECT_ID(''dbo.RepTwitterAgente'', ''U'') IS NOT NULL
+    DROP TABLE dbo.RepTwitterAgente;
+
+IF OBJECT_ID(''dbo.RepTwitterDetail'', ''U'') IS NOT NULL
+    DROP TABLE dbo.RepTwitterDetail;
+
+IF OBJECT_ID(''dbo.RepTwitterGeneral'', ''U'') IS NOT NULL
+    DROP TABLE dbo.RepTwitterGeneral;
+
+'
     exec (@sql)
 
-     SET @process = ''
-    SET @sql = ''
+     SET @process = 'DROP PROCEDURE dbo.ccspRepTwitterACD, ccspRepTwitterAgente, ccspRepTwitterDetail, ccspRepTwitterGeneral'
+    SET @sql = '
+IF OBJECT_ID(''dbo.ccspRepTwitterACD'', ''P'') IS NOT NULL
+    DROP PROCEDURE dbo.ccspRepTwitterACD;
+
+IF OBJECT_ID(''dbo.ccspRepTwitterAgente'', ''P'') IS NOT NULL
+    DROP PROCEDURE dbo.ccspRepTwitterAgente;
+
+IF OBJECT_ID(''dbo.ccspRepTwitterDetail'', ''P'') IS NOT NULL
+    DROP PROCEDURE dbo.ccspRepTwitterDetail;
+
+IF OBJECT_ID(''dbo.ccspRepTwitterGeneral'', ''P'') IS NOT NULL
+    DROP PROCEDURE dbo.ccspRepTwitterGeneral;'
     exec (@sql)
 
-    SET @process = ''
-    SET @sql = ''
-    exec (@sql)
+    SET @process = 'The user alias and agentName are changed in RepViewInCallsDetail]'
+	SET @sql = '
+	ALTER VIEW [dbo].[RepViewInCallsDetail] AS  
+	SELECT [date] AS receptionDate,
+		cal_final,
+		inboundId AS inboundCamp,
+		ACDGroup AS campaign,
+		ModelName,
+		callStatusId,
+		callStatus,
+		dispositionId,
+		disposition AS disposition_InCallsDetail,
+		subDispositionId,
+		subDisposition AS sub_Disposition,
+		dnisId,
+		dnis AS didNumber,
+		userId,
+		[user] as agentUsername,
+		callKey AS call_Key,
+		[source],
+		[destinationNumber],
+		callbackDate,
+		[cal_tWait] as queueTime,
+		ANI AS aniNumber,
+		queueTime AS queue_Time,
+		xferTime,
+		ringingTime,
+		dialogTime AS dialog_Time,
+		mohTime AS hold_Time,
+		twrapup,
+		AverageHandleTime AS handleTime,
+		extension,
+		agentName as [user],
+		whoHangUp AS endedBy,
+		recibeCallBy
+		[year],
+		[month],
+		[day],
+		[hour],
+		[minutes],
+		provedorId,
+		provider AS provider_InCallsDetail,
+		trunk AS trunk_InCallsDetail,
+		fileMoved,
+		[CapturedData],
+		Dato1,
+		Dato2,
+		Dato3,
+		Dato4,
+		Dato5,
+		callid AS call_Id,
+		grabId,
+		nameDNI,
+		numDNI,
+		collectCall,
+		timeTotalInCallSec,
+		timeTotalInCallMin,
+		statusCallByIVR,
+		IVR_ID,
+		callHung,
+		areaId,
+		area
+	FROM RepInCallsDetail WITH (NOLOCK);
+	'
+	EXEC(@sql);
 
      SET @process = ''
     SET @sql = ''

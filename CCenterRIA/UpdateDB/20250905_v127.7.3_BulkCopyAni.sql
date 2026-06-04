@@ -1809,7 +1809,7 @@ END'
     exec (@sql)
 
     SET @process = 'CREATE PROCEDURE dbo.ccsp_DLRGetRotativeANIBatchInline_A3'
-    SET @sql = 'CREATE PROCEDURE dbo.ccsp_DLRGetRotativeANIBatchInline_A3
+    SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_DLRGetRotativeANIBatchInline_A3]
 (
     @Batch dbo.ANIBatchType READONLY,
     @cam_id INT,
@@ -1826,15 +1826,27 @@ BEGIN
     BEGIN TRY
         BEGIN TRAN;
 
+        IF @cam_id IS NULL OR @cam_id <= 0 
+        BEGIN
+            PRINT ''Parametro @cam_id invalido.'';
+            RETURN;
+        END;
+
+        IF @aniList IS NULL OR @aniList <= 0
+        BEGIN
+            PRINT ''Parametro @aniList invalido.'';
+            RETURN;
+        END;
+
         SELECT @GlobalPoolSize = PoolSize
         FROM dbo.ccAniGlobalCount
         WHERE id_RAniList = @aniList;
 
         IF ISNULL(@GlobalPoolSize, 0) <= 0 
         BEGIN
-            print ''No existe PoolSize global valido.''
-            return
-        END
+            PRINT ''No existe PoolSize global valido.'';
+            RETURN;
+        END;
 
         /* =========================================================
            1. Normalizar batch
@@ -1871,9 +1883,22 @@ BEGIN
             x.PhonePos,
             x.PhonePos,
             x.phone,
-            CASE WHEN LEFT(x.phone, 2) IN (''33'', ''55'', ''56'', ''81'') THEN 2 ELSE 3 END,
-            CASE WHEN LEFT(x.phone, 2) IN (''33'', ''55'', ''56'', ''81'') THEN LEFT(x.phone, 2) ELSE LEFT(x.phone, 3) END,
-            CONVERT(INT, CASE WHEN LEFT(x.phone, 2) IN (''33'', ''55'', ''56'', ''81'') THEN LEFT(x.phone, 2) ELSE LEFT(x.phone, 3) END)
+            CASE 
+                WHEN LEFT(x.phone, 2) IN (''33'', ''55'', ''56'', ''81'') THEN 2 
+                ELSE 3 
+            END,
+            CASE 
+                WHEN LEFT(x.phone, 2) IN (''33'', ''55'', ''56'', ''81'') THEN LEFT(x.phone, 2) 
+                ELSE LEFT(x.phone, 3) 
+            END,
+            CONVERT
+            (
+                INT,
+                CASE 
+                    WHEN LEFT(x.phone, 2) IN (''33'', ''55'', ''56'', ''81'') THEN LEFT(x.phone, 2) 
+                    ELSE LEFT(x.phone, 3) 
+                END
+            )
         FROM
         (
             SELECT
@@ -1884,11 +1909,11 @@ BEGIN
             CROSS APPLY
             (
                 VALUES
-                    (1, NULLIF(b.phone1, '''')),
-                    (2, NULLIF(b.phone2, '''')),
-                    (3, NULLIF(b.phone3, '''')),
-                    (4, NULLIF(b.phone4, '''')),
-                    (5, NULLIF(b.phone5, ''''))
+                    (1, NULLIF(LTRIM(RTRIM(b.phone1)), '''')),
+                    (2, NULLIF(LTRIM(RTRIM(b.phone2)), '''')),
+                    (3, NULLIF(LTRIM(RTRIM(b.phone3)), '''')),
+                    (4, NULLIF(LTRIM(RTRIM(b.phone4)), '''')),
+                    (5, NULLIF(LTRIM(RTRIM(b.phone5)), ''''))
             ) v(PhonePos, phone)
             WHERE v.phone IS NOT NULL
               AND LEN(v.phone) >= 3
@@ -2070,8 +2095,6 @@ BEGIN
 
         /* =========================================================
            6. Work
-              GlobalTargetSeq se calcula aquí.
-              Se elimina UPDATE posterior sobre #Work.
            ========================================================= */
 
         IF OBJECT_ID(''tempdb..#Work'') IS NOT NULL DROP TABLE #Work;
@@ -2089,6 +2112,7 @@ BEGIN
             z.UsedCount,
             z.Phase,
             z.PhaseRN,
+            z.LastANI,
             z.LastPrefix6,
             z.LastSeriesKey,
             CASE
@@ -2132,6 +2156,7 @@ BEGIN
                         rp.PoolPrefix
                     ORDER BY rp.PhoneRN
                 ) AS PhaseRN,
+                st.LastANI,
                 st.LastPrefix6,
                 st.LastSeriesKey
             FROM #ResolvedPool rp
@@ -2153,6 +2178,7 @@ BEGIN
                 phone,
                 PhaseRN,
                 PrefixPoolSize,
+                LastANI,
                 LastPrefix6,
                 LastSeriesKey,
                 GlobalTargetSeq
@@ -2180,7 +2206,10 @@ BEGIN
             SeriesKey       VARCHAR(6) NULL
         );
 
-        /* Fase 1 */
+        /* =========================================================
+           Fase 1
+           ========================================================= */
+
         INSERT INTO #AssignedAni
         SELECT
             w.callout_id,
@@ -2207,7 +2236,10 @@ BEGIN
         WHERE w.Phase = 1
           AND w.PrefixPoolSize > 0;
 
-        /* Fase 2 */
+        /* =========================================================
+           Fase 2
+           ========================================================= */
+
         INSERT INTO #AssignedAni
         SELECT
             w.callout_id,
@@ -2277,7 +2309,10 @@ BEGIN
           AND w.PrefixPoolSize > 0
           AND qx.telAni IS NOT NULL;
 
-        /* Fallback fase 2 */
+        /* =========================================================
+           Fallback Fase 2
+           ========================================================= */
+
         INSERT INTO #AssignedAni
         SELECT
             w.callout_id,
@@ -2311,29 +2346,163 @@ BEGIN
                 AND a.PhoneRN = w.PhoneRN
           );
 
-        /* Fase 3 global */
-        INSERT INTO #AssignedAni
-        SELECT
-            w.callout_id,
-            w.id_RAniList,
-            w.PhonePos,
-            w.PhoneRN,
-            w.phone,
-            w.Phase,
-            w.CycleNo,
-            d.Seq,
-            d.Seq,
-            d.telAni,
-            LEFT(d.telAni, 6),
-            CASE
-                WHEN LEFT(d.telAni, 2) IN (''33'', ''55'', ''56'', ''81'') THEN SUBSTRING(d.telAni, 3, 4)
-                ELSE SUBSTRING(d.telAni, 4, 3)
-            END
-        FROM #Work w
-        INNER JOIN dbo.ccRotativeAniListDetail d
-            ON d.id_RAniList = w.id_RAniList
-           AND d.Seq = w.GlobalTargetSeq
-        WHERE w.Phase = 3;
+        /* =========================================================
+           Fase 3 global
+           Pseudoaleatorio por posicion, LADA distinta, sin ccLogDials.
+           El WHILE permite que cada PhoneRN vea lo asignado previamente
+           en #AssignedAni y evita repetir dentro del batch.
+           ========================================================= */
+
+        DECLARE @Phase3RN INT = 1;
+
+        WHILE @Phase3RN <= 5
+        BEGIN
+            INSERT INTO #AssignedAni
+            (
+                callout_id,
+                id_RAniList,
+                PhonePos,
+                PhoneRN,
+                phone,
+                Phase,
+                AssignedCycleNo,
+                AssignedPos,
+                AssignedSeq,
+                AssignedANI,
+                prefix6,
+                SeriesKey
+            )
+            SELECT
+                w.callout_id,
+                w.id_RAniList,
+                w.PhonePos,
+                w.PhoneRN,
+                w.phone,
+                w.Phase,
+                w.CycleNo,
+                q.Seq,
+                q.Seq,
+                q.telAni,
+                LEFT(q.telAni, 6),
+                CASE
+                    WHEN LEFT(q.telAni, 2) IN (''33'', ''55'', ''56'', ''81'')
+                        THEN SUBSTRING(q.telAni, 3, 4)
+                    ELSE SUBSTRING(q.telAni, 4, 3)
+                END AS SeriesKey
+            FROM #Work w
+            CROSS APPLY
+            (
+                SELECT
+                    CASE
+                        WHEN LEFT(w.phone, 2) IN (''33'', ''55'', ''56'', ''81'')
+                            THEN LEFT(w.phone, 2)
+                        ELSE LEFT(w.phone, 3)
+                    END AS PhoneLada
+            ) lp
+
+            OUTER APPLY
+            (
+                /* Principal:
+                   LADA distinta, siguiente posicion circular,
+                   evitando ANIs ya asignados para este callout en este batch. */
+                SELECT TOP (1)
+                    d.Seq,
+                    d.telAni
+                FROM dbo.ccRotativeAniListDetail d
+                CROSS APPLY
+                (
+                    SELECT
+                        CASE
+                            WHEN LEFT(d.telAni, 2) IN (''33'', ''55'', ''56'', ''81'')
+                                THEN LEFT(d.telAni, 2)
+                            ELSE LEFT(d.telAni, 3)
+                        END AS AniLada
+                ) la
+                WHERE d.id_RAniList = w.id_RAniList
+                  AND la.AniLada <> lp.PhoneLada
+                  AND NOT EXISTS
+                  (
+                      SELECT 1
+                      FROM #AssignedAni a
+                      WHERE a.callout_id = w.callout_id
+                        AND a.id_RAniList = w.id_RAniList
+                        AND a.AssignedANI = d.telAni
+                  )
+                ORDER BY
+                    CASE
+                        WHEN d.Seq >= w.GlobalTargetSeq
+                            THEN d.Seq - w.GlobalTargetSeq
+                        ELSE @GlobalPoolSize - w.GlobalTargetSeq + d.Seq
+                    END
+            ) q1
+
+            OUTER APPLY
+            (
+                /* Fallback 1:
+                   Si no hay LADA distinta disponible sin repetir,
+                   toma cualquier ANI pendiente de la lista completa. */
+                SELECT TOP (1)
+                    d.Seq,
+                    d.telAni
+                FROM dbo.ccRotativeAniListDetail d
+                WHERE d.id_RAniList = w.id_RAniList
+                  AND NOT EXISTS
+                  (
+                      SELECT 1
+                      FROM #AssignedAni a
+                      WHERE a.callout_id = w.callout_id
+                        AND a.id_RAniList = w.id_RAniList
+                        AND a.AssignedANI = d.telAni
+                  )
+                ORDER BY
+                    CASE
+                        WHEN d.Seq >= w.GlobalTargetSeq
+                            THEN d.Seq - w.GlobalTargetSeq
+                        ELSE @GlobalPoolSize - w.GlobalTargetSeq + d.Seq
+                    END
+            ) q2
+
+            OUTER APPLY
+            (
+                /* Fallback 2:
+                   Sólo si ya no hay pendiente en este batch,
+                   permite repetir, priorizando LADA distinta. */
+                SELECT TOP (1)
+                    d.Seq,
+                    d.telAni
+                FROM dbo.ccRotativeAniListDetail d
+                CROSS APPLY
+                (
+                    SELECT
+                        CASE
+                            WHEN LEFT(d.telAni, 2) IN (''33'', ''55'', ''56'', ''81'')
+                                THEN LEFT(d.telAni, 2)
+                            ELSE LEFT(d.telAni, 3)
+                        END AS AniLada
+                ) la
+                WHERE d.id_RAniList = w.id_RAniList
+                ORDER BY
+                    CASE WHEN la.AniLada <> lp.PhoneLada THEN 0 ELSE 1 END,
+                    CASE WHEN ISNULL(d.telAni, '''') <> ISNULL(w.LastANI, '''') THEN 0 ELSE 1 END,
+                    CASE
+                        WHEN d.Seq >= w.GlobalTargetSeq
+                            THEN d.Seq - w.GlobalTargetSeq
+                        ELSE @GlobalPoolSize - w.GlobalTargetSeq + d.Seq
+                    END
+            ) q3
+
+            CROSS APPLY
+            (
+                SELECT
+                    COALESCE(q1.Seq, q2.Seq, q3.Seq) AS Seq,
+                    COALESCE(q1.telAni, q2.telAni, q3.telAni) AS telAni
+            ) q
+            WHERE w.Phase = 3
+              AND w.PhaseRN = @Phase3RN
+              AND q.telAni IS NOT NULL;
+
+            SET @Phase3RN += 1;
+        END;
 
         CREATE UNIQUE CLUSTERED INDEX IX_AssignedAni
             ON #AssignedAni(callout_id, PhonePos);
@@ -2390,6 +2559,32 @@ BEGIN
         CREATE UNIQUE CLUSTERED INDEX IX_LastAssigned
             ON #LastAssigned(callout_id, id_RAniList);
 
+        IF OBJECT_ID(''tempdb..#LastGlobalAssigned'') IS NOT NULL DROP TABLE #LastGlobalAssigned;
+
+        SELECT
+            x.callout_id,
+            x.id_RAniList,
+            x.AssignedSeq AS LastGlobalSeq
+        INTO #LastGlobalAssigned
+        FROM
+        (
+            SELECT
+                a.callout_id,
+                a.id_RAniList,
+                a.AssignedSeq,
+                ROW_NUMBER() OVER
+                (
+                    PARTITION BY a.callout_id, a.id_RAniList
+                    ORDER BY a.PhoneRN DESC
+                ) AS rn
+            FROM #AssignedAni a
+            WHERE a.Phase = 3
+        ) x
+        WHERE x.rn = 1;
+
+        CREATE UNIQUE CLUSTERED INDEX IX_LastGlobalAssigned
+            ON #LastGlobalAssigned(callout_id, id_RAniList);
+
         IF OBJECT_ID(''tempdb..#StateUpdate'') IS NOT NULL DROP TABLE #StateUpdate;
 
         SELECT
@@ -2405,7 +2600,11 @@ BEGIN
             END AS NewUsedCount,
             ((st.PrefixNextPos - 1 + ISNULL(wa.PrefixCnt, 0)) % ISNULL(NULLIF(wa.PrefixPoolSize, 0), 1)) + 1 AS NewPrefixNextPos,
             ((st.ExcludeNextPos - 1 + ISNULL(wa.ExcludeCnt, 0)) % ISNULL(NULLIF(wa.ExcludePoolSize, 0), 1)) + 1 AS NewExcludeNextPos,
-            ((st.GlobalNextPos - 1 + ISNULL(wa.GlobalCnt, 0)) % @GlobalPoolSize) + 1 AS NewGlobalNextPos,
+            CASE
+                WHEN lga.LastGlobalSeq IS NOT NULL
+                    THEN (lga.LastGlobalSeq % @GlobalPoolSize) + 1
+                ELSE st.GlobalNextPos
+            END AS NewGlobalNextPos,
             la.AssignedANI,
             la.prefix6,
             la.SeriesKey,
@@ -2418,7 +2617,10 @@ BEGIN
            AND wa.id_RAniList = st.id_RAniList
         LEFT JOIN #LastAssigned la
             ON la.callout_id = st.callout_id
-           AND la.id_RAniList = st.id_RAniList;
+           AND la.id_RAniList = st.id_RAniList
+        LEFT JOIN #LastGlobalAssigned lga
+            ON lga.callout_id = st.callout_id
+           AND lga.id_RAniList = st.id_RAniList;
 
         CREATE UNIQUE CLUSTERED INDEX IX_StateUpdate
             ON #StateUpdate(callout_id, id_RAniList);
@@ -2442,7 +2644,7 @@ BEGIN
            AND u.id_RAniList = s.id_RAniList;       
 
         /* =========================================================
-           10. Salida sin ORDER BY
+           10. Salida
            ========================================================= */
 
         SELECT
@@ -6210,750 +6412,818 @@ END;
     exec (@sql)
 
     SET @process = 'CREATE PROCEDURE dbo.ccsp_DLRSaveDialResultBulk'
-    SET @sql = 'CREATE PROCEDURE dbo.ccsp_DLRSaveDialResultBulk(
- @Action TINYINT
+    SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_DLRSaveDialResultBulk]
+(
+    @Action TINYINT
 )
 AS
 BEGIN
     SET NOCOUNT ON;
-IF @Action =1 
-BEGIN
 
-    DECLARE @country TINYINT;
-    DECLARE @ldlocal VARCHAR(10);
-    DECLARE @setting292 TINYINT = 0;
-    DECLARE @RecicleSIC TINYINT = 0;
+    IF @Action = 1
+    BEGIN
 
-    SELECT @country = valor
-    FROM dbo.ccSettings WITH (NOLOCK)
-    WHERE setting_id = 104;
+        DECLARE @country TINYINT;
+        DECLARE @ldlocal VARCHAR(10);
+        DECLARE @setting292 TINYINT = 0;
+        DECLARE @RecicleSIC TINYINT = 0;
 
-    SELECT @ldlocal = valor
-    FROM dbo.ccSettings WITH (NOLOCK)
-    WHERE setting_id = 17;
+        SELECT @country = valor
+        FROM dbo.ccSettings WITH (NOLOCK)
+        WHERE setting_id = 104;
 
-    SELECT @setting292 = ISNULL(valor, 0)
-    FROM dbo.ccSettings2 WITH (NOLOCK)
-    WHERE setting_id = 292;
+        SELECT @ldlocal = valor
+        FROM dbo.ccSettings WITH (NOLOCK)
+        WHERE setting_id = 17;
 
-   SELECT @RecicleSIC = ISNULL(valor, 0)
-   FROM dbo.ccSettings WITH (NOLOCK)
-   WHERE setting_id = 60;
+        SELECT @setting292 = ISNULL(valor, 0)
+        FROM dbo.ccSettings2 WITH (NOLOCK)
+        WHERE setting_id = 292;
 
-    -------------------------------------------------------------------------
-    -- 1. Teléfonos únicos del lote
-    -------------------------------------------------------------------------
-    CREATE TABLE #Phones
-    (
-        Phone VARCHAR(32) NOT NULL PRIMARY KEY,
-        PhoneLength TINYINT NOT NULL,
-        LengthStr VARCHAR(10) NOT NULL
-    );
+        SELECT @RecicleSIC = ISNULL(valor, 0)
+        FROM dbo.ccSettings WITH (NOLOCK)
+        WHERE setting_id = 60;
 
-    INSERT INTO #Phones
-    (
-        Phone,
-        PhoneLength,
-        LengthStr
-    )
-    SELECT DISTINCT
-        T.Phone,
-        CONVERT(TINYINT, LEN(T.Phone)) AS PhoneLength,
-        CONVERT(VARCHAR(10), LEN(T.Phone)) AS LengthStr
-    FROM dbo.ccoLogDialsTempData T WITH (NOLOCK)    
-    WHERE T.IsUpdate = 0
+        -------------------------------------------------------------------------
+        -- 1. Teléfonos únicos del lote
+        -------------------------------------------------------------------------
+        CREATE TABLE #Phones
+        (
+            Phone VARCHAR(32) NOT NULL PRIMARY KEY,
+            PhoneLength TINYINT NOT NULL,
+            LengthStr VARCHAR(10) NOT NULL
+        );
 
-    -------------------------------------------------------------------------
-    -- 2. Resultado de tipo de llamada por teléfono
-    -------------------------------------------------------------------------
-    CREATE TABLE #PhoneTipoLlamada
-    (
-        Phone VARCHAR(32) NOT NULL PRIMARY KEY,
-        TipoLlamadaId TINYINT NOT NULL
-    );
+        INSERT INTO #Phones
+        (
+            Phone,
+            PhoneLength,
+            LengthStr
+        )
+        SELECT DISTINCT
+            T.Phone,
+            CONVERT(TINYINT, LEN(T.Phone)) AS PhoneLength,
+            CONVERT(VARCHAR(10), LEN(T.Phone)) AS LengthStr
+        FROM dbo.ccoLogDialsTempData T WITH (NOLOCK)
+        WHERE T.IsUpdate = 0;
 
-    -------------------------------------------------------------------------
-    -- 3. Detectar si existen reglas por longitud para cada teléfono
-    -------------------------------------------------------------------------
-    CREATE TABLE #PhoneHasLengthRules
-    (
-        Phone VARCHAR(32) NOT NULL PRIMARY KEY,
-        HasLengthRules BIT NOT NULL
-    );
+        -------------------------------------------------------------------------
+        -- 2. Resultado de tipo de llamada por teléfono
+        -------------------------------------------------------------------------
+        CREATE TABLE #PhoneTipoLlamada
+        (
+            Phone VARCHAR(32) NOT NULL PRIMARY KEY,
+            TipoLlamadaId TINYINT NOT NULL
+        );
 
-    INSERT INTO #PhoneHasLengthRules
-    (
-        Phone,
-        HasLengthRules
-    )
-    SELECT
-        P.Phone,
-        CASE 
-            WHEN EXISTS
-            (
-                SELECT 1
-                FROM dbo.cstoTipoLlamada CTL WITH (INDEX(IX_cstoTipoLlamada), NOLOCK)
-                WHERE CTL.country_id = CASE WHEN @country = 1 THEN 1 ELSE @country END
-                  AND CHARINDEX(P.LengthStr, CTL.longitud) > 0
-                  AND
-                  (
-                        @country <> 1
-                        OR CTL.tipoLlamada_id NOT IN (8, 9, 10, 11, 12)
-                  )
-            )
-            THEN 1
-            ELSE 0
-        END AS HasLengthRules
-    FROM #Phones P;
+        -------------------------------------------------------------------------
+        -- 3. Detectar si existen reglas por longitud para cada teléfono
+        -------------------------------------------------------------------------
+        CREATE TABLE #PhoneHasLengthRules
+        (
+            Phone VARCHAR(32) NOT NULL PRIMARY KEY,
+            HasLengthRules BIT NOT NULL
+        );
 
-    -------------------------------------------------------------------------
-    -- 4. Clasificación por reglas de longitud y prefijo
-    -------------------------------------------------------------------------
-    ;WITH PrefixCandidates AS
-    (
+        INSERT INTO #PhoneHasLengthRules
+        (
+            Phone,
+            HasLengthRules
+        )
         SELECT
             P.Phone,
-            CTL.tipoLlamada_id,
-            SplitPrefijo.value AS Prefijo,
-            ROW_NUMBER() OVER
-            (
-                PARTITION BY P.Phone
-                ORDER BY LEN(SplitPrefijo.value) DESC
-            ) AS RN
+            CASE
+                WHEN EXISTS
+                (
+                    SELECT 1
+                    FROM dbo.cstoTipoLlamada CTL WITH (INDEX(IX_cstoTipoLlamada), NOLOCK)
+                    WHERE CTL.country_id = CASE WHEN @country = 1 THEN 1 ELSE @country END
+                      AND CHARINDEX(P.LengthStr, CTL.longitud) > 0
+                      AND
+                      (
+                            @country <> 1
+                            OR CTL.tipoLlamada_id NOT IN (8, 9, 10, 11, 12)
+                      )
+                )
+                THEN 1
+                ELSE 0
+            END AS HasLengthRules
+        FROM #Phones P;
+
+        -------------------------------------------------------------------------
+        -- 4. Clasificación por reglas de longitud y prefijo
+        -------------------------------------------------------------------------
+        ;WITH PrefixCandidates AS
+        (
+            SELECT
+                P.Phone,
+                CTL.tipoLlamada_id,
+                SplitPrefijo.value AS Prefijo,
+                ROW_NUMBER() OVER
+                (
+                    PARTITION BY P.Phone
+                    ORDER BY LEN(SplitPrefijo.value) DESC
+                ) AS RN
+            FROM #Phones P
+            INNER JOIN #PhoneHasLengthRules H
+                ON H.Phone = P.Phone
+               AND H.HasLengthRules = 1
+            INNER JOIN dbo.cstoTipoLlamada CTL WITH (INDEX(IX_cstoTipoLlamada), NOLOCK)
+                ON CTL.country_id = CASE WHEN @country = 1 THEN 1 ELSE @country END
+               AND CHARINDEX(P.LengthStr, CTL.longitud) > 0
+               AND
+               (
+                    @country <> 1
+                    OR CTL.tipoLlamada_id NOT IN (8, 9, 10, 11, 12)
+               )
+            CROSS APPLY dbo.fn_RIASplitDelimited(CTL.prefijo, ''|'') SplitPrefijo
+            WHERE P.Phone LIKE SplitPrefijo.value + ''%''
+        )
+        INSERT INTO #PhoneTipoLlamada
+        (
+            Phone,
+            TipoLlamadaId
+        )
+        SELECT
+            P.Phone,
+            ISNULL(C.tipoLlamada_id, 0) AS TipoLlamadaId
         FROM #Phones P
         INNER JOIN #PhoneHasLengthRules H
             ON H.Phone = P.Phone
            AND H.HasLengthRules = 1
-        INNER JOIN dbo.cstoTipoLlamada CTL WITH (INDEX(IX_cstoTipoLlamada), NOLOCK)
-            ON CTL.country_id = CASE WHEN @country = 1 THEN 1 ELSE @country END
-           AND CHARINDEX(P.LengthStr, CTL.longitud) > 0
-           AND
-           (
-                @country <> 1
-                OR CTL.tipoLlamada_id NOT IN (8, 9, 10, 11, 12)
-           )
-        CROSS APPLY dbo.fn_RIASplitDelimited(CTL.prefijo, ''|'') SplitPrefijo
-        WHERE P.Phone LIKE SplitPrefijo.value + ''%''
-    )
-    INSERT INTO #PhoneTipoLlamada
-    (
-        Phone,
-        TipoLlamadaId
-    )
-    SELECT
-        P.Phone,
-        ISNULL(C.tipoLlamada_id, 0) AS TipoLlamadaId
-    FROM #Phones P
-    INNER JOIN #PhoneHasLengthRules H
-        ON H.Phone = P.Phone
-       AND H.HasLengthRules = 1
-    LEFT JOIN PrefixCandidates C
-        ON C.Phone = P.Phone
-       AND C.RN = 1;
+        LEFT JOIN PrefixCandidates C
+            ON C.Phone = P.Phone
+           AND C.RN = 1;
 
-    -------------------------------------------------------------------------
-    -- 5. Clasificación por regla default longitud = ''0''
-    -------------------------------------------------------------------------
-    ;WITH DefaultPrefixCandidates AS
-    (
+        -------------------------------------------------------------------------
+        -- 5. Clasificación por regla default longitud = ''0''
+        -------------------------------------------------------------------------
+        ;WITH DefaultPrefixCandidates AS
+        (
+            SELECT
+                P.Phone,
+                CTL.tipoLlamada_id,
+                SplitPrefijo.value AS Prefijo,
+                ROW_NUMBER() OVER
+                (
+                    PARTITION BY P.Phone
+                    ORDER BY LEN(SplitPrefijo.value) DESC
+                ) AS RN
+            FROM #Phones P
+            INNER JOIN #PhoneHasLengthRules H
+                ON H.Phone = P.Phone
+               AND H.HasLengthRules = 0
+            INNER JOIN dbo.cstoTipoLlamada CTL WITH (INDEX(IX_cstoTipoLlamada), NOLOCK)
+                ON CTL.country_id = @country
+               AND CTL.longitud = ''0''
+               AND
+               (
+                    @country <> 1
+                    OR CTL.tipoLlamada_id NOT IN (8, 9, 10, 11, 12)
+               )
+            CROSS APPLY dbo.fn_RIASplitDelimited(CTL.prefijo, ''|'') SplitPrefijo
+            WHERE P.Phone LIKE SplitPrefijo.value + ''%''
+        )
+        INSERT INTO #PhoneTipoLlamada
+        (
+            Phone,
+            TipoLlamadaId
+        )
         SELECT
             P.Phone,
-            CTL.tipoLlamada_id,
-            SplitPrefijo.value AS Prefijo,
-            ROW_NUMBER() OVER
-            (
-                PARTITION BY P.Phone
-                ORDER BY LEN(SplitPrefijo.value) DESC
-            ) AS RN
+            D.tipoLlamada_id AS TipoLlamadaId
         FROM #Phones P
         INNER JOIN #PhoneHasLengthRules H
             ON H.Phone = P.Phone
            AND H.HasLengthRules = 0
-        INNER JOIN dbo.cstoTipoLlamada CTL WITH (INDEX(IX_cstoTipoLlamada), NOLOCK)
-            ON CTL.country_id = @country
-           AND CTL.longitud = ''0''
-           AND
-           (
-                @country <> 1
-                OR CTL.tipoLlamada_id NOT IN (8, 9, 10, 11, 12)
-           )
-        CROSS APPLY dbo.fn_RIASplitDelimited(CTL.prefijo, ''|'') SplitPrefijo
-        WHERE P.Phone LIKE SplitPrefijo.value + ''%''
-    )
-    INSERT INTO #PhoneTipoLlamada
-    (
-        Phone,
-        TipoLlamadaId
-    )
-    SELECT
-        P.Phone,
-        D.tipoLlamada_id AS TipoLlamadaId
-    FROM #Phones P
-    INNER JOIN #PhoneHasLengthRules H
-        ON H.Phone = P.Phone
-       AND H.HasLengthRules = 0
-    INNER JOIN DefaultPrefixCandidates D
-        ON D.Phone = P.Phone
-       AND D.RN = 1
-    WHERE NOT EXISTS
-    (
-        SELECT 1
-        FROM #PhoneTipoLlamada PTL
-        WHERE PTL.Phone = P.Phone
-    );
-
--------------------------------------------------------------------------
--- 6. Fallback México usando Series y ccRiaArecode
--------------------------------------------------------------------------
-IF @country = 1
-BEGIN
-    CREATE TABLE #PhonesMexicoFallback
-    (
-        Phone VARCHAR(32) NOT NULL PRIMARY KEY,
-        NormalizedPhone VARCHAR(32) NOT NULL,
-        LadaTemp VARCHAR(5) NOT NULL,
-        Serie VARCHAR(10) NOT NULL,
-        Numeracion INT NULL,
-        IsLocal BIT NOT NULL
-    );
-
-    INSERT INTO #PhonesMexicoFallback
-    (
-        Phone,
-        NormalizedPhone,
-        LadaTemp,
-        Serie,
-        Numeracion,
-        IsLocal
-    )
-    SELECT
-        X.Phone,
-        X.NormalizedPhone,
-        X.LadaTemp,
-        X.Serie,
-        X.Numeracion,
-        CASE
-            WHEN A.area IS NOT NULL OR @ldlocal = X.LadaTemp THEN 1
-            ELSE 0
-        END AS IsLocal
-    FROM
-    (
-        SELECT
-            P.Phone,
-            N.NormalizedPhone,
-            CASE
-                WHEN LEFT(N.NormalizedPhone, 2) IN (''55'', ''56'', ''33'', ''81'')
-                    THEN LEFT(N.NormalizedPhone, 2)
-                ELSE LEFT(N.NormalizedPhone, 3)
-            END AS LadaTemp,
-            CASE
-                WHEN LEFT(N.NormalizedPhone, 2) IN (''55'', ''56'', ''33'', ''81'')
-                    THEN SUBSTRING(N.NormalizedPhone, 3, 4)
-                ELSE SUBSTRING(N.NormalizedPhone, 4, 3)
-            END AS Serie,
-            CASE
-                WHEN RIGHT(N.NormalizedPhone, 4) NOT LIKE ''%[^0-9]%''
-                    THEN CONVERT(INT, RIGHT(N.NormalizedPhone, 4))
-                ELSE NULL
-            END AS Numeracion
-        FROM #Phones P
-        CROSS APPLY
-        (
-            SELECT RIGHT
-            (
-                CASE
-                    WHEN P.PhoneLength = 10 - LEN(@ldlocal)
-                        THEN CONVERT(VARCHAR(3), @ldlocal) + P.Phone
-                    ELSE P.Phone
-                END,
-                10
-            ) AS NormalizedPhone
-        ) N
+        INNER JOIN DefaultPrefixCandidates D
+            ON D.Phone = P.Phone
+           AND D.RN = 1
         WHERE NOT EXISTS
         (
             SELECT 1
             FROM #PhoneTipoLlamada PTL
             WHERE PTL.Phone = P.Phone
-              AND PTL.TipoLlamadaId > 0
-        )
-    ) X
-    LEFT JOIN dbo.ccRiaArecode A WITH (NOLOCK)
-        ON A.area = X.LadaTemp;
+        );
 
-    ---------------------------------------------------------------------
-    -- Materializamos el resultado porque un CTE solo sirve para 1 query
-    ---------------------------------------------------------------------
-    CREATE TABLE #MexicoResult
-    (
-        Phone VARCHAR(32) NOT NULL PRIMARY KEY,
-        TipoLlamadaId TINYINT NOT NULL
-    );
-
-    ;WITH SeriesMatch AS
-    (
-        SELECT
-            F.Phone,
-            F.IsLocal,
-            S.MODALIDAD,
-            ROW_NUMBER() OVER
+        -------------------------------------------------------------------------
+        -- 6. Fallback México usando Series y ccRiaArecode
+        -------------------------------------------------------------------------
+        IF @country = 1
+        BEGIN
+            CREATE TABLE #PhonesMexicoFallback
             (
-                PARTITION BY F.Phone
-                ORDER BY S.CLD
-            ) AS RN
-        FROM #PhonesMexicoFallback F
-        INNER JOIN dbo.Series S WITH (NOLOCK)
-            ON S.CLD = F.LadaTemp
-           AND S.SERIE = F.Serie
-           AND F.Numeracion BETWEEN S.[NUMERACION INICIAL]
-                                AND S.[NUMERACION FINAL]
-    )
-    INSERT INTO #MexicoResult
-    (
-        Phone,
-        TipoLlamadaId
-    )
-    SELECT
-        F.Phone,
-        CASE
-            WHEN SM.MODALIDAD IN (''FIJO'', ''MPP'') AND F.IsLocal = 1 THEN 1
-            WHEN SM.MODALIDAD IN (''FIJO'', ''MPP'') AND F.IsLocal = 0 THEN 2
-            WHEN SM.MODALIDAD = ''CPP'' AND F.IsLocal = 1 THEN 3
-            WHEN SM.MODALIDAD = ''CPP'' AND F.IsLocal = 0 THEN 4
-            ELSE 0
-        END AS TipoLlamadaId
-    FROM #PhonesMexicoFallback F
-    LEFT JOIN SeriesMatch SM
-        ON SM.Phone = F.Phone
-       AND SM.RN = 1;
+                Phone VARCHAR(32) NOT NULL PRIMARY KEY,
+                NormalizedPhone VARCHAR(32) NOT NULL,
+                LadaTemp VARCHAR(5) NOT NULL,
+                Serie VARCHAR(10) NOT NULL,
+                Numeracion INT NULL,
+                IsLocal BIT NOT NULL
+            );
 
-    ---------------------------------------------------------------------
-    -- Primero actualizamos teléfonos que ya existen con tipo 0
-    ---------------------------------------------------------------------
-    UPDATE PTL
-    SET PTL.TipoLlamadaId = MR.TipoLlamadaId
-    FROM #PhoneTipoLlamada PTL
-    INNER JOIN #MexicoResult MR
-        ON MR.Phone = PTL.Phone
-    WHERE PTL.TipoLlamadaId = 0
-      AND MR.TipoLlamadaId > 0;
+            INSERT INTO #PhonesMexicoFallback
+            (
+                Phone,
+                NormalizedPhone,
+                LadaTemp,
+                Serie,
+                Numeracion,
+                IsLocal
+            )
+            SELECT
+                X.Phone,
+                X.NormalizedPhone,
+                X.LadaTemp,
+                X.Serie,
+                X.Numeracion,
+                CASE
+                    WHEN A.area IS NOT NULL OR @ldlocal = X.LadaTemp THEN 1
+                    ELSE 0
+                END AS IsLocal
+            FROM
+            (
+                SELECT
+                    P.Phone,
+                    N.NormalizedPhone,
+                    CASE
+                        WHEN LEFT(N.NormalizedPhone, 2) IN (''55'', ''56'', ''33'', ''81'')
+                            THEN LEFT(N.NormalizedPhone, 2)
+                        ELSE LEFT(N.NormalizedPhone, 3)
+                    END AS LadaTemp,
+                    CASE
+                        WHEN LEFT(N.NormalizedPhone, 2) IN (''55'', ''56'', ''33'', ''81'')
+                            THEN SUBSTRING(N.NormalizedPhone, 3, 4)
+                        ELSE SUBSTRING(N.NormalizedPhone, 4, 3)
+                    END AS Serie,
+                    CASE
+                        WHEN RIGHT(N.NormalizedPhone, 4) NOT LIKE ''%[^0-9]%''
+                            THEN CONVERT(INT, RIGHT(N.NormalizedPhone, 4))
+                        ELSE NULL
+                    END AS Numeracion
+                FROM #Phones P
+                CROSS APPLY
+                (
+                    SELECT RIGHT
+                    (
+                        CASE
+                            WHEN P.PhoneLength = 10 - LEN(@ldlocal)
+                                THEN CONVERT(VARCHAR(3), @ldlocal) + P.Phone
+                            ELSE P.Phone
+                        END,
+                        10
+                    ) AS NormalizedPhone
+                ) N
+                WHERE NOT EXISTS
+                (
+                    SELECT 1
+                    FROM #PhoneTipoLlamada PTL
+                    WHERE PTL.Phone = P.Phone
+                      AND PTL.TipoLlamadaId > 0
+                )
+            ) X
+            LEFT JOIN dbo.ccRiaArecode A WITH (NOLOCK)
+                ON A.area = X.LadaTemp;
 
-    ---------------------------------------------------------------------
-    -- Luego insertamos teléfonos que todavía no existen
-    ---------------------------------------------------------------------
-    INSERT INTO #PhoneTipoLlamada
-    (
-        Phone,
-        TipoLlamadaId
-    )
-    SELECT
-        MR.Phone,
-        MR.TipoLlamadaId
-    FROM #MexicoResult MR
-    WHERE NOT EXISTS
-    (
-        SELECT 1
-        FROM #PhoneTipoLlamada PTL
-        WHERE PTL.Phone = MR.Phone
-    );
-END;
+            CREATE TABLE #MexicoResult
+            (
+                Phone VARCHAR(32) NOT NULL PRIMARY KEY,
+                TipoLlamadaId TINYINT NOT NULL
+            );
 
-    -------------------------------------------------------------------------
-    -- 7. Teléfonos que no quedaron clasificados
-    -------------------------------------------------------------------------
-    INSERT INTO #PhoneTipoLlamada
-    (
-        Phone,
-        TipoLlamadaId
-    )
-    SELECT
-        P.Phone,
-        0 AS TipoLlamadaId
-    FROM #Phones P
-    WHERE NOT EXISTS
-    (
-        SELECT 1
-        FROM #PhoneTipoLlamada PTL
-        WHERE PTL.Phone = P.Phone
-    );
+            ;WITH SeriesMatch AS
+            (
+                SELECT
+                    F.Phone,
+                    F.IsLocal,
+                    S.MODALIDAD,
+                    ROW_NUMBER() OVER
+                    (
+                        PARTITION BY F.Phone
+                        ORDER BY S.CLD
+                    ) AS RN
+                FROM #PhonesMexicoFallback F
+                INNER JOIN dbo.Series S WITH (NOLOCK)
+                    ON S.CLD = F.LadaTemp
+                   AND S.SERIE = F.Serie
+                   AND F.Numeracion BETWEEN S.[NUMERACION INICIAL]
+                                        AND S.[NUMERACION FINAL]
+            )
+            INSERT INTO #MexicoResult
+            (
+                Phone,
+                TipoLlamadaId
+            )
+            SELECT
+                F.Phone,
+                CASE
+                    WHEN SM.MODALIDAD IN (''FIJO'', ''MPP'') AND F.IsLocal = 1 THEN 1
+                    WHEN SM.MODALIDAD IN (''FIJO'', ''MPP'') AND F.IsLocal = 0 THEN 2
+                    WHEN SM.MODALIDAD = ''CPP'' AND F.IsLocal = 1 THEN 3
+                    WHEN SM.MODALIDAD = ''CPP'' AND F.IsLocal = 0 THEN 4
+                    ELSE 0
+                END AS TipoLlamadaId
+            FROM #PhonesMexicoFallback F
+            LEFT JOIN SeriesMatch SM
+                ON SM.Phone = F.Phone
+               AND SM.RN = 1;
 
+            UPDATE PTL
+            SET PTL.TipoLlamadaId = MR.TipoLlamadaId
+            FROM #PhoneTipoLlamada PTL
+            INNER JOIN #MexicoResult MR
+                ON MR.Phone = PTL.Phone
+            WHERE PTL.TipoLlamadaId = 0
+              AND MR.TipoLlamadaId > 0;
 
--------------------------------------------------------------------------
--- Actualizar ccoCallsOut para llamadas contestadas tipoResDial_id = 1
--------------------------------------------------------------------------
-UPDATE CO 
-SET CO.cal_puerto = T.Port,
-    CO.cal_manual = CASE 
-                        WHEN CO.cal_manual = 1 THEN 2 
-                        ELSE CO.cal_manual 
+            INSERT INTO #PhoneTipoLlamada
+            (
+                Phone,
+                TipoLlamadaId
+            )
+            SELECT
+                MR.Phone,
+                MR.TipoLlamadaId
+            FROM #MexicoResult MR
+            WHERE NOT EXISTS
+            (
+                SELECT 1
+                FROM #PhoneTipoLlamada PTL
+                WHERE PTL.Phone = MR.Phone
+            );
+        END;
+
+        -------------------------------------------------------------------------
+        -- 7. Teléfonos que no quedaron clasificados
+        -------------------------------------------------------------------------
+        INSERT INTO #PhoneTipoLlamada
+        (
+            Phone,
+            TipoLlamadaId
+        )
+        SELECT
+            P.Phone,
+            0 AS TipoLlamadaId
+        FROM #Phones P
+        WHERE NOT EXISTS
+        (
+            SELECT 1
+            FROM #PhoneTipoLlamada PTL
+            WHERE PTL.Phone = P.Phone
+        );
+
+        -------------------------------------------------------------------------
+        -- Actualizar ccoCallsOut para llamadas contestadas tipoResDial_id = 1
+        -------------------------------------------------------------------------
+        UPDATE CO
+        SET CO.cal_puerto = T.Port,
+            CO.cal_manual = CASE
+                                WHEN CO.cal_manual = 1 THEN 2
+                                ELSE CO.cal_manual
+                            END
+        FROM dbo.ccoCallsOut CO WITH (ROWLOCK)
+        INNER JOIN dbo.ccoLogDialsTempData T WITH (NOLOCK)
+            ON T.CallId = CO.cal_id
+        WHERE T.IsUpdate = 0
+          AND T.CallId > 0
+          AND T.ResDialTypeId = 1
+          AND CO.cal_puerto = 0;
+
+        -------------------------------------------------------------------------
+        -- Actualizar ccoCallsOut para tipoResDial_id = 11
+        -------------------------------------------------------------------------
+        UPDATE CO
+        SET CO.cal_puerto = T.Port
+        FROM dbo.ccoCallsOut CO WITH (ROWLOCK)
+        INNER JOIN dbo.ccoLogDialsTempData T WITH (NOLOCK)
+            ON T.CallId = CO.cal_id
+        WHERE T.IsUpdate = 0
+          AND T.CallId > 0
+          AND T.ResDialTypeId = 11
+          AND CO.cal_puerto = 0;
+
+        -------------------------------------------------------------------------
+        -- 8. Calcular TipoDialingMode en modo preview
+        -------------------------------------------------------------------------
+        CREATE TABLE #DialingModePreview
+        (
+            CalloutId INT NOT NULL,
+            Phone VARCHAR(32) NOT NULL,
+            CallIdOriginal INT NOT NULL,
+            ResolvedCallId INT NULL,
+            CamId SMALLINT NOT NULL,
+            TipoDialingModeBulk NVARCHAR(9) NOT NULL,
+            ManualCRMBulk BIT NOT NULL
+        );
+
+        ;WITH DialBase AS
+        (
+            SELECT
+                T.CalloutId,
+                T.Phone,
+                T.CallId AS CallIdOriginal,
+                T.CamId
+            FROM dbo.ccoLogDialsTempData T WITH (NOLOCK)
+            WHERE T.IsUpdate = 0
+        ),
+        CallData AS
+        (
+            SELECT
+                D.CalloutId,
+                D.Phone,
+                D.CallIdOriginal,
+                CASE
+                    WHEN ISNULL(D.CallIdOriginal, 0) > 0 THEN D.CallIdOriginal
+                    ELSE NULL
+                END AS ResolvedCallId,
+                D.CamId,
+                O.calif_id,
+                O.califSub_id,
+                O.cal_manual,
+                O.cal_odbc
+            FROM DialBase D
+            LEFT JOIN dbo.ccoCallsOut O WITH (NOLOCK, INDEX(PK_ccoCallsOut))
+                ON O.cal_id = D.CallIdOriginal
+               AND D.CallIdOriginal > 0
+        ),
+        CampData AS
+        (
+            SELECT
+                CD.CalloutId,
+                CD.Phone,
+                CD.CallIdOriginal,
+                CD.ResolvedCallId,
+                CD.CamId,
+                CD.calif_id,
+                CD.califSub_id,
+                CD.cal_manual,
+                ISNULL(
+                    CASE
+                        WHEN C.campType = 6 THEN ''100''
+                        WHEN C.progDial = 2 THEN ''010''
+                        WHEN C.progDial = 1 THEN ''001''
+                        ELSE ''000''
                     END
-FROM dbo.ccoCallsOut CO WITH (ROWLOCK)
-INNER JOIN dbo.ccoLogDialsTempData T WITH (NOLOCK) ON T.CallId = CO.cal_id
-WHERE T.IsUpdate =0 
-  AND T.CallId > 0
-  AND T.ResDialTypeId = 1
-  AND CO.cal_puerto = 0;
-
--------------------------------------------------------------------------
--- Actualizar ccoCallsOut para tipoResDial_id = 11
--------------------------------------------------------------------------
-UPDATE CO
-SET CO.cal_puerto = T.Port
-FROM dbo.ccoCallsOut CO  WITH (ROWLOCK)
-INNER JOIN dbo.ccoLogDialsTempData T WITH (NOLOCK)
-    ON T.CallId = CO.cal_id
-WHERE T.IsUpdate = 0
-  AND T.CallId > 0
-  AND T.ResDialTypeId = 11
-  AND CO.cal_puerto = 0;
-
-    -------------------------------------------------------------------------
--- 8. Calcular TipoDialingMode en modo preview
---    No inserta ni actualiza nada.
---    Trata CallId = 0 como "sin call_id".
--------------------------------------------------------------------------
-CREATE TABLE #DialingModePreview
-(
-    CalloutId INT NOT NULL,
-    Phone VARCHAR(32) NOT NULL,
-    CallIdOriginal INT NOT NULL,
-    ResolvedCallId INT NULL,
-    CamId SMALLINT NOT NULL,
-    TipoDialingModeBulk NVARCHAR(9) NOT NULL,
-    ManualCRMBulk BIT NOT NULL
-);
-
-;WITH DialBase AS
-(
-    SELECT
-        T.CalloutId,
-        T.Phone,
-        T.CallId AS CallIdOriginal,
-        T.CamId
-    FROM dbo.ccoLogDialsTempData T WITH (NOLOCK)
-    WHERE T.IsUpdate = 0
-),
-CallData AS
-(
-    SELECT
-        D.CalloutId,
-        D.Phone,
-        D.CallIdOriginal,
-        CASE
-            WHEN ISNULL(D.CallIdOriginal, 0) > 0 THEN D.CallIdOriginal
-            ELSE NULL
-        END AS ResolvedCallId,
-        D.CamId,
-        O.calif_id,
-        O.califSub_id,
-        O.cal_manual,
-        O.cal_odbc
-    FROM DialBase D
-    LEFT JOIN dbo.ccoCallsOut O WITH (NOLOCK, INDEX(PK_ccoCallsOut))
-        ON O.cal_id = D.CallIdOriginal
-       AND D.CallIdOriginal > 0
-),
-CampData AS
-(
-    SELECT
-        CD.CalloutId,
-        CD.Phone,
-        CD.CallIdOriginal,
-        CD.ResolvedCallId,
-        CD.CamId,
-        CD.calif_id,
-        CD.califSub_id,
-        CD.cal_manual,
-
-        ISNULL(
-            CASE
-                WHEN C.campType = 6 THEN ''100''
-                WHEN C.progDial = 2 THEN ''010''
-                WHEN C.progDial = 1 THEN ''001''
-                ELSE ''000''
-            END
-            + CAST(ISNULL(C.iTipoDial, 0) AS CHAR(1))
-            + CAST(ISNULL(C.abandonCallback, 0) AS CHAR(1))
-            + CAST(ISNULL(C.excCallback, 0) AS CHAR(1)),
-            ''000000''
-        ) AS BaseValor
-    FROM CallData CD
-    LEFT JOIN dbo.cccamps C WITH (NOLOCK)
-        ON C.cam_id = CD.CamId
-),
-KeepDialData AS
-(
-    SELECT
-        C.CalloutId,
-        C.Phone,
-        C.CallIdOriginal,
-        C.ResolvedCallId,
-        C.CamId,
-        C.cal_manual,
-        C.BaseValor,
-
-        CASE
-            WHEN ISNULL(C.CallIdOriginal, 0) > 0
-             AND
-             (
-                 ISNULL(TC.keepDial, 0) = 1
-                 OR ISNULL(TS.keepDial, 0) = 1
-             )
-                THEN ''1''
-            ELSE ''0''
-        END AS KeepDial
-    FROM CampData C
-    LEFT JOIN dbo.ccTipoCalifOUT TC WITH (NOLOCK)
-        ON TC.calif_id = C.calif_id
-       AND C.CallIdOriginal > 0
-    LEFT JOIN dbo.ccTipoCalifSubOUT TS WITH (NOLOCK)
-        ON TS.califSub_id = C.califSub_id
-       AND C.CallIdOriginal > 0
-),
-ValorArmado AS
-(
-    SELECT
-        K.CalloutId,
-        K.Phone,
-        K.CallIdOriginal,
-        K.ResolvedCallId,
-        K.CamId,
-
-        K.BaseValor
-        + K.KeepDial
-        + CASE
-            WHEN ISNULL(K.CallIdOriginal, 0) > 0 THEN
-                CASE K.cal_manual
-                    WHEN 1 THEN ''10''
-                    WHEN 2 THEN ''01''
+                    + CAST(ISNULL(C.iTipoDial, 0) AS CHAR(1))
+                    + CAST(ISNULL(C.abandonCallback, 0) AS CHAR(1))
+                    + CAST(ISNULL(C.excCallback, 0) AS CHAR(1)),
+                    ''000000''
+                ) AS BaseValor
+            FROM CallData CD
+            LEFT JOIN dbo.cccamps C WITH (NOLOCK)
+                ON C.cam_id = CD.CamId
+        ),
+        KeepDialData AS
+        (
+            SELECT
+                C.CalloutId,
+                C.Phone,
+                C.CallIdOriginal,
+                C.ResolvedCallId,
+                C.CamId,
+                C.cal_manual,
+                C.BaseValor,
+                CASE
+                    WHEN ISNULL(C.CallIdOriginal, 0) > 0
+                     AND
+                     (
+                         ISNULL(TC.keepDial, 0) = 1
+                         OR ISNULL(TS.keepDial, 0) = 1
+                     )
+                        THEN ''1''
+                    ELSE ''0''
+                END AS KeepDial
+            FROM CampData C
+            LEFT JOIN dbo.ccTipoCalifOUT TC WITH (NOLOCK)
+                ON TC.calif_id = C.calif_id
+               AND C.CallIdOriginal > 0
+            LEFT JOIN dbo.ccTipoCalifSubOUT TS WITH (NOLOCK)
+                ON TS.califSub_id = C.califSub_id
+               AND C.CallIdOriginal > 0
+        ),
+        ValorArmado AS
+        (
+            SELECT
+                K.CalloutId,
+                K.Phone,
+                K.CallIdOriginal,
+                K.ResolvedCallId,
+                K.CamId,
+                K.BaseValor
+                + K.KeepDial
+                + CASE
+                    WHEN ISNULL(K.CallIdOriginal, 0) > 0 THEN
+                        CASE K.cal_manual
+                            WHEN 1 THEN ''10''
+                            WHEN 2 THEN ''01''
+                            ELSE ''00''
+                        END
                     ELSE ''00''
-                END
-            ELSE ''00''
-          END AS ValorCompleto
-    FROM KeepDialData K
-),
-ValorFinal AS
-(
-    SELECT
-        V.CalloutId,
-        V.Phone,
-        V.CallIdOriginal,
-        V.ResolvedCallId,
-        V.CamId,
+                  END AS ValorCompleto
+            FROM KeepDialData K
+        ),
+        ValorFinal AS
+        (
+            SELECT
+                V.CalloutId,
+                V.Phone,
+                V.CallIdOriginal,
+                V.ResolvedCallId,
+                V.CamId,
+                SUBSTRING(V.ValorCompleto, 1, 3)
+                + SUBSTRING(V.ValorCompleto, 4, 1)
+                + SUBSTRING(V.ValorCompleto, 5, 2)
+                + SUBSTRING(V.ValorCompleto, 7, 1)
+                + SUBSTRING(V.ValorCompleto, 8, 2) AS TipoDialingModeBulk
+            FROM ValorArmado V
+        )
+        INSERT INTO #DialingModePreview
+        (
+            CalloutId,
+            Phone,
+            CallIdOriginal,
+            ResolvedCallId,
+            CamId,
+            TipoDialingModeBulk,
+            ManualCRMBulk
+        )
+        SELECT
+            VF.CalloutId,
+            VF.Phone,
+            VF.CallIdOriginal,
+            VF.ResolvedCallId,
+            VF.CamId,
+            ISNULL(VF.TipoDialingModeBulk, ''000000000'') AS TipoDialingModeBulk,
+            CASE
+                WHEN @setting292 = 1
+                     AND RIGHT(''00'' + RTRIM(COALESCE(VF.TipoDialingModeBulk, '''')), 2) LIKE ''%1%''
+                    THEN 1
+                ELSE 0
+            END AS ManualCRMBulk
+        FROM ValorFinal VF;
 
-        SUBSTRING(V.ValorCompleto, 1, 3)
-        + SUBSTRING(V.ValorCompleto, 4, 1)
-        + SUBSTRING(V.ValorCompleto, 5, 2)
-        + SUBSTRING(V.ValorCompleto, 7, 1)
-        + SUBSTRING(V.ValorCompleto, 8, 2) AS TipoDialingModeBulk
-    FROM ValorArmado V
-)
-INSERT INTO #DialingModePreview
-(
-    CalloutId,
-    Phone,
-    CallIdOriginal,
-    ResolvedCallId,
-    CamId,
-    TipoDialingModeBulk,
-    ManualCRMBulk
-)
-SELECT
-    VF.CalloutId,
-    VF.Phone,
-    VF.CallIdOriginal,
-    VF.ResolvedCallId,
-    VF.CamId,
-    ISNULL(VF.TipoDialingModeBulk, ''000000000'') AS TipoDialingModeBulk,
-    CASE
-        WHEN @setting292 = 1
-             AND RIGHT(''00'' + RTRIM(COALESCE(VF.TipoDialingModeBulk, '''')), 2) LIKE ''%1%''
-            THEN 1
-        ELSE 0
-    END AS ManualCRMBulk
-FROM ValorFinal VF;
+        -------------------------------------------------------------------------
+        -- 9. Resultado final insertado
+        -------------------------------------------------------------------------
+        CREATE TABLE #InsertedLogDials
+        (
+            RowId INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+            LogDialId INT NOT NULL,
+            CalloutId INT NOT NULL,
+            Phone VARCHAR(32) NOT NULL,
+            ResDialTypeId TINYINT NOT NULL,
+            CallDate DATETIME NOT NULL,
+            CallId INT NOT NULL,
+            tipoLlamada_id INT NOT NULL,
+            Port INT NOT NULL
+        );
 
-    -------------------------------------------------------------------------
-    -- 9. Resultado final solicitado
-    -------------------------------------------------------------------------
-CREATE TABLE #InsertedLogDials
-(
-    RowId INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-    LogDialId INT NOT NULL,
-    CalloutId INT NOT NULL,
-    Phone VARCHAR(32) NOT NULL,
-    ResDialTypeId TINYINT NOT NULL,
-    CallDate DATETIME NOT NULL,
-    CallId int NOT NULL,
-    tipoLlamada_id int NOT NULL,
-    Port int NOT NULL
-);
+        -------------------------------------------------------------------------
+        -- 10. Base de inserción sin repetidos
+        --     RNCorrelation: evita repetir el mismo UUID / DialId.
+        --     RNPhoneAni: evita repetir mismo Telefono + ANI dentro del lote.
+        -------------------------------------------------------------------------
+        ;WITH InsertBaseRaw AS
+        (
+            SELECT
+                T.CalloutId,
+                T.CamId,
+                T.ResDialTypeId,
+                T.Phone,
+                T.Port,
+                T.TimeDialing,
+                T.TimeAnswerBit,
+                T.DateNow,
+                T.IsAnswerbit,
+                T.TimeBusy,
+                ISNULL(DMP.TipoDialingModeBulk, ''000000000'') AS TipoDialingModeBulk,
+                T.CallId,
+                T.TimeAnswerBitDate,
+                T.IsCanceledNoAgents,
+                T.DisconnectCause,
+                T.CalKey,
+                T.CallTS,
+                PTL.TipoLlamadaId,
+                T.Ani,
+                T.Destination,
+                T.DestinationName,
+                ISNULL(DMP.ManualCRMBulk, 0) AS ManualCRMBulk,
+                T.DialId,
 
-INSERT INTO dbo.ccoLogDials WITH (ROWLOCK)
-(
-    callout_id,
-    cam_id,
-    tipoResDial_id,
-    Telefono,
-    Puerto,
-    tDialing,
-    fecha,
-    answerbit,
-    tbusy,
-    TipoDialingMode,
-    cal_id,
-    tAnswerBit,
-    canceledNoAgents,
-    disconnectCause,
-    cal_key,
-    call_TS,
-    tipoLlamada_id,
-    ani,
-    destination,
-    destination_name,
-    manualCRM
-)
-OUTPUT
-    INSERTED.logDial_id,
-    INSERTED.callout_id,
-    INSERTED.Telefono,
-    INSERTED.tipoResDial_id,
-    INSERTED.fecha,
-    INSERTED.cal_id,
-    INSERTED.tipoLlamada_id,
-    INSERTED.Puerto
-INTO #InsertedLogDials
-(
-    LogDialId,
-    CalloutId,
-    Phone,
-    ResDialTypeId,
-    CallDate,
-    CallId,
-    tipoLlamada_id,
-    Port
-)
-  SELECT
-    T.CalloutId AS callout_id,
-    T.CamId as cam_id,
-    T.ResDialTypeId as tipoResDial_id,
-    T.Phone AS telefono,
-    T.Port as Puerto,
-    T.TimeDialing + T.TimeAnswerBit as tDialing,
-    T.DateNow as fecha,
-    T.IsAnswerbit as answerbit,
-    T.TimeBusy as tbusy,
-    ISNULL(DMP.TipoDialingModeBulk, ''000000000'') AS TipoDialingMode,
-    T.CallId as cal_id,
-    T.TimeAnswerBitDate as tAnswerBit,
-    T.IsCanceledNoAgents as canceledNoAgents,
-    T.DisconnectCause as disconnectCause,
-    T.CalKey as cal_key,
-    T.CallTS as call_TS,
-    PTL.TipoLlamadaId AS tipoLlamada_id,
-    T.Ani as ani,
-    T.Destination as destination,
-    T.DestinationName as destination_name,
-    ISNULL(DMP.ManualCRMBulk, 0) AS manualCRM
-FROM dbo.ccoLogDialsTempData T WITH (NOLOCK)
-INNER JOIN #PhoneTipoLlamada PTL ON PTL.Phone = T.Phone
-LEFT JOIN #DialingModePreview DMP ON DMP.CalloutId = T.CalloutId AND DMP.Phone = T.Phone
-WHERE T.IsUpdate = 0
-ORDER BY T.CalloutId;
+                ROW_NUMBER() OVER
+                (
+                    PARTITION BY T.DialId
+                    ORDER BY T.DateNow DESC, T.Port DESC, T.CalloutId DESC, T.CallId DESC
+                ) AS RNCorrelation,
 
+                ROW_NUMBER() OVER
+                (
+                    PARTITION BY T.Phone, T.Ani
+                    ORDER BY T.DateNow DESC, T.Port DESC, T.CalloutId DESC, T.CallId DESC
+                ) AS RNPhoneAni
+            FROM dbo.ccoLogDialsTempData T WITH (NOLOCK)
+            INNER JOIN #PhoneTipoLlamada PTL
+                ON PTL.Phone = T.Phone
+            LEFT JOIN #DialingModePreview DMP
+                ON DMP.CalloutId = T.CalloutId
+               AND DMP.Phone = T.Phone
+               AND DMP.CallIdOriginal = T.CallId
+               AND DMP.CamId = T.CamId
+            WHERE T.IsUpdate = 0
+        )
+        INSERT INTO dbo.ccoLogDials WITH (ROWLOCK)
+        (
+            callout_id,
+            cam_id,
+            tipoResDial_id,
+            Telefono,
+            Puerto,
+            tDialing,
+            fecha,
+            answerbit,
+            tbusy,
+            TipoDialingMode,
+            cal_id,
+            tAnswerBit,
+            canceledNoAgents,
+            disconnectCause,
+            cal_key,
+            call_TS,
+            tipoLlamada_id,
+            ani,
+            destination,
+            destination_name,
+            manualCRM,
+            dialCorrelationId
+        )
+        OUTPUT
+            INSERTED.logDial_id,
+            INSERTED.callout_id,
+            INSERTED.Telefono,
+            INSERTED.tipoResDial_id,
+            INSERTED.fecha,
+            INSERTED.cal_id,
+            INSERTED.tipoLlamada_id,
+            INSERTED.Puerto
+        INTO #InsertedLogDials
+        (
+            LogDialId,
+            CalloutId,
+            Phone,
+            ResDialTypeId,
+            CallDate,
+            CallId,
+            tipoLlamada_id,
+            Port
+        )
+        SELECT
+            I.CalloutId,
+            I.CamId,
+            I.ResDialTypeId,
+            I.Phone,
+            I.Port,
+            I.TimeDialing + I.TimeAnswerBit,
+            I.DateNow,
+            I.IsAnswerbit,
+            I.TimeBusy,
+            I.TipoDialingModeBulk,
+            I.CallId,
+            I.TimeAnswerBitDate,
+            I.IsCanceledNoAgents,
+            I.DisconnectCause,
+            I.CalKey,
+            I.CallTS,
+            I.TipoLlamadaId,
+            I.Ani,
+            I.Destination,
+            I.DestinationName,
+            I.ManualCRMBulk,
+            I.DialId
+        FROM InsertBaseRaw I
+        WHERE
+            (
+                I.DialId IS NULL
+                OR I.RNCorrelation = 1
+            )
+            AND I.RNPhoneAni = 1
+            AND NOT EXISTS
+            (
+                SELECT 1
+                FROM dbo.ccoLogDials LD WITH (NOLOCK)
+                WHERE I.DialId IS NOT NULL
+                  AND LD.dialCorrelationId = I.DialId
+            )
+        ORDER BY I.CalloutId;
 
+        INSERT INTO dbo.ccoLogDialsData
+        (
+            logDial_id,
+            callout_id,
+            Data1,
+            Data2,
+            Data3,
+            Data4,
+            Data5,
+            callDate
+        )
+        SELECT
+            I.LogDialId,
+            I.CalloutId,
+            ISNULL(COS.Dato1, ''''),
+            ISNULL(COS.Dato2, ''''),
+            ISNULL(COS.Dato3, ''''),
+            ISNULL(COS.Dato4, ''''),
+            ISNULL(COS.Dato5, ''''),
+            I.CallDate
+        FROM #InsertedLogDials I
+        INNER JOIN dbo.ccoCallsOutSource COS WITH (NOLOCK)
+            ON COS.callout_id = I.CalloutId;
 
-INSERT INTO dbo.ccoLogDialsData
-(
-    logDial_id,
-    callout_id,
-    Data1,
-    Data2,
-    Data3,
-    Data4,
-    Data5,
-    callDate
-)
-SELECT
-    I.LogDialId,
-    I.CalloutId,
-    ISNULL(COS.Dato1, ''''),
-    ISNULL(COS.Dato2, ''''),
-    ISNULL(COS.Dato3, ''''),
-    ISNULL(COS.Dato4, ''''),
-    ISNULL(COS.Dato5, ''''),
-    I.CallDate
-FROM #InsertedLogDials I
-INNER JOIN dbo.ccoCallsOutSource COS WITH (NOLOCK)
-    ON COS.callout_id = I.CalloutId;
+        -------------------------------------------------------------------------
+        -- Actualizar ccoWorkingTable si RecicleSIC está activo
+        -------------------------------------------------------------------------
+        IF @RecicleSIC = 1
+        BEGIN
+            UPDATE WT
+            SET WT.tipoResDial_id = I.ResDialTypeId
+            FROM dbo.ccoWorkingTable WT WITH (ROWLOCK)
+            INNER JOIN #InsertedLogDials I
+                ON I.CalloutId = WT.callout_id;
+        END;
 
-   -------------------------------------------------------------------------
--- Actualizar ccoWorkingTable si RecicleSIC está activo
--------------------------------------------------------------------------
-IF @RecicleSIC = 1
-BEGIN
-    UPDATE WT
-    SET WT.tipoResDial_id = I.ResDialTypeId
-    FROM dbo.ccoWorkingTable WT WITH (ROWLOCK)
-    INNER JOIN #InsertedLogDials I
-        ON I.CalloutId = WT.callout_id;
-END;
+        IF EXISTS (SELECT 1 FROM dbo.cstoTarifa)
+        BEGIN
+            UPDATE cco
+            SET cco.costo = csto.MinutoUno
+                            + CASE
+                                WHEN ISNULL(cco.totalCall_Time, 0) > 0
+                                    THEN ((CEILING((ISNULL(cco.totalCall_Time, 0)) / 60.0) - 1) * csto.MinutoAdicional)
+                                ELSE 0
+                              END,
+                cco.provedor_id = cd.provedor_id,
+                cco.tipoLlamada_id = T.tipoLlamada_id
+            FROM #InsertedLogDials T
+            INNER JOIN dbo.ccoCallsOut cco
+                ON cco.cal_id = T.CallId
+               AND cco.cal_manual <> 1
+            INNER JOIN dbo.ccoDialers cd
+                ON T.Port = cd.Puerto
+            INNER JOIN dbo.cstoTarifa csto
+                ON csto.tipoLlamada_id = T.tipoLlamada_id
+            WHERE T.CallId > 0
+              AND T.ResDialTypeId = 1;
+        END;
 
-IF EXISTS (SELECT 1 FROM dbo.cstoTarifa)
-BEGIN
-    update cco
-    set cco.costo=csto.MinutoUno + case when ISNULL(cco.totalCall_Time,0) > 0 then((ceiling(( ISNULL(cco.totalCall_Time,0) ) / 60.0 )- 1) * csto.MinutoAdicional ) else 0 end
-    ,cco.provedor_id=cd.provedor_id
-    ,cco.tipoLlamada_id = T.tipoLlamada_id
-    FROM #InsertedLogDials T
-    INNER JOIN dbo.ccoCallsOut cco on cco.cal_id=T.CallId AND cco.cal_manual <> 1
-    INNER JOIN dbo.ccoDialers cd on T.Port = cd.Puerto
-    INNER JOIN dbo.cstoTarifa csto on csto.tipoLlamada_id = T.tipoLlamada_id AND CSTO.tipoLlamada_id = T.tipoLlamada_id
-    where T.CallId > 0 AND T.ResDialTypeId = 1
-END
-DELETE FROM dbo.ccoLogDialsTempData
-WHERE IsUpdate = 0
+        DELETE FROM dbo.ccoLogDialsTempData
+        WHERE IsUpdate = 0;
 
+    END
+    ELSE IF @Action = 2
+    BEGIN
 
-END
-ELSE IF @Action=2 
-BEGIN
-    UPDATE LD
-    SET LD.tipoResDial_id = T.ResDialTypeId,
-        LD.answerbit = T.IsAnswerbit,
-        LD.canceledNoAgents = T.IsCanceledNoAgents,
-        LD.disconnectCause = T.DisconnectCause
-    FROM dbo.ccoLogDials LD WITH (ROWLOCK)
-    INNER JOIN dbo.ccoLogDialsTempData T WITH (NOLOCK)
-        ON T.CalloutId=LD.callout_id 
-    and T.CallId=LD.cal_id
-    and T.CallTS = LD.call_TS
-    and T.DateNow = LD.fecha
-    WHERE T.IsUpdate > 0
+        UPDATE LD
+        SET LD.tipoResDial_id = T.ResDialTypeId,
+            LD.answerbit = T.IsAnswerbit,
+            LD.canceledNoAgents = T.IsCanceledNoAgents,
+            LD.disconnectCause = T.DisconnectCause
+        FROM dbo.ccoLogDials LD WITH (ROWLOCK)
+        INNER JOIN dbo.ccoLogDialsTempData T WITH (NOLOCK)
+            ON T.CalloutId = LD.callout_id
+           AND T.CallId = LD.cal_id
+           AND T.CallTS = LD.call_TS
+           AND T.DateNow = LD.fecha
+        WHERE T.IsUpdate > 0;
 
-    DELETE FROM dbo.ccoLogDialsTempData
-    WHERE IsUpdate > 0
+        DELETE FROM dbo.ccoLogDialsTempData
+        WHERE IsUpdate > 0;
 
-END
-ELSE IF @Action=3 
-BEGIN
-    declare @today datetime
-    set @today=DATEADD(hh,-2,getdate())
-    set @today=CONVERT(date,@today,121)
-    
-    ;with relationIvr as(
-        SELECT cld.logDial_id, ivr.IVR_id
-        FROM dbo.IVRCallsIn ivr 
-        INNER JOIN dbo.ccoLogDials cld on ivr.dialCorrelationId=cld.dialCorrelationId  
-        where ivr.date>=@today AND ivr.dialCorrelationId IS NOT NULL
-    )
-    
-    UPDATE opt
-    SET opt.cal_id = r.logDial_id
-    FROM dbo.IVROptions opt 
-    INNER JOIN relationIvr r on r.IVR_id=opt.IVR_id
-    where opt.cal_id=0
+    END
+    ELSE IF @Action = 3
+    BEGIN
 
-END
+        DECLARE @today DATETIME;
+
+        SET @today = DATEADD(HOUR, -2, GETDATE());
+        SET @today = CONVERT(DATE, @today, 121);
+
+        ;WITH relationIvr AS
+        (
+            SELECT
+                cld.logDial_id,
+                ivr.IVR_id
+            FROM dbo.IVRCallsIn ivr
+            INNER JOIN dbo.ccoLogDials cld
+                ON ivr.dialCorrelationId = cld.dialCorrelationId
+            WHERE ivr.date >= @today
+              AND ivr.dialCorrelationId IS NOT NULL
+        )
+        UPDATE opt
+        SET opt.cal_id = r.logDial_id
+        FROM dbo.IVROptions opt
+        INNER JOIN relationIvr r
+            ON r.IVR_id = opt.IVR_id
+        WHERE opt.cal_id = 0;
+
+    END;
 
     SET NOCOUNT OFF;
 END;'

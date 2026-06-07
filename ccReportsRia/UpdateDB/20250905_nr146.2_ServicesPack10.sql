@@ -55,6 +55,21 @@ BEGIN
     end'
     exec (@sql)
 
+    SET @process = 'CREATE TABLE dbo.ReportJsonKeys'
+    SET @sql = 'if not exists(select 1 from sys.tables where name=''ReportJsonKeys'') BEGIN
+CREATE TABLE dbo.ReportJsonKeys
+(
+    id int NOT NULL,
+    ReportDate date NOT NULL,
+    JsonKey nvarchar(256) NOT NULL,
+    CreatedAt datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
+
+    CONSTRAINT PK_ReportJsonKeys
+        PRIMARY KEY (id, ReportDate, JsonKey)
+);
+END'
+    exec (@sql)
+
     SET @process = 'ALTER  PROCEDURE [dbo].[ccspRepCatalogos] se agrega el area 0 S/Area'
     SET @sql = 'ALTER  PROCEDURE [dbo].[ccspRepCatalogos]
 @type as tinyint,
@@ -7658,11 +7673,7 @@ IF OBJECT_ID(''dbo.ccspRepTwitterGeneral'', ''P'') IS NOT NULL
 		area
 	FROM RepInCallsDetail WITH (NOLOCK);
 	'
-	EXEC(@sql);
-
-     SET @process = ''
-    SET @sql = ''
-    exec (@sql)
+	EXEC(@sql);    
 
     SET @process = ''
     SET @sql = ''

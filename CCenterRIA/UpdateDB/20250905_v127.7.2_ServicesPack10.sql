@@ -7290,8 +7290,8 @@ IF OBJECT_ID(''dbo.ccspADMaddConversationTweet'', ''P'') IS NOT NULL
     exec (@sql)
 
 
-    SET @process = ''
-    SET @sql = ''
+    SET @process = 'delete from ccMenus Report Twitter'
+    SET @sql = 'delete from ccMenus where menu_id in(11000,11010,11020,11030,11040) and type=3'
     exec (@sql)
     
 

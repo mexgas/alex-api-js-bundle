@@ -70,6 +70,13 @@ CREATE TABLE dbo.ReportJsonKeys
 END'
     exec (@sql)
 
+     SET @process = 'INSERT ccMenus 2140'
+    SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccMenus WHERE menu_id = 2140)
+    BEGIN
+        INSERT INTO ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release) VALUES (2140,''Historico de Agentes|Agent History'',2000,''B'',2,3,'''',''5b93455cb709b0d0e530e8c721d1a8d4e39ec732890faa5e326f078f203e910e96bf09cfe811ecf0150db2af792c3401'');
+    END'
+    exec (@sql)
+
     SET @process = 'ALTER  PROCEDURE [dbo].[ccspRepCatalogos] se agrega el area 0 S/Area'
     SET @sql = 'ALTER  PROCEDURE [dbo].[ccspRepCatalogos]
 @type as tinyint,

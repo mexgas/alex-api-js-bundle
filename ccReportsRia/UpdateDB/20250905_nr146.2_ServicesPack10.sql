@@ -7675,6 +7675,13 @@ IF OBJECT_ID(''dbo.ccspRepTwitterGeneral'', ''P'') IS NOT NULL
 	'
 	EXEC(@sql);    
 
+    SET @process = 'INSERT ccMenus 3230'
+    SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccMenus WHERE menu_id = 3230)
+    BEGIN
+        INSERT INTO ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release) VALUES (3230,''Cola virtual|Virtual queue'',3000,''B'',2,3,''Error'',''3f2db252ad1e8747e879159ed8498ccf30092c85618c7a5edde85033f5b8cfac'');
+    END'
+    exec (@sql)
+
     SET @process = ''
     SET @sql = ''
     exec (@sql)

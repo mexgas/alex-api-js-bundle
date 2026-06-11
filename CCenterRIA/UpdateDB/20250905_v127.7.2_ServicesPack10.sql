@@ -7646,7 +7646,7 @@ BEGIN
             END
 
             -- Mantiene la fecha de Call BACK
-            UPDATE ccoWorkingTable SET nOcupado = @nOcupado, cal_status = @cal_status, cal_telefono = case when @Telefono ='' then cal_telefono else @Telefono end
+            UPDATE ccoWorkingTable SET nOcupado = @nOcupado, cal_status = @cal_status, cal_telefono = case when @Telefono ='''' then cal_telefono else @Telefono end
             WHERE callout_id = @callout_id
             RETURN(0)
         END
@@ -7683,7 +7683,7 @@ BEGIN
 
             SELECT @DateNewDial = DATEADD(mi, @cam_inter_nocontesto, GETDATE())
 
-            UPDATE ccoWorkingTable SET nNoContesta = @nNoContesta, cal_status = @cal_status, cal_telefono = case when @Telefono ='' then cal_telefono else @Telefono end,
+            UPDATE ccoWorkingTable SET nNoContesta = @nNoContesta, cal_status = @cal_status, cal_telefono = case when @Telefono ='''' then cal_telefono else @Telefono end,
             cal_fechaDial = CASE WHEN @DateNewDial > @DateNextDial THEN @DateNewDial ELSE cal_fechaDial END
             WHERE callout_id = @callout_id
             RETURN(0)
@@ -7721,7 +7721,7 @@ BEGIN
             SELECT @DateNewDial = DATEADD(mi, @cam_inter_fax, GETDATE())
 
             -- Programacion de CALLBACK, si esta en TCPA se pasa a nuevos
-            UPDATE ccoWorkingTable SET nFax = @nFax, cal_status = @cal_status, cal_telefono = case when @Telefono ='' then cal_telefono else @Telefono end,
+            UPDATE ccoWorkingTable SET nFax = @nFax, cal_status = @cal_status, cal_telefono = case when @Telefono ='''' then cal_telefono else @Telefono end,
             cal_fechaDial = CASE WHEN @DateNewDial > @DateNextDial  THEN @DateNewDial ELSE cal_fechaDial END
             WHERE callout_id = @callout_id
             RETURN(0)
@@ -7758,7 +7758,7 @@ BEGIN
             SELECT @DateNewDial = DATEADD(mi, @cam_inter_graba, GETDATE())
 
             -- Programacion de CALLBACK, si esta en TCPA se pasa a nuevos
-            UPDATE ccoWorkingTable SET nContestadora = @nContestadora, cal_status = @cal_status, cal_telefono = case when @Telefono ='' then cal_telefono else @Telefono end,
+            UPDATE ccoWorkingTable SET nContestadora = @nContestadora, cal_status = @cal_status, cal_telefono = case when @Telefono ='''' then cal_telefono else @Telefono end,
             cal_fechaDial = CASE WHEN @DateNewDial > @DateNextDial THEN @DateNewDial ELSE cal_fechaDial END
             WHERE callout_id = @callout_id
             RETURN(0)
@@ -7779,8 +7779,7 @@ BEGIN
 
     RETURN(0)
     SET NOCOUNT OFF
-END
-'
+END'
     exec (@sql)
     
 

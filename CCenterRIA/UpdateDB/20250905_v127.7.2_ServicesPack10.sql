@@ -7552,8 +7552,235 @@ BEGIN
 END'
     exec (@sql)
 
-    SET @process = ''
-    SET @sql = ''
+    SET @process = '#9333 ALTER PROCEDURE [dbo].[ccsp_OUTUpdateDialJob]'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_OUTUpdateDialJob]
+@callout_id     INT,
+@CallResultDial TINYINT,
+@isTCPA         BIT     = 0
+AS
+BEGIN
+
+    SET NOCOUNT ON
+
+    /*1:Contesto | 2:Ocupada | 3:No contestada | 4:Fax/Modem | 5:No Dial Tone | 7:Colgado durante transferencia
+    ++8:short call | ++9:Otro | 8:Other | 10:NoService | 11:Machine */
+
+    DECLARE @nOcupado TINYINT, @nNoContesta TINYINT, @nFax TINYINT, @nContestadora TINYINT
+    DECLARE @nShortCall TINYINT, @nOtro TINYINT, @cam_NoInt_ocupado TINYINT, @cam_NoInt_graba TINYINT
+    DECLARE @cam_ocupado SMALLINT, @cam_inter_ocupado SMALLINT, @cam_nocontesto SMALLINT
+    DECLARE @cam_graba SMALLINT, @cam_inter_graba SMALLINT, @cam_inter_nocontesto SMALLINT
+    DECLARE @cam_fax SMALLINT, @cam_inter_fax SMALLINT
+    DECLARE @DateNextDial DATETIME, @DateNewDial DATETIME, @cam_id SMALLINT
+    DECLARE @ExisteWT TINYINT, @cam_NoInt_fax TINYINT, @cam_NoInt_nocontesto TINYINT, @cal_status TINYINT
+    DECLARE @sSQL NVARCHAR(MAX), @Telefono VARCHAR(15), @prioridadLlamada CHAR(8)
+    DECLARE @ExistePriorityOrder TINYINT
+
+    SELECT @cam_id = cam_id,
+        @nOcupado = ISNULL(nOcupado, 0),
+        @nNoContesta = ISNULL(nNoContesta, 0),
+        @nFax = ISNULL(nFax, 0),
+        @nContestadora = ISNULL(nContestadora, 0),
+        @nShortCall = ISNULL(nShortCall, 0),
+        @nOtro = ISNULL(nOtro, 0),
+        @DateNextDial = cal_fechaDial
+    FROM ccoWorkingTable with(nolock)
+    WHERE callout_id = @callout_id
+
+    SELECT @ExisteWT = CASE WHEN @cam_id IS NOT NULL THEN 1 ELSE 0 END
+    SELECT @cal_status = CASE WHEN @isTCPA = 1 THEN 0 ELSE 1 END--si esta en modo TCPA no gene|rar callbacks
+
+    IF @CallResultDial = 20 BEGIN-- CONTACTADO
+        EXEC ccsp_OUTCancelDialJOB @callout_id,0,@nOcupado,@nNoContesta,@nFax,@nContestadora,@nShortCall,@nOtro,@ExisteWT
+        RETURN(0)
+    END
+    IF @CallResultDial = 1 BEGIN-- CONTESTO
+        IF @isTCPA = 1 BEGIN
+            UPDATE ccoWorkingTable WITH (ROWLOCK, UPDLOCK) SET cal_status = @cal_status WHERE callout_id = @callout_id
+        END
+        ELSE
+        BEGIN
+            IF (SELECT campType FROM ccCamps WHERE cam_id = @cam_id) = 6
+                RETURN(0)
+            IF (SELECT abandonCallback FROM ccCamps WHERE cam_id = @cam_id) = 1
+                BEGIN
+                    EXEC ccsp_OUTCancelDialJOB @callout_id,1,@nOcupado,@nNoContesta,@nFax,@nContestadora,@nShortCall,@nOtro,@ExisteWT
+            END
+            ELSE BEGIN
+                EXEC ccsp_OUTCancelDialJOB @callout_id,0,@nOcupado,@nNoContesta,@nFax,@nContestadora,@nShortCall,@nOtro,@ExisteWT
+            END
+        END
+        RETURN(0)
+    END
+    IF @CallResultDial IN(2, 12) BEGIN -- OCUPADO
+        SELECT @cam_ocupado = cam_ocupado,
+        @cam_inter_ocupado = cam_inter_ocupado,
+        @cam_NoInt_ocupado = cam_NoInt_ocupado,
+        @nOcupado = @nOcupado + 1
+        FROM ccCamps
+        WHERE cam_id = @cam_id
+
+        IF @cam_ocupado = 1
+        BEGIN -- Opcion Ocupado HABILITADA
+            IF @nOcupado > @cam_NoInt_ocupado OR @nShortCall > 4
+            BEGIN
+                EXEC ccsp_OUTCancelDialJOB @callout_id,0,@nOcupado,@nNoContesta,@nFax,@nContestadora,@nShortCall,@nOtro,@ExisteWT
+                RETURN(0)
+            END
+
+            exec ccsp_OUTUpdateDialJobCommon @action=1,@callout_id=@callout_id,@cam_id= @cam_id, @prioridadLlamada =@prioridadLlamada OUTPUT
+
+            -- Change priority and obtain the next telephone
+            UPDATE ccoCallsOutSource with(rowlock) SET nNoContesta = CASE WHEN nNoContesta < 255 THEN ISNULL(nNoContesta, 0) + 1    ELSE nNoContesta END
+            WHERE callout_id = @callout_id
+
+            exec ccsp_OUTUpdateDialJobCommon @action=2,@callout_id=@callout_id, @prioridadLlamada =@prioridadLlamada,@Telefono =@Telefono OUTPUT
+
+            SELECT @DateNewDial = DATEADD(mi, @cam_inter_ocupado, GETDATE())
+
+            -- Programacion de CALLBACK, si esta en TCPA se pasa a nuevos
+            IF @DateNewDial > @DateNextDial
+            BEGIN   -- Nueva fecha de Call BACk
+                UPDATE ccoWorkingTable WITH (ROWLOCK, UPDLOCK) SET nOcupado = @nOcupado, cal_fechaDial = @DateNewDial, cal_status = @cal_status
+                WHERE callout_id = @callout_id
+                RETURN(0)
+            END
+
+            -- Mantiene la fecha de Call BACK
+            UPDATE ccoWorkingTable SET nOcupado = @nOcupado, cal_status = @cal_status, cal_telefono = case when @Telefono ='' then cal_telefono else @Telefono end
+            WHERE callout_id = @callout_id
+            RETURN(0)
+        END
+
+        -- ELSE: Opcion Ocupado DESHABILITADA
+        EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
+        RETURN(0)
+    END
+    IF @CallResultDial IN(3, 5, 8) BEGIN-- NO CONTESTA
+        --select NO Contesta
+        SELECT @cam_nocontesto = cam_nocontesto,
+        @cam_inter_nocontesto = cam_inter_nocontesto,
+        @cam_NoInt_nocontesto = cam_NoInt_nocontesto,
+        @nNoContesta = @nNoContesta + 1
+        FROM ccCamps
+        WHERE cam_id = @cam_id
+
+        IF @cam_nocontesto = 1
+        BEGIN-- Opcion NoContesta HABILITADA
+            IF @nNoContesta > @cam_NoInt_nocontesto OR @nShortCall > 4
+            BEGIN --select No Contesta Habilitada
+                EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
+                RETURN(0)
+            END
+
+            exec ccsp_OUTUpdateDialJobCommon @action=1,@callout_id=@callout_id,@cam_id= @cam_id, @prioridadLlamada =@prioridadLlamada OUTPUT
+
+            -- Change priority and obtain the next telephone
+            UPDATE ccoCallsOutSource with(rowlock) SET nNoContesta = CASE WHEN nNoContesta < 255 THEN ISNULL(nNoContesta, 0) + 1
+            ELSE nNoContesta END
+            WHERE callout_id = @callout_id
+
+            exec ccsp_OUTUpdateDialJobCommon @action=2,@callout_id=@callout_id, @prioridadLlamada =@prioridadLlamada,@Telefono =@Telefono OUTPUT
+
+            SELECT @DateNewDial = DATEADD(mi, @cam_inter_nocontesto, GETDATE())
+
+            UPDATE ccoWorkingTable SET nNoContesta = @nNoContesta, cal_status = @cal_status, cal_telefono = case when @Telefono ='' then cal_telefono else @Telefono end,
+            cal_fechaDial = CASE WHEN @DateNewDial > @DateNextDial THEN @DateNewDial ELSE cal_fechaDial END
+            WHERE callout_id = @callout_id
+            RETURN(0)
+        END
+
+        -- Opcion NoContesta DESHABILITADA
+        EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
+        RETURN(0)
+    END
+    IF @CallResultDial = 4
+    BEGIN-- Fax/Modem
+        SELECT @cam_fax = cam_fax,
+        @cam_inter_fax = cam_inter_fax,
+        @cam_NoInt_fax = cam_NoInt_fax,
+        @nFax = @nFax + 1
+        FROM ccCamps
+        WHERE cam_id = @cam_id
+
+        IF @cam_fax = 1
+        BEGIN-- Opcion Fax/Modem HABILITADA
+            IF @nFax > @cam_NoInt_fax OR @nShortCall > 4
+            BEGIN
+                EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
+                RETURN(0)
+            END
+
+            exec ccsp_OUTUpdateDialJobCommon @action=1,@callout_id=@callout_id,@cam_id= @cam_id, @prioridadLlamada =@prioridadLlamada OUTPUT
+
+            -- Change priority and obtain the next telephone
+            UPDATE ccoCallsOutSource with(rowlock) SET nFax = CASE WHEN nFax < 255 THEN ISNULL(nFax, 0) + 1 ELSE nFax END
+            WHERE callout_id = @callout_id
+
+            exec ccsp_OUTUpdateDialJobCommon @action=2,@callout_id=@callout_id, @prioridadLlamada =@prioridadLlamada,@Telefono =@Telefono OUTPUT
+
+            SELECT @DateNewDial = DATEADD(mi, @cam_inter_fax, GETDATE())
+
+            -- Programacion de CALLBACK, si esta en TCPA se pasa a nuevos
+            UPDATE ccoWorkingTable SET nFax = @nFax, cal_status = @cal_status, cal_telefono = case when @Telefono ='' then cal_telefono else @Telefono end,
+            cal_fechaDial = CASE WHEN @DateNewDial > @DateNextDial  THEN @DateNewDial ELSE cal_fechaDial END
+            WHERE callout_id = @callout_id
+            RETURN(0)
+        END
+
+        -- Opcion Fax/Modem DESHABILITADA
+        EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
+        RETURN(0)
+    END
+    IF @CallResultDial = 11
+    BEGIN-- Maquina Contestadora
+        SELECT @cam_graba = cam_graba,
+        @cam_inter_graba = cam_inter_graba,
+        @cam_NoInt_graba = cam_NoInt_graba,
+        @nContestadora = @nContestadora + 1
+        FROM ccCamps
+        WHERE cam_id = @cam_id
+
+        IF @cam_graba = 1 BEGIN-- Opcion Maquina Contestadora HABILITADA
+            IF @nContestadora > @cam_NoInt_graba OR @nShortCall > 4
+            BEGIN
+                EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
+                RETURN(0)
+            END
+
+            exec ccsp_OUTUpdateDialJobCommon @action=1,@callout_id=@callout_id,@cam_id= @cam_id, @prioridadLlamada =@prioridadLlamada OUTPUT
+
+            -- Change priority and obtain the next telephone
+            UPDATE ccoCallsOutSource with(rowlock) SET nContestadora = CASE WHEN nContestadora < 255 THEN ISNULL(nContestadora, 0) + 1 ELSE nContestadora END
+            WHERE callout_id = @callout_id
+
+            exec ccsp_OUTUpdateDialJobCommon @action=2,@callout_id=@callout_id, @prioridadLlamada =@prioridadLlamada,@Telefono =@Telefono OUTPUT
+
+            SELECT @DateNewDial = DATEADD(mi, @cam_inter_graba, GETDATE())
+
+            -- Programacion de CALLBACK, si esta en TCPA se pasa a nuevos
+            UPDATE ccoWorkingTable SET nContestadora = @nContestadora, cal_status = @cal_status, cal_telefono = case when @Telefono ='' then cal_telefono else @Telefono end,
+            cal_fechaDial = CASE WHEN @DateNewDial > @DateNextDial THEN @DateNewDial ELSE cal_fechaDial END
+            WHERE callout_id = @callout_id
+            RETURN(0)
+        END
+
+        -- Opcion Maquina Contestadora DESHABILITADA
+        EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
+        RETURN(0)
+    END
+    IF @CallResultDial IN(10, 90)
+    BEGIN--No Dial Tone, otros, NoService
+        EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
+        RETURN(0)
+    END
+    IF @CallResultDial > 13 AND @CallResultDial <> 51   BEGIN--Dial Result not register
+        EXEC ccsp_OUTUpdateDialJob @callout_id = @callout_id, @CallResultDial = 8, @isTCPA = @isTCPA
+    END
+
+    RETURN(0)
+    SET NOCOUNT OFF
+END
+'
     exec (@sql)
     
 

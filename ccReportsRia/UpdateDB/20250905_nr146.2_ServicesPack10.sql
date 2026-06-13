@@ -8238,7 +8238,7 @@ select
     DATEPART(minute, re.createAt) AS [minute]
 from RECORDERRIA_RECORDINGEVALUATION re
 INNER JOIN RIA_GRABACION rg ON re.grab_id = rg.grab_id
-INNER JOIN ccUserView a ON g.age_id = a.User_id
+INNER JOIN ccUserView a ON rg.age_id = a.User_id
 INNER JOIN ccUserView s ON RE.userAdmin = s.Login
 LEFT JOIN cccamps cc ON rg.cam_id = cc.cam_id
 LEFT JOIN ccinbound ci ON rg.cam_id = ci.Inbound_id

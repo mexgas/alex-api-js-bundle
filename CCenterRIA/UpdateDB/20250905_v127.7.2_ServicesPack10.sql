@@ -874,9 +874,16 @@ END
 '
 EXEC(@sql)
 
+SET @process = 'DROP ccsp_AgentGetEspecialidadesActivas'
+SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_AgentGetEspecialidadesActivas'')
+begin
+        DROP PROCEDURE ccsp_AgentGetEspecialidadesActivas;
+end'
+exec (@sql)
+
 set @process = 'Se modifica ccsp_AgentGetEspecialidadesActivas para tomar horarios correctamente'
 set @sql = '
-ALTER PROCEDURE [dbo].[ccsp_AgentGetEspecialidadesActivas]
+CREATE PROCEDURE [dbo].[ccsp_AgentGetEspecialidadesActivas]
     @userID INT,
     @current INT = 0
     AS
@@ -954,7 +961,7 @@ ALTER PROCEDURE [dbo].[ccsp_AgentGetEspecialidadesActivas]
                 )
                 AND inb.inbound_id <> @current
                 AND status <> 0
-                AND IDArea IN (SELECT cu.IDArea FROM ccUsers cu WHERE cu.User_id = @current)
+                AND IDArea IN (SELECT cu.IDArea FROM ccUsers cu WHERE cu.User_id = @userID)
                 ORDER BY 2;
             END
             ELSE
@@ -8421,18 +8428,7 @@ END;
 END
 '
     exec (@sql)
-
-    SET @process = ''
-    SET @sql = ''
-    exec (@sql)
-    
-
-    SET @process = ''
-    SET @sql = ''
-    exec (@sql)    
-
-
-
+ 
     SET @process = ''
     SET @sql = ''
     exec (@sql)

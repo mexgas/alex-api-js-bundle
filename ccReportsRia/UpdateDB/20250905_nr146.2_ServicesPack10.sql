@@ -40,6 +40,10 @@ BEGIN
 	BEGIN TRY
 
 		--- BEGIN Services Pack 10 --
+        SET @process = '#7508  insert into ReportHighUse ccspRepCallbackQueue'
+    SET @sql = 'if not exists(select * from ReportHighUse where nameSp=''ccspRepCallbackQueue'')
+insert into ReportHighUse values(''ccspRepCallbackQueue'')'
+    exec (@sql)
 
     SET @process = 'DROP usp_SetObjectDescription'
     SET @sql = 'if exists (select * from sys.procedures where name = N''usp_SetObjectDescription'')
@@ -8818,9 +8822,7 @@ END'
     SET @sql = ''
     exec (@sql)
 
-    SET @process = ''
-    SET @sql = ''
-    exec (@sql)
+
   
     	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version
 

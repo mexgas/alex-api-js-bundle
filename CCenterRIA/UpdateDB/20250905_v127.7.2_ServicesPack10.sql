@@ -8970,6 +8970,78 @@ END;
     exec (@sql)
     
 
+    SET @process = 'Fix: Registrar llamadas IA inbound en ccAVRSTransfer para el Galatea Finder'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_IVRUpdateCallEndNew]
+@cal_id INT,
+@cal_tIVRCallDuration INT,
+@statuscal_id TINYINT,
+@cal_opciones VARCHAR(10),
+@cal_colgada TINYINT,
+@User_id SMALLINT,
+@cal_extension VARCHAR(7),
+@tWait SMALLINT,
+@cbPhone VARCHAR(20),
+@generateCallback int=1,
+@cal_dialog float = 0
+AS
+SET NOCOUNT ON
+
+if @statuscal_id <> 2 begin
+	set @generateCallback=1
+end
+
+UPDATE ccCallsIn
+SET statusCall_id =
+	CASE
+		WHEN @statuscal_id IN (2, 3, 4, 7, 8) THEN @statuscal_id
+		ELSE
+			CASE
+				WHEN statusCall_id = 5 THEN 6
+				ELSE statuscall_id
+			END
+	END,
+	user_id =
+	CASE
+		WHEN user_id = 0 AND @User_id > 0 THEN @User_id
+		ELSE user_id
+	END,
+cal_extension =
+	CASE
+		WHEN LEN(cal_extension) = 0 AND LEN(@cal_extension) > 0 THEN @cal_extension
+		ELSE cal_extension
+	END,
+cal_tWait = @tWait,
+cal_final = getdate(),
+cal_tDialog = CASE WHEN @cal_dialog > 0 THEN @cal_dialog ELSE cal_tDialog END
+WHERE cal_id = @cal_id
+
+if @generateCallback = 1 begin
+	EXEC ccsp_RIAUpdateCallBack_Abandon @cal_id, @statuscal_id, @cbPhone
+end
+
+--- Insercion de llamadas de IA
+declare @tMinAVRS SMALLINT = 5
+select @tMinAVRS = valor from ccSettings where setting_id = 65
+
+declare @totalDuration INT = 0
+if @cal_dialog < @tMinAVRS AND @User_id > 0
+begin
+    select @totalDuration = ISNULL(DATEDIFF(ss, cal_Inicio, cal_final), 0)
+    from ccCallsIn where cal_id = @cal_id
+end
+
+if (@cal_dialog >= @tMinAVRS OR @totalDuration >= @tMinAVRS)
+    AND NOT EXISTS (SELECT 1 FROM ccAVRSTransfer WHERE cal_id = @cal_id AND tipo = 0)
+begin
+    INSERT into ccAVRSTransfer (cal_id, tipo) values(@cal_id, 0)
+end
+
+EXEC ccsp_EngineLogTransfers 2, @cal_id, 2, 2, null, @tWait, @cal_tIVRCallDuration
+
+SET NOCOUNT OFF
+'
+    exec (@sql)
+
     SET @process = 'update ccSettings 236  descripcion and description'
     SET @sql = 'update ccSettings 
 set descripcion=''Modo de grabación de llamada (0-Deshabilitado, 1-Habilitado, 2- grabacion early media en buzon)''

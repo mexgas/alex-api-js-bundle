@@ -9042,6 +9042,13 @@ SET NOCOUNT OFF
 '
     exec (@sql)
 
+    SET @process = 'update ccSettings 236  descripcion and description'
+    SET @sql = 'update ccSettings 
+set descripcion=''Modo de grabación de llamada (0-Deshabilitado, 1-Habilitado, 2- grabacion early media en buzon)''
+,description=''EnableCall recording mode (Early Media). 0-Disabled, 1-Enabled, 2- recording early media en voicemail''
+where setting_id=236'
+    exec (@sql)
+
     
     SET @process = ''
     SET @sql = ''

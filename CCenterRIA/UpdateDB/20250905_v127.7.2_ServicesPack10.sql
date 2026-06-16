@@ -9039,7 +9039,6 @@ end
 EXEC ccsp_EngineLogTransfers 2, @cal_id, 2, 2, null, @tWait, @cal_tIVRCallDuration
 
 SET NOCOUNT OFF
-GO
 '
     exec (@sql)
 

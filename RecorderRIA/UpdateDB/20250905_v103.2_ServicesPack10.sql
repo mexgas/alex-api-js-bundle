@@ -174,9 +174,6 @@ LEFT JOIN ccRIAInboundGraph grap ON grap.Inbound_id = inb.Inbound_id AND rec.tip
 LEFT JOIN ccRIACampsGraph grapOut ON grapOut.cam_id = outb.cam_id AND rec.tipo_llamada = 2
 LEFT JOIN ccVirtualAgent va ON rec.virtualAgentId = va.idAgent
 
-
-select * from @RecNodeTable
-
 insert into @XMLTable (grab_id,status, dateIn, node)       
 SELECT  
     C01,0 [status],[date],

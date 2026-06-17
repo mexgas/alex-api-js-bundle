@@ -8796,13 +8796,161 @@ END'
     END'
     exec (@sql)
 
+    
+    SET @process = 'CW-11359 ALTER PROCEDURE [dbo].[ccspRepInDIDResume]'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepInDIDResume]
+
+    @action tinyint,
+    @from datetime = NULL,
+    @to datetime = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+
+    IF @from IS NULL
+        SET @from = CONVERT(date, GETDATE());
+
+    IF @to IS NULL
+        SET @to = GETDATE();
+
+    DECLARE @tresDialog smallint;
+
+    EXEC @tresDialog = ccspConfigTresDialog;
+
+    IF @action = 1
+    BEGIN
+        DELETE FROM dbo.RepInDIDResume WITH (ROWLOCK)
+        WHERE [date] >= @from
+          AND [date] < @to;
+
+        ;WITH Calls AS
+        (
+            SELECT
+                DATEADD(HOUR, DATEDIFF(HOUR, 0, c.cal_inicio), 0) AS timegroup,
+                c.dni_id,
+                COUNT_BIG(*) AS total_answer
+            FROM dbo.ccCallsIn c
+            WHERE c.cal_inicio >= @from
+              AND c.cal_inicio < @to
+              AND c.dni_id > 0
+              AND c.statuscall_id = 13
+              AND c.cal_tdialog > @tresDialog
+            GROUP BY
+                DATEADD(HOUR, DATEDIFF(HOUR, 0, c.cal_inicio), 0),
+                c.dni_id
+        )
+        INSERT INTO dbo.RepInDIDResume
+        (
+            [date],
+            dnisId,
+            dnis,
+            dnis_count,
+            [count],
+            [year],
+            [month],
+            [day],
+            [hour],
+            [minutes]
+        )
+        SELECT
+            c.timegroup AS [date],
+            c.dni_id AS dnisId,
+            CASE 
+            WHEN ISNULL(d.dni_descripcion, '''') = ''''
+                THEN  d.dni_numero
+            WHEN UPPER(d.dni_descripcion) =''DNIS''
+                THEN d.dni_descripcion + ''_''
+            ELSE d.dni_descripcion
+        END AS dnis,
+
+        CASE 
+            WHEN ISNULL(d.dni_descripcion, '''') = ''''
+                THEN d.dni_numero + ''_Count''
+            WHEN UPPER(d.dni_descripcion)  =''DNIS''
+                THEN d.dni_descripcion + ''__Count''
+            ELSE d.dni_descripcion + ''_Count''
+        END AS dnis_count,
+            SUM(c.total_answer) AS [count],
+            DATEPART(YEAR, c.timegroup) AS [year],
+            DATEPART(MONTH, c.timegroup) AS [month],
+            DATEPART(DAY, c.timegroup) AS [day],
+            DATEPART(HOUR, c.timegroup) AS [hour],
+            DATEPART(MINUTE, c.timegroup) AS [minutes]
+        FROM Calls c
+        LEFT JOIN dbo.ccdnis d
+            ON c.dni_id = d.dni_id
+        GROUP BY
+            c.timegroup,
+            c.dni_id,
+            d.dni_descripcion,
+            d.dni_numero
+        HAVING SUM(c.total_answer) > 0;
+    END
+END;'
+    exec (@sql)
+
     SET @process = ''
     SET @sql = ''
+    exec (@sql)
+
     SET @process = ''
     SET @sql = ''
     exec (@sql)
 
      SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+    SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+     SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+    SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+    SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+     SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+    SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+     SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+    SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+    SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+     SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+    SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+     SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+    SET @process = ''
     SET @sql = ''
     exec (@sql)
 

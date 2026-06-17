@@ -719,7 +719,7 @@ ringingTime
         ISNULL(cod.Data5, ISNULL(cs.Dato5, '''')) AS [data5],
         ISNULL(Call.cal_tMsg, 0) AS [MessageTime],
         ISNULL(rc.grab_id, 0) AS grabId,
-        concat(camps.IDArea,Usr.IDArea,1) AS [areaId],
+        case when camps.IDArea is not null then camps.IDArea when Usr.IDArea is not null then Usr.IDArea else 1 end AS [areaId],
         isnull(ar.AreaName,'''') AS [area],
 ld.ani as originNumber,
 call.cal_fcallback as callbackDate,

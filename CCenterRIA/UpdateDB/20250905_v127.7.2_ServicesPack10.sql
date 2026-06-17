@@ -8994,6 +8994,7 @@ UPDATE ccCallsIn
 SET statusCall_id =
 	CASE
 		WHEN @statuscal_id IN (2, 3, 4, 7, 8) THEN @statuscal_id
+        WHEN @statuscal_id =94 THEN 13  --InboundAIAttended para el telephony
 		ELSE
 			CASE
 				WHEN statusCall_id = 5 THEN 6

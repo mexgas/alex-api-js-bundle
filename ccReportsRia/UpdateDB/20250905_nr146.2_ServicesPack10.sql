@@ -8925,23 +8925,185 @@ BEGIN
 END;'
     exec (@sql)
 
-    SET @process = ''
-    SET @sql = ''
+    SET @process = 'Insert translations report 2140'
+	SET @sql = 'if not exists (select 1 from TranslatedReports where id = 2140)
+	BEGIN
+		insert into TranslatedReports values (2140,''EstadoAgente|Campaign|newCallKey'')
+	END'
+	EXEC(@sql)
+
+    SET @process = 'DROP ccspRepAgentHistory'
+    SET @sql = 'if exists (select * from sys.procedures where name = N''ccspRepAgentHistory'')
+    begin
+            DROP PROCEDURE ccspRepAgentHistory;
+    end'
     exec (@sql)
+
+    SET @process = 'CREATE ccspRepAgentHistory 2140'
+    SET @sql = 'CREATE PROCEDURE [dbo].[ccspRepAgentHistory]
+	(
+		@action TINYINT,
+		@from   DATETIME = NULL,
+		@to     DATETIME = NULL
+	)
+	AS
+	BEGIN
+		SET NOCOUNT ON;
+
+		IF @from IS NULL
+			SET @from = CONVERT(date, GETDATE());
+
+		IF @to IS NULL
+			SET @to = GETDATE();
+
+		SET @from = CONVERT(date, @from);
+
+		IF @action = 1
+		BEGIN
+
+			DELETE FROM RepAgentHistory WHERE [date] >= @from AND [date] < @to;
+
+			;WITH eventos AS
+			(
+				SELECT
+					cl.User_id,
+					cu.Login,
+					cu.IDArea,
+					cl.Fecha AS FechaEvento,
+					cl.TipoMov,
+					LAG(cl.Fecha) OVER
+					(
+						PARTITION BY cl.User_id
+						ORDER BY cl.Fecha
+					) AS FechaAnterior,
+					
+					LAG(cl.TipoMov) OVER
+					(
+						PARTITION BY cl.User_id
+						ORDER BY cl.Fecha
+					) AS TipoMovAnterior
+					
+				FROM ccLogLogin cl
+				INNER JOIN ccUsers cu
+					ON cl.User_id = cu.User_id
+				WHERE cl.Fecha >= DATEADD(DAY, -1, @from)
+				  AND cl.Fecha < @to
+				  AND cu.TipoUser_id = 1
+			)
+			INSERT INTO RepAgentHistory
+			(
+				AgentName,
+				[date],
+				EstadoAgente,
+				TiempoEstado,
+				Campaign,
+				CallKey,
+				userId,
+				AreaId
+			)
+			SELECT
+				Login,
+				FechaAnterior,
+				''systemTranslated_offline'',--''Disconnect'',
+				CONVERT
+				( CHAR(8),DATEADD ( SECOND, DATEDIFF(SECOND, FechaAnterior, FechaEvento), 0 ),108),
+				''systemTranslated_value_empty'',
+				''systemTranslated_value_empty'',
+				User_id,
+				IDArea
+			FROM eventos
+			WHERE TipoMov = 1
+			  AND TipoMovAnterior = 0
+			  AND FechaAnterior IS NOT NULL
+			  AND FechaEvento >= @from
+			  AND FechaEvento < @to;
+
+			;WITH statusLabels (Id, Description) AS
+				(
+					SELECT * FROM
+					(
+						VALUES
+							(0, ''systemTranslated_offline''),
+							(1, ''systemTranslated_validating''),
+							(2, ''systemTranslated_unavailable''),
+							(3, ''systemTranslated_ready''),
+							(4, ''systemTranslated_engaged''),
+							(5, ''systemTranslated_call_transfer''),
+							(6, ''systemTranslated_wrap_up''),
+							(21,''systemTranslated_dialing''),
+							(24,''systemTranslated_engaged_chat''),
+							(30,''systemTranslated_reconnecting''),
+							(31,''systemTranslated_ready_preview''),
+							(32,''systemTranslated_preview''),
+							(33,''systemTranslated_assisted_call''),
+							(34,''systemTranslated_engaged_whats''),
+							(35,''systemTranslated_idle_preview''),
+							(36,''systemTranslated_engaged_email''),
+							(37,''systemTranslated_custom_ready''),
+							(39,''systemTranslated_inbox_transfer'')
+							--(pending, ''engaged-preview'')
+					) AS DatosFijos(Id, Description)
+				)
+
+			INSERT INTO RepAgentHistory
+			(
+				AgentName,
+				[date],
+				EstadoAgente,
+				TiempoEstado,
+				Campaign,
+				CallKey,
+				userId,
+				AreaId
+			)
+			SELECT
+				u.Login,
+				lad.fecha,
+				tsa.Description,
+				CONVERT ( CHAR(8), DATEADD(SECOND, CAST(lad.tStatus AS INT), 0), 108),
+				ISNULL ( NULLIF(LTRIM(cin.descripcion), ''''), ISNULL(LTRIM(c.cam_descripcion), ''N/A'') ),
+				ISNULL( NULLIF(LTRIM(co.cal_key), ''''), ISNULL(LTRIM(ci.cal_key), ''N/A'')),
+				lad.User_id,
+				u.IdArea
+
+			FROM ccLogAgentesDia lad
+			INNER JOIN ccUsers u ON lad.User_id = u.User_id
+			INNER JOIN statusLabels tsa ON lad.TipoStatusAge_id = tsa.Id
+			LEFT JOIN ccCamps c ON lad.IdCampEsp = c.cam_id
+			LEFT JOIN ccInbound cin ON lad.IdCampEsp = cin.Inbound_id
+			LEFT JOIN ccoCallsOut co ON lad.callID = co.cal_id
+			LEFT JOIN ccCallsIn ci ON lad.callID = ci.cal_id
+			WHERE lad.fecha >= @from
+			  AND lad.fecha < @to
+			  AND lad.TipoStatusAge_id IN (0,1, 2, 3, 4, 5, 6, 21,24,30,31,32,33,34,35,36,37,39)
+	END
+	END'
+    exec (@sql)
+	
+	SET @process = 'Delete view RepViewAgentHistory'
+	SET @sql = '
+	IF EXISTS (SELECT * FROM sys.views WHERE name = N''RepViewAgentHistory'')
+	BEGIN
+		DROP VIEW RepViewAgentHistory;
+	END'
+	EXEC(@sql)
 
     SET @process = ''
-    SET @sql = ''
-    exec (@sql)
-
-     SET @process = ''
-    SET @sql = ''
+    SET @sql = 'CREATE VIEW RepViewAgentHistory AS
+		SELECT 
+			AgentName, 
+			[date] as newDate, 
+			EstadoAgente, 
+			TiempoEstado, 
+			Campaign, 
+			CallKey as newCallKey, 
+			userId, 
+			AreaId
+		FROM 
+			RepAgentHistory;'
     exec (@sql)
 
     SET @process = ''
-    SET @sql = ''
-    exec (@sql)
-
-     SET @process = ''
     SET @sql = ''
     exec (@sql)
 

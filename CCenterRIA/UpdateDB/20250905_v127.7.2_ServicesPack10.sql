@@ -58,7 +58,7 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 
     SET @process = 'Se agrega Action= 17 en ccsp_VirtualAgents'
     SET @sql = '
-    ALTER PROCEDURE [dbo].[ccsp_VirtualAgents]
+    CREATE PROCEDURE [dbo].[ccsp_VirtualAgents]
     @action INT = 0,
 
     @idVirtualAgent INT = 0,

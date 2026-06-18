@@ -8796,7 +8796,42 @@ END'
     END'
     exec (@sql)
 
-    
+    SET @process = 'INSERT ccMenus 12000'
+    SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccMenus WHERE menu_id = 12000)
+    BEGIN
+        INSERT INTO ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release) VALUES (12000,''WhatsApp de entrada|Inbound WhatsApp'',12000,''A'',7,3,'''',''01fca49b34e37efff01faa6808ea7fb401278e754bbe713c58f023954497efc8537ce0372c9ec527e453b7d0af15f0ca'');
+    END'
+    exec (@sql)
+
+    SET @process = 'INSERT ccMenus 12010'
+    SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccMenus WHERE menu_id = 12010)
+    BEGIN
+        INSERT INTO ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release) VALUES (12010,''Detalle de conversaciones|Conversations Detail'',12000,''B'',7,3,'''',''accb20a46285ea9856ace61e5e3ffd452de1f55f20c7a005ce8e05a503060fb18beee994719b6abd36ad36efaffd0370'');
+    END'
+    exec (@sql)
+
+    SET @process = 'INSERT ccMenus 12015'
+    SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccMenus WHERE menu_id = 12015)
+    BEGIN
+        INSERT INTO ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release) VALUES (12015,''Detalle de desasignaciones|Deassignments details'',12000,''B'',7,3,'''',''e9befc66956d7d9fd76131b32eb489783a31ee84a8ad9fde96e1d89b26627cac8fc4fa52f426845fa98a3f91eb0ff8041e6f05eb13fe339c90f00002d2d06235'');
+    END'
+    exec (@sql)
+
+    SET @process = 'INSERT ccMenus 12017'
+    SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccMenus WHERE menu_id = 12017)
+    BEGIN
+        INSERT INTO ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release) VALUES (12017,''Detalle de conversaciones enviadas a SPAM|Detail of conversations sent to SPAM'',12000,''B'',7,3,'''',''accb20a46285ea9856ace61e5e3ffd4582792fe13e066f048a0c3f937dc1daf96bdd2edb9f23d5b4b486f46011c61eb08915ca96b688576ca7a25b2b03170981862172d92a203b6c9051ce2f5670037d'');
+    END'
+    exec (@sql)
+
+    SET @process = 'INSERT ccMenus 12020'
+    SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccMenus WHERE menu_id = 12020)
+    BEGIN
+        INSERT INTO ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release) VALUES (12020,''Conversaciones por campaña|Conversations by Campaign'',12000,''B'',7,3,'''',''2605c8244920fb599fb936a4bf94521a7284d5e414815e8ef15fa8f6b0040db16a54ce29b02250a22a8cb87c41c6f3b30e3860a31b59d733442bb174a555b7b2'');
+    END'
+    exec (@sql)
+
+
     SET @process = 'CW-11359 ALTER PROCEDURE [dbo].[ccspRepInDIDResume]'
     SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepInDIDResume]
 

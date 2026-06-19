@@ -113,7 +113,7 @@ pipeline {
             }
         }
        
-        stage('Compare Schema') {
+       stage('Compare Schema') {
             steps {
                 script {
                     def compareDatabaseWithRetry = { String databaseName ->

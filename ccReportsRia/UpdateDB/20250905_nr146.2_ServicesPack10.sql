@@ -40,6 +40,10 @@ BEGIN
 	BEGIN TRY
 
 		--- BEGIN Services Pack 10 --
+        SET @process = '#7508  insert into ReportHighUse ccspRepCallbackQueue'
+    SET @sql = 'if not exists(select * from ReportHighUse where nameSp=''ccspRepCallbackQueue'')
+insert into ReportHighUse values(''ccspRepCallbackQueue'')'
+    exec (@sql)
 
     SET @process = 'DROP usp_SetObjectDescription'
     SET @sql = 'if exists (select * from sys.procedures where name = N''usp_SetObjectDescription'')
@@ -53,6 +57,28 @@ BEGIN
     begin
             DROP PROCEDURE usp_SetColumnDescription;
     end'
+    exec (@sql)
+
+    SET @process = 'CREATE TABLE dbo.ReportJsonKeys'
+    SET @sql = 'if not exists(select 1 from sys.tables where name=''ReportJsonKeys'') BEGIN
+CREATE TABLE dbo.ReportJsonKeys
+(
+    id int NOT NULL,
+    ReportDate date NOT NULL,
+    JsonKey nvarchar(256) NOT NULL,
+    CreatedAt datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
+
+    CONSTRAINT PK_ReportJsonKeys
+        PRIMARY KEY (id, ReportDate, JsonKey)
+);
+END'
+    exec (@sql)
+
+     SET @process = 'INSERT ccMenus 2140'
+    SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccMenus WHERE menu_id = 2140)
+    BEGIN
+        INSERT INTO ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release) VALUES (2140,''Historico de Agentes|Agent History'',2000,''B'',2,3,'''',''5b93455cb709b0d0e530e8c721d1a8d4e39ec732890faa5e326f078f203e910e96bf09cfe811ecf0150db2af792c3401'');
+    END'
     exec (@sql)
 
     SET @process = 'ALTER  PROCEDURE [dbo].[ccspRepCatalogos] se agrega el area 0 S/Area'
@@ -693,7 +719,7 @@ ringingTime
         ISNULL(cod.Data5, ISNULL(cs.Dato5, '''')) AS [data5],
         ISNULL(Call.cal_tMsg, 0) AS [MessageTime],
         ISNULL(rc.grab_id, 0) AS grabId,
-        concat(camps.IDArea,Usr.IDArea,1) AS [areaId],
+        case when camps.IDArea is not null then camps.IDArea when Usr.IDArea is not null then Usr.IDArea else 1 end AS [areaId],
         isnull(ar.AreaName,'''') AS [area],
 ld.ani as originNumber,
 call.cal_fcallback as callbackDate,
@@ -7658,9 +7684,1430 @@ IF OBJECT_ID(''dbo.ccspRepTwitterGeneral'', ''P'') IS NOT NULL
 		area
 	FROM RepInCallsDetail WITH (NOLOCK);
 	'
-	EXEC(@sql);
+	EXEC(@sql);    
 
-     SET @process = ''
+    SET @process = '#9519 ALTER PROCEDURE [dbo].[ccspRepAgentHSBCKPI]'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepAgentHSBCKPI]
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+AS
+
+SET NOCOUNT ON
+
+if @from is null
+    select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null
+    select @to = getdate()
+
+if @action = 1
+begin
+    
+    DELETE  FROM RepAgentHSBCKPI WITH (ROWLOCK) WHERE DATE >= @from AND DATE < @to
+
+    create table #General (date datetime, General decimal(10,2), OpHoursOutBound decimal(10,2), OpHoursInbound decimal(10,2), SignIn decimal(10,2))
+    create table #AvgIdle(fecha datetime, IdleSeconds decimal(10,2), analistas int)
+
+    insert into #General
+    select convert(date, [date]) as date, sum(General), sum(OpHoursOutBound), sum(OpHoursInbound), sum(SignIn)
+    from (
+        (select convert(date,[cal_inicio]) as date,
+            (CONVERT(decimal(10,2),(sum(cal_tDialog)+sum(cal_tNotas)+sum(cal_tXfer)+sum(cal_tRing)))) as general,
+            (CONVERT(decimal(10,2),(sum(cal_tDialog)+sum(cal_tNotas)+sum(cal_tXfer)+sum(cal_tRing)))) as OpHoursOutBound,
+            0 as OpHoursInbound,
+            (CONVERT(decimal(10,2),(sum(cal_tDialog)+sum(cal_tNotas)+sum(cal_tXfer)+sum(cal_tRing)))) as SignIn
+        from ccoCallsOut where cal_Inicio >=@from and cal_Inicio<@to
+        group by convert(date,[cal_inicio]))
+    union all
+        (select convert(date,[date]) as date,
+            (CONVERT(decimal(10,2),sum(xfertime)+sum(ringingTime)+sum(dialogTime))) as general,
+            0 as OpHoursOutBound,
+            (CONVERT(decimal(10,2),sum(xfertime)+sum(ringingTime)+sum(dialogTime))) as OpHoursInbound,
+            (CONVERT(decimal(10,2),sum(xfertime)+sum(ringingTime)+sum(dialogTime))) as SignIn
+        from RepInCallsDetail  where date >=@from and date<@to
+        group by convert(date,[date]))
+    union all
+        (select convert(date,[date]) as date, 
+            (CONVERT(decimal(10,2),sum(tnotesout)+sum(tringout)+sum(tav)+sum(tnotav))) as general,
+            0 as OpHoursOutBound,
+            0 as OpHoursInbound,
+            (CONVERT(decimal(10,2),sum(tnotesout)+sum(tringout))) as SignIn
+        from RepAgentGI where date >=@from and date<@to
+        group by convert(date,[date]))
+    ) as final
+    group by convert(date,[date])
+
+    ;with calls as(select convert(date, cal_inicio) date, count(DISTINCT User_id) cuenta from ccoCallsOut 
+    where cal_Inicio >=@from and cal_Inicio<@to AND User_id > 0 
+    group by convert(date,cal_inicio)
+    ),RepAgentGIGroup as(
+        select convert(date,date,121) as [date],tnotav from RepAgentGI
+        where date >=@from and date<@to
+    )
+    insert into #AvgIdle
+    select convert(date,a.date), 
+        case when b.cuenta > 0 
+            then CAST((cast(sum(tnotav) as float)/cast(b.cuenta as float))/3600 as decimal(10,2))
+            else 0
+        end IdleSeconds,
+        b.cuenta as analistas
+    from calls b
+    INNER join RepAgentGIGroup a on a.date= b.date
+    group by convert(date,a.date), cuenta
+    order by convert(date,a.date)
+
+    insert into RepAgentHSBCKPI
+    select convert(date,a.date), 
+        ISNULL(OpHoursOutBound, 0) / 3600 as OpHoursOutbound,
+        ISNULL(OpHoursInbound, 0) / 3600 as OpHoursInbound,
+        ISNULL(General, 0) / 3600  as PaidHours,
+        case when analistas > 0 then ((ISNULL(General, 0) / analistas )) / 3600 else 0 end OffLineActivities,
+        ISNULL(SignIn ,0) / 3600  as SignIn,
+        ISNULL(IdleSeconds, 0) as AvgIdleSeconds,
+        ISNULL(cast((cast(sum(tdialogout) as float) / 3600) as decimal(10,3)), 0) as AvgTalkSeconds,
+        ISNULL(cast((cast(sum(tnotesout) as float) / 3600) as decimal(10,3)), 0) as AvgWrapSeconds,
+        ISNULL(cast((cast((sum(tdialogout)+sum(tnotesout)) as float) / 3600) as decimal(10,3)), 0) as AvgAHTSeconds,
+        datepart(yyyy,max(a.date)) as Year,
+        datepart(mm,max(a.date)) as Month,
+        datepart(dd,max(a.date)) as Day,
+        datepart(hh,max(a.date)) as Hours,
+        datepart(mi,max(a.date)) as Minutes,
+        ISNULL(cast((cast(sum(b.tauxiliarready) as float) / 3600) as decimal(10,3)), 0) as AvgAuxiliarySeconds
+    from #General a
+    left join RepAgentGI b on b.date >=@from and b.date<@to and convert(date,a.date) = convert(date,b.date)
+    left join #AvgIdle c on convert(date,a.date) = convert(date,fecha)
+    where a.date between @from and @to 
+    group by convert(date,a.date), OpHoursOutBound, OpHoursInbound, General, SignIn, analistas, IdleSeconds
+    order by convert(date,a.date)
+
+    drop table #General
+    drop table #AvgIdle
+end'
+    exec (@sql)
+
+     SET @process = '#9519 ALTER PROCEDURE [dbo].[ccspRepAVRSAgent] '
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepAVRSAgent]        
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+AS
+set nocount on
+
+if @from is null
+    select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null
+    select @to = getdate()
+
+if(DATEPART(hour, @from) = 3 and DATEPART(minute, @from) = 0)
+    SELECT @from = convert(DATETIME, convert(VARCHAR(11), @from))
+
+if @action = 1
+BEGIN
+
+    ---Before insert delete first  table dbo.RepAVRSAgent 
+    DELETE FROM dbo.RepAVRSAgent with(rowlock)
+    where date >= @from AND date < @to
+
+    INSERT INTO dbo.RepAVRSAgent
+    --By Agent      
+    select          -- Xion
+        DATEADD(dd, 0, DATEDIFF(dd, 0, f.fecha_calif)) AS fecha,
+        a.User_id,
+        a.Login,
+        (a.apellidopaterno+'' ''+a.apellidomaterno+'' ''+a.nombres) AS agent, 
+        f.total_forma AS scores, 
+        f.total_forma AS scores, 
+        f.total_forma AS scores,
+        s.User_id,
+        s.Login,
+        (s.apellidopaterno+'' ''+s.apellidomaterno+'' ''+s.nombres) AS Supervisor,
+        f.id_formato,
+        k.nombre,       
+        f.id_grabacion,
+        case f.tipo 
+            when 1 then case f.tipo_llamada when 1 then ''systemTranslated_in_single'' else ''systemTranslated_out_single'' end   
+            when 2 then ''systemTranslated_Chat''
+            when 3 then ''systemTranslated_Email''
+            when 3 then ''systemTranslated_Twitter''
+        end as Medio,       
+        f.cam_id as CamId,
+        f.tipo_llamada as TipoLlamada,  
+        (CASE WHEN f.tipo_llamada = 2 THEN e.cam_descripcion ELSE u.descripcion END)
+            AS Cam,      
+        YEAR(f.fecha_calif) AS [year], 
+        MONTH(f.fecha_calif) AS [month], 
+        DAY(f.fecha_calif) AS [day], 
+        CAST(DATEPART(hour, f.fecha_calif) as varchar(2)) AS [hour], 
+        CAST(DATEPART(minute, f.fecha_calif) as varchar(2)) AS [minute]
+    from dbo.RIA_FORMACALIF f
+    INNER JOIN dbo.ccUserView a ON f.age_id = a.User_id
+    INNER JOIN dbo.ccUserView s ON f.id_calificador = s.User_id
+    INNER JOIN dbo.RIA_FORMATOS k ON k.id_formato=f.id_formato
+    left join cccamps AS e ON f.cam_id = e.cam_id
+    left join ccinbound AS u ON f.cam_id = u.Inbound_id
+    WHERE f.fecha_calif >= @from AND f.fecha_calif < @to
+    UNION
+    select          -- Kolob
+        DATEADD(dd, 0, DATEDIFF(dd, 0, RE.createAt)) AS fecha,
+        g.age_id [User_id],
+        a.Login,
+        (a.apellidopaterno+'' ''+a.apellidomaterno+'' ''+a.nombres) AS agent, 
+        RE.totalPoints AS scores,
+        RE.totalPoints AS scores,
+        RE.totalPoints AS scores,
+        u.User_id [User_id],
+        RE.userAdmin [Login],
+        RE.nameAdmin [Supervisor],
+        RE.idFormat [id_formato],
+        EF.nameFormat [nombre],
+        RE.grab_id [id_grabacion],
+        case g.tipo_grab_id     --Siempre es 1 -> trsp_AdmSaveScoresFormaCalif
+            when 1 then case g.tipo_llamada when 1 then ''systemTranslated_in_single'' else ''systemTranslated_out_single'' end   
+            when 2 then ''systemTranslated_Chat''
+            when 3 then ''systemTranslated_Email''
+            when 3 then ''systemTranslated_Twitter''
+        end as Medio,       
+        g.cam_id as CamId,
+        g.tipo_llamada as TipoLlamada,
+        (CASE WHEN g.tipo_llamada = 2 THEN c.cam_descripcion ELSE i.descripcion END) AS Cam,         
+        YEAR(RE.createAt) AS [year], 
+        MONTH(RE.createAt) AS [month], 
+        DAY(RE.createAt) AS [day], 
+        DATEPART(hour, RE.createAt)  AS [hour], 
+        DATEPART(minute, RE.createAt) AS [minute]
+    from dbo.RECORDERRIA_RECORDINGEVALUATION RE 
+    inner join RIA_GRABACION g on RE.grab_id = g.grab_id        
+    inner join RECORDERRIA_EVALUATIONFORMATS EF on RE.idFormat = EF.idFormat
+    inner JOIN ccUserView a ON g.age_id = a.User_id and a.TipoUser_id = 1
+    inner JOIN ccUserView u ON RE.userAdmin = u.Login and u.TipoUser_id > 1
+    left join ccCamps AS c ON g.cam_id = c.cam_id
+    left join ccInbound AS i ON g.cam_id = i.Inbound_id
+    where RE.createAt >= @from and RE.createAt < @to
+END
+
+set nocount off'
+    exec (@sql)
+
+    SET @process = '#9519 ALTER PROCEDURE  [dbo].[ccspRepAVRSQuestion]'
+    SET @sql = 'ALTER PROCEDURE  [dbo].[ccspRepAVRSQuestion]
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+AS
+if @from is null
+    select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null
+    select @to = getdate()
+
+if(DATEPART(hour, @from) = 3 and DATEPART(minute, @from) = 0)
+    SELECT @from = convert(DATETIME, convert(VARCHAR(11), @from))
+
+if @action = 1 BEGIN
+
+
+DELETE FROM dbo.RepAVRSQuestion with(rowlock)
+where date >= @from AND date < @to
+
+;with template as (
+select 
+rfc.nameFormatConcept
+,rcq.idQuestion
+,rcq.idConcept
+,rcq.idFormat
+,rcq.title
+,ref.nameFormat
+
+from  RECORDERRIA_CONCEPTQUESTIONS rcq
+right join RECORDERRIA_FORMATCONCEPTS rfc on rfc.idConcept = rcq.idConcept
+right join RECORDERRIA_EVALUATIONFORMATS ref on ref.idFormat = rcq.idFormat
+),
+answer as (
+    select 
+        rre.nameAdmin--
+    ,convert(date, rre.createAt) as [date]
+    ,raq.idRecordingEvaluation
+    ,raq.IdQuestion
+    ,raq.points
+    ,rre.grab_id
+    ,rre.userAdmin
+    ,rre.createAt
+    ,rre.idFormat
+    from  RECORDERRIA_ANSWERSOFQUESTIONSEVALUATION raq
+    right join  RECORDERRIA_RECORDINGEVALUATION rre on rre.idRecordingEvaluation = raq.idRecordingEvaluation
+),
+total as(
+select 
+an.date as [date]
+,ra.age_id  as UserId
+,cu.Login AS [user]
+,(cu.apellidopaterno+'' ''+cu.apellidomaterno+'' ''+cu.nombres)  AS agentName
+,ccu.User_id as supervisorId
+,an.userAdmin as supervisorUser
+,an.nameAdmin as Supervisor
+,t.idFormat  AS templateId
+,t.nameFormat AS Template
+,t.idConcept as sectionId
+,t.nameFormatConcept as Section
+,t.idQuestion as questionId
+,t.title as question
+,an.points as score
+,an.grab_id as mediaId
+,case ra.tipo_grab_id
+        when 1 then case ra.tipo_llamada when 1 then ''systemTranslated_in_single'' else ''systemTranslated_out_single'' end    
+        when 2 then ''systemTranslated_Chat''
+        when 3 then ''systemTranslated_Email''
+        when 3 then ''systemTranslated_Twitter''
+    end as media
+,ra.cam_id AS cam_id
+,(CASE WHEN ra.tipo_llamada = 2 THEN cc.cam_descripcion ELSE ci.descripcion END) AS campaignAcd
+from answer an
+left join template t on t.idFormat = an.idFormat
+inner join RIA_GRABACION ra on ra.grab_id = an.grab_id
+inner join ccUsers cu ON cu.User_id = ra.age_id
+inner join ccUsers ccu on ccu.Login = an.userAdmin
+left join cccamps cc ON ra.cam_id = cc.cam_id
+left join ccinbound ci ON ra.cam_id = ci.Inbound_id
+WHERE an.createAt >= @from AND an.createAt <= @to
+),
+dataResume as(
+(select
+convert(date, f.fecha_calif) as [date]
+    ,f.age_id as userId
+    ,a.Login as [user]
+    ,(a.apellidopaterno+'' ''+a.apellidomaterno+'' ''+a.nombres) AS agentName
+    ,f.id_calificador as supervisorId
+    ,s.Login as supervisorUser
+    ,(s.apellidopaterno+'' ''+s.apellidomaterno+'' ''+s.nombres) AS Supervisor
+    ,f.id_formato as templateId
+    ,q.nombre as Template
+    ,c.id_concepto as sectionId
+    ,c.con_descripcion as Section
+    ,p.id_pregunta AS questionId
+    ,p.enunciado_pregunta AS Question
+    ,r.peso AS score
+    ,f.id_grabacion as mediaId
+    ,case f.tipo
+        when 1 then case f.tipo_llamada when 1 then ''systemTranslated_in_single'' else ''systemTranslated_out_single'' end
+        when 2 then ''systemTranslated_Chat''
+        when 3 then ''systemTranslated_Email''
+        when 3 then ''systemTranslated_Twitter''
+    end as media
+    ,f.cam_id as cam_id
+    ,(CASE WHEN f.tipo_llamada = 2 THEN e.cam_descripcion ELSE u.descripcion END) AS campaignAcd
+
+from RIA_RESULTADOSFORMA r
+    INNER JOIN dbo.RIA_FORMACALIF f ON f.id_forma = r.id_forma
+    INNER JOIN RIA_FORMATOS q ON q.id_formato = f.id_formato
+    INNER JOIN RIA_PREGUNTAS p ON r.id_pregunta = p.id_pregunta
+    INNER JOIN RIA_CONCEPTOS c ON p.id_concepto = c.id_concepto
+    INNER JOIN dbo.ccUserView a ON f.age_id = a.User_id
+    INNER JOIN dbo.ccUserView s ON f.id_calificador = s.User_id
+    left JOIN cccamps AS e ON f.cam_id = e.cam_id and  f.tipo_llamada=2
+    left JOIN ccinbound AS u ON f.cam_id = u.Inbound_id and  f.tipo_llamada=1
+    WHERE f.fecha_calif >= @from AND f.fecha_calif <= @to
+    )
+    UNION
+    (
+        select 
+        date
+        ,UserId
+        ,user
+        ,agentName AS agentName
+        ,supervisorId
+        ,supervisorUser
+        ,Supervisor
+        ,templateId
+        ,Template
+        ,sectionId
+        ,Section
+        ,questionId
+        ,question
+        ,score
+        ,mediaId
+        ,media
+        ,cam_id
+        ,campaignAcd
+        from total 
+    )
+)
+    INSERT INTO dbo.RepAVRSQuestion ([date],userId,[user],agentName,supervisorId,supervisorUser,Supervisor,templateId,Template,sectionId,Section, questionId, Question, avgDisposition,mediaId,media,cam_id,campaignAcd,Dispositions)
+    select [date],userId, [user],agentName,supervisorId,supervisorUser,Supervisor,templateId,Template,sectionId,Section, questionId, Question, avg(score) score, mediaId, media,cam_id,campaignAcd, avg(score) score
+    from dataResume
+    group by  [date], userId,[user],agentName,supervisorId,supervisorUser,Supervisor,templateId,Template,sectionId,Section, questionId, Question,
+    mediaId,media,cam_id,campaignAcd
+ 
+END'
+    exec (@sql)
+
+     SET @process = '#9519 ALTER PROCEDURE [dbo].[ccspRepAVRSQuestionDetail]'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepAVRSQuestionDetail]
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+AS
+set nocount on
+
+if @from is null
+    select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null
+    select @to = getdate()
+
+if @action = 1
+BEGIN       
+---Before insert delete first table dbo.RepAVRSQuestionDetail 
+DELETE FROM dbo.RepAVRSQuestionDetail with(rowlock)
+where date >= @from AND date < @to;
+
+WITH reportQaEvaluation (Fecha,agentId, LoginAgent, Agent,SupId,LoginSup,Supervisor,formatId,nameTemplate,score,Medio, tipoLlamada)
+AS
+(
+    (
+    select
+    f.fecha_calif Fecha,
+    a.User_id agentId,
+    a.Login as LoginAgent,  
+    (a.apellidopaterno+'' ''+a.apellidomaterno+'' ''+a.nombres) Agent, 
+    s.User_id as SupId,
+    s.Login as LoginSup,
+    (s.apellidopaterno+'' ''+s.apellidomaterno+'' ''+s.nombres) AS Supervisor,
+    t.id_formato formatId,
+    t.nombre as nameTemplate,
+    SUM (r.peso) as score,
+    f.tipo as medio,
+    ISNULL(f.tipo_llamada, 0) as tipoLlamada
+    from RIA_RESULTADOSFORMA r
+    INNER JOIN dbo.RIA_FORMACALIF f ON f.id_forma = r.id_forma
+    INNER JOIN dbo.ccUserView a ON f.age_id = a.User_id
+    INNER JOIN dbo.ccUserView s ON f.id_calificador = s.User_id
+    INNER JOIN (SELECT id_formato,nombre
+        FROM dbo.RIA_FORMATOS
+        WHERE activo = 1 and tipo=1
+        GROUP BY id_formato,nombre) as t ON t.id_formato = f.id_formato
+    WHERE f.fecha_calif >= @from AND f.fecha_calif < @to    
+    GROUP BY f.fecha_calif,a.User_id,
+    (a.apellidopaterno+'' ''+a.apellidomaterno+'' ''+a.nombres),a.Login,(s.apellidopaterno+'' ''+s.apellidomaterno+'' ''+s.nombres), s.Login, t.nombre,f.tipo,s.User_id,t.id_formato, f.tipo_llamada
+    )   
+    UNION
+    (
+    select 
+    RE.createAt [Fecha],
+    g.age_id [agentId],
+    a.Login [LoginAgent],
+    (a.apellidopaterno + '' '' + a.apellidomaterno + '' '' + a.nombres) AS Agent,
+    u.User_id [SupId],
+    RE.userAdmin [LoginSup],
+    RE.nameAdmin [Supervisor],
+    RE.idFormat [formatId],
+    f.nameFormat [nameTemplate],
+    RE.totalPoints [score],
+    g.tipo_grab_id [medio],
+    ISNULL(g.tipo_llamada, 0) as tipoLlamada
+    from dbo.RECORDERRIA_RECORDINGEVALUATION RE
+    inner join RIA_GRABACION g on RE.grab_id = g.grab_id
+    INNER JOIN RECORDERRIA_EVALUATIONFORMATS f on RE.idFormat = f.idFormat
+    INNER JOIN ccUserView a ON g.age_id = a.User_id and a.TipoUser_id = 1
+    INNER JOIN ccUserView u ON RE.userAdmin = u.Login and u.TipoUser_id > 1
+    where RE.createAt >= @from and RE.createAt < @to
+    )
+)
+
+
+insert into RepAVRSQuestionDetail
+select Fecha,agentId, LoginAgent, Agent, SupId,LoginSup,Supervisor,formatId,nameTemplate,score,
+(case Medio 
+when 1 then case tipoLlamada when 1 then ''systemTranslated_in_single'' else ''systemTranslated_out_single'' end   
+when 2 then ''systemTranslated_Chat''
+when 3 then ''systemTranslated_Email''
+when 3 then ''systemTranslated_Twitter''
+end) as Medio,  
+YEAR(Fecha) AS [year], 
+MONTH(Fecha) AS [month], 
+DAY(Fecha) AS [day],
+DATEPART(HOUR,Fecha) AS [hour], 
+DATEPART(MINUTE,Fecha) AS [minute]
+from reportQaEvaluation
+
+END 
+
+set nocount off'
+    exec (@sql)
+
+    SET @process = '#9519 ALTER PROCEDURE [dbo].[ccspRepAVRSRateDetail]'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepAVRSRateDetail]
+
+@action as tinyint,
+@from as datetime,
+@to as datetime
+AS
+SET ANSI_WARNINGS ON;
+
+if @from is null
+    select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null
+    select @to = getdate()
+
+if @action = 1
+BEGIN
+--Before insert delete first  table dbo.RepAVRRateDetail 
+DELETE FROM dbo.RepAVRSRateDetail with(rowlock)
+where date >= @from AND date < @to
+
+INSERT INTO dbo.RepAVRSRateDetail
+
+select
+    f.fecha_calif AS fecha,
+    a.User_id,
+    a.Login,
+    (a.apellidopaterno+'' ''+a.apellidomaterno+'' ''+a.nombres) AS agent, 
+    s.User_id,
+    s.Login,
+    (s.apellidopaterno+'' ''+s.apellidomaterno+'' ''+s.nombres) AS Supervisor,
+    f.id_grabacion,
+    case f.tipo 
+        when 1 then case f.tipo_llamada when 1 then ''systemTranslated_in_single'' else ''systemTranslated_out_single'' end
+        when 2 then ''systemTranslated_Chat''
+        when 3 then ''systemTranslated_Email''
+        when 3 then ''systemTranslated_Twitter''
+    end as Medio,   
+    t.id_formato,
+    t.nombre,
+    c.con_descripcion,
+    p.enunciado_pregunta,
+    r.etiquetas,
+    r.peso as avgDisposition,   
+    r.peso as avgDisposition,   
+    r.peso as avgDisposition,
+    f.cam_id as CamId,
+    f.tipo,
+    (CASE WHEN f.tipo_llamada = 2 THEN e.cam_descripcion ELSE u.descripcion END)
+        AS Cam,
+    r.id_forma,
+    YEAR(f.fecha_calif) AS [year], 
+    MONTH(f.fecha_calif) AS [month], 
+    DAY(f.fecha_calif) AS [day], 
+    DATEPART(hour, f.fecha_calif) AS [hour], 
+    DATEPART(minute, f.fecha_calif) AS [minute]     
+from RIA_RESULTADOSFORMA r
+INNER JOIN dbo.RIA_FORMACALIF f ON f.id_forma = r.id_forma
+INNER JOIN dbo.ccUserView a ON f.age_id = a.User_id
+INNER JOIN dbo.ccUserView s ON f.id_calificador = s.User_id
+INNER JOIN (SELECT id_formato,nombre,MAX(version)AS version
+                            FROM dbo.RIA_FORMATOS
+                            WHERE activo = 1 and tipo=1
+                            GROUP BY id_formato,nombre) as t ON t.id_formato= f.id_formato
+INNER JOIN RIA_PREGUNTAS p ON r.id_pregunta = p.id_pregunta
+INNER JOIN RIA_CONCEPTOS c ON p.id_concepto = c.id_concepto
+LEFT JOIN cccamps AS e ON f.cam_id = e.cam_id
+LEFT JOIN ccinbound AS u ON f.cam_id = u.Inbound_id
+WHERE f.fecha_calif >= @from AND f.fecha_calif < @to
+
+union
+
+select 
+    re.createAt as fecha,
+    a.User_id,
+    a.Login,
+    (a.apellidopaterno+'' ''+a.apellidomaterno+'' ''+a.nombres) AS agent, 
+    s.User_id,
+    s.Login,
+    (s.apellidopaterno+'' ''+s.apellidomaterno+'' ''+s.nombres) AS Supervisor,
+    rg.grab_id as id_grabacion,
+    case rg.tipo_grab_id        --Siempre es 1 -> trsp_AdmSaveScoresFormaCalif
+        when 1 then case rg.tipo_llamada when 1 then ''systemTranslated_in_single'' else ''systemTranslated_out_single'' end
+        when 2 then ''systemTranslated_Chat''
+        when 3 then ''systemTranslated_Email''
+        when 3 then ''systemTranslated_Twitter''
+    end as Medio,
+    re.idFormat AS templateId,
+    ref.nameFormat AS Template,
+    rfc.nameFormatConcept as Section,
+    rcq.title as question,
+    CASE 
+        WHEN raqv.answerType123 IS NOT NULL THEN raqv.answerType123.value(''(/rootNode/Answer/@title)[1]'', ''varchar(max)'')
+        WHEN raqv.answerType4 IS NOT NULL THEN CAST(raqv.answerType4 AS varchar(max))
+        WHEN raqv.answerType5 IS NOT NULL THEN raqv.answerType5
+    ELSE ''''
+    END AS etiquetas,
+    raqv.points AS Dispositions, 
+    raqv.points AS Dispositions2, 
+    raqv.points AS avgDisposition,
+    rg.cam_id AS cam_id,
+    rg.tipo_llamada AS tipoLlamada,
+    (CASE WHEN rg.tipo_llamada = 2 THEN cc.cam_descripcion ELSE ci.descripcion END) AS campaignAcd,
+    ref.idFormat AS formaId,
+    YEAR(re.createAt) AS [year], 
+    MONTH(re.createAt) AS [month], 
+    DAY(re.createAt) AS [day], 
+    DATEPART(hour, re.createAt) AS [hour], 
+    DATEPART(minute, re.createAt) AS [minute]
+from RECORDERRIA_RECORDINGEVALUATION re
+INNER JOIN RIA_GRABACION rg ON re.grab_id = rg.grab_id
+INNER JOIN ccUserView a ON rg.age_id = a.User_id
+INNER JOIN ccUserView s ON RE.userAdmin = s.Login
+LEFT JOIN cccamps cc ON rg.cam_id = cc.cam_id
+LEFT JOIN ccinbound ci ON rg.cam_id = ci.Inbound_id
+INNER JOIN RECORDERRIA_EVALUATIONFORMATS ref ON ref.idFormat = re.idFormat
+INNER JOIN RECORDERRIA_FORMATCONCEPTS rfc ON rfc.idFormat = re.idFormat
+INNER JOIN RECORDERRIA_ANSWERSOFQUESTIONSEVALUATION raqv ON raqv.idRecordingEvaluation = re.idRecordingEvaluation
+INNER JOIN RECORDERRIA_CONCEPTQUESTIONS rcq ON rcq.idQuestion = raqv.IdQuestion
+WHERE re.createAt >= @from AND re.createAt < @to
+end'
+    exec (@sql)
+
+    SET @process = '#9519 ALTER PROCEDURE [dbo].[ccspRepAVRSSection]'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepAVRSSection]
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+AS
+
+if @from is null
+    select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null
+    select @to = getdate()
+
+if(DATEPART(hour, @from) = 3 and DATEPART(minute, @from) = 0)
+    SELECT @from = convert(DATETIME, convert(VARCHAR(11), @from))
+
+if @action = 1
+BEGIN
+DELETE FROM dbo.RepAVRSSection with(rowlock)
+where date >= @from AND date <= @to
+
+declare @FormatoConcepto table(
+    id int not null,
+    idConcept int not null,
+    idFormat  int not null
+);
+
+insert into @FormatoConcepto
+    select ROW_NUMBER()  OVER(ORDER BY fc.idFormat asc), idConcept, idFormat from RECORDERRIA_FORMATCONCEPTS fc
+
+;with formato as(
+SELECT id_formato,nombre,MAX(version)AS version FROM dbo.RIA_FORMATOS WHERE activo = 1 and tipo=1 GROUP BY id_formato,nombre),
+        dataResume as(
+            (select convert(date, f.fecha_calif) as [date],
+                f.age_id as userId,
+                a.Login as [user],
+                (a.apellidopaterno+'' ''+a.apellidomaterno+'' ''+a.nombres) AS agentName,
+                f.id_calificador as supervisorId,
+                s.Login as supervisorUser,
+                (s.apellidopaterno+'' ''+s.apellidomaterno+'' ''+s.nombres) AS Supervisor,
+                f.id_formato as templateId
+                ,t.nombre as Template
+                ,c.id_concepto as sectionId
+                ,c.con_descripcion as Section
+                ,w.id as templateSectionId
+                ,(t.nombre + '' '' + c.con_descripcion)+'' ''+convert(varchar(10),w.id)  as templateSection
+                ,r.peso AS score
+                ,f.id_grabacion as idMedia
+                ,case f.tipo
+                    when 1 then case f.tipo_llamada when 1 then ''systemTranslated_in_single'' else ''systemTranslated_out_single'' end   
+                    when 2 then ''systemTranslated_Chat''
+                    when 3 then ''systemTranslated_Email''
+                    when 4 then ''systemTranslated_Twitter''
+                end as media,
+                f.cam_id as cam_id,
+                f.tipo_llamada as tipoLlamada,
+                (CASE WHEN f.tipo_llamada = 2 THEN e.cam_descripcion ELSE u.descripcion END) AS campaignAcd
+                ,f.id_forma
+                from RIA_RESULTADOSFORMA r
+            INNER JOIN RIA_FORMACALIF f ON f.id_forma = r.id_forma
+            INNER JOIN formato t ON t.id_formato= f.id_formato
+            INNER JOIN RIA_PREGUNTAS p ON r.id_pregunta = p.id_pregunta
+            INNER JOIN RIA_CONCEPTOS c ON p.id_concepto = c.id_concepto
+            inner join RIA_FORMATOCONCEPTO w ON w.sectionId = c.id_concepto and w.templateId = c.id_formato
+            INNER JOIN dbo.ccUserView a ON f.age_id = a.User_id
+            INNER JOIN dbo.ccUserView s ON f.id_calificador = s.User_id
+            left join cccamps AS e ON f.cam_id = e.cam_id and  f.tipo_llamada=2
+            left join ccinbound AS u ON f.cam_id = u.Inbound_id and  f.tipo_llamada=1
+            WHERE f.fecha_calif >= @from AND f.fecha_calif <= @to
+        )
+        UNION ALL
+
+            (select 
+                convert(date, re.createAt) as [date],
+                rg.age_id as userId,
+                cu.Login as [user],
+                (cu.apellidopaterno+'' ''+cu.apellidomaterno+'' ''+cu.nombres) as agentName,
+                cuu.User_id as supervisorId,
+                re.userAdmin as supervisorUser,
+                re.nameAdmin as Supervisor,
+                re.idFormat as templateId,
+                ref.nameFormat as Template,
+                rfc.idConcept as sectionId,
+                rfc.nameFormatConcept as section,
+                fcc.id as templateSection,
+                (ref.nameFormat + '' '' + rfc.nameFormatConcept)+'' ''+convert(varchar(10), rfc.idConcept) as templateSection, 
+                re.totalPoints as score,
+                re.grab_id as idMedia,
+                case rg.tipo_grab_id
+                    when 1 then case rg.tipo_llamada when 1 then ''systemTranslated_in_single'' else ''systemTranslated_out_single'' end   
+                    when 2 then ''systemTranslated_Chat''
+                    when 3 then ''systemTranslated_Email''
+                    when 3 then ''systemTranslated_Twitter''
+                end as media,
+                rg.cam_id as cam_id,
+                rg.tipo_llamada as tipoLlamada,
+                (CASE WHEN rg.tipo_llamada = 2 THEN cc.cam_descripcion ELSE ci.descripcion END) as campaignAcd,
+                re.idFormat as id_forma
+            from RECORDERRIA_RECORDINGEVALUATION re
+            INNER join RIA_GRABACION rg ON re.grab_id = rg.grab_id
+            INNER join ccUsers cu ON cu.User_id = rg.age_id
+            INNER join ccUsers cuu ON cuu.Login = re.userAdmin
+            INNER join RECORDERRIA_EVALUATIONFORMATS ref ON ref.idFormat = re.idFormat
+            INNER join RECORDERRIA_FORMATCONCEPTS rfc ON rfc.idFormat = re.idFormat
+            INNER join @FormatoConcepto fcc on fcc.idConcept = rfc.idConcept and fcc.idFormat = re.idFormat 
+            left join cccamps cc ON rg.cam_id = cc.cam_id
+            left join ccinbound ci ON rg.cam_id = ci.Inbound_id
+            WHERE re.createAt >= @from AND re.createAt <= @to
+            )
+        
+        )
+
+INSERT INTO dbo.RepAVRSSection([date],userId,[user],agentName,supervisorId,supervisorUser,Supervisor,templateId,Template,sectionId,Section,templateSectionId,templateSection,avgDisposition,idMedia,media,cam_id,tipoLlamada,campaignAcd,idForma,year,month,day,hour,minutes,Dispositions)
+        select [date],userId, [user],agentName,supervisorId,supervisorUser,Supervisor,templateId,Template,sectionId,Section,templateSectionId,templateSection
+        ,avg(score) score, idMedia,media,cam_id,tipoLlamada,campaignAcd,id_forma,
+        YEAR([date]) AS [year],
+        MONTH([date]) AS [month],
+        DAY([date]) AS [day],
+                0 AS [hour],
+                0 AS [minute]
+        ,avg(score) score
+        from dataResume
+        group by  [date], userId,[user],agentName,supervisorId,supervisorUser,Supervisor,templateId,Template,sectionId,Section,templateSectionId,templateSection,
+        idMedia,media,cam_id,tipoLlamada,campaignAcd,id_forma
+END'
+    exec (@sql)
+
+     SET @process = '#9519 ALTER PROCEDURE [dbo].[ccspRepAVRSSupervisor]'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepAVRSSupervisor]
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+AS
+
+if @from is null
+    select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null
+    select @to = getdate()  
+
+if(DATEPART(hour, @from) = 3 and DATEPART(minute, @from) = 0)
+    SELECT @from = convert(DATETIME, convert(VARCHAR(11), @from))
+
+if @action = 1
+BEGIN
+---Before insert delete first  table dbo.RepAVRSSupervisor 
+DELETE FROM dbo.RepAVRSSupervisor with(rowlock) 
+where date >= @from AND date < @to
+
+DECLARE @AVRSSupervisor TABLE( fecha            DATETIME NOT NULL
+                             , userID           INT NOT NULL
+                             , [user]           VARCHAR(50) NOT NULL  
+                             , agent            VARCHAR(50) NOT NULL
+                             , Dispositions     INT NOT NULL
+                             , Dispositions2    INT NOT NULL
+                             , avgDisposition   INT NOT NULL
+                             , supervisorId     INT NOT NULL
+                             , supervisorUser   VARCHAR(50) NOT NULL
+                             , supervisor       VARCHAR(50) NOT NULL
+                             , idFormato        INT NOT NULL
+                             , Template         VARCHAR(50) NOT NULL
+                             , idMedia          INT NOT NULL
+                             , media            VARCHAR(50) NOT NULL
+                             , cam_id           INT NOT NULL
+                             , tipoLlamada      INT NOT NULL
+                             , campaignAcd      VARCHAR(50) NOT NULL
+                             , [year]           INT NOT NULL
+                             , [month]          INT NOT NULL
+                             , [day]            INT NOT NULL
+                             , [hour]           INT NOT NULL
+                             , [minute]         INT NOT NULL
+);
+
+INSERT INTO @AVRSSupervisor
+
+    select
+        DATEADD(dd, 0, DATEDIFF(dd, 0, f.fecha_calif)) AS fecha,
+        a.User_id AS userID,
+        a.Login AS [user],
+        (a.apellidopaterno+'' ''+a.apellidomaterno+'' ''+a.nombres) AS agent, 
+        f.total_forma AS Dispositions, 
+        f.total_forma AS Dispositions2, 
+        f.total_forma AS avgDisposition,
+        s.User_id AS supervisorId,
+        s.Login AS supervisorUser,
+        (s.apellidopaterno+'' ''+s.apellidomaterno+'' ''+s.nombres) AS supervisor,
+        f.id_formato AS idFormato,
+        k.nombre AS Template,       
+        f.id_grabacion AS idMedia,
+        case f.tipo 
+            when 1 then case f.tipo_llamada when 1 then ''systemTranslated_in_single'' else ''systemTranslated_out_single'' end   
+            when 2 then ''systemTranslated_Chat''
+            when 3 then ''systemTranslated_Email''
+            when 3 then ''systemTranslated_Twitter''
+        end AS media,   
+        f.cam_id AS cam_id,
+        f.tipo_llamada AS tipoLlamada,  
+        (CASE WHEN f.tipo_llamada = 2 THEN e.cam_descripcion ELSE u.descripcion END)
+            AS campaignAcd,      
+        YEAR(f.fecha_calif) AS [year], 
+        MONTH(f.fecha_calif) AS [month], 
+        DAY(f.fecha_calif) AS [day], 
+        CAST(DATEPART(hour, f.fecha_calif) AS varchar(2)) AS [hour], 
+        CAST(DATEPART(minute, f.fecha_calif) as varchar(2)) AS [minute]
+    from dbo.RIA_FORMACALIF f
+    INNER JOIN dbo.ccUserView a ON f.age_id = a.User_id
+    INNER JOIN dbo.ccUserView s ON f.id_calificador = s.User_id
+    INNER JOIN (SELECT id_formato,nombre,MAX(version)AS version
+                                FROM dbo.RIA_FORMATOS
+                                WHERE activo = 1
+                                GROUP BY id_formato,nombre) AS t 
+                                ON t.id_formato= f.id_formato
+    INNER JOIN dbo.RIA_FORMATOS k ON k.id_formato=f.id_formato
+    left join cccamps e ON f.cam_id = e.cam_id
+    left join ccinbound u ON f.cam_id = u.Inbound_id
+    WHERE f.fecha_calif >= @from AND f.fecha_calif < @to
+UNION 
+    select 
+        DATEADD(dd, 0, DATEDIFF(dd, 0, re.createAt)) AS fecha,
+        rg.age_id AS userID,
+        cu.Login AS [user],
+        (cu.apellidopaterno+'' ''+cu.apellidomaterno+'' ''+cu.nombres) AS agent,
+        re.totalPoints AS Dispositions, 
+        re.totalPoints AS Dispositions2, 
+        re.totalPoints AS avgDisposition,
+        cuu.User_id AS supervisorId,
+        re.userAdmin AS supervisorUser,
+        re.nameAdmin AS supervisor,
+        re.idFormat AS idFormato,
+        ref.nameFormat AS Template,
+        re.grab_id AS idMedia,
+        case rg.tipo_grab_id
+            when 1 then case rg.tipo_llamada when 1 then ''systemTranslated_in_single'' else ''systemTranslated_out_single'' end   
+            when 2 then ''systemTranslated_Chat''
+            when 3 then ''systemTranslated_Email''
+            when 3 then ''systemTranslated_Twitter''
+        end as media,
+        rg.cam_id AS cam_id,
+        rg.tipo_llamada AS tipoLlamada,
+        (CASE WHEN rg.tipo_llamada = 2 THEN cc.cam_descripcion ELSE ci.descripcion END) AS campaignAcd,
+        YEAR(re.createAt) AS [year], 
+        MONTH(re.createAt) AS [month], 
+        DAY(re.createAt) AS [day], 
+        CAST(DATEPART(hour, re.createAt) as varchar(2)) AS [hour], 
+        CAST(DATEPART(minute, re.createAt) as varchar(2)) AS [minute]
+    from RECORDERRIA_RECORDINGEVALUATION re
+    left join RIA_GRABACION rg ON re.grab_id = rg.grab_id
+    INNER join ccUsers cu ON cu.User_id = rg.age_id
+    INNER join ccUsers cuu ON cuu.Login = re.userAdmin
+    INNER join RECORDERRIA_EVALUATIONFORMATS ref ON ref.idFormat = re.idFormat
+    left join cccamps cc ON rg.cam_id = cc.cam_id
+    left join ccinbound ci ON rg.cam_id = ci.Inbound_id
+    WHERE re.createAt >= @from AND re.createAt < @to
+
+    
+
+INSERT INTO dbo.RepAVRSSupervisor
+    select 
+        fecha, 
+        userID,     
+        [user],
+        agent,      
+        Dispositions,
+        Dispositions2,
+        avgDisposition,  
+        supervisorId,    
+        supervisorUser,  
+        supervisor, 
+        idFormato,  
+        Template,       
+        idMedia,        
+        media,      
+        cam_id,     
+        tipoLlamada,    
+        campaignAcd,    
+        [year],     
+        [month],        
+        [day],      
+        [hour],     
+        [minute]    
+    from @AVRSSupervisor
+
+END'
+    exec (@sql)
+
+    SET @process = '#9519 ALTER PROCEDURE [dbo].[ccspRepInboundKPI]'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepInboundKPI]
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+AS
+
+SET NOCOUNT ON
+
+if @from is null
+    select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null
+    select @to = getdate()
+
+if @action = 1
+begin
+    
+        DELETE FROM dbo.RepInboundKPI WITH (ROWLOCK)
+        WHERE [date] >= @from 
+          AND [date] <  @to;
+
+        CREATE TABLE #NumQuejas 
+        (
+            fecha date NOT NULL,
+            quejas int NOT NULL
+        );
+
+        CREATE TABLE #AvgSeconds 
+        (
+            fecha date NOT NULL,
+            TalkSeconds decimal(10,2) NULL,
+            WrapSeconds decimal(10,2) NULL
+        );
+
+        CREATE TABLE #AvgIdle
+        (
+            fecha date NOT NULL,
+            IdleSeconds decimal(10,2) NULL
+        );
+
+
+      INSERT INTO #NumQuejas
+        (
+            fecha,
+            quejas
+        )
+        SELECT 
+            x.fecha,
+            SUM(x.cuenta) AS quejas
+        FROM
+        (
+            SELECT 
+                CONVERT(date, [date]) AS fecha,
+                COUNT(1) AS cuenta
+            FROM dbo.RepInCallsDetail
+            WHERE [date] >= @from
+              AND [date] <  @to
+              AND callStatusId = 13
+              AND dispositionId IN 
+              (
+                  5,6,7,8,9,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,
+                  29,30,31,32,33,34,48,49
+              )
+            GROUP BY CONVERT(date, [date])
+
+            UNION ALL
+
+            SELECT 
+                CONVERT(date, cal_Inicio) AS fecha,
+                COUNT(1) AS cuenta
+            FROM dbo.ccoCallsOut
+            WHERE cal_Inicio >= @from
+              AND cal_Inicio <  @to
+              AND calif_id = 31
+            GROUP BY CONVERT(date, cal_Inicio)
+        ) x
+        GROUP BY x.fecha;
+
+    INSERT INTO #AvgSeconds
+    (
+        fecha,
+        TalkSeconds,
+        WrapSeconds
+    )
+    SELECT 
+        CONVERT(date, [date]) AS fecha,
+        CAST(SUM(tdialogin) AS float) / 3600 AS TalkSeconds,
+        CAST(SUM(tnotesin) AS float) / 3600 AS WrapSeconds
+    FROM dbo.RepAgentGI
+    WHERE [date] >= @from
+        AND [date] <  @to
+    GROUP BY CONVERT(date, [date]);
+
+    ;WITH calls AS
+    (
+        SELECT 
+            CONVERT(date, cal_inicio) AS fecha,
+            COUNT(DISTINCT User_id) AS cuenta
+        FROM dbo.ccoCallsOut
+        WHERE cal_inicio >= @from
+            AND cal_inicio <  @to
+        GROUP BY CONVERT(date, cal_inicio)
+    )
+    , RepAgentGIGroup as(
+        select convert(date,[date],121) as [date]
+        ,tnotav
+         from RepAgentGI 
+        where [date] >= @from
+        AND [date] <  @to
+    )
+    insert into #AvgIdle
+    select convert(date,a.date), 
+        case when b.cuenta > 0 
+            then CAST((cast(sum(tnotav) as float)/cast(b.cuenta as float))/3600 as decimal(10,2))
+            else 0
+        end IdleSeconds
+    from calls b
+    Inner join RepAgentGIGroup a on a.date = b.fecha
+    group by convert(date,a.date), cuenta
+    order by convert(date,a.date)
+
+    insert into RepInboundKPI
+    select convert(date,[date]) as date, 
+        sum(NCO) as NCO, 
+        sum(NCH) as NCH, 
+        sum(Abandoned) as Abandoned,
+        case when sum(SL2) > 0 
+            then CAST( ( (cast(sum(SL1) as float) / cast(sum(SL2) as float)) * 100 ) as decimal(10,2)) 
+            else 0 
+        end as SL,
+        sum(RPC) as RPC,
+        sum(PTP) as PTP,
+        SUM(PK) as PK,
+        case when quejas > 0 then quejas else 0 end Quejas,
+        ISNULL(IdleSeconds, 0) as AVGIdle,
+        ISNULL(TalkSeconds, 0) as AVGTalkSeconds,
+        ISNULL(WrapSeconds, 0) as AVGWrapSeconds,
+        datepart(yyyy,max(date)) as year,
+        datepart(mm,max(date)) as month,
+        datepart(dd,max(date)) as day,
+        datepart(hh,max(date)) as hours,
+        datepart(mi,max(date)) as minutes
+    from(
+        select date as date, 1 as NCO,
+            case when userid > 0 then 1 else 0 end NCH,
+            case when callStatusId in (6,7,8) then 1 else 0 end Abandoned,
+            case when callStatusId = 13 and queueTime < 21 then 1 else 0 end SL1,
+            case when [date] >= @from AND [date] <  @to then 1 else 0 end SL2,
+            case when callStatusId=13 and dispositionId in (5,6,7,8,9,22,23,24,25,26,29,30,31,32,33,34) then 1 else 0 end RPC, 
+            case when callStatusId=13 and dispositionId in (5,6,7,8,9) then 1 else 0 end PTP,
+            case when callStatusId=13 and dispositionId in (46,47,48,49) then 1 else 0 end PK
+        from RepInCallsDetail
+        where [date] >= @from
+        AND [date] <  @to
+    ) as final
+    left join #NumQuejas b on convert(date, date) = convert(date, fecha)
+    left join #AvgSeconds c on convert(date, date) = convert(date, c.fecha)
+    left join #AvgIdle d on convert(date, date) =convert(date, d.fecha)
+    where [date] >= @from
+    AND [date] <  @to
+    group by convert(date,final.date), quejas, WrapSeconds, TalkSeconds, IdleSeconds
+    order by convert(date,[date])
+
+    drop table #NumQuejas
+    drop table #AvgSeconds
+    drop table #AvgIdle
+end'
+    exec (@sql)
+
+     SET @process = '#9519 ALTER PROC [dbo].[ccspRepSpecialRecordingsDownload]'
+    SET @sql = 'ALTER PROC [dbo].[ccspRepSpecialRecordingsDownload]
+@action AS TINYINT, 
+@from AS DATETIME = NULL, 
+@to AS DATETIME = NULL
+AS
+IF @from IS NULL
+    SELECT @from = convert(DATETIME, convert(VARCHAR(11), getdate()))
+IF @to IS NULL
+    SELECT @to = getdate()
+IF @action = 1
+BEGIN
+  DELETE FROM RepSpecialRecordingsDownload  WHERE date >= @from AND date < @to
+
+
+;with grab as(
+    select  ccrd.date ,ccrd.adminId,
+        A.grab_id, ccrd.CampType as tipo_llamada, A.calif_id, A.califSub_id,A.cam_id
+    from ccRecordingsDownload ccrd
+    inner join RIA_GRABACION A with(nolock) on ccrd.grab_Id=A.grab_id
+    where ccrd.date between @from and @to   
+), 
+    califTotal as (
+    select grab_id
+    ,isnull(calif.Description,''N/A'') as calificacion
+    ,isnull(sub.califSubDesc,''N/A'') as subCalif
+    from grab
+    left join cctipocalifout calif on calif.calif_id = grab.calif_id
+    left join cctipocalifsubout sub on sub.califSub_id = grab.califSub_id
+    where grab.tipo_llamada=2
+    union
+    select grab_id
+    ,isnull(calif.Description,''N/A'') as calificacion
+    ,isnull(sub.califSubDesc,''N/A'') as subCalif
+    from grab
+    left join cctipocalif calif on calif.calif_id = grab.calif_id
+    left join cctipocalifsub sub on sub.califSub_id = grab.califSub_id
+    where grab.tipo_llamada=1
+),
+total as(
+    select
+    ccr.date,
+    ccr.grab_id,
+    c.cam_id,c.cam_descripcion,2 as CampType,
+    ccr.adminId
+    ,ccr.tipo_llamada
+    from cccamps c
+    inner join grab ccr on ccr.cam_id= c.cam_id
+    where ccr.tipo_llamada = 2 and ccr.date between @from and @to
+    union
+    select 
+    ccr.date,
+    ccr.grab_id,
+    Inbound_id,descripcion,1 as CampType
+    ,ccr.adminId
+    ,ccr.tipo_llamada
+    from 
+    ccinbound i
+    inner join grab ccr on ccr.cam_id = i.Inbound_id
+    where ccr.tipo_llamada = 1 and ccr.date between @from and @to
+)
+
+insert into RepSpecialRecordingsDownload
+select 
+t.date
+,t.adminId
+,case when CHARINDEX('' '',u.Nombres) > 0 then left(u.Nombres,CHARINDEX('' '',u.Nombres)-1)  + '' '' + u.ApellidoPaterno else  u.Nombres  + '' '' + u.ApellidoPaterno end admin_Name
+,t.grab_id
+,t.cam_id as generalId
+,case when t.tipo_llamada = 1 then t.cam_id else 0 end as inboundId
+,case when t.tipo_llamada = 1 then t.cam_descripcion else '''' end as inboundCampaign
+,case when t.tipo_llamada = 2 then t.cam_id else 0 end as campaingId
+,case when t.tipo_llamada = 2 then t.cam_descripcion else '''' end as outboundCampaign
+,ct.calificacion
+,ct.subCalif
+from total t
+inner join ccUsers u on u.User_id = t.adminId
+inner join califTotal ct on ct.grab_id=t.grab_id
+
+
+END'
+    exec (@sql)
+
+    SET @process = 'INSERT ccMenus 3230'
+    SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccMenus WHERE menu_id = 3230)
+    BEGIN
+        INSERT INTO ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release) VALUES (3230,''Cola virtual|Virtual queue'',3000,''B'',3,3,''Error'',''3f2db252ad1e8747e879159ed8498ccf30092c85618c7a5edde85033f5b8cfac'');
+    END'
+    exec (@sql)
+
+    SET @process = 'INSERT ccMenus 12000'
+    SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccMenus WHERE menu_id = 12000)
+    BEGIN
+        INSERT INTO ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release) VALUES (12000,''WhatsApp de entrada|Inbound WhatsApp'',12000,''A'',7,3,'''',''01fca49b34e37efff01faa6808ea7fb401278e754bbe713c58f023954497efc8537ce0372c9ec527e453b7d0af15f0ca'');
+    END'
+    exec (@sql)
+
+    SET @process = 'INSERT ccMenus 12010'
+    SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccMenus WHERE menu_id = 12010)
+    BEGIN
+        INSERT INTO ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release) VALUES (12010,''Detalle de conversaciones|Conversations Detail'',12000,''B'',7,3,'''',''accb20a46285ea9856ace61e5e3ffd452de1f55f20c7a005ce8e05a503060fb18beee994719b6abd36ad36efaffd0370'');
+    END'
+    exec (@sql)
+
+    SET @process = 'INSERT ccMenus 12015'
+    SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccMenus WHERE menu_id = 12015)
+    BEGIN
+        INSERT INTO ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release) VALUES (12015,''Detalle de desasignaciones|Deassignments details'',12000,''B'',7,3,'''',''e9befc66956d7d9fd76131b32eb489783a31ee84a8ad9fde96e1d89b26627cac8fc4fa52f426845fa98a3f91eb0ff8041e6f05eb13fe339c90f00002d2d06235'');
+    END'
+    exec (@sql)
+
+    SET @process = 'INSERT ccMenus 12017'
+    SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccMenus WHERE menu_id = 12017)
+    BEGIN
+        INSERT INTO ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release) VALUES (12017,''Detalle de conversaciones enviadas a SPAM|Detail of conversations sent to SPAM'',12000,''B'',7,3,'''',''accb20a46285ea9856ace61e5e3ffd4582792fe13e066f048a0c3f937dc1daf96bdd2edb9f23d5b4b486f46011c61eb08915ca96b688576ca7a25b2b03170981862172d92a203b6c9051ce2f5670037d'');
+    END'
+    exec (@sql)
+
+    SET @process = 'INSERT ccMenus 12020'
+    SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccMenus WHERE menu_id = 12020)
+    BEGIN
+        INSERT INTO ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release) VALUES (12020,''Conversaciones por campaña|Conversations by Campaign'',12000,''B'',7,3,'''',''2605c8244920fb599fb936a4bf94521a7284d5e414815e8ef15fa8f6b0040db16a54ce29b02250a22a8cb87c41c6f3b30e3860a31b59d733442bb174a555b7b2'');
+    END'
+    exec (@sql)
+
+
+    SET @process = 'CW-11359 ALTER PROCEDURE [dbo].[ccspRepInDIDResume]'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepInDIDResume]
+
+    @action tinyint,
+    @from datetime = NULL,
+    @to datetime = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+
+    IF @from IS NULL
+        SET @from = CONVERT(date, GETDATE());
+
+    IF @to IS NULL
+        SET @to = GETDATE();
+
+    DECLARE @tresDialog smallint;
+
+    EXEC @tresDialog = ccspConfigTresDialog;
+
+    IF @action = 1
+    BEGIN
+        DELETE FROM dbo.RepInDIDResume WITH (ROWLOCK)
+        WHERE [date] >= @from
+          AND [date] < @to;
+
+        ;WITH Calls AS
+        (
+            SELECT
+                DATEADD(HOUR, DATEDIFF(HOUR, 0, c.cal_inicio), 0) AS timegroup,
+                c.dni_id,
+                COUNT_BIG(*) AS total_answer
+            FROM dbo.ccCallsIn c
+            WHERE c.cal_inicio >= @from
+              AND c.cal_inicio < @to
+              AND c.dni_id > 0
+              AND c.statuscall_id = 13
+              AND c.cal_tdialog > @tresDialog
+            GROUP BY
+                DATEADD(HOUR, DATEDIFF(HOUR, 0, c.cal_inicio), 0),
+                c.dni_id
+        )
+        INSERT INTO dbo.RepInDIDResume
+        (
+            [date],
+            dnisId,
+            dnis,
+            dnis_count,
+            [count],
+            [year],
+            [month],
+            [day],
+            [hour],
+            [minutes]
+        )
+        SELECT
+            c.timegroup AS [date],
+            c.dni_id AS dnisId,
+            CASE 
+            WHEN ISNULL(d.dni_descripcion, '''') = ''''
+                THEN  d.dni_numero
+            WHEN UPPER(d.dni_descripcion) =''DNIS''
+                THEN d.dni_descripcion + ''_''
+            ELSE d.dni_descripcion
+        END AS dnis,
+
+        CASE 
+            WHEN ISNULL(d.dni_descripcion, '''') = ''''
+                THEN d.dni_numero + ''_Count''
+            WHEN UPPER(d.dni_descripcion)  =''DNIS''
+                THEN d.dni_descripcion + ''__Count''
+            ELSE d.dni_descripcion + ''_Count''
+        END AS dnis_count,
+            SUM(c.total_answer) AS [count],
+            DATEPART(YEAR, c.timegroup) AS [year],
+            DATEPART(MONTH, c.timegroup) AS [month],
+            DATEPART(DAY, c.timegroup) AS [day],
+            DATEPART(HOUR, c.timegroup) AS [hour],
+            DATEPART(MINUTE, c.timegroup) AS [minutes]
+        FROM Calls c
+        LEFT JOIN dbo.ccdnis d
+            ON c.dni_id = d.dni_id
+        GROUP BY
+            c.timegroup,
+            c.dni_id,
+            d.dni_descripcion,
+            d.dni_numero
+        HAVING SUM(c.total_answer) > 0;
+    END
+END;'
+    exec (@sql)
+
+    SET @process = 'Insert translations report 2140'
+	SET @sql = 'if not exists (select 1 from TranslatedReports where id = 2140)
+	BEGIN
+		insert into TranslatedReports values (2140,''EstadoAgente|Campaign|newCallKey'')
+	END'
+	EXEC(@sql)
+
+    SET @process = 'DROP ccspRepAgentHistory'
+    SET @sql = 'if exists (select * from sys.procedures where name = N''ccspRepAgentHistory'')
+    begin
+            DROP PROCEDURE ccspRepAgentHistory;
+    end'
+    exec (@sql)
+
+    SET @process = 'CREATE ccspRepAgentHistory 2140'
+    SET @sql = 'CREATE PROCEDURE [dbo].[ccspRepAgentHistory]
+	(
+		@action TINYINT,
+		@from   DATETIME = NULL,
+		@to     DATETIME = NULL
+	)
+	AS
+	BEGIN
+		SET NOCOUNT ON;
+
+		IF @from IS NULL
+			SET @from = CONVERT(date, GETDATE());
+
+		IF @to IS NULL
+			SET @to = GETDATE();
+
+		SET @from = CONVERT(date, @from);
+
+		IF @action = 1
+		BEGIN
+
+			DELETE FROM RepAgentHistory WHERE [date] >= @from AND [date] < @to;
+
+			;WITH eventos AS
+			(
+				SELECT
+					cl.User_id,
+					cu.Login,
+					cu.IDArea,
+					cl.Fecha AS FechaEvento,
+					cl.TipoMov,
+					LAG(cl.Fecha) OVER
+					(
+						PARTITION BY cl.User_id
+						ORDER BY cl.Fecha
+					) AS FechaAnterior,
+					
+					LAG(cl.TipoMov) OVER
+					(
+						PARTITION BY cl.User_id
+						ORDER BY cl.Fecha
+					) AS TipoMovAnterior
+					
+				FROM ccLogLogin cl
+				INNER JOIN ccUsers cu
+					ON cl.User_id = cu.User_id
+				WHERE cl.Fecha >= DATEADD(DAY, -1, @from)
+				  AND cl.Fecha < @to
+				  AND cu.TipoUser_id = 1
+			)
+			INSERT INTO RepAgentHistory
+			(
+				AgentName,
+				[date],
+				EstadoAgente,
+				TiempoEstado,
+				Campaign,
+				CallKey,
+				userId,
+				AreaId
+			)
+			SELECT
+				Login,
+				FechaAnterior,
+				''systemTranslated_offline'',--''Disconnect'',
+				CONVERT
+				( CHAR(8),DATEADD ( SECOND, DATEDIFF(SECOND, FechaAnterior, FechaEvento), 0 ),108),
+				''systemTranslated_value_empty'',
+				''systemTranslated_value_empty'',
+				User_id,
+				IDArea
+			FROM eventos
+			WHERE TipoMov = 1
+			  AND TipoMovAnterior = 0
+			  AND FechaAnterior IS NOT NULL
+			  AND FechaEvento >= @from
+			  AND FechaEvento < @to;
+
+			;WITH statusLabels (Id, Description) AS
+				(
+					SELECT * FROM
+					(
+						VALUES
+							(0, ''systemTranslated_offline''),
+							(1, ''systemTranslated_validating''),
+							(2, ''systemTranslated_unavailable''),
+							(3, ''systemTranslated_ready''),
+							(4, ''systemTranslated_engaged''),
+							(5, ''systemTranslated_call_transfer''),
+							(6, ''systemTranslated_wrap_up''),
+							(21,''systemTranslated_dialing''),
+							(24,''systemTranslated_engaged_chat''),
+							(30,''systemTranslated_reconnecting''),
+							(31,''systemTranslated_ready_preview''),
+							(32,''systemTranslated_preview''),
+							(33,''systemTranslated_assisted_call''),
+							(34,''systemTranslated_engaged_whats''),
+							(35,''systemTranslated_idle_preview''),
+							(36,''systemTranslated_engaged_email''),
+							(37,''systemTranslated_custom_ready''),
+							(39,''systemTranslated_inbox_transfer'')
+							--(pending, ''engaged-preview'')
+					) AS DatosFijos(Id, Description)
+				)
+
+			INSERT INTO RepAgentHistory
+			(
+				AgentName,
+				[date],
+				EstadoAgente,
+				TiempoEstado,
+				Campaign,
+				CallKey,
+				userId,
+				AreaId
+			)
+			SELECT
+				u.Login,
+				lad.fecha,
+				tsa.Description,
+				CONVERT ( CHAR(8), DATEADD(SECOND, CAST(lad.tStatus AS INT), 0), 108),
+				ISNULL ( NULLIF(LTRIM(cin.descripcion), ''''), ISNULL(LTRIM(c.cam_descripcion), ''N/A'') ),
+				ISNULL( NULLIF(LTRIM(co.cal_key), ''''), ISNULL(LTRIM(ci.cal_key), ''N/A'')),
+				lad.User_id,
+				u.IdArea
+
+			FROM ccLogAgentesDia lad
+			INNER JOIN ccUsers u ON lad.User_id = u.User_id
+			INNER JOIN statusLabels tsa ON lad.TipoStatusAge_id = tsa.Id
+			LEFT JOIN ccCamps c ON lad.IdCampEsp = c.cam_id
+			LEFT JOIN ccInbound cin ON lad.IdCampEsp = cin.Inbound_id
+			LEFT JOIN ccoCallsOut co ON lad.callID = co.cal_id
+			LEFT JOIN ccCallsIn ci ON lad.callID = ci.cal_id
+			WHERE lad.fecha >= @from
+			  AND lad.fecha < @to
+			  AND lad.TipoStatusAge_id IN (0,1, 2, 3, 4, 5, 6, 21,24,30,31,32,33,34,35,36,37,39)
+	END
+	END'
+    exec (@sql)
+	
+	SET @process = 'Delete view RepViewAgentHistory'
+	SET @sql = '
+	IF EXISTS (SELECT * FROM sys.views WHERE name = N''RepViewAgentHistory'')
+	BEGIN
+		DROP VIEW RepViewAgentHistory;
+	END'
+	EXEC(@sql)
+
+    SET @process = ''
+    SET @sql = 'CREATE VIEW RepViewAgentHistory AS
+		SELECT 
+			AgentName, 
+			[date] as newDate, 
+			EstadoAgente, 
+			TiempoEstado, 
+			Campaign, 
+			CallKey as newCallKey, 
+			userId, 
+			AreaId
+		FROM 
+			RepAgentHistory;'
+    exec (@sql)
+
+    SET @process = ''
+    SET @sql = ''
+    exec (@sql)
+
+    SET @process = ''
     SET @sql = ''
     exec (@sql)
 
@@ -7704,10 +9151,6 @@ IF OBJECT_ID(''dbo.ccspRepTwitterGeneral'', ''P'') IS NOT NULL
     SET @sql = ''
     exec (@sql)
 
-     SET @process = ''
-    SET @sql = ''
-    exec (@sql)
-
     SET @process = ''
     SET @sql = ''
     exec (@sql)
@@ -7724,9 +9167,7 @@ IF OBJECT_ID(''dbo.ccspRepTwitterGeneral'', ''P'') IS NOT NULL
     SET @sql = ''
     exec (@sql)
 
-    SET @process = ''
-    SET @sql = ''
-    exec (@sql)
+
   
     	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version
 

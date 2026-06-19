@@ -15,8 +15,8 @@ set PrDatabaseName=%1
 set DestDatabaseName=%1
 
 REM Define los detalles de conexión, con el parámetro TrustServerCertificate en la cadena de conexión
-set OriConnectionString="Data Source=192.168.1.59,1436;Initial Catalog=%DestDatabaseName%;User Id=sa;Password=Nuxiba2024_;Encrypt=False;TrustServerCertificate=True"
-set PrConnectionString="Data Source=192.168.1.59,1437;Initial Catalog=%PrDatabaseName%;User Id=sa;Password=Nuxiba2024_;Encrypt=False;TrustServerCertificate=True"
+set OriConnectionString="Data Source=127.0.0.1,1436;Initial Catalog=%DestDatabaseName%;User Id=sa;Password=Nuxiba2024_;Encrypt=False;TrustServerCertificate=True"
+set PrConnectionString="Data Source=127.0.0.1,1437;Initial Catalog=%PrDatabaseName%;User Id=sa;Password=Nuxiba2024_;Encrypt=False;TrustServerCertificate=True"
 
 REM Define los archivos DACPAC donde se guardarán los esquemas extraídos
 set PrDacpac=%PrDatabaseName%_Pr.dacpac

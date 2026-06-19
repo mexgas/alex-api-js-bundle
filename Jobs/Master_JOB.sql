@@ -9,7 +9,7 @@ BEGIN TRAN
 
 BEGIN TRY
 
-        set @process = 'BEFORE CREATING DatabaseCentinella JOB'
+    set @process = 'BEFORE CREATING DatabaseCentinella JOB'
     set @sql = 'USE [master];
 
 IF OBJECT_ID(''dbo.userDatabases'', ''U'') IS NOT NULL

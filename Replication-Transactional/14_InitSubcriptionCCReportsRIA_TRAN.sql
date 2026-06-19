@@ -129,8 +129,6 @@ order by description,publisher_db'
 
 	set @Sql = 'exec msdb..sp_update_job @job_name = ''ReportsMasterProcess'', @enabled = 0 --Enable
 exec msdb..sp_update_job @job_name = ''ReportMasterProcessGenerateLow'', @enabled = 0 --Enable
-exec msdb..sp_update_job @job_name = ''ReportsMasterProcessPublicationHighLoad'', @enabled = 0 --Enable
-exec msdb..sp_update_job @job_name = ''ReportsMasterProcessPublicationLowLoad'', @enabled = 0 --Enable
 exec msdb..sp_update_job @job_name = ''ReportsMasterProcessYesterday'', @enabled = 0 --Enable
 '
 	EXEC(@Sql)
@@ -477,8 +475,6 @@ exec sp_ExecPendingSubscriptions_CCReportsRIA
 
 if not exists(select * from migration where status in(0,1)) BEGIN
 	exec msdb..sp_update_job @job_name = ''''ReportsMasterProcess'''', @enabled = 1 --Enable
-	--exec msdb..sp_update_job @job_name = ''''ReportsMasterProcessPublicationHighLoad'''', @enabled = 1 --Enable
-	--exec msdb..sp_update_job @job_name = ''''ReportsMasterProcessPublicationLowLoad'''', @enabled = 1 --Enable
 	exec msdb..sp_update_job @job_name = ''''ReportsMasterProcessYesterday'''', @enabled = 0 --Disable
 	exec msdb..sp_update_job @job_name = ''''ReportMasterProcessGenerateLow'''', @enabled = 1 --Enable
 	exec msdb..sp_update_job @job_name = ''''CW_Tran_Replication_CCReportsRIA'''', @enabled = 0 --Disable

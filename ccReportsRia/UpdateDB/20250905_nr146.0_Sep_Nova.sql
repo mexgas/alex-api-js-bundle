@@ -112,152 +112,69 @@ END'
 EXEC(@sql)
 
 --------------------------------  BEING Octavio -------------------------------- 
-    -- RepAgentSummary
-    SET @process = 'AlterTable RepAgentSummary';
-    SET @sql = '
-    IF COL_LENGTH(''RepAgentSummary'', ''areaId'') IS NULL
+SET @process = 'AlterTable RepAgentSummary';
+SET @sql = N'
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.columns
+    WHERE name = N''areaId''
+      AND object_id = OBJECT_ID(N''dbo.RepAgentSummary'')
+)
+BEGIN
+    ALTER TABLE dbo.RepAgentSummary ADD areaId INT NOT NULL CONSTRAINT DF_RepAgentSummary_areaId DEFAULT(0);
+END;
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.columns
+    WHERE name = N''area''
+      AND object_id = OBJECT_ID(N''dbo.RepAgentSummary'')
+)
+BEGIN
+    ALTER TABLE dbo.RepAgentSummary ADD area VARCHAR(100) NULL;
+END;
+';
+EXEC (@sql);
+
+SET @process = 'Update: Migracion de Area en RepAgentSummary (Por lotes)';
+SET @sql = N'
+    SET NOCOUNT ON;
+    DECLARE @BatchSize INT = 10000;
+
+    WHILE 1 = 1
     BEGIN
-        ALTER TABLE RepAgentSummary 
-            ADD areaId INT NOT NULL DEFAULT(0);
+        UPDATE TOP (@BatchSize) R
+        SET 
+            R.areaId = A.IDArea, 
+            R.area = A.AreaName
+        FROM RepAgentSummary R
+        INNER JOIN ccUserView u ON R.userId = u.User_id
+        INNER JOIN ccriacat_areas A ON u.IDArea = A.IDArea
+        WHERE R.areaId = 0;
+
+        IF @@ROWCOUNT = 0
+            BREAK;
     END
+';
+EXEC (@sql);
 
-    IF COL_LENGTH(''RepAgentSummary'', ''area'') IS NULL
-    BEGIN
-        ALTER TABLE RepAgentSummary 
-            ADD area VARCHAR(100) NULL;
-    END
-    ';
-    EXEC(@sql);
+SET @process = 'AlterTable RepOutCallsDetail';
+SET @sql = N'
+IF COL_LENGTH(N''dbo.RepOutCallsDetail'', N''areaId'') IS NULL
+BEGIN
+    ALTER TABLE dbo.RepOutCallsDetail
+      ADD areaId INT NOT NULL
+      CONSTRAINT DF_RepOutCallsDetail_areaId DEFAULT (0);
+END;
 
-    -- RepOutCallsDetail
-    SET @process = 'AlterTable RepOutCallsDetail';
-    SET @sql = '
-    IF COL_LENGTH(''RepOutCallsDetail'', ''areaId'') IS NULL
-    BEGIN
-        ALTER TABLE RepOutCallsDetail 
-            ADD areaId INT NOT NULL DEFAULT(0);
-    END
+IF COL_LENGTH(N''dbo.RepOutCallsDetail'', N''area'') IS NULL
+BEGIN
+    ALTER TABLE dbo.RepOutCallsDetail
+      ADD area VARCHAR(100) NULL;
+END;
+';
 
-    IF COL_LENGTH(''RepOutCallsDetail'', ''area'') IS NULL
-    BEGIN
-        ALTER TABLE RepOutCallsDetail 
-            ADD area VARCHAR(100) NULL;
-    END
-    ';
-    EXEC(@sql);
-
-	-- RepInCallsDetail
-    SET @process = 'AlterTable RepInCallsDetail';
-    SET @sql = '
-    IF COL_LENGTH(''RepInCallsDetail'', ''areaId'') IS NULL
-    BEGIN
-        ALTER TABLE RepInCallsDetail 
-            ADD areaId INT NOT NULL DEFAULT(0);
-    END
-
-    IF COL_LENGTH(''RepInCallsDetail'', ''area'') IS NULL
-    BEGIN
-        ALTER TABLE RepInCallsDetail 
-            ADD area VARCHAR(100) NULL;
-    END
-    ';
-    EXEC(@sql);
-
-    -- RepOutDialDetail
-    SET @process = 'AlterTable RepOutDialDetail';
-    SET @sql = '
-    IF COL_LENGTH(''RepOutDialDetail'', ''areaId'') IS NULL
-    BEGIN
-        ALTER TABLE RepOutDialDetail 
-            ADD areaId INT NOT NULL DEFAULT(0);
-    END
-
-    IF COL_LENGTH(''RepOutDialDetail'', ''area'') IS NULL
-    BEGIN
-        ALTER TABLE RepOutDialDetail 
-            ADD area VARCHAR(100) NULL;
-    END
-    ';
-    EXEC(@sql);
-
-    -- RepSpecialAbndCamp
-    SET @process = 'AlterTable RepSpecialAbndCamp';
-    SET @sql = '
-    IF COL_LENGTH(''RepSpecialAbndCamp'', ''areaId'') IS NULL
-    BEGIN
-        ALTER TABLE RepSpecialAbndCamp 
-            ADD areaId INT NOT NULL DEFAULT(0);
-    END
-
-    IF COL_LENGTH(''RepSpecialAbndCamp'', ''area'') IS NULL
-    BEGIN
-        ALTER TABLE RepSpecialAbndCamp 
-            ADD area VARCHAR(100) NULL;
-    END
-    ';
-    EXEC(@sql);
-
-	
-
-    SET @process = 'Create Column source';
-    SET @sql = '
-    -- source
-    IF NOT EXISTS (
-        SELECT 1
-        FROM sys.columns 
-        WHERE Name = ''source''
-          AND Object_ID = Object_ID(''dbo.RepInCallsDetail'')
-    )
-    BEGIN
-        ALTER TABLE dbo.RepInCallsDetail 
-            ADD source VARCHAR(20);
-    END';
-    EXEC(@sql);
-
-    SET @process = 'Create Column destinationNumber';
-    SET @sql = '
-    -- destinationNumber
-    IF NOT EXISTS (
-        SELECT 1
-        FROM sys.columns 
-        WHERE Name = ''destinationNumber''
-          AND Object_ID = Object_ID(''dbo.RepInCallsDetail'')
-    )
-    BEGIN
-        ALTER TABLE dbo.RepInCallsDetail 
-            ADD destinationNumber VARCHAR(20);
-    END';
-    EXEC(@sql);
-
-    SET @process = 'Create Column queueTime';
-    SET @sql = '
-    -- cal_tWait
-    IF NOT EXISTS (
-        SELECT 1
-        FROM sys.columns 
-        WHERE Name = ''cal_tWait''
-          AND Object_ID = Object_ID(''dbo.RepInCallsDetail'')
-    )
-    BEGIN
-        ALTER TABLE dbo.RepInCallsDetail 
-            ADD cal_tWait INT;
-    END';
-    EXEC(@sql);
-
-    SET @process = 'Create Column callbackDate';
-    SET @sql = '
-    -- callbackDate
-    IF NOT EXISTS (
-        SELECT 1
-        FROM sys.columns 
-        WHERE Name = ''callbackDate''
-          AND Object_ID = Object_ID(''dbo.RepInCallsDetail'')
-    )
-    BEGIN
-        ALTER TABLE dbo.RepInCallsDetail 
-            ADD callbackDate DATETIME;
-    END';
-    EXEC(@sql);
+EXEC(@sql);
 
 SET @process = 'Update: Migracion de Area en RepOutCallsDetail (Por lotes)';
 SET @sql = N'
@@ -283,44 +200,41 @@ EXEC (@sql);
 --------------------------------  BEING GASJ --------------------------------
 
     set @process = 'ALTER PROCEDURE [dbo].[ccspRepAgentSummary]'
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepAgentSummary] 
-		@action AS TINYINT, 
-		@from AS DATETIME = NULL, 
-		@to AS DATETIME = NULL
-		AS
+    set @sql='ALTER PROCEDURE [dbo].[ccspRepAgentSummary] @action AS TINYINT, @from AS DATETIME = NULL, @to AS DATETIME = NULL
+AS
 
-		IF @from IS NULL
-			SELECT @from = CONVERT(DATETIME, CONVERT(VARCHAR(11), GETDATE()))
+IF @from IS NULL
+    SELECT @from = CONVERT(DATETIME, CONVERT(VARCHAR(11), GETDATE()))
 
-		IF @to IS NULL
-			SELECT @to = GETDATE()
+IF @to IS NULL
+    SELECT @to = GETDATE()
 
-		if(@to = convert(datetime,convert(varchar(11),getdate(),121)+''03:00:00'',121)) AND @from = DATEADD(dd,-1,@to)
-		BEGIN   
-			select @from = convert(datetime,convert(varchar(11),@from))
-		END
+if(@to = convert(datetime,convert(varchar(11),getdate(),121)+''03:00:00'',121)) AND @from = DATEADD(dd,-1,@to)
+BEGIN   
+    select @from = convert(datetime,convert(varchar(11),@from))
+END
 
-		IF @action = 1
-		BEGIN
+IF @action = 1
+BEGIN
 
-			IF OBJECT_ID(''tempdb..#AuxiliarReadyDetail'') IS NOT NULL
-			DROP TABLE #AuxiliarReadyDetail
+    IF OBJECT_ID(''tempdb..#AuxiliarReadyDetail'') IS NOT NULL
+    DROP TABLE #AuxiliarReadyDetail
 
-			CREATE TABLE #AuxiliarReadyDetail
-			(
-				timegroup DATE,
-				userId INT,
-				[user] VARCHAR(50),
-				[sessionTime] INT,
-				TipoReadyAuxiliarId INT,
-				descripcion VARCHAR(50),
-				descripcion_time VARCHAR(50),
-				[time] DECIMAL(18, 3),
-				timeSeconds DECIMAL(18, 3)
-			)
+    CREATE TABLE #AuxiliarReadyDetail
+    (
+        timegroup DATE,
+        userId INT,
+        [user] VARCHAR(50),
+        [sessionTime] INT,
+        TipoReadyAuxiliarId INT,
+        descripcion VARCHAR(50),
+        descripcion_time VARCHAR(50),
+        [time] DECIMAL(18, 3),
+        timeSeconds DECIMAL(18, 3)
+    )
 
-			INSERT INTO #AuxiliarReadyDetail
-			EXEC ccspGetAuxiliarReadyDetail @from = @from, @to = @to
+    INSERT INTO #AuxiliarReadyDetail
+    EXEC ccspGetAuxiliarReadyDetail @from = @from, @to = @to
         
     DELETE RepAgentSummary WHERE loginMktTime BETWEEN @from AND @to;
     DELETE RepAgentSummary_VersionAmatech WHERE loginMktTime BETWEEN @from  AND @to;
@@ -417,54 +331,54 @@ EXEC (@sql);
     )
     --select * from AgentSession
     
-			INSERT INTO RepAgentSummary (date,login,[user],sessionTime,loginMktTime,logoutMktTime,callTengaged,ndTime,NCallsOut,NCallsIn,NCallsCorta,NAtend,NNoCalif
-			,Available,avgCallTengaged,twrapup,userId,TypeNotReady,descripcion,descripcion_time,time,transferStatus,ringingTime,unknownStatus,otherStatus,failureStatus
-			,chatTengaged,undefinedTime,dialingStatus,TipoReadyAuxiliarId,auxiliarRedy_descripcion,descripcion_auxiliarRedyTime_time,auxiliarRedyTime,areaId, area)
-			SELECT A.[date], A.[login], A.[user], A.sessionTime, A.dateLogin AS loginMktTime
-			, A.logout AS logoutMktTime
-			, isnull(co.tDialogOut, 0) + isnull(ci.tDialogIn, 0) callTengaged
-			, ISNULL(r.notready, 0) AS ndTime, isnull(co.AttendedCallOut, 0) AS NCallsOut, isnull(ci.AttendedCallIn, 0) AS NCallsIn
-			, ISNULL(co.abnd_xfer, 0) + isnull(co.abnd_ring, 0) + isnull(co.abnd_ring, 0) + isnull(ci.abnd_xfer, 0) + isnull(ci.abnd_ring, 0) + isnull(ci.abnd_ring, 0) AS NCallsCorta
-			, ISNULL(co.NotAttendedCallOut, 0) + ISNULL(ci.NotAttendedCallIn, 0) AS NAtend
-			, ISNULL(ci.NoCalifIn, 0) + ISNULL(co.NoCalifOut, 0) AS NNoCalif    
-			, ISNULL(AgtGI.tav, 0) AS Available
-				,ISNULL(    
-				(   ISNULL(co.tDialogOut, 0) + ISNULL(co.tNotesOut, 0) + ISNULL(ci.tDialogIn, 0) + ISNULL(ci.tNotesIn, 0) )
-					/
-				 nullif(isnull(co.AttendedCallOut,0) + isnull(ci.AttendedCallIn,0),0)
-				, 0) AS avgCallTengaged
+    INSERT INTO RepAgentSummary (date,login,[user],sessionTime,loginMktTime,logoutMktTime,callTengaged,ndTime,NCallsOut,NCallsIn,NCallsCorta,NAtend,NNoCalif
+    ,Available,avgCallTengaged,twrapup,userId,TypeNotReady,descripcion,descripcion_time,time,transferStatus,ringingTime,unknownStatus,otherStatus,failureStatus
+    ,chatTengaged,undefinedTime,dialingStatus,TipoReadyAuxiliarId,auxiliarRedy_descripcion,descripcion_auxiliarRedyTime_time,auxiliarRedyTime,areaId, area)
+    SELECT A.[date], A.[login], A.[user], A.sessionTime, A.dateLogin AS loginMktTime
+    , A.logout AS logoutMktTime
+    , isnull(co.tDialogOut, 0) + isnull(ci.tDialogIn, 0) callTengaged
+    , ISNULL(r.notready, 0) AS ndTime, isnull(co.AttendedCallOut, 0) AS NCallsOut, isnull(ci.AttendedCallIn, 0) AS NCallsIn
+    , ISNULL(co.abnd_xfer, 0) + isnull(co.abnd_ring, 0) + isnull(co.abnd_ring, 0) + isnull(ci.abnd_xfer, 0) + isnull(ci.abnd_ring, 0) + isnull(ci.abnd_ring, 0) AS NCallsCorta
+    , ISNULL(co.NotAttendedCallOut, 0) + ISNULL(ci.NotAttendedCallIn, 0) AS NAtend
+    , ISNULL(ci.NoCalifIn, 0) + ISNULL(co.NoCalifOut, 0) AS NNoCalif    
+    , ISNULL(AgtGI.tav, 0) AS Available
+        ,ISNULL(    
+        (   ISNULL(co.tDialogOut, 0) + ISNULL(co.tNotesOut, 0) + ISNULL(ci.tDialogIn, 0) + ISNULL(ci.tNotesIn, 0) )
+            /
+         nullif(isnull(co.AttendedCallOut,0) + isnull(ci.AttendedCallIn,0),0)
+        , 0) AS avgCallTengaged
         
-				,ISNULL(co.tNotesOut, 0) + ISNULL(ci.tNotesIn, 0) AS twrapup, A.userId AS userId
-				,ISNULL(notReady.TipoNotReadyId, 0) AS TipoNotReadyId
-				,ISNULL(notReady.descripcion, 0) AS descripcion
-			   ,ISNULL(notReady.descripcion_time, 0) AS descripcion_time
-			   ,ISNULL(notReady.timeSeconds, 0) AS timeSeconds
-				, ISNULL(co.txferOut, 0) + ISNULL(ci.txferIn, 0) AS transferStatus
-				, ISNULL(co.tringOut, 0) + ISNULL(ci.tringIn, 0) AS ringingTime
-				, ISNULL(AgtGI.tunknown, 0) unknownStatus
-				, ISNULL(AgtGI.tother, 0) otherStatus
-				, ISNULL(AgtGI.tprob, 0) failureStatus
-				, ISNULL(AgtGI.tChatting, 0) chatTengaged
-				, ISNULL(AgtGI.tundefined, 0) undefinedTime
-				, ISNULL(AgtGI.tManual, 0) dialingStatus
-				, isnull(auxiliarReady.TipoReadyAuxiliarId,0) as TipoReadyAuxiliarId
-				, isnull(auxiliarReady.descripcion,'''') as auxiliarRedy_descripcion
-				, isnull(auxiliarReady.descripcion_time,''_Time2'') as descripcion_auxiliarRedyTime_time
-				, convert(int,isnull(auxiliarReady.timeSeconds,0)) as auxiliarRedyTime
-				, ISNULL(ar.IDArea, 1) AS areaId   
-				, ISNULL(ar.AreaName,''Default'') AS area 
-			FROM AgentSession A
-			LEFT JOIN tmpCallout co ON A.DATE = co.DATE AND A.userId = co.userId
-			LEFT JOIN tmpCallIn ci  ON A.DATE = ci.DATE AND A.userId = ci.userId
-			LEFT JOIN RepDetail r   ON r.daygroup = A.DATE AND A.userId = r.userId
-			LEFT JOIN notReadyDay notReady on notReady.userId=A.userId and notReady.daygroup=A.date
-			LEFT join #AuxiliarReadyDetail auxiliarReady on auxiliarReady.userId=A.userId and auxiliarReady.timegroup=A.date
-			left join RepAgentGIGroup AgtGI on AgtGI.date=A.date and AgtGI.userId=A.userId
-			LEFT JOIN ccUsers us WITH (NOLOCK) ON us.User_id = A.userId      
-			LEFT JOIN ccRIACat_Areas ar WITH (NOLOCK) ON ar.IDArea = us.IDArea   
-			order by A.[date],A.userId
+        ,ISNULL(co.tNotesOut, 0) + ISNULL(ci.tNotesIn, 0) AS twrapup, A.userId AS userId
+        ,ISNULL(notReady.TipoNotReadyId, 0) AS TipoNotReadyId
+        ,ISNULL(notReady.descripcion, 0) AS descripcion
+       ,ISNULL(notReady.descripcion_time, 0) AS descripcion_time
+       ,ISNULL(notReady.timeSeconds, 0) AS timeSeconds
+        , ISNULL(co.txferOut, 0) + ISNULL(ci.txferIn, 0) AS transferStatus
+        , ISNULL(co.tringOut, 0) + ISNULL(ci.tringIn, 0) AS ringingTime
+        , ISNULL(AgtGI.tunknown, 0) unknownStatus
+        , ISNULL(AgtGI.tother, 0) otherStatus
+        , ISNULL(AgtGI.tprob, 0) failureStatus
+        , ISNULL(AgtGI.tChatting, 0) chatTengaged
+        , ISNULL(AgtGI.tundefined, 0) undefinedTime
+        , ISNULL(AgtGI.tManual, 0) dialingStatus
+        , isnull(auxiliarReady.TipoReadyAuxiliarId,0) as TipoReadyAuxiliarId
+        , isnull(auxiliarReady.descripcion,'''') as auxiliarRedy_descripcion
+        , isnull(auxiliarReady.descripcion_time,''_Time2'') as descripcion_auxiliarRedyTime_time
+        , convert(int,isnull(auxiliarReady.timeSeconds,0)) as auxiliarRedyTime
+        , ISNULL(ar.IDArea, 1) AS areaId   
+        , ISNULL(ar.AreaName,''Default'') AS area 
+    FROM AgentSession A
+    LEFT JOIN tmpCallout co ON A.DATE = co.DATE AND A.userId = co.userId
+    LEFT JOIN tmpCallIn ci  ON A.DATE = ci.DATE AND A.userId = ci.userId
+    LEFT JOIN RepDetail r   ON r.daygroup = A.DATE AND A.userId = r.userId
+    LEFT JOIN notReadyDay notReady on notReady.userId=A.userId and notReady.daygroup=A.date
+    LEFT join #AuxiliarReadyDetail auxiliarReady on auxiliarReady.userId=A.userId and auxiliarReady.timegroup=A.date
+    left join RepAgentGIGroup AgtGI on AgtGI.date=A.date and AgtGI.userId=A.userId
+    LEFT JOIN ccUsers us WITH (NOLOCK) ON us.User_id = A.userId      
+    LEFT JOIN ccRIACat_Areas ar WITH (NOLOCK) ON ar.IDArea = us.IDArea   
+    order by A.[date],A.userId
 
-		END'
+END'
     EXEC(@sql)
     
     --------------------------------  END GASJ -------------------------------- 
@@ -475,7 +389,175 @@ EXEC (@sql);
 
 	------------------------------------- END MAGV --------------------------------------
     -------------------------------------------------------BEGIN Octavio Ortiz----------------------------------------------------------------------------------------
- 
+    SET @process = 'AlterTable RepInCallsDetail';
+    SET @sql = N'
+    IF COL_LENGTH(N''dbo.RepInCallsDetail'', N''areaId'') IS NULL
+    BEGIN
+        ALTER TABLE dbo.RepInCallsDetail
+          ADD areaId INT NOT NULL
+          CONSTRAINT DF_RepInCallsDetail_areaId DEFAULT (0);
+    END;
+
+    IF COL_LENGTH(N''dbo.RepInCallsDetail'', N''area'') IS NULL
+    BEGIN
+        ALTER TABLE dbo.RepInCallsDetail
+          ADD area VARCHAR(100) NULL;
+    END;
+    ';
+
+    EXEC(@sql);
+    
+    SET @process = 'Update: Migracion de Area en RepInCallsDetail (Por lotes)';
+    SET @sql = N'
+    SET NOCOUNT ON;
+    DECLARE @BatchSize INT = 10000;
+    WHILE 1 = 1
+    BEGIN
+        UPDATE TOP (@BatchSize) R
+        SET R.areaId = A.IDArea, R.area = A.AreaName
+        FROM RepInCallsDetail R
+        INNER JOIN ccinbound c ON R.inboundId = c.inbound_id
+        INNER JOIN ccriacat_areas A ON c.IDArea = A.IDArea
+        WHERE R.areaId = 0;
+
+        IF @@ROWCOUNT = 0 BREAK;
+    END
+    ';
+    EXEC (@sql);
+
+    SET @process = 'Create Column source';
+    SET @sql = '
+    -- source
+    IF NOT EXISTS (
+        SELECT 1
+        FROM sys.columns 
+        WHERE Name = ''source''
+          AND Object_ID = Object_ID(''dbo.RepInCallsDetail'')
+    )
+    BEGIN
+        ALTER TABLE dbo.RepInCallsDetail 
+            ADD source VARCHAR(20);
+    END';
+    EXEC(@sql);
+
+    SET @process = 'Create Column destinationNumber';
+    SET @sql = '
+    -- destinationNumber
+    IF NOT EXISTS (
+        SELECT 1
+        FROM sys.columns 
+        WHERE Name = ''destinationNumber''
+          AND Object_ID = Object_ID(''dbo.RepInCallsDetail'')
+    )
+    BEGIN
+        ALTER TABLE dbo.RepInCallsDetail 
+            ADD destinationNumber VARCHAR(20);
+    END';
+    EXEC(@sql);
+
+    SET @process = 'Create Column queueTime';
+    SET @sql = '
+    -- cal_tWait
+    IF NOT EXISTS (
+        SELECT 1
+        FROM sys.columns 
+        WHERE Name = ''cal_tWait''
+          AND Object_ID = Object_ID(''dbo.RepInCallsDetail'')
+    )
+    BEGIN
+        ALTER TABLE dbo.RepInCallsDetail 
+            ADD cal_tWait INT;
+    END';
+    EXEC(@sql);
+
+    SET @process = 'Create Column callbackDate';
+    SET @sql = '
+    -- callbackDate
+    IF NOT EXISTS (
+        SELECT 1
+        FROM sys.columns 
+        WHERE Name = ''callbackDate''
+          AND Object_ID = Object_ID(''dbo.RepInCallsDetail'')
+    )
+    BEGIN
+        ALTER TABLE dbo.RepInCallsDetail 
+            ADD callbackDate DATETIME;
+    END';
+    EXEC(@sql);
+
+    SET @process = 'AlterTable RepOutDialDetail';
+    SET @sql = N'
+    IF COL_LENGTH(N''dbo.RepOutDialDetail'', N''areaId'') IS NULL
+    BEGIN
+        ALTER TABLE dbo.RepOutDialDetail
+          ADD areaId INT NOT NULL
+          CONSTRAINT DF_RepOutDialDetail_areaId DEFAULT (0);
+    END;
+
+    IF COL_LENGTH(N''dbo.RepOutDialDetail'', N''area'') IS NULL
+    BEGIN
+        ALTER TABLE dbo.RepOutDialDetail
+          ADD area VARCHAR(100) NULL;
+    END;
+    ';
+
+    EXEC(@sql);
+
+   SET @process = 'Update: Migracion de Area en RepOutDialDetail (Por lotes)';
+    SET @sql = N'
+    SET NOCOUNT ON;
+    DECLARE @BatchSize INT = 10000;
+    WHILE 1 = 1
+    BEGIN
+        UPDATE TOP (@BatchSize) R
+        SET R.areaId = A.IDArea, R.area = A.AreaName
+        FROM RepOutDialDetail R
+        INNER JOIN cccamps c ON R.campaignId = c.cam_id
+        INNER JOIN ccriacat_areas A ON c.IDArea = A.IDArea
+        WHERE R.areaId = 0;
+
+        IF @@ROWCOUNT = 0 BREAK;
+    END
+    ';
+    EXEC (@sql);
+
+
+    SET @process = 'AlterTable RepSpecialAbndCamp';
+    SET @sql = N'
+    IF COL_LENGTH(N''dbo.RepSpecialAbndCamp'', N''areaId'') IS NULL
+    BEGIN
+        ALTER TABLE dbo.RepSpecialAbndCamp
+          ADD areaId INT NOT NULL
+          CONSTRAINT DF_RepSpecialAbndCamp_areaId DEFAULT (0);
+    END;
+
+    IF COL_LENGTH(N''dbo.RepSpecialAbndCamp'', N''area'') IS NULL
+    BEGIN
+        ALTER TABLE dbo.RepSpecialAbndCamp
+          ADD area VARCHAR(100) NULL;
+    END;
+    ';
+
+    EXEC(@sql);
+
+    SET @process = 'Update: Migracion de Area en RepSpecialAbndCamp (Por lotes)';
+    SET @sql = N'
+    SET NOCOUNT ON;
+    DECLARE @BatchSize INT = 10000;
+    WHILE 1 = 1
+    BEGIN
+        UPDATE TOP (@BatchSize) R
+        SET R.areaId = A.IDArea, R.area = A.AreaName
+        FROM RepSpecialAbndCamp R
+        INNER JOIN cccamps c ON R.campaignId = c.cam_id
+        INNER JOIN ccriacat_areas A ON c.IDArea = A.IDArea
+        WHERE R.areaId = 0;
+
+        IF @@ROWCOUNT = 0 BREAK;
+    END
+    ';
+    EXEC (@sql);
+
     SET @process = 'Insert into ReportsFilters - KR201001';
     SET @sql = '
     IF NOT EXISTS (
@@ -1848,6 +1930,398 @@ EXEC(@sql)
 
 --------------------------------------------------------END Marco Diaz----------------------------------------------------------------------
 
+------------------------------BEGIN Jesus Gallardo MED Nova Monti 9---------------------------------
+
+set @process = '#6535 ALTER VIEW [dbo].[ccUserView] isnull(IDArea,1)'
+set @sql='ALTER VIEW [dbo].[ccUserView] AS
+SELECT 
+    User_id, Login, Nombres, ApellidoPaterno, ApellidoMaterno, 
+    TipoStatusAge_id, TipoUser_id, Status, Sexo, isnull(IDArea,1) IDArea, fCreate 
+FROM ccUsers
+UNION
+SELECT 
+    User_id, Login, Nombres, ApellidoPaterno, ApellidoMaterno, 
+    TipoStatusAge_id, TipoUser_id, Status, Sexo, isnull(IDArea,1) IDArea, fCreate 
+FROM ccUsers_Consulta;'
+EXEC(@sql)
+
+
+
+SET @process = '#7806 DROP INDEX repetidos'
+SET @sql = '
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepAgentGI_date''AND object_id = OBJECT_ID(''RepAgentGI'') ) BEGIN DROP INDEX IX_RepAgentGI_date ON RepAgentGI END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepAgentKPI_date''AND object_id = OBJECT_ID(''RepAgentKPI'') ) BEGIN DROP INDEX IX_RepAgentKPI_date ON RepAgentKPI END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepAgentNotReady_date''AND object_id = OBJECT_ID(''RepAgentNotReady'') ) BEGIN DROP INDEX IX_RepAgentNotReady_date ON RepAgentNotReady END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepAgentNotReadyDet_date''AND object_id = OBJECT_ID(''RepAgentNotReadyDet'') ) BEGIN DROP INDEX IX_RepAgentNotReadyDet_date ON RepAgentNotReadyDet END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepAgentSession_date''AND object_id = OBJECT_ID(''RepAgentSession'') ) BEGIN DROP INDEX IX_RepAgentSession_date ON RepAgentSession END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepAgentSessionByInterval_date''AND object_id = OBJECT_ID(''RepAgentSessionByInterval'') ) BEGIN DROP INDEX IX_RepAgentSessionByInterval_date ON RepAgentSessionByInterval END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepAgentTimeShift_date''AND object_id = OBJECT_ID(''RepAgentTimeShift'') ) BEGIN DROP INDEX IX_RepAgentTimeShift_date ON RepAgentTimeShift END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepAuxiliariesByAgentDet_date''AND object_id = OBJECT_ID(''RepAuxiliariesByAgentDet'') ) BEGIN DROP INDEX IX_RepAuxiliariesByAgentDet_date ON RepAuxiliariesByAgentDet END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInChangeFlow''AND object_id = OBJECT_ID(''RepInChangeFlow'') ) BEGIN DROP INDEX IX_RepInChangeFlow ON RepInChangeFlow END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInChangeFlow_date''AND object_id = OBJECT_ID(''RepInChangeFlow'') ) BEGIN DROP INDEX IX_RepInChangeFlow_date ON RepInChangeFlow END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInNotTransferred''AND object_id = OBJECT_ID(''RepInNotTransferred'') ) BEGIN DROP INDEX IX_RepInNotTransferred ON RepInNotTransferred END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInNotTransferred_date''AND object_id = OBJECT_ID(''RepInNotTransferred'') ) BEGIN DROP INDEX IX_RepInNotTransferred_date ON RepInNotTransferred END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepOutDialDetail''AND object_id = OBJECT_ID(''RepOutDialDetail'') ) BEGIN DROP INDEX IX_RepOutDialDetail ON RepOutDialDetail END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepOutDialDetail_date''AND object_id = OBJECT_ID(''RepOutDialDetail'') ) BEGIN DROP INDEX IX_RepOutDialDetail_date ON RepOutDialDetail END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepSpecialRecordingsDownload_date''AND object_id = OBJECT_ID(''RepSpecialRecordingsDownload'') ) BEGIN DROP INDEX IX_RepSpecialRecordingsDownload_date ON RepSpecialRecordingsDownload END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepSpecialStatusDetail_date''AND object_id = OBJECT_ID(''RepSpecialStatusDetail'') ) BEGIN DROP INDEX IX_RepSpecialStatusDetail_date ON RepSpecialStatusDetail END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepWhatsAppByCampaignIn_date''AND object_id = OBJECT_ID(''RepWhatsAppByCampaignIn'') ) BEGIN DROP INDEX IX_RepWhatsAppByCampaignIn_date ON RepWhatsAppByCampaignIn END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepWhatsAppByCampaignOut_date''AND object_id = OBJECT_ID(''RepWhatsAppByCampaignOut'') ) BEGIN DROP INDEX IX_RepWhatsAppByCampaignOut_date ON RepWhatsAppByCampaignOut END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepWhatsAppDetailConversationIn_date''AND object_id = OBJECT_ID(''RepWhatsAppDetailConversationIn'') ) BEGIN DROP INDEX IX_RepWhatsAppDetailConversationIn_date ON RepWhatsAppDetailConversationIn END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepWhatsAppDetailConversationOut_date''AND object_id = OBJECT_ID(''RepWhatsAppDetailConversationOut'') ) BEGIN DROP INDEX IX_RepWhatsAppDetailConversationOut_date ON RepWhatsAppDetailConversationOut END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepWhatsConversationsMarkedAsSpam_date''AND object_id = OBJECT_ID(''RepWhatsConversationsMarkedAsSpam'') ) BEGIN DROP INDEX IX_RepWhatsConversationsMarkedAsSpam_date ON RepWhatsConversationsMarkedAsSpam END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepWhatsConversationsUnassigned_date''AND object_id = OBJECT_ID(''RepWhatsConversationsUnassigned'') ) BEGIN DROP INDEX IX_RepWhatsConversationsUnassigned_date ON RepWhatsConversationsUnassigned END
+
+
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepACDChats''AND object_id = OBJECT_ID(''RepACDChats'') ) BEGIN DROP INDEX IX_RepACDChats ON RepACDChats END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepAgentCallStatusesByInterval''AND object_id = OBJECT_ID(''RepAgentCallStatusesByInterval'') ) BEGIN DROP INDEX IX_RepAgentCallStatusesByInterval ON RepAgentCallStatusesByInterval END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepAgentGI_VersionOld''AND object_id = OBJECT_ID(''RepAgentGI_VersionOld'') ) BEGIN DROP INDEX IX_RepAgentGI_VersionOld ON RepAgentGI_VersionOld END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepAgentHSBCKPI''AND object_id = OBJECT_ID(''RepAgentHSBCKPI'') ) BEGIN DROP INDEX IX_RepAgentHSBCKPI ON RepAgentHSBCKPI END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepAgentSummary''AND object_id = OBJECT_ID(''RepAgentSummary'') ) BEGIN DROP INDEX IX_RepAgentSummary ON RepAgentSummary END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepAnsweredCallsByDialingRetries''AND object_id = OBJECT_ID(''RepAnsweredCallsByDialingRetries'') ) BEGIN DROP INDEX IX_RepAnsweredCallsByDialingRetries ON RepAnsweredCallsByDialingRetries END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepAvgAnswerTimeChats''AND object_id = OBJECT_ID(''RepAvgAnswerTimeChats'') ) BEGIN DROP INDEX IX_RepAvgAnswerTimeChats ON RepAvgAnswerTimeChats END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepAVRSDisposition''AND object_id = OBJECT_ID(''RepAVRSDisposition'') ) BEGIN DROP INDEX IX_RepAVRSDisposition ON RepAVRSDisposition END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepCallTimeSummary''AND object_id = OBJECT_ID(''RepCallTimeSummary'') ) BEGIN DROP INDEX IX_RepCallTimeSummary ON RepCallTimeSummary END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepCallXfer''AND object_id = OBJECT_ID(''RepCallXfer'') ) BEGIN DROP INDEX IX_RepCallXfer ON RepCallXfer END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepChatsAndCallsGeneral''AND object_id = OBJECT_ID(''RepChatsAndCallsGeneral'') ) BEGIN DROP INDEX IX_RepChatsAndCallsGeneral ON RepChatsAndCallsGeneral END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepChatsDetail''AND object_id = OBJECT_ID(''RepChatsDetail'') ) BEGIN DROP INDEX IX_RepChatsDetail ON RepChatsDetail END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepChatsEffectiveness''AND object_id = OBJECT_ID(''RepChatsEffectiveness'') ) BEGIN DROP INDEX IX_RepChatsEffectiveness ON RepChatsEffectiveness END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepChatsNotContacted''AND object_id = OBJECT_ID(''RepChatsNotContacted'') ) BEGIN DROP INDEX IX_RepChatsNotContacted ON RepChatsNotContacted END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepDetailAgent''AND object_id = OBJECT_ID(''RepDetailAgent'') ) BEGIN DROP INDEX IX_RepDetailAgent ON RepDetailAgent END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepDialingResultsDetail''AND object_id = OBJECT_ID(''RepDialingResultsDetail'') ) BEGIN DROP INDEX IX_RepDialingResultsDetail ON RepDialingResultsDetail END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepEmailACD''AND object_id = OBJECT_ID(''RepEmailACD'') ) BEGIN DROP INDEX IX_RepEmailACD ON RepEmailACD END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepEmailAgente''AND object_id = OBJECT_ID(''RepEmailAgente'') ) BEGIN DROP INDEX IX_RepEmailAgente ON RepEmailAgente END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepEmailDetail''AND object_id = OBJECT_ID(''RepEmailDetail'') ) BEGIN DROP INDEX IX_RepEmailDetail ON RepEmailDetail END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepEmailGeneral''AND object_id = OBJECT_ID(''RepEmailGeneral'') ) BEGIN DROP INDEX IX_RepEmailGeneral ON RepEmailGeneral END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInAbnd''AND object_id = OBJECT_ID(''RepInAbnd'') ) BEGIN DROP INDEX IX_RepInAbnd ON RepInAbnd END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInAnsw''AND object_id = OBJECT_ID(''RepInAnsw'') ) BEGIN DROP INDEX IX_RepInAnsw ON RepInAnsw END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInBill01900''AND object_id = OBJECT_ID(''RepInBill01900'') ) BEGIN DROP INDEX IX_RepInBill01900 ON RepInBill01900 END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInboundKPI''AND object_id = OBJECT_ID(''RepInboundKPI'') ) BEGIN DROP INDEX IX_RepInboundKPI ON RepInboundKPI END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInCalls''AND object_id = OBJECT_ID(''RepInCalls'') ) BEGIN DROP INDEX IX_RepInCalls ON RepInCalls END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInCallsDetail''AND object_id = OBJECT_ID(''RepInCallsDetail'') ) BEGIN DROP INDEX IX_RepInCallsDetail ON RepInCallsDetail END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInDIDResume''AND object_id = OBJECT_ID(''RepInDIDResume'') ) BEGIN DROP INDEX IX_RepInDIDResume ON RepInDIDResume END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInDispositions''AND object_id = OBJECT_ID(''RepInDispositions'') ) BEGIN DROP INDEX IX_RepInDispositions ON RepInDispositions END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInEffectiveness''AND object_id = OBJECT_ID(''RepInEffectiveness'') ) BEGIN DROP INDEX IX_RepInEffectiveness ON RepInEffectiveness END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInRejectedCalls''AND object_id = OBJECT_ID(''RepInRejectedCalls'') ) BEGIN DROP INDEX IX_RepInRejectedCalls ON RepInRejectedCalls END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInSubDispositions''AND object_id = OBJECT_ID(''RepInSubDispositions'') ) BEGIN DROP INDEX IX_RepInSubDispositions ON RepInSubDispositions END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepInTrunkBusy''AND object_id = OBJECT_ID(''RepInTrunkBusy'') ) BEGIN DROP INDEX IX_RepInTrunkBusy ON RepInTrunkBusy END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepIVRByOptions''AND object_id = OBJECT_ID(''RepIVRByOptions'') ) BEGIN DROP INDEX IX_RepIVRByOptions ON RepIVRByOptions END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepIVRDetail''AND object_id = OBJECT_ID(''RepIVRDetail'') ) BEGIN DROP INDEX IX_RepIVRDetail ON RepIVRDetail END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepIVRFirstOption''AND object_id = OBJECT_ID(''RepIVRFirstOption'') ) BEGIN DROP INDEX IX_RepIVRFirstOption ON RepIVRFirstOption END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepIVRGeneral''AND object_id = OBJECT_ID(''RepIVRGeneral'') ) BEGIN DROP INDEX IX_RepIVRGeneral ON RepIVRGeneral END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepMKTTiemposTotales_1''AND object_id = OBJECT_ID(''RepMKTTiemposTotales'') ) BEGIN DROP INDEX IX_RepMKTTiemposTotales_1 ON RepMKTTiemposTotales END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepOutAnswCalls''AND object_id = OBJECT_ID(''RepOutAnswCalls'') ) BEGIN DROP INDEX IX_RepOutAnswCalls ON RepOutAnswCalls END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepOutboundKPI''AND object_id = OBJECT_ID(''RepOutboundKPI'') ) BEGIN DROP INDEX IX_RepOutboundKPI ON RepOutboundKPI END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepOutCallBacks''AND object_id = OBJECT_ID(''RepOutCallBacks'') ) BEGIN DROP INDEX IX_RepOutCallBacks ON RepOutCallBacks END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepOutCalls''AND object_id = OBJECT_ID(''RepOutCalls'') ) BEGIN DROP INDEX IX_RepOutCalls ON RepOutCalls END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepOutCallsByTelephone''AND object_id = OBJECT_ID(''RepOutCallsByTelephone'') ) BEGIN DROP INDEX IX_RepOutCallsByTelephone ON RepOutCallsByTelephone END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepOutCallsDetail''AND object_id = OBJECT_ID(''RepOutCallsDetail'') ) BEGIN DROP INDEX IX_RepOutCallsDetail ON RepOutCallsDetail END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepOutCallsOnChatDetail''AND object_id = OBJECT_ID(''RepOutCallsOnChatDetail'') ) BEGIN DROP INDEX IX_RepOutCallsOnChatDetail ON RepOutCallsOnChatDetail END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepOutDials''AND object_id = OBJECT_ID(''RepOutDials'') ) BEGIN DROP INDEX IX_RepOutDials ON RepOutDials END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepOutDispositions''AND object_id = OBJECT_ID(''RepOutDispositions'') ) BEGIN DROP INDEX IX_RepOutDispositions ON RepOutDispositions END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepOutKPI''AND object_id = OBJECT_ID(''RepOutKPI'') ) BEGIN DROP INDEX IX_RepOutKPI ON RepOutKPI END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepOutManagementBase_1''AND object_id = OBJECT_ID(''RepOutManagementBase'') ) BEGIN DROP INDEX IX_RepOutManagementBase_1 ON RepOutManagementBase END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepOutSubDispositions''AND object_id = OBJECT_ID(''RepOutSubDispositions'') ) BEGIN DROP INDEX IX_RepOutSubDispositions ON RepOutSubDispositions END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepOutTrunkBusy''AND object_id = OBJECT_ID(''RepOutTrunkBusy'') ) BEGIN DROP INDEX IX_RepOutTrunkBusy ON RepOutTrunkBusy END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepSpececialAbnd''AND object_id = OBJECT_ID(''RepSpececialAbnd'') ) BEGIN DROP INDEX IX_RepSpececialAbnd ON RepSpececialAbnd END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepSpececialAgent''AND object_id = OBJECT_ID(''RepSpececialAgent'') ) BEGIN DROP INDEX IX_RepSpececialAgent ON RepSpececialAgent END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepSpececialAgtPerformance''AND object_id = OBJECT_ID(''RepSpececialAgtPerformance'') ) BEGIN DROP INDEX IX_RepSpececialAgtPerformance ON RepSpececialAgtPerformance END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepSpececialCamMovs''AND object_id = OBJECT_ID(''RepSpececialCamMovs'') ) BEGIN DROP INDEX IX_RepSpececialCamMovs ON RepSpececialCamMovs END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepSpececialPromises''AND object_id = OBJECT_ID(''RepSpececialPromises'') ) BEGIN DROP INDEX IX_RepSpececialPromises ON RepSpececialPromises END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepSpecialCallKeyHistory''AND object_id = OBJECT_ID(''RepSpecialCallKeyHistory'') ) BEGIN DROP INDEX IX_RepSpecialCallKeyHistory ON RepSpecialCallKeyHistory END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepSpecialTimes''AND object_id = OBJECT_ID(''RepSpecialTimes'') ) BEGIN DROP INDEX IX_RepSpecialTimes ON RepSpecialTimes END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_RepTrunkBusy''AND object_id = OBJECT_ID(''RepTrunkBusy'') ) BEGIN DROP INDEX IX_RepTrunkBusy ON RepTrunkBusy END'
+EXEC(@sql)
+
+
+SET @process = '#7806 ALTER PROCEDURE [dbo].[ccSpCreateIndexReport] se quita los inidices en reportes'
+SET @sql = 'ALTER PROCEDURE [dbo].[ccSpCreateIndexReport]
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+declare @tIndexMerge table(id int identity,tableName varchar(255),status bit)
+declare @sql nvarchar(max),@tableName varchar(255),@id int
+declare @column varchar(255),@indexName varchar(255)
+
+
+
+/****************************INDICES PARA REPORTES *******************************/
+if not exists (select * from sys.indexes where name = N''IX_ccoCallsOut13'' and object_id = OBJECT_ID(N''ccoCallsOut''))
+begin
+   CREATE NONCLUSTERED INDEX IX_ccoCallsOut13
+ON [dbo].[ccoCallsOut] ([cal_Inicio])
+INCLUDE ([cal_id],[cal_telefono],[cal_puerto],[cam_id],[User_id],[statusCall_id],[calif_id],[cal_tDialog],[cal_tNotas],[cal_tXfer],[cal_tRing],[cal_manual],[cal_tMoh],[cal_whoHung],[cal_twait])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_RIA_GRABACION_11'' and object_id = OBJECT_ID(N''RIA_GRABACION''))
+begin
+CREATE NONCLUSTERED INDEX IX_RIA_GRABACION_11
+ON [dbo].[RIA_GRABACION] ([tipo_llamada],[cal_id])
+INCLUDE ([grab_id])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_ccLogTransfers_3'' and object_id = OBJECT_ID(N''ccLogtransfers''))
+begin
+   CREATE NONCLUSTERED INDEX IX_ccLogTransfers_3
+ON [dbo].[ccLogtransfers] ([fechaFin])
+INCLUDE ([cal_id],[tipo],[modo],[destino],[tAntesXfer],[tDespuesXfer])
+end
+
+
+if not exists (select * from sys.indexes where name = N''IX_ccLogAgentesDia_6'' and object_id = OBJECT_ID(N''ccLogAgentesDia''))
+begin
+   CREATE NONCLUSTERED INDEX IX_ccLogAgentesDia_6
+ON [dbo].[ccLogAgentesDia] ([fecha])
+INCLUDE ([User_id],[TipoStatusAge_id],[tStatus])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_ccLogAgentesNotReady_5'' and object_id = OBJECT_ID(N''cclogagentesnotready''))
+begin
+   CREATE NONCLUSTERED INDEX IX_ccLogAgentesNotReady_5
+ON [dbo].[cclogagentesnotready] ([fecha])
+INCLUDE ([User_id],[TipoNotReady_id],[tStatus])
+end
+
+    
+if not exists (select * from sys.indexes where name = N''IX_ccLogLogin_6'' and object_id = OBJECT_ID(N''ccloglogin''))
+begin
+   CREATE NONCLUSTERED INDEX IX_ccLogLogin_6
+ON [dbo].[ccloglogin] ([fecha])
+INCLUDE ([User_id],[Extension],[TipoMov])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_ccoLogDials_8'' and object_id = OBJECT_ID(N''ccoLogDials''))
+begin
+CREATE NONCLUSTERED INDEX IX_ccoLogDials_8
+ON [dbo].[ccoLogDials] ([fecha],[cal_id])
+INCLUDE ([tipoResDial_id])
+end
+
+
+
+if not exists (select * from sys.indexes where name = N''IX_ccCallsIn_8'' and object_id = OBJECT_ID(N''ccCallsIn''))
+begin
+CREATE NONCLUSTERED INDEX IX_ccCallsIn_8
+ON [dbo].[ccCallsIn] ([IVR_id])
+INCLUDE ([cal_id])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_ccCallsIn_9'' and object_id = OBJECT_ID(N''ccCallsIn''))
+begin
+CREATE NONCLUSTERED INDEX IX_ccCallsIn_9
+ON [dbo].[ccCallsIn] ([cal_Inicio])
+INCLUDE ([cal_id])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_tmpSessionTimeGroup_1'' and object_id = OBJECT_ID(N''tmpSessionTimeGroup''))
+begin
+CREATE NONCLUSTERED INDEX IX_tmpSessionTimeGroup_1
+ON [dbo].[tmpSessionTimeGroup] ([user_id])
+INCLUDE ([timegroup],[tlog])
+end
+
+   
+if not exists (select * from sys.indexes where name = N''IX_tmpccLogAgentesDia_2'' and object_id = OBJECT_ID(N''tmpccLogAgentesDia''))
+begin
+CREATE NONCLUSTERED INDEX IX_tmpccLogAgentesDia_2
+ON [dbo].[tmpccLogAgentesDia] ([userId],[timeGroup])
+INCLUDE ([TipoStatusAge_id],[tStatus])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_tmpTimesInboundData_1'' and object_id = OBJECT_ID(N''tmpTimesInboundData''))
+begin
+CREATE NONCLUSTERED INDEX IX_tmpTimesInboundData_1
+ON [dbo].[tmpTimesInboundData] ([statusCall_id])
+INCLUDE ([timegroup],[Inbound_id],[nabnd],[tque],[txfer],[tring])
+end
+
+    
+if not exists (select * from sys.indexes where name = N''IX_tmpTimesInboundData_2'' and object_id = OBJECT_ID(N''tmpTimesInboundData''))
+begin
+CREATE NONCLUSTERED INDEX IX_tmpTimesInboundData_2
+ON [dbo].[tmpTimesInboundData] ([cal_id])
+INCLUDE ([Inbound_id],[User_id])
+end
+
+
+if not exists (select * from sys.indexes where name = N''IX_tmpTimesOutboundData_1'' and object_id = OBJECT_ID(N''tmpTimesOutboundData''))
+begin
+CREATE NONCLUSTERED INDEX IX_tmpTimesOutboundData_1
+ON [dbo].[tmpTimesOutboundData] ([timegroup],[cal_id])
+INCLUDE ([User_id])
+end
+    
+if not exists (select * from sys.indexes where name = N''IX_tmpTimesOutboundData_2'' and object_id = OBJECT_ID(N''tmpTimesOutboundData''))
+begin
+CREATE NONCLUSTERED INDEX IX_tmpTimesOutboundData_2
+ON [dbo].[tmpTimesOutboundData] ([cal_manual])
+INCLUDE ([timegroup],[User_id],[nabnd_xfer],[nabnd_ring],[tdialog],[tnotes],[cal_id])
+end
+
+
+    
+if not exists (select * from sys.indexes where name = N''IX_RepAgentNotReadyDet_2'' and object_id = OBJECT_ID(N''RepAgentNotReadyDet''))
+begin
+CREATE NONCLUSTERED INDEX IX_RepAgentNotReadyDet_2
+ON [dbo].[RepAgentNotReadyDet] ([tiponotreadyId],[startDate])
+INCLUDE ([userId],[status],[statusTime])
+end
+
+ 
+
+end'
+EXEC(@sql)
+
+
+SET @process = '#7806  CREATE NONCLUSTERED INDEX [IX_ccoLogDials_cal_id_logDial]'
+SET @sql = 'IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes i
+    WHERE i.name = ''IX_ccoLogDials_cal_id_logDial''
+      AND i.object_id = OBJECT_ID(''dbo.ccoLogDials'')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX [IX_ccoLogDials_cal_id_logDial]
+    ON [dbo].[ccoLogDials] ([cal_id] desc)
+    INCLUDE ([logDial_id])
+END'
+EXEC(@sql)
+
+
+SET @process = '#7806 CREATE NONCLUSTERED INDEX IX_ccoLogDials_fecha_repOutDialDetail'
+SET @sql = 'IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes i
+    WHERE i.name = ''IX_ccoLogDials_fecha_repOutDialDetail''
+      AND i.object_id = OBJECT_ID(''dbo.ccoLogDials'')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX IX_ccoLogDials_fecha_repOutDialDetail
+    ON dbo.ccoLogDials
+    (
+        fecha ASC
+    )
+    INCLUDE
+    (
+        logDial_id,
+        callout_id,
+        cam_id,
+        tipoResDial_id,
+        Telefono,
+        Puerto,
+        tDialing,
+        tBusy,
+        answerbit,
+        TipoDialingMode,
+        cal_id,
+        canceledNoAgents,
+        disconnectCause,
+        tipoLlamada_id,
+        manualCRM
+    );
+END'
+EXEC(@sql)
+
+
+SET @process = '#7806 CREATE NONCLUSTERED INDEX IX_ccoCallsOut_cal_id_repOutDialDetail'
+SET @sql = 'IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes i
+    WHERE i.name = ''IX_ccoCallsOut_cal_id_repOutDialDetail''
+      AND i.object_id = OBJECT_ID(''dbo.ccoCallsOut'')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX IX_ccoCallsOut_cal_id_repOutDialDetail
+    ON dbo.ccoCallsOut
+    (
+        cal_id
+    )
+    INCLUDE
+    (
+        callout_id,
+        User_id,
+        cal_key,
+        calif_id,
+        califSub_id,
+        cal_manual,
+        file_moved
+    );
+END'
+EXEC(@sql)
+
+SET @process = 'KR140003 - Tabla nueva en BD de Reporte de Detalle de Marcación'
+    SET @sql = '
+IF NOT EXISTS(SELECT 1 FROM sys.tables WHERE name = ''ccoLogDialsData'')
+BEGIN
+    CREATE TABLE ccoLogDialsData(
+        logDial_id INT NOT NULL PRIMARY KEY,
+        callout_id INT NOT NULL,
+        Data1 VARCHAR(255) NOT NULL,
+        Data2 VARCHAR(255) NOT NULL,
+        Data3 VARCHAR(255) NOT NULL,
+        Data4 VARCHAR(255) NOT NULL,
+        Data5 VARCHAR(255) NOT NULL,
+        callDate DATETIME NOT NULL
+    )
+
+    CREATE INDEX IX_ccoLogDialsData ON ccoLogDialsData (callout_id, callDate)
+END'
+    EXEC(@sql)
+
+
+SET @process = '#7806  CREATE NONCLUSTERED INDEX IX_ccoLogDialsData_logDial_repOutDialDetail'
+SET @sql = 'IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes i
+    WHERE i.name = ''IX_ccoLogDialsData_logDial_repOutDialDetail''
+      AND i.object_id = OBJECT_ID(''dbo.ccoLogDialsData'')
+)
+BEGIN
+
+    CREATE NONCLUSTERED INDEX IX_ccoLogDialsData_logDial_repOutDialDetail
+    ON dbo.ccoLogDialsData
+    (
+        logDial_id
+    )
+    INCLUDE
+    (
+        Data1,
+        Data2,
+        Data3,
+        Data4,
+        Data5
+    );
+END'
+EXEC(@sql)
+
+
+SET @process = '#7806  DROP INDEX IX_RepOutDialDetail ON RepOutDialDetail;'
+SET @sql = 'IF EXISTS (
+    SELECT 1 
+    FROM sys.indexes 
+    WHERE name = ''IX_RepOutDialDetail''
+    AND object_id = OBJECT_ID(''RepOutDialDetail'')
+)
+BEGIN
+    DROP INDEX IX_RepOutDialDetail ON RepOutDialDetail;
+END'
+EXEC(@sql)
+
+
+SET @process = '#7806 DROP INDEX IX_RepOutDialDetail_date ON RepOutDialDetail'
+SET @sql = 'IF EXISTS (
+    SELECT 1 
+    FROM sys.indexes 
+    WHERE name = ''IX_RepOutDialDetail_date''
+    AND object_id = OBJECT_ID(''RepOutDialDetail'')
+)
+BEGIN
+    DROP INDEX IX_RepOutDialDetail_date ON RepOutDialDetail;
+END'
+EXEC(@sql)
+
+
 --- BEGIN Carlos Muñoz ---
 SET @process = 'KM52000 Calculo de información de columna de posiciones en reporte de llamadas contestadas por campaña.' 
 
@@ -1863,6 +2337,10 @@ END'
     
 EXEC(@sql)
 --- END Carlos Muñoz ---
+
+set @process = ''
+set @sql=''
+EXEC(@sql)
 
 ------------------------------END Jesus Gallardo Sears Nova Monti 9---------------------------------
 

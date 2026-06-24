@@ -4131,7 +4131,7 @@ EXEC(@sql)
 
 
 SET @process = 'Cambio para las HU KM46002 ccsp_GalateaAreas'
-set @sql='        ALTER procedure [dbo].[ccsp_GalateaAreas] 
+set @sql='ALTER procedure [dbo].[ccsp_GalateaAreas] 
         @option int = 2,
         @IDArea smallint = 0,
         @Descripcion varchar(40) = NULL,

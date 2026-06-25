@@ -70,7 +70,7 @@ BEGIN
 			WHERE date >= @from AND date < @to
 
 			INSERT INTO RepOutSMSAnswDetailByCamp
-			SELECT smsDate date, cam.cam_id camId, cam_descripcion campaignName, message, phone senderNumber, cam.cam_id campaignId
+			SELECT smsDate date, cam.cam_id camId, cam_descripcion campaignName, src.message, phone senderNumber, cam.cam_id campaignId
 			FROM smsccoLogDial smslog (nolock)
 				LEFT JOIN cccamps cam on cam.cam_id=smslog.cam_id
 				LEFT JOIN smsoutSourceMessage src on src.smsout_id=smslog.smsout_id

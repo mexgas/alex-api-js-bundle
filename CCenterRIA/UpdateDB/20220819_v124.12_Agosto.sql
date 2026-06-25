@@ -3331,8 +3331,8 @@ END
         ------------------------------------------------------------ End Jesus Gallardo  ---------------------------------------------------------------------
         ------------------------------------------------------------ Start Hugo Longoria ---------------------------------------------------------------------
         set @process = 'ANIRotative Create table ccRotativeANIListDetail'
-        set @sql = 'IF (NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES 
-                 WHERE TABLE_SCHEMA = ''dbo'' 
+        set @sql = 'IF (NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES
+                 WHERE TABLE_SCHEMA = ''dbo''
                  AND  TABLE_NAME = ''ccRotativeANIListDetail''))
                 BEGIN
                 CREATE TABLE [dbo].[ccRotativeANIListDetail](
@@ -3341,7 +3341,14 @@ END
                     [loadDate] [smalldatetime] NOT NULL DEFAULT Getdate())
                 END'
         EXEC(@sql)
-        
+
+        set @process = 'ANIRotative Add loadDate to ccRotativeANIListDetail if missing'
+        set @sql = 'IF NOT EXISTS(SELECT * FROM sys.columns WHERE name = N''loadDate'' AND Object_ID = Object_ID(N''ccRotativeANIListDetail''))
+                BEGIN
+                    ALTER TABLE [dbo].[ccRotativeANIListDetail] ADD [loadDate] [smalldatetime] NOT NULL DEFAULT Getdate()
+                END'
+        EXEC(@sql)
+
         set @process = 'K005012'
         set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminDispositions]
             @command int,

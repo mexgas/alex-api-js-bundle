@@ -10,10 +10,28 @@ BEGIN TRY
     -- K070305 - Reporte Detalle de llamada contestada para agentes virtuales
     -- BD: CCReportsRIA
     -- Cambios:
-    --   1. SP ccspRepOutDialDetail: poblar IsAICampaign, corregir login='N/A' para IA, poblar calId
+    --   0. RepOutDialDetail: nueva columna campType TINYINT NULL
+    --   1. SP ccspRepOutDialDetail: poblar campType, IsAICampaign, login='N/A' para IA, calId
     --   2. TranslatedReports id=4010: agregar ModelName a columnas traducibles
-    --   3. ReportsFilters: agregar filtro campaignType para reporte 4010
+    --   3. Filters/ReportsFilters: filtro campaignType para reporte 4010
+    --   3c. RepOutDialDetailView: exponer ValidationMode, IsAICampaign, campType
+    -- PASO 4 (fuera del TRAN): ccspRepCatalogos type=39 para campaignType
     -- =====================================================================
+
+    -- -----------------------------------------------------------------
+    -- 0. campType: nueva columna en RepOutDialDetail
+    -- -----------------------------------------------------------------
+    SET @process = 'K070305 - ADD campType to RepOutDialDetail'
+
+    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE Name = 'campType' AND Object_ID = OBJECT_ID('dbo.RepOutDialDetail'))
+        ALTER TABLE dbo.RepOutDialDetail ADD campType TINYINT NULL;
+
+    -- Garantizar ValidationMode e IsAICampaign por si este servidor no tiene el 14 Script
+    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE Name = 'ValidationMode' AND Object_ID = OBJECT_ID('dbo.RepOutDialDetail'))
+        ALTER TABLE dbo.RepOutDialDetail ADD ValidationMode VARCHAR(100) NULL;
+
+    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE Name = 'IsAICampaign' AND Object_ID = OBJECT_ID('dbo.RepOutDialDetail'))
+        ALTER TABLE dbo.RepOutDialDetail ADD IsAICampaign BIT NULL;
 
     -- -----------------------------------------------------------------
     -- 1. SP ccspRepOutDialDetail
@@ -160,7 +178,7 @@ BEGIN
             [data11], [data12], [data13], [data14], [data15],
             [preview_Time], [login], [areaId], [area],
             [ani], [CapturedData], [ValidationMode],
-            [IsAICampaign], [calId]
+            [IsAICampaign], [calId], [campType]
         )
         SELECT
             dials.fecha AS [date],
@@ -230,7 +248,12 @@ BEGIN
                 ELSE ''COFETEL''
             END AS ValidationMode,
             CASE WHEN camps.CampType = 9 THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS IsAICampaign,
-            CASE WHEN ISNUMERIC(dials.cal_id) = 1 THEN CAST(dials.cal_id AS INT) ELSE 0 END AS calId
+            CASE WHEN ISNUMERIC(dials.cal_id) = 1 THEN CAST(dials.cal_id AS INT) ELSE 0 END AS calId,
+            CASE
+                WHEN camps.CampType = 9 THEN CAST(9 AS TINYINT)
+                WHEN camps.CampType = 6 THEN CAST(6 AS TINYINT)
+                ELSE CAST(0 AS TINYINT)
+            END AS campType
         FROM #dials AS dials
         LEFT JOIN ccoCallsOutSource cs (NOLOCK)
             ON dials.callout_id = cs.callout_id
@@ -305,8 +328,37 @@ END
         VALUES (4010, 'Dialing Detail', 'campaignType')
     END
 
+    -- -----------------------------------------------------------------
+    -- 3c. ALTER VIEW RepOutDialDetailView: exponer ValidationMode,
+    --     IsAICampaign y campType
+    -- -----------------------------------------------------------------
+    SET @process = 'K070305 - ALTER VIEW RepOutDialDetailView'
+
+    EXEC('
+ALTER VIEW [dbo].[RepOutDialDetailView] AS
+SELECT
+    [date], [calId], [callKey], [telephone], [dialResultId], [dialResult], [dialog],
+    [campaignId], [campaign], [ModelName], [timeMessage],
+    [year], [month], [day], [hour], [minutes],
+    [listName], [billed], [CapturedData],
+    [data1]  AS [Dato1],
+    [data2]  AS [Dato2],
+    [data3]  AS [Dato3],
+    [data4]  AS [Dato4],
+    [data5]  AS [Dato5],
+    [fileMoved], [DCCustomer], [disconnectCause], [dialType], [TipoTel],
+    [CallDisposition], [CallSubDisposition],
+    [data6], [data7], [data8], [data9], [data10],
+    [data11], [data12], [data13], [data14], [data15],
+    [preview_Time], [login] AS [user], [areaId], [area], [ani],
+    [ValidationMode],
+    ISNULL([IsAICampaign], 0) AS [IsAICampaign],
+    ISNULL([campType],    0) AS [campType]
+FROM RepOutDialDetail WITH (NOLOCK);
+')
+
     COMMIT TRAN
-    PRINT 'K070305 - Pasos 1-3 aplicados. Aplicar paso 4 (ccspRepCatalogos) por separado.'
+    PRINT 'K070305 - Pasos 0-3c aplicados correctamente.'
 
 END TRY
 BEGIN CATCH
@@ -318,32 +370,490 @@ END CATCH
 GO
 
 -- =======================================================================
--- PASO 4 (fuera del TRAN porque ALTER PROCEDURE no puede ir dentro de uno)
--- K070305 - ccspRepCatalogos: agregar case type=39 para filtro campaignType
+-- PASO 4 (fuera del TRAN — DDL de procedimiento no puede ir dentro)
+-- K070305 - ccspRepCatalogos: agregar type=39 para filtro campaignType
 --
--- El mecanismo de WHERE en GenericReport.StatementBuilder es completamente
--- generico: cuando el front-end envia IsAICampaign=1, StatementBuilder
--- construye automaticamente: AND charindex(','+CAST([IsAICampaign] AS VARCHAR)+',',',1,')>0
--- Por lo tanto NO se requieren cambios en el C# de cw-reports-asp.
+-- Devuelve 3 opciones mapeadas a la columna campType de RepOutDialDetail:
+--   0 = Salida estandar  (CampType != 9 y != 6)
+--   9 = Salida IA        (CampType  = 9)
+--   6 = Salida VP        (CampType  = 6)
+--
+-- GenericReport construye automaticamente:
+--   AND CHARINDEX(','+CAST([campType] AS VARCHAR)+',', ',<vals>,') > 0
+-- No se requieren cambios en cw-reports-asp.
 -- =======================================================================
-IF NOT EXISTS (
-    SELECT 1 FROM syscomments
-    WHERE id = OBJECT_ID('ccspRepCatalogos') AND text LIKE '%@type = 39%'
-)
+IF OBJECT_ID('dbo.ccspRepCatalogos') IS NOT NULL
+    DROP PROCEDURE dbo.ccspRepCatalogos
+GO
+
+CREATE PROCEDURE [dbo].[ccspRepCatalogos]
+    @type     TINYINT,
+    @action   TINYINT  = 0,
+    @userId   INT      = 0,
+    @menuId   INT      = 0
+AS
 BEGIN
-    PRINT 'Aplicando paso 4: reconstruir ccspRepCatalogos con type=39...'
-    -- Bloque a insertar en ccspRepCatalogos justo antes de "END -- Action 0":
-    --
-    --     -- CAMPAIGN TYPE (IA vs Standard)
-    --     IF @type = 39
-    --     BEGIN
-    --         SELECT id, description, dbcolumn FROM (VALUES
-    --             ('0', 'systemTranslated_Standard', 'IsAICampaign'),
-    --             ('1', 'systemTranslated_IA',       'IsAICampaign')
-    --         ) AS t(id, description, dbcolumn)
-    --     END
-    --
-    -- Ejecutar el DROP + CREATE completo del SP en SSMS con el bloque anterior incluido.
-    PRINT 'Ver bloque comentado arriba para aplicar en SSMS.'
+
+    DECLARE @tablatemp TABLE (id INT, description VARCHAR(100) NULL)
+    DECLARE @tempwork  TABLE (idwg INT)
+    DECLARE @SQL       NVARCHAR(MAX)
+    DECLARE @condition    NVARCHAR(300) = ''
+    DECLARE @columnName   NVARCHAR(100) = ''
+    DECLARE @consult      NVARCHAR(2000) = ''
+
+    IF @action = 0
+    BEGIN
+        IF OBJECT_ID('TEMPDB..#filters') IS NULL
+        BEGIN
+            CREATE TABLE #filters ([Type] VARCHAR(200))
+        END
+
+        -- CAMPAIGNS
+        IF @type = 1
+        BEGIN
+            INSERT INTO #filters SELECT [Category] FROM ReportsFiltersCategory WHERE FilterName = 'campaigns' AND ReportId = @menuId
+            IF EXISTS (SELECT * FROM #filters)
+            BEGIN
+                SET @condition  = ' WHERE camp.campType IN (SELECT * FROM #filters)'
+                SELECT @columnName = [dbColumn] FROM ReportsFiltersCategory WHERE FilterName = 'campaigns' AND ReportId = @menuId
+            END
+            ELSE BEGIN
+                SET @columnName = 'campaignId'
+            END
+
+            SET @consult = N' SELECT cam_id as id, cam_descripcion as description, @columnName as dbColumn FROM ccCamps camp'
+
+            IF @userId <> 0
+            BEGIN
+                DECLARE @isJustVoiceFilter BIT = CASE WHEN @menuId IN (4010) THEN 1 ELSE 0 END
+
+                SET @SQL = ' DECLARE @tablatemp TABLE (id INT, description VARCHAR(100) NULL)
+                    INSERT INTO @tablatemp
+                    SELECT DISTINCT caesp.IdCampEsp, '''' AS description FROM ccUserView us
+                    INNER JOIN ccRIAWorkGroupUsers wgu ON us.User_id = wgu.User_id
+                    INNER JOIN ccRIACampEspWG caesp ON wgu.IDWG = caesp.IDWG AND caesp.Tipo=1'
+
+                IF @isJustVoiceFilter = 1
+                BEGIN
+                    SET @SQL += ' INNER JOIN dbo.cccamps AS c ON caesp.IdCampEsp = c.cam_id'
+                END
+
+                SET @SQL += ' WHERE us.[User_id] = @userId'
+
+                IF @isJustVoiceFilter = 1
+                BEGIN
+                    SET @SQL += ' AND c.CampType IN (0,6,9)'
+                END
+
+                SET @SQL += ' IF EXISTS(SELECT 1 FROM @tablatemp) BEGIN '
+                    + @consult + ' INNER JOIN @tablatemp A ON camp.cam_id = A.id ' + @condition
+                    + ' END
+                    ELSE BEGIN
+                        SELECT 0 AS id, ''N/A'' AS description, ''campaignId'' AS dbColumn
+                    END'
+            END
+            ELSE BEGIN
+                SET @SQL = @consult + @condition
+            END
+            EXEC sp_executesql @SQL, N'@userId AS INT = 0, @columnName AS NVARCHAR(100)', @userId=@userId, @columnName=@columnName
+        END
+
+        -- DIAL RESULTS
+        IF @type = 2
+        BEGIN
+            SELECT tiporesdial_id AS id, descripcion AS description, 'dialResultId' AS dbColumn
+            FROM ccTipoResultadoDial
+            ORDER BY descripcion
+        END
+
+        -- WORKGROUPS
+        IF @type = 3
+        BEGIN
+            IF @userId <> 0
+            BEGIN
+                SELECT v.IDWG AS id, c.WGName AS description, 'workgroupId' AS dbColumn
+                FROM ccWgByAcdView v
+                INNER JOIN ccriacat_workgroup c ON c.IDWG = v.IDWG
+                WHERE USER_ID = @userId
+                RETURN
+            END
+            ELSE BEGIN
+                SELECT idwg AS id, wgname AS description, 'workgroupId' AS dbColumn
+                FROM ccRIACat_WorkGroup
+                GROUP BY idwg, wgname
+                ORDER BY wgname
+            END
+        END
+
+        -- AREAS
+        IF @type = 4
+        BEGIN
+            IF @userId <> 0
+            BEGIN
+                INSERT INTO @tablatemp
+                SELECT DISTINCT ISNULL(us.IDArea, 0) AS IDArea, wgu.User_id FROM ccUserView us
+                INNER JOIN ccRIAWorkGroupUsers wgu ON us.User_id = wgu.User_id
+                WHERE us.[User_id] = @userId
+
+                SELECT DISTINCT idArea AS id, ISNULL(AreaName, 'S/AREA') AS description, 'areaId' AS dbColumn
+                FROM ccRIACat_Areas area INNER JOIN @tablatemp tem ON area.IDArea = tem.id
+                RETURN
+            END
+            ELSE BEGIN
+                SELECT idArea AS id, AreaName AS description, 'areaId' AS dbColumn
+                FROM ccRIACat_Areas
+                GROUP BY idArea, AreaName
+                ORDER BY AreaName
+            END
+        END
+
+        -- DISPOSITIONS OUT
+        IF @type = 5
+        BEGIN
+            SELECT calif_id AS id, [description] AS description, 'dispositionId' AS dbColumn
+            FROM ccTipoCalifOut
+            ORDER BY [description]
+        END
+
+        -- USER
+        IF @type = 6
+        BEGIN
+            IF @userId <> 0
+            BEGIN
+                INSERT INTO @tempwork
+                    SELECT IDWG FROM ccRIAWorkGroupUsers WITH (INDEX(IX_ccRIAWorkGroupUsers_I)) WHERE User_id = @userId
+
+                SELECT DISTINCT us.User_id AS id, us.Login AS description, 'userId' AS dbcolumn FROM ccUserView us
+                INNER JOIN ccRIAWorkGroupUsers wgu ON us.User_id = wgu.User_id
+                INNER JOIN @tempwork awg ON wgu.IDWG = awg.idwg
+                WHERE us.TipoUser_id = 1 AND [status] = 1
+                RETURN
+            END
+            ELSE BEGIN
+                SELECT [user_id] AS id, [login] AS description, 'userId' AS dbColumn
+                FROM ccUserView WHERE [status] = 1 AND TipoUser_id = 1
+                ORDER BY description
+            END
+        END
+
+        -- ACDS
+        IF @type = 7
+        BEGIN
+            INSERT INTO #filters SELECT [Category] FROM ReportsFiltersCategory WHERE FilterName = 'acds' AND ReportId = @menuId
+            IF EXISTS (SELECT * FROM #filters)
+            BEGIN
+                SET @condition  = ' WHERE B.chat IN (SELECT * FROM #filters)'
+                SELECT @columnName = [dbColumn] FROM ReportsFiltersCategory WHERE FilterName = 'acds' AND ReportId = @menuId
+            END
+            ELSE BEGIN
+                SET @columnName = 'inboundId'
+            END
+
+            SET @consult = N' SELECT inbound_id AS id, descripcion AS description, @columnName AS dbColumn FROM ccInbound B'
+
+            IF @userId <> 0
+            BEGIN
+                SET @SQL = ' DECLARE @tablatemp TABLE (id INT, description VARCHAR(100) NULL)
+                    INSERT INTO @tablatemp
+                    SELECT DISTINCT caesp.IdCampEsp, '''' AS description FROM ccUserView us
+                    INNER JOIN ccRIAWorkGroupUsers wgu ON us.User_id = wgu.User_id
+                    INNER JOIN ccRIACampEspWG caesp ON wgu.IDWG = caesp.IDWG AND caesp.Tipo=0
+                    WHERE us.[User_id] = @userId;'
+                    + ' IF EXISTS(SELECT 1 FROM @tablatemp) BEGIN'
+                    + @consult + ' INNER JOIN @tablatemp A ON B.inbound_id = A.id' + @condition + ' RETURN;'
+                    + ' END
+                    ELSE BEGIN
+                        SELECT 0 AS id, ''N/A'' AS description, ''inboundId'' AS dbColumn
+                    END'
+            END
+            ELSE BEGIN
+                SET @SQL = @consult + @condition
+            END
+            EXEC sp_executesql @SQL, N'@userId INT = 0, @columnName AS NVARCHAR(100)', @userId=@userId, @columnName=@columnName
+        END
+
+        -- DIDS
+        IF @type = 8
+        BEGIN
+            SELECT 0 AS id, 'S/DNIS' AS description, 'dnisId' AS dbColumn
+            UNION
+            SELECT dni_id AS id, CASE WHEN dni_Descripcion = '' THEN CONVERT(VARCHAR, dni_numero) ELSE dni_Descripcion END AS description, 'dnisId' AS dbColumn
+            FROM ccdnis
+        END
+
+        -- DISPOSITIONS IN
+        IF @type = 9
+        BEGIN
+            SELECT calif_id AS id, [description] AS description, 'dispositionId' AS dbColumn
+            FROM ccTipoCalif
+            ORDER BY [description]
+        END
+
+        -- SUBDISPOSITIONS IN
+        IF @type = 10
+        BEGIN
+            SELECT califSub_id AS id, [califSubDesc] AS description, 'subDispositionId' AS dbColumn
+            FROM ccTipoCalifSub
+            ORDER BY [description]
+        END
+
+        -- PROVIDER
+        IF @type = 11
+        BEGIN
+            SELECT proveedor_id AS id, descrip AS description, 'providerId' AS dbColumn
+            FROM cstoProveedor
+            ORDER BY [description]
+        END
+
+        -- UNAVAILABLES
+        IF @type = 12
+        BEGIN
+            SELECT tiponotready_id AS id, descripcion AS description, 'tiponotreadyId' AS dbColumn
+            FROM cctiponotready
+            ORDER BY descripcion
+        END
+
+        -- DIALERS
+        IF @type = 13
+        BEGIN
+            SELECT dialer_id AS id, descripcion AS description, 'dialerId' AS dbColumn
+            FROM ccoDiaers
+            ORDER BY descripcion
+        END
+
+        -- CALL TYPES
+        IF @type = 14
+        BEGIN
+            SELECT statusCall_id AS id, descripcion AS description, 'callStatusId' AS dbColumn
+            FROM ccStatusLlamada
+            ORDER BY descripcion
+        END
+
+        -- AVRS TEMPLATE-SECTION
+        IF @type = 15
+        BEGIN
+            SELECT fc.id AS id, (rf.nombre + ' ' + rc.con_descripcion) + ' ' + CONVERT(VARCHAR(10), fc.id) AS description, 'templateSectionId' AS dbColumn
+            FROM RIA_FORMATOCONCEPTO fc
+            INNER JOIN (SELECT id_formato, nombre, MAX(version) AS version FROM RIA_FORMATOS WHERE activo = 1 GROUP BY id_formato, nombre) AS rf ON rf.id_formato = fc.templateId
+            INNER JOIN RIA_CONCEPTOS rc ON rc.id_concepto = fc.sectionId
+            ORDER BY fc.id
+        END
+
+        -- AVRS TEMPLATES
+        IF @type = 16
+        BEGIN
+            SELECT f.id_formato AS id, f.nombre AS description, 'templateId' AS dbColumn
+            FROM RIA_FORMATOS f INNER JOIN (SELECT id_formato, MAX(version) AS version FROM RIA_FORMATOS WHERE activo = 1 GROUP BY id_formato) AS t
+            ON f.id_formato = t.id_formato AND f.version = t.version
+            ORDER BY f.nombre
+        END
+
+        -- AVRS SUPERVISOR
+        IF @type = 17
+        BEGIN
+            SELECT [user_id] AS id, [login] AS description, 'supervisorId' AS dbColumn
+            FROM ccUserView
+            WHERE [status] = 1 AND TipoUser_id = 2
+            ORDER BY [login]
+        END
+
+        -- AVRS SECTIONS
+        IF @type = 31
+        BEGIN
+            SELECT c.id_concepto AS id, c.con_descripcion AS description, 'sectionId' AS dbColumn
+            FROM RIA_CONCEPTOS c INNER JOIN (SELECT id_concepto, MAX(version) AS version FROM RIA_CONCEPTOS GROUP BY id_concepto) AS t
+            ON c.id_concepto = t.id_concepto AND c.version = t.version
+            ORDER BY c.con_descripcion
+        END
+
+        -- AVRS QUESTIONS
+        IF @type = 23
+        BEGIN
+            SELECT p.id_pregunta AS id, p.enunciado_pregunta AS description, 'questionId' AS dbColumn
+            FROM RIA_PREGUNTAS p INNER JOIN (SELECT id_pregunta FROM RIA_PREGUNTAS GROUP BY id_pregunta) AS t ON p.id_pregunta = t.id_pregunta
+            ORDER BY p.enunciado_pregunta
+        END
+
+        -- AVRS QUESTIONS CHAT
+        IF @type = 24
+        BEGIN
+            SELECT p.id_pregunta AS id, p.enunciado_pregunta AS description, 'questionId' AS dbColumn
+            FROM RIA_PREGUNTAS p INNER JOIN (SELECT id_pregunta FROM RIA_PREGUNTAS GROUP BY id_pregunta) AS t ON p.id_pregunta = t.id_pregunta
+            ORDER BY p.enunciado_pregunta
+        END
+
+        -- STATUS CALL
+        IF @type = 25
+        BEGIN
+            SELECT statusCall_id AS id, [descripcion] AS description, 'statusCallId' AS dbcolumn
+            FROM ccstatusLlamada
+            ORDER BY [descripcion]
+        END
+
+        -- SURVEY
+        IF @type = 26
+        BEGIN
+            SELECT surveyId AS id, [description] AS description, 'surveyId' AS dbcolumn
+            FROM Survey
+            ORDER BY [description]
+        END
+
+        -- DIAL TYPE
+        IF @type = 29
+        BEGIN
+            SELECT dialId AS id, [description] AS description, 'dialId' AS dbcolumn
+            FROM dialType
+            ORDER BY [description]
+        END
+
+        -- DIALS
+        IF @type = 30
+        BEGIN
+            SELECT id AS id, [description] AS description, 'dialId' AS dbcolumn
+            FROM Dials
+            ORDER BY [description]
+        END
+
+        -- INBOUND CHAT CAMPAIGNS
+        IF @type = 33
+        BEGIN
+            IF @userId <> 0
+            BEGIN
+                INSERT INTO @tablatemp
+                SELECT DISTINCT caesp.IdCampEsp, '' AS description FROM ccUserView us
+                INNER JOIN ccRIAWorkGroupUsers wgu ON us.User_id = wgu.User_id
+                INNER JOIN ccRIACampEspWG caesp ON wgu.IDWG = caesp.IDWG AND caesp.Tipo=0
+                INNER JOIN ccInbound i ON caesp.IdCampEsp = i.Inbound_id AND i.chat IN (0,11)
+                WHERE us.[User_id] = @userId
+
+                SELECT inbound_id AS id, descripcion AS description, 'inboundCamp' AS dbColumn
+                FROM ccInbound B INNER JOIN @tablatemp A ON B.inbound_id = A.id
+                RETURN
+            END
+            ELSE BEGIN
+                SELECT inbound_id AS id, descripcion AS description, 'inboundCamp' AS dbColumn
+                FROM ccInbound WHERE chat IN (0,11)
+            END
+        END
+
+        -- AUXILIAR TYPES
+        IF @type = 34
+        BEGIN
+            SELECT DISTINCT TipoReadyAuxiliar_Id AS id, [Description] AS description, 'auxiliarId' AS dbcolumn
+            FROM TipoReadyAuxiliar
+            ORDER BY [description]
+        END
+
+        -- SMS SEGMENTS
+        IF @type = 35
+        BEGIN
+            SELECT SegmentId AS id, Name AS description, 'SegmentId' AS dbColumn FROM ccSmsSegments
+        END
+
+        -- ADMIN USER
+        IF @type = 36
+        BEGIN
+            IF @userId <> 0
+            BEGIN
+                INSERT INTO @tempwork
+                    SELECT IDWG FROM ccRIAWorkGroupUsers WITH (INDEX(IX_ccRIAWorkGroupUsers_I)) WHERE User_id = @userId
+
+                SELECT DISTINCT us.User_id AS id, us.Login AS description, 'adminId' AS dbcolumn FROM ccUserView us
+                INNER JOIN ccRIAWorkGroupUsers wgu ON us.User_id = wgu.User_id
+                INNER JOIN @tempwork awg ON wgu.IDWG = awg.idwg
+                WHERE us.TipoUser_id = 2 AND [status] = 1
+                RETURN
+            END
+            ELSE BEGIN
+                SELECT [user_id] AS id, [login] AS description, 'adminId' AS dbColumn
+                FROM ccUserView WHERE [status] = 1 AND TipoUser_id = 2
+                ORDER BY description
+            END
+        END
+
+        -- IA INBOUND CAMPAIGNS (proceso 2150)
+        IF @type = 37
+        BEGIN
+            IF @userId <> 0
+            BEGIN
+                SELECT DISTINCT
+                    i.Inbound_id  AS id,
+                    i.descripcion AS description,
+                    'inboundId'   AS dbcolumn
+                FROM ccInbound i
+                INNER JOIN ccRIACampEspWG cewg ON cewg.IdCampEsp = i.Inbound_id
+                INNER JOIN ccRIAWorkGroupUsers wgu ON wgu.IDWG = cewg.IDWG
+                INNER JOIN ccUsers u ON wgu.User_id = u.user_id
+                WHERE wgu.User_id = @userId
+                  AND i.chat = 11
+                  AND i.IDArea = u.IDArea
+            END
+            ELSE
+            BEGIN
+                SELECT DISTINCT
+                    Inbound_id  AS id,
+                    descripcion AS description,
+                    'inboundId' AS dbcolumn
+                FROM ccInbound
+                WHERE chat = 11
+                ORDER BY description
+            END
+        END
+
+        -- VIRTUAL AGENT MODEL NAME (procesos 2150, 3010, 4010)
+        IF @type = 38
+        BEGIN
+            SELECT
+                nameAgent AS id,
+                nameAgent AS description,
+                'ModelName' AS dbcolumn
+            FROM ccVirtualAgent
+            ORDER BY description
+        END
+
+        -- CAMPAIGN TYPE (proceso 4010)
+        -- Filtra por campType en RepOutDialDetail: 0=Estandar, 9=IA, 6=VP
+        IF @type = 39
+        BEGIN
+            SELECT id, description, dbcolumn FROM (VALUES
+                (0, 'systemTranslated_StandardOutbound', 'campType'),
+                (9, 'systemTranslated_AIOutbound',       'campType'),
+                (6, 'systemTranslated_VPOutbound',       'campType')
+            ) AS t(id, description, dbcolumn)
+        END
+
+    END -- Action 0
+
+    IF OBJECT_ID('TEMPDB..#filters') IS NOT NULL
+        DROP TABLE #filters
+
+    -- ---------------------------------------------------------
+    IF @action = 1
+    BEGIN
+        -- TRUNKS
+        IF @type = 13
+        BEGIN
+            SELECT MIN(trunk) AS [min], MAX(trunk) AS [max], 'trunk' AS dbColumn FROM RepTrunkBusy
+        END
+
+        -- AVRS DISPOSITION
+        IF @type = 18
+        BEGIN
+            SELECT 0 AS [min], 100 AS [max], 'Disposition' AS dbColumn
+        END
+
+        -- AVG DISPOSITION
+        IF @type = 19
+        BEGIN
+            SELECT 0 AS [min], 100 AS [max], 'avgDisposition' AS dbColumn
+        END
+
+        -- SCORE
+        IF @type = 20
+        BEGIN
+            SELECT 0 AS [min], 100 AS [max], 'avgDisposition' AS dbColumn
+        END
+    END
+
 END
 GO

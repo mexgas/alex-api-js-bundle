@@ -73,7 +73,15 @@ if @Version_Actual >= @Version
 	while exists(select publicationName from publicationTableCCenterRIA where status=0) begin
 		select top 1 @publicationName=publicationName,@publicationId=Id from publicationTableCCenterRIA where status=0
 		use [ccReportsRia]
-		if not exists (SELECT * FROM sysobjects WHERE name = N'syspublications')
+		IF OBJECT_ID('dbo.MSreplication_subscriptions') IS NULL
+	   OR NOT EXISTS
+	   (
+			SELECT 1
+			FROM dbo.MSreplication_subscriptions
+			WHERE UPPER(publisher) = UPPER(@publicationServer)
+			  AND UPPER(publisher_db) = UPPER(N'CCenterRia')
+			  AND UPPER(publication) = UPPER(@publicationName)
+	   )
 		begin
 					
 			exec sp_addpullsubscription @publisher = @publicationServer
@@ -111,49 +119,29 @@ if @Version_Actual >= @Version
 			, @publication_type = 0
 
 		end
-		else begin			
-			if not exists
-			(
-				select 
-					1 
-				from 
-					dbo.syssubscriptions 
-				where 
-					dest_db= 'ccReportsRia' 
-					AND artid in
-								(
-									select 
-										artid 
-									from 
-										dbo.sysarticles 
-									where
-										pubid = 
-												(
-													select 
-														pubid 
-													FROM 
-														dbo.syspublications 
-													WHERE 
-														name = @publicationName --and UPPER(publisher)=UPPER(publishingservername()) and publisher_db=db_name()
-												)
-								)
-					--the status and subscription_types are different on transactional publications
-					--AND status <>2 
-						--and subscription_type <> 2 and subscription_type <> 3
-			)
-			begin
-				
-				exec sp_addpullsubscription @publisher = @publicationServer
-				, @publication = @publicationName
-				, @publisher_db = N'CCenterRia'
-				, @independent_agent = N'True'
-				, @subscription_type = N'pull'
-				, @description = N''
-				, @update_mode = N'read only'
-				, @immediate_sync = 0
-			
-				
-				exec sp_addpullsubscription_agent @publisher = @publicationServer
+		ELSE 
+BEGIN
+    IF OBJECT_ID('dbo.MSreplication_subscriptions') IS NULL
+       OR NOT EXISTS
+       (
+            SELECT 1
+            FROM dbo.MSreplication_subscriptions
+            WHERE UPPER(publisher) = UPPER(@publicationServer)
+              AND UPPER(publisher_db) = UPPER(N'CCenterRia')
+              AND UPPER(publication) = UPPER(@publicationName)
+       )
+    BEGIN
+        EXEC sp_addpullsubscription 
+            @publisher = @publicationServer,
+            @publication = @publicationName,
+            @publisher_db = N'CCenterRia',
+            @independent_agent = N'True',
+            @subscription_type = N'pull',
+            @description = N'',
+            @update_mode = N'read only',
+            @immediate_sync = 0;
+
+        exec sp_addpullsubscription_agent @publisher = @publicationServer
 				, @publisher_db = N'CCenterRia'
 				, @publication = @publicationName
 				, @distributor = @publicationServer
@@ -177,8 +165,12 @@ if @Version_Actual >= @Version
 				, @job_login = @jobLogin
 				, @job_password = @jobPassword
 				, @publication_type = 0
-			end
-		end	
+    END
+    ELSE
+    BEGIN
+        PRINT 'La suscripcion ya existe para la publicacion: ' + @publicationName;
+    END
+END
 		update publicationTableCCenterRIA set status=1 where id=@publicationId
 	end
 

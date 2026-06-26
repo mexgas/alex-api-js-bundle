@@ -816,9 +816,9 @@ BEGIN
         IF @type = 39
         BEGIN
             SELECT id, description, dbcolumn FROM (VALUES
-                (0, 'systemTranslated_StandardOutbound', 'campType'),
-                (9, 'systemTranslated_AIOutbound',       'campType'),
-                (6, 'systemTranslated_VPOutbound',       'campType')
+                (0, 'Salida Estándar', 'campType'),
+                (9, 'Salida IA',       'campType'),
+                (6, 'Salida VP',       'campType')
             ) AS t(id, description, dbcolumn)
         END
 

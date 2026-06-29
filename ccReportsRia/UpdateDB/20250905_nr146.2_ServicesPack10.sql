@@ -9103,19 +9103,15 @@ END;'
 			RepAgentHistory;'
     exec (@sql)
 
-    SET @process = 'INSERT ccMenus 12020'
-    SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccMenus WHERE menu_id = 12020)
-    BEGIN
-        INSERT INTO ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release) VALUES (12020,''Conversaciones por campaña|Conversations by Campaign'',12000,''B'',7,3,'''',''2605c8244920fb599fb936a4bf94521a7284d5e414815e8ef15fa8f6b0040db16a54ce29b02250a22a8cb87c41c6f3b30e3860a31b59d733442bb174a555b7b2'');
-    END'
-    exec (@sql)
-
-    SET @process = 'Insert status de numero no valido para reportes'
+        SET @process = 'Insert status de numero no valido para reportes'
     SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccSMSResult WHERE resultId = 8)
 BEGIN
     INSERT INTO ccSMSResult (resultId, description, translatedDesc) 
     VALUES (8, ''Invalid number'', ''systemTranslated_invalidNumber'');
 END'
+
+    SET @process = ''
+    SET @sql = ''
     exec (@sql)
 
     SET @process = ''

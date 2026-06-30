@@ -1,188 +1,283 @@
-set nocount on
-use [ccReportsRia]
-declare @Version int, @Version_Actual int
+SET NOCOUNT ON;
+
+USE [CCReportsRIA];
+
+DECLARE @Version int,
+        @Version_Actual int;
+
 ---------------- VERSION ----------------
-Set @Version = '102'
+SET @Version = 102;
 
-exec @Version_Actual = dbo.ccsp_getVersion 'BD'
+EXEC @Version_Actual = dbo.ccsp_getVersion 'BD';
 
-if @Version_Actual >= @Version
- begin
-	declare @Sql nvarchar(max)
-	declare @publicationServer nvarchar(max)
-
-	declare @hostName nvarchar(max),@indexInstancia tinyint
-	select @hostName =@@servername
-	select @indexInstancia =charindex('\',@hostName )
-	if @indexInstancia>0
-		set @hostName = substring(@hostName , 0, charindex('\',@hostName ))
-
-
-	select @publicationServer = convert(nvarchar(max),valor) from ccsettings where setting_id = 31
-	select @publicationServer = substring(@publicationServer, 0, charindex('|',@publicationServer))
-
-	declare @jobLogin nvarchar(max)
-	declare @jobPassword nvarchar(max)
-	declare @userNameSQL nvarchar(50)
-	declare @passwordSQL nvarchar(50)
-	declare @userNameWin nvarchar(50)
-	declare @passwordWin nvarchar(50)
-	
-
-	declare @publDistLogin nvarchar(max)
-	declare @publDistPassword nvarchar(max)
-
-	declare @settingBD nvarchar(100)
-
-	declare @temp table	(id int, value nvarchar(100));
-	select @settingBD = valor from ccSettings where setting_id = 35
-
-	insert into @temp select id,Value from fn_RIASplitDelimited(@settingBD,'|')
-
-	select @userNameWin = value  from @temp where id = 1
-	select @passwordWin = value  from @temp where id = 2
-	select @userNameSQL = value  from @temp where id = 3
-	select @passwordSQL = value  from @temp where id = 4
-	select @hostName = value  from @temp where id = 5
-
-	
-	-----agregado de credenciales WINDOWS-----
-	set @jobLogin = isnull(@userNameWin,@hostName+'\SnapshotReplication')
-	set @jobPassword = isnull(@passwordWin,'Nuxiba2010')
-
-	-----agregado de credenciales SQL SERVER-----
-	set @publDistLogin = isnull(@userNameSQL,'replication')
-	set @publDistPassword = isnull(@passwordSQL,'replication')
-
-	---------------- INICIO SCRIPT ----------------
-
-	/******************************/
-	/*** Change user dboowner *****/
-	/******************************/
-
-	if exists (select * from sys.databases where name='ccReportsRia')
-	begin
-		if not exists (select * from sys.databases where suser_sname(owner_sid)<>'sa' and name='ccReportsRia')
-			ALTER AUTHORIZATION ON DATABASE::ccReportsRia TO sa
-	end
-		
-
-	declare @publicationId int,@publicationName varchar(100)
-	update publicationTableCCenterRIA set status=0
-	
-	while exists(select publicationName from publicationTableCCenterRIA where status=0) begin
-		select top 1 @publicationName=publicationName,@publicationId=Id from publicationTableCCenterRIA where status=0
-		use [ccReportsRia]
-		IF OBJECT_ID('dbo.MSreplication_subscriptions') IS NULL
-	   OR NOT EXISTS
-	   (
-			SELECT 1
-			FROM dbo.MSreplication_subscriptions
-			WHERE UPPER(publisher) = UPPER(@publicationServer)
-			  AND UPPER(publisher_db) = UPPER(N'CCenterRia')
-			  AND UPPER(publication) = UPPER(@publicationName)
-	   )
-		begin
-					
-			exec sp_addpullsubscription @publisher = @publicationServer
-			, @publication = @publicationName
-			, @publisher_db = N'CCenterRia'
-			, @independent_agent = N'True'
-			, @subscription_type = N'pull'
-			, @description = N''
-			, @update_mode = N'read only'
-			, @immediate_sync = 0
-			
-			exec sp_addpullsubscription_agent @publisher = @publicationServer
-			, @publisher_db = N'CCenterRia'
-			, @publication = @publicationName
-			, @distributor = @publicationServer
-			, @distributor_security_mode = 0
-			, @distributor_login = @publDistLogin
-			, @distributor_password = @publDistPassword
-			, @enabled_for_syncmgr = N'False'
-			, @frequency_type = 1
-			, @frequency_interval = 0
-			, @frequency_relative_interval = 0
-			, @frequency_recurrence_factor = 0
-			, @frequency_subday = 0
-			, @frequency_subday_interval = 0
-			, @active_start_time_of_day = 0
-			, @active_end_time_of_day = 0
-			, @active_start_date = 0
-			, @active_end_date = 19950101
-			, @alt_snapshot_folder = N''
-			, @working_directory = N''
-			, @use_ftp = N'False'
-			, @job_login = @jobLogin
-			, @job_password = @jobPassword
-			, @publication_type = 0
-
-		end
-		ELSE 
+IF @Version_Actual >= @Version
 BEGIN
-    IF OBJECT_ID('dbo.MSreplication_subscriptions') IS NULL
-       OR NOT EXISTS
-       (
-            SELECT 1
-            FROM dbo.MSreplication_subscriptions
-            WHERE UPPER(publisher) = UPPER(@publicationServer)
-              AND UPPER(publisher_db) = UPPER(N'CCenterRia')
-              AND UPPER(publication) = UPPER(@publicationName)
-       )
+    DECLARE @Sql nvarchar(max);
+    DECLARE @publicationServer nvarchar(max);
+    DECLARE @hostName nvarchar(max);
+    DECLARE @indexInstancia tinyint;
+
+    SELECT @hostName = @@SERVERNAME;
+    SELECT @indexInstancia = CHARINDEX('\', @hostName);
+
+    IF @indexInstancia > 0
+        SET @hostName = SUBSTRING(@hostName, 1, CHARINDEX('\', @hostName) - 1);
+
+    --------------------------------------------------------------------
+    -- Obtener servidor de publicación
+    --------------------------------------------------------------------
+    SELECT @publicationServer = CONVERT(nvarchar(max), valor)
+    FROM ccSettings
+    WHERE setting_id = 31;
+
+    IF CHARINDEX('|', @publicationServer) > 0
     BEGIN
-        EXEC sp_addpullsubscription 
-            @publisher = @publicationServer,
-            @publication = @publicationName,
-            @publisher_db = N'CCenterRia',
-            @independent_agent = N'True',
-            @subscription_type = N'pull',
-            @description = N'',
-            @update_mode = N'read only',
-            @immediate_sync = 0;
+        SET @publicationServer = LEFT(@publicationServer, CHARINDEX('|', @publicationServer) - 1);
+    END;
 
-        exec sp_addpullsubscription_agent @publisher = @publicationServer
-				, @publisher_db = N'CCenterRia'
-				, @publication = @publicationName
-				, @distributor = @publicationServer
-				, @distributor_security_mode = 0
-				, @distributor_login = @publDistLogin
-				, @distributor_password = @publDistPassword
-				, @enabled_for_syncmgr = N'False'
-				, @frequency_type = 1
-				, @frequency_interval = 0
-				, @frequency_relative_interval = 0
-				, @frequency_recurrence_factor = 0
-				, @frequency_subday = 0
-				, @frequency_subday_interval = 0
-				, @active_start_time_of_day = 0
-				, @active_end_time_of_day = 0
-				, @active_start_date = 0
-				, @active_end_date = 19950101
-				, @alt_snapshot_folder = N''
-				, @working_directory = N''
-				, @use_ftp = N'False'
-				, @job_login = @jobLogin
-				, @job_password = @jobPassword
-				, @publication_type = 0
-    END
-    ELSE
+    IF ISNULL(@publicationServer, '') = ''
     BEGIN
-        PRINT 'La suscripcion ya existe para la publicacion: ' + @publicationName;
-    END
-END
-		update publicationTableCCenterRIA set status=1 where id=@publicationId
-	end
+        RAISERROR('No se pudo obtener @publicationServer desde ccSettings setting_id = 31.', 16, 1);
+        RETURN;
+    END;
 
-	------------------ FIN SCRIPT ------------------
+    --------------------------------------------------------------------
+    -- Variables de credenciales
+    --------------------------------------------------------------------
+    DECLARE @jobLogin nvarchar(max);
+    DECLARE @jobPassword nvarchar(max);
+    DECLARE @userNameSQL nvarchar(50);
+    DECLARE @passwordSQL nvarchar(50);
+    DECLARE @userNameWin nvarchar(50);
+    DECLARE @passwordWin nvarchar(50);
 
-	SELECT 'Pull subscription setup completed successfully.';
- end
+    DECLARE @publDistLogin nvarchar(max);
+    DECLARE @publDistPassword nvarchar(max);
 
-else
- begin
-	select 'Version incorrecta de base de datos, version actual: '
-	+ cast(@Version_Actual as varchar(5))
-	+ ', version que desea ingresar: ' + cast(@Version as varchar(5))
- end
-set nocount off
+    DECLARE @settingBD nvarchar(100);
+
+    DECLARE @temp TABLE
+    (
+        id int,
+        value nvarchar(100)
+    );
+
+    SELECT @settingBD = valor
+    FROM ccSettings
+    WHERE setting_id = 35;
+
+    INSERT INTO @temp
+    SELECT id, value
+    FROM fn_RIASplitDelimited(@settingBD, '|');
+
+    SELECT @userNameWin = value
+    FROM @temp
+    WHERE id = 1;
+
+    SELECT @passwordWin = value
+    FROM @temp
+    WHERE id = 2;
+
+    SELECT @userNameSQL = value
+    FROM @temp
+    WHERE id = 3;
+
+    SELECT @passwordSQL = value
+    FROM @temp
+    WHERE id = 4;
+
+    SELECT @hostName = value
+    FROM @temp
+    WHERE id = 5;
+
+    --------------------------------------------------------------------
+    -- Credenciales WINDOWS
+    --------------------------------------------------------------------
+    SET @jobLogin = ISNULL(NULLIF(@userNameWin, ''), @hostName + '\SnapshotReplication');
+    SET @jobPassword = ISNULL(NULLIF(@passwordWin, ''), 'Nuxiba2010');
+
+    --------------------------------------------------------------------
+    -- Credenciales SQL SERVER
+    --------------------------------------------------------------------
+    SET @publDistLogin = ISNULL(NULLIF(@userNameSQL, ''), 'replication');
+    SET @publDistPassword = ISNULL(NULLIF(@passwordSQL, ''), 'replication');
+
+    --------------------------------------------------------------------
+    -- Cambiar owner a sa si aplica
+    --------------------------------------------------------------------
+    IF EXISTS
+    (
+        SELECT 1
+        FROM sys.databases
+        WHERE name = 'CCReportsRIA'
+          AND SUSER_SNAME(owner_sid) <> 'sa'
+    )
+    BEGIN
+        ALTER AUTHORIZATION ON DATABASE::CCReportsRIA TO sa;
+    END;
+
+    --------------------------------------------------------------------
+    -- Validar tabla de publicaciones
+    --------------------------------------------------------------------
+    IF OBJECT_ID(N'dbo.publicationTableCCenterRIA', N'U') IS NULL
+    BEGIN
+        RAISERROR('No existe la tabla dbo.publicationTableCCenterRIA en CCReportsRIA.', 16, 1);
+        RETURN;
+    END;
+
+    --------------------------------------------------------------------
+    -- Inicio de creación de pull subscriptions
+    --------------------------------------------------------------------
+    DECLARE @publicationId int;
+    DECLARE @publicationName varchar(100);
+    DECLARE @ExisteSuscripcion bit;
+
+    UPDATE publicationTableCCenterRIA
+    SET status = 0;
+
+    WHILE EXISTS
+    (
+        SELECT 1
+        FROM publicationTableCCenterRIA
+        WHERE status = 0
+    )
+    BEGIN
+        SELECT TOP 1
+            @publicationName = publicationName,
+            @publicationId = Id
+        FROM publicationTableCCenterRIA
+        WHERE status = 0
+        ORDER BY Id;
+
+        SET @ExisteSuscripcion = 0;
+
+        ----------------------------------------------------------------
+        -- Validar existencia de suscripción sin romper si la tabla no existe
+        ----------------------------------------------------------------
+        IF OBJECT_ID(N'dbo.MSreplication_subscriptions', N'U') IS NOT NULL
+        BEGIN
+            SET @Sql = N'
+                IF EXISTS
+                (
+                    SELECT 1
+                    FROM dbo.MSreplication_subscriptions
+                    WHERE UPPER(publisher) = UPPER(@publisher)
+                      AND UPPER(publisher_db) = UPPER(@publisher_db)
+                      AND UPPER(publication) = UPPER(@publication)
+                )
+                BEGIN
+                    SET @existe = 1;
+                END
+                ELSE
+                BEGIN
+                    SET @existe = 0;
+                END;
+            ';
+
+            EXEC sp_executesql
+                @Sql,
+                N'@publisher nvarchar(255),
+                  @publisher_db nvarchar(255),
+                  @publication nvarchar(255),
+                  @existe bit OUTPUT',
+                @publisher = @publicationServer,
+                @publisher_db = N'CCenterRia',
+                @publication = @publicationName,
+                @existe = @ExisteSuscripcion OUTPUT;
+        END
+        ELSE
+        BEGIN
+            SET @ExisteSuscripcion = 0;
+        END;
+
+        ----------------------------------------------------------------
+        -- Crear suscripción si no existe
+        ----------------------------------------------------------------
+        IF @ExisteSuscripcion = 0
+        BEGIN
+            BEGIN TRY
+
+                PRINT 'Creando pull subscription para publicacion: ' + @publicationName;
+
+                EXEC sp_addpullsubscription
+                    @publisher = @publicationServer,
+                    @publication = @publicationName,
+                    @publisher_db = N'CCenterRia',
+                    @independent_agent = N'True',
+                    @subscription_type = N'pull',
+                    @description = N'',
+                    @update_mode = N'read only',
+                    @immediate_sync = 0;
+
+                EXEC sp_addpullsubscription_agent
+                    @publisher = @publicationServer,
+                    @publisher_db = N'CCenterRia',
+                    @publication = @publicationName,
+                    @distributor = @publicationServer,
+                    @distributor_security_mode = 0,
+                    @distributor_login = @publDistLogin,
+                    @distributor_password = @publDistPassword,
+                    @enabled_for_syncmgr = N'False',
+                    @frequency_type = 1,
+                    @frequency_interval = 0,
+                    @frequency_relative_interval = 0,
+                    @frequency_recurrence_factor = 0,
+                    @frequency_subday = 0,
+                    @frequency_subday_interval = 0,
+                    @active_start_time_of_day = 0,
+                    @active_end_time_of_day = 0,
+                    @active_start_date = 0,
+                    @active_end_date = 19950101,
+                    @alt_snapshot_folder = N'',
+                    @working_directory = N'',
+                    @use_ftp = N'False',
+                    @job_login = @jobLogin,
+                    @job_password = @jobPassword,
+                    @publication_type = 0;
+
+                PRINT 'Pull subscription creada correctamente para publicacion: ' + @publicationName;
+
+            END TRY
+            BEGIN CATCH
+
+                SELECT
+                    ERROR_NUMBER() AS ErrorNumber,
+                    ERROR_MESSAGE() AS ErrorMessage,
+                    ERROR_PROCEDURE() AS ErrorProcedure,
+                    ERROR_LINE() AS ErrorLine,
+                    @publicationServer AS PublicationServer,
+                    N'CCenterRia' AS PublisherDB,
+                    @publicationName AS PublicationName,
+                    @publDistLogin AS DistributorLogin,
+                    @jobLogin AS JobLogin;
+
+            END CATCH;
+        END
+        ELSE
+        BEGIN
+            PRINT 'La suscripcion ya existe para la publicacion: ' + @publicationName;
+        END;
+
+        ----------------------------------------------------------------
+        -- Marcar publicación como procesada
+        ----------------------------------------------------------------
+        UPDATE publicationTableCCenterRIA
+        SET status = 1
+        WHERE Id = @publicationId;
+    END;
+
+    --------------------------------------------------------------------
+    -- Fin
+    --------------------------------------------------------------------
+    SELECT 'Pull subscription setup completed successfully.' AS Resultado;
+END;
+ELSE
+BEGIN
+    SELECT
+        'Version incorrecta de base de datos, version actual: '
+        + CAST(@Version_Actual AS varchar(5))
+        + ', version que desea ingresar: '
+        + CAST(@Version AS varchar(5)) AS Resultado;
+END;
+
+SET NOCOUNT OFF;

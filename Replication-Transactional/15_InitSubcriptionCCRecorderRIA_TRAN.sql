@@ -9,6 +9,20 @@ declare @settingBD varchar(500)
 
 	select @serverName = value  from @temp where id = 1
 
+    declare @publDistLogin nvarchar(max)
+	declare @publDistPassword nvarchar(max)
+
+    
+
+    delete from @temp
+
+    select @settingBD = par_valor from TREC_PARAMETROS where par_id = 73
+	insert into @temp select id,Value from fn_RIASplitDelimited(@settingBD,'|')
+
+    select @publDistLogin=value from @temp where id=3
+    select @publDistPassword=value from @temp where id=4
+
+
 	/*Comienza creacion de linked server*/
 	if(@serverName!=@@servername)
 	begin
@@ -16,7 +30,7 @@ declare @settingBD varchar(500)
 		IF NOT EXISTS ( SELECT TOP (1) * FROM sysservers WHERE srvname = 'SvrPublisher_transactional' )
 		begin
 			EXEC master.dbo.sp_addlinkedserver @server = N'SvrPublisher_transactional', @srvproduct=N'SQLSERVER', @provider=N'SQLNCLI11', @datasrc=@serverName
-			EXEC master.dbo.sp_addlinkedsrvlogin @rmtsrvname=N'SvrPublisher_transactional',@useself=N'False',@locallogin=NULL,@rmtuser=N'replication',@rmtpassword='replication'
+			EXEC master.dbo.sp_addlinkedsrvlogin @rmtsrvname=N'SvrPublisher_transactional',@useself=N'False',@locallogin=NULL,@rmtuser=@publDistLogin,@rmtpassword=@publDistPassword
 			EXEC master.dbo.sp_serveroption @server=N'SvrPublisher_transactional', @optname=N'collation compatible', @optvalue=N'false'
 			EXEC master.dbo.sp_serveroption @server=N'SvrPublisher_transactional', @optname=N'data access', @optvalue=N'true'
 			EXEC master.dbo.sp_serveroption @server=N'SvrPublisher_transactional', @optname=N'dist', @optvalue=N'false'

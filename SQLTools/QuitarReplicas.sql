@@ -160,8 +160,8 @@ END CATCH;
 -- Clean Up Linked Servers and Jobs Related to Transactional Replication
 -- =============================================
 IF EXISTS (SELECT * FROM sys.servers WHERE name = 'SvrPublisher_transactional')
-BEGIN
-    EXEC master.dbo.sp_dropserver @server = 'SvrPublisher_transactional', @droplogins = NULL;
+BEGIN    
+    EXEC master.dbo.sp_dropserver @server = 'SvrPublisher_transactional', @droplogins='droplogins'
     PRINT 'Dropped linked server: SvrPublisher_transactional';
 END;
 

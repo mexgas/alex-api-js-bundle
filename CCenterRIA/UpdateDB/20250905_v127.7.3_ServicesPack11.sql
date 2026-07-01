@@ -157,17 +157,50 @@ SELECT
 FROM Tiempos;'
     exec (@sql)
     
-
-    
-    
-
-    SET @process = ''
-    SET @sql = ''
+    SET @process = 'DROP ccsp_GetPreviewHistory'
+    SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GetPreviewHistory'')
+    begin
+            DROP PROCEDURE ccsp_GetPreviewHistory;
+    end'
     exec (@sql)
 
 
-    SET @process = ''
-    SET @sql = ''
+    SET @process = 'CREATE ccsp_GetPreviewHistory'
+    SET @sql = '	CREATE Proc [dbo].[ccsp_GetPreviewHistory]( @callOut_Id int ,@initialRow smallint,@finalRow smallint)
+		AS
+		declare @initialDate datetime, @finalDate datetime
+		set @finalDate= GETDATE()
+		set @initialDate = (select DATEDIFF(day,30,@finalDate))
+
+		declare @temTable table (callOut_id int, dialResult varchar(50),disposition varchar(100),date datetime)
+		insert into @temTable 
+					select co.callout_id as callOut_id, 
+					trd.descTranslate dialResult,
+					ISNULL( tco.Description,'''') as calificacion,
+					ld.fecha as fecha
+					from ccoCallsOut co 
+					left join ccoLogDials ld on co.callout_id = ld.callout_id
+					left join cctipoResultadoDial trd ON ld.tipoResDial_id = trd.tiporesdial_id
+					LEFT JOIN cctipocalifout tco ON tco.calif_id = co.calif_id
+					where co.callout_id = @callOut_Id and co.cal_id = ld.cal_id  and ld.fecha >= @initialDate and ld.fecha <=@finalDate and ld.tipoResDial_id != 13
+
+					union 
+					select rppr.callout_id,
+					tpp.descripcion,
+					'''',
+					rppr.reg_date
+					from RegProcessPreviewRecord rppr
+					join ccTypeProcessPreview tpp on rppr.process= tpp.typeProcess_id
+					where rppr.process NOT IN (1,5,7,14,15) and rppr.callout_id = @callOut_Id and rppr.reg_date >= @initialDate and rppr.reg_date <=@finalDate
+			
+
+		SELECT  * FROM    
+				( SELECT    ROW_NUMBER() OVER ( ORDER BY date ) AS RowNum, *
+				  FROM      @temTable 
+				) AS RowConstrainedResult
+		WHERE   RowNum >= @initialRow
+			AND RowNum <= @finalRow 
+		ORDER BY RowNum	'
     exec (@sql)
     
 

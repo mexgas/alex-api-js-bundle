@@ -9103,9 +9103,12 @@ END;'
 			RepAgentHistory;'
     exec (@sql)
 
-    SET @process = ''
-    SET @sql = ''
-    exec (@sql)
+        SET @process = 'Insert status de numero no valido para reportes'
+    SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccSMSResult WHERE resultId = 8)
+BEGIN
+    INSERT INTO ccSMSResult (resultId, description, translatedDesc) 
+    VALUES (8, ''Invalid number'', ''systemTranslated_invalidNumber'');
+END'
 
     SET @process = ''
     SET @sql = ''

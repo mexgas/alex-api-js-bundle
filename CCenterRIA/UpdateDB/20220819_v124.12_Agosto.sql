@@ -3330,17 +3330,48 @@ END
     EXEC(@sql)
         ------------------------------------------------------------ End Jesus Gallardo  ---------------------------------------------------------------------
         ------------------------------------------------------------ Start Hugo Longoria ---------------------------------------------------------------------
-        set @process = 'ANIRotative Create table ccRotativeANIListDetail'
-        set @sql = 'IF (NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES 
-                 WHERE TABLE_SCHEMA = ''dbo'' 
-                 AND  TABLE_NAME = ''ccRotativeANIListDetail''))
-                BEGIN
-                CREATE TABLE [dbo].[ccRotativeANIListDetail](
-                    [id_RAniList] [smallint] NOT NULL,
-                    [telAni] [varchar](32) NOT NULL,
-                    [loadDate] [smalldatetime] NOT NULL DEFAULT Getdate())
-                END'
-        EXEC(@sql)
+        SET @process = 'ANIRotative Create/Alter table ccRotativeANIListDetail';
+        SET @sql = '
+    IF NOT EXISTS (
+        SELECT 1
+        FROM sys.tables t
+        INNER JOIN sys.schemas s 
+            ON t.schema_id = s.schema_id
+        WHERE s.name = ''dbo''
+          AND t.name = ''ccRotativeANIListDetail''
+    )
+    BEGIN
+        CREATE TABLE [dbo].[ccRotativeANIListDetail]
+        (
+            [id_RAniList] [smallint] NOT NULL,
+            [telAni] [varchar](32) NOT NULL,
+            [loadDate] [smalldatetime] NOT NULL 
+                CONSTRAINT [DF_ccRotativeANIListDetail_loadDate] DEFAULT GETDATE()
+        );
+    END
+    ELSE
+    BEGIN
+        IF NOT EXISTS (
+            SELECT 1
+            FROM sys.columns c
+            INNER JOIN sys.tables t 
+                ON c.object_id = t.object_id
+            INNER JOIN sys.schemas s 
+                ON t.schema_id = s.schema_id
+            WHERE s.name = ''dbo''
+              AND t.name = ''ccRotativeANIListDetail''
+              AND c.name = ''loadDate''
+        )
+        BEGIN
+            ALTER TABLE [dbo].[ccRotativeANIListDetail]
+            ADD [loadDate] [smalldatetime] NOT NULL
+                CONSTRAINT [DF_ccRotativeANIListDetail_loadDate] DEFAULT GETDATE()
+                WITH VALUES;
+        END
+    END;
+    ';
+
+    EXEC(@sql);
         
         set @process = 'K005012'
         set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminDispositions]

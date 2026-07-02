@@ -9110,6 +9110,8 @@ BEGIN
     VALUES (8, ''Invalid number'', ''systemTranslated_invalidNumber'');
 END'
 
+exec (@sql)
+
     SET @process = ''
     SET @sql = ''
     exec (@sql)

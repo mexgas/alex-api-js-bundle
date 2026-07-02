@@ -9109,7 +9109,9 @@ BEGIN
     INSERT INTO ccSMSResult (resultId, description, translatedDesc) 
     VALUES (8, ''Invalid number'', ''systemTranslated_invalidNumber'');
 END'
-       exec (@sql)     
+
+exec (@sql)
+
     SET @process = ''
     SET @sql = ''
     exec (@sql)

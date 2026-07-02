@@ -203,9 +203,16 @@ FROM Tiempos;'
 		ORDER BY RowNum	'
     exec (@sql)
     
-    SET @process = 'Se realiza la modificación para que las grabaciones se detengan al transferir'
+    SET @process = 'DROP ccsp_DLRgetXferInfo'
+    SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_DLRgetXferInfo'')
+    begin
+            DROP PROCEDURE ccsp_DLRgetXferInfo;
+    end'
+    exec (@sql)
+
+    SET @process = 'CREATE ccsp_DLRgetXferInfo'
     SET @sql = '
-        ALTER procedure [dbo].[ccsp_DLRgetXferInfo]
+        CREATE procedure [dbo].[ccsp_DLRgetXferInfo]
         @camEspecId smallint=0,
         @iPortNumber smallint = 0,
         @type smallint,

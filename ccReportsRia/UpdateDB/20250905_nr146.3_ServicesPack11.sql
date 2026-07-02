@@ -871,7 +871,7 @@ BEGIN
                 ELSE ''systemTranslated_Local'' 
              END AS fileMoved
             ,dials.disconnectCause
-            ,COALESCE(dat.[description], tr.descTranslate, ''N/A'') AS DCCustomer
+            ,case when dat.[description] is not null then dat.[description] when  tr.descTranslate is not null then tr.descTranslate else ''N/A'' END AS DCCustomer
             ,dials.dialType
             ,TipoTel
             ,CASE

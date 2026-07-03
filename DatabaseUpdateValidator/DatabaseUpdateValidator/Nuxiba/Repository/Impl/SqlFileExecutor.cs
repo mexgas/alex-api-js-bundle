@@ -33,25 +33,12 @@ namespace DatabaseUpdateValidator.Nuxiba.Repository.Impl
             @"\b(CREATE|ALTER|DROP|SELECT|INSERT|UPDATE|DELETE|MERGE|EXEC(?:UTE)?|TRUNCATE)\b",
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-        private static readonly Dictionary<Regex, string> Sql2012IncompatibilityPatterns = new()
+        private static readonly Dictionary<Regex, string> Sql2016IncompatibilityPatterns = new()
         {
-            { new Regex(@"\bSTRING_SPLIT\s*\(", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant), "STRING_SPLIT (added in SQL Server 2016)" },
-            { new Regex(@"\bDROP\s+TABLE\s+IF\s+EXISTS\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant), "DROP TABLE IF EXISTS (added in SQL Server 2016)" },
-            { new Regex(@"\bDROP\s+VIEW\s+IF\s+EXISTS\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant), "DROP VIEW IF EXISTS (added in SQL Server 2016)" },
-            { new Regex(@"\bDROP\s+PROCEDURE\s+IF\s+EXISTS\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant), "DROP PROCEDURE IF EXISTS (added in SQL Server 2016)" },
-            { new Regex(@"\bDROP\s+FUNCTION\s+IF\s+EXISTS\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant), "DROP FUNCTION IF EXISTS (added in SQL Server 2016)" },
-            { new Regex(@"\bDROP\s+TRIGGER\s+IF\s+EXISTS\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant), "DROP TRIGGER IF EXISTS (added in SQL Server 2016)" },
-            { new Regex(@"\bDROP\s+TYPE\s+IF\s+EXISTS\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant), "DROP TYPE IF EXISTS (added in SQL Server 2016)" },
-            { new Regex(@"\bCREATE\s+OR\s+ALTER\s+(?:PROCEDURE|PROC|FUNCTION|VIEW|TRIGGER)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant), "CREATE OR ALTER (added in SQL Server 2016 SP1)" },
             { new Regex(@"\bCONCAT_WS\s*\(", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant), "CONCAT_WS (added in SQL Server 2017)" },
-            { new Regex(@"\bOPENJSON\s*\(", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant), "OPENJSON (added in SQL Server 2016)" },
-            { new Regex(@"\bJSON_QUERY\s*\(", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant), "JSON_QUERY (added in SQL Server 2016)" },
-            { new Regex(@"\bJSON_VALUE\s*\(", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant), "JSON_VALUE (added in SQL Server 2016)" },
-            { new Regex(@"\bJSON_MODIFY\s*\(", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant), "JSON_MODIFY (added in SQL Server 2016)" },
-            { new Regex(@"\bJSON_EXTRACT\s*\(", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant), "JSON_EXTRACT (not supported by SQL Server 2012)" },
+            { new Regex(@"\bSTRING_AGG\s*\(", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant), "STRING_AGG (added in SQL Server 2017)" },
             { new Regex(@"\bTRIM\s*\(", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant), "TRIM (added in SQL Server 2017)" },
-            { new Regex(@"\bTRANSLATE\s*\(", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant), "TRANSLATE (added in SQL Server 2017)" },
-            { new Regex(@"\bAT\s+TIME\s+ZONE\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant), "AT TIME ZONE (added in SQL Server 2016)" }
+            { new Regex(@"\bTRANSLATE\s*\(", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant), "TRANSLATE (added in SQL Server 2017)" }
         };
 
         private readonly ISqlExecutor _sqlExecutor;
@@ -118,7 +105,7 @@ namespace DatabaseUpdateValidator.Nuxiba.Repository.Impl
                         {
                             ValidateDuplicateObjectsDirect(sqlScript);
                             ValidateDuplicateDynamicSql(sqlScript);
-                            ValidateSql2012Compatibility(sqlScript);
+                            ValidateSql2016Compatibility(sqlScript);
                         }
 
                         // Execute the script in the database
@@ -170,26 +157,26 @@ namespace DatabaseUpdateValidator.Nuxiba.Repository.Impl
             }
         }
 
-        private void ValidateSql2012Compatibility(string contenidoSql)
+        private void ValidateSql2016Compatibility(string contenidoSql)
         {
             var incompatibleFeatures = new List<string>();
             var directSql = MaskSqlCommentsAndStrings(contenidoSql);
 
-            AddSql2012CompatibilityIssues(directSql, 1, "direct SQL", incompatibleFeatures);
+            AddSql2016CompatibilityIssues(directSql, 1, "direct SQL", incompatibleFeatures);
 
             foreach (var block in ExtractDynamicSqlBlocks(contenidoSql))
             {
                 if (LooksLikeSql(block.Value))
                 {
-                    AddSql2012CompatibilityIssues(block.Value, block.StartLine, "dynamic SQL", incompatibleFeatures);
+                    AddSql2016CompatibilityIssues(block.Value, block.StartLine, "dynamic SQL", incompatibleFeatures);
                 }
             }
 
             if (incompatibleFeatures.Any())
             {
                 var featureList = string.Join(Environment.NewLine + "- ", incompatibleFeatures);
-                Logger.Warn($"SQL Server 2012 compatibility issues found:{Environment.NewLine}- {featureList}");
-                throw new Exception($"SQL Server 2012 incompatible features detected:{Environment.NewLine}- {featureList}");
+                Logger.Warn($"SQL Server 2016 compatibility issues found:{Environment.NewLine}- {featureList}");
+                throw new Exception($"SQL Server 2016 incompatible features detected:{Environment.NewLine}- {featureList}");
             }
         }
 
@@ -393,9 +380,9 @@ namespace DatabaseUpdateValidator.Nuxiba.Repository.Impl
             return new SqlStringLiteral(value.ToString(), rawText.ToString(), startLine, startIndex, sql.Length - 1);
         }
 
-        private static void AddSql2012CompatibilityIssues(string sql, int baseLineNumber, string source, ICollection<string> incompatibleFeatures)
+        private static void AddSql2016CompatibilityIssues(string sql, int baseLineNumber, string source, ICollection<string> incompatibleFeatures)
         {
-            foreach (var pattern in Sql2012IncompatibilityPatterns)
+            foreach (var pattern in Sql2016IncompatibilityPatterns)
             {
                 foreach (Match match in pattern.Key.Matches(sql))
                 {

@@ -47,6 +47,13 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 
 
 	--- BEGIN Services Pack 1-8 --
+	SET @process = 'KM47001 - Alter Column cctipoResultadodial'
+	SET @sql = 'IF OBJECT_ID(''dbo.ccTipoResultadoDial'') IS NOT NULL AND ISNULL(COL_LENGTH(''dbo.ccTipoResultadoDial'', ''descripcion''), 0) < 50
+	BEGIN
+		ALTER TABLE dbo.ccTipoResultadoDial
+		ALTER COLUMN descripcion VARCHAR(50);
+	END'
+	EXEC(@sql)
 
     SET @process = 'KM47001 - Se crea campo para el tipo de ANI en llamada manual'
 	SET @sql = 'if not exists(select top 1 1 from cctipoResultadodial where tipoResDial_id=15)

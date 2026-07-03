@@ -1318,6 +1318,37 @@ END'
 '
     exec (@sql)
 
+    SET @process = 'DROP INDEX PK_ccMenuUser_ ON dbo.ccMenuUser;';
+SET @sql = 'IF EXISTS (
+    SELECT 1
+    FROM sys.indexes i
+    LEFT JOIN sys.key_constraints kc
+    ON i.object_id = kc.parent_object_id
+    AND i.index_id = kc.unique_index_id
+    WHERE i.object_id = OBJECT_ID(''dbo.ccMenuUser'')
+    AND i.name = ''PK_ccMenuUser_''
+    AND kc.name IS NULL
+)
+BEGIN
+    DROP INDEX PK_ccMenuUser_ ON dbo.ccMenuUser;   
+END
+'
+EXEC(@sql);
+
+SET @process = 'ALTER TABLE dbo.ccMenuUser DROP COLUMN replkey;';
+SET @sql = 'IF EXISTS (
+    SELECT 1
+    FROM sys.columns
+    WHERE object_id = OBJECT_ID(''dbo.ccMenuUser'')
+      AND name = ''replkey''
+)
+BEGIN
+    ALTER TABLE dbo.ccMenuUser
+    DROP COLUMN replkey;
+END;
+'
+EXEC(@sql);
+
     SET @process = 'Configuración de Menú (2150) - Agentes Virtuales';
 
 SET @sql = '

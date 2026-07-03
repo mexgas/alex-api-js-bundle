@@ -1,13 +1,27 @@
 SET NOCOUNT ON
 
-declare @serverName varchar(200)
 use [CCReportsRIA]
+
+declare @serverName varchar(200)
 declare @temp table	(id int, value nvarchar(100));
 declare @settingBD varchar(500)
+declare @userNameSQL nvarchar(100)= NULL;
+declare @passwordSQL nvarchar(100)= NULL;
+
 	select @settingBD = valor from ccSettings where setting_id = 31
 	insert into @temp select id,Value from fn_RIASplitDelimited(@settingBD,'|')
-
 	select @serverName = value  from @temp where id = 1
+	
+	delete from @temp; 
+	set @settingBD = NULL;
+
+	select @settingBD = valor from ccSettings where setting_id = 35
+	insert into @temp select id,Value from fn_RIASplitDelimited(@settingBD,'|')
+	select @userNameSQL = value from @temp where id = 3
+	select @passwordSQL = value from @temp where id = 4
+
+	set @userNameSQL = isnull(@userNameSQL,'replication')
+	set @passwordSQL = isnull(@passwordSQL,'replication')
 	
 	/*Comienza creacion de linked server*/
 	if(@serverName!=@@servername)
@@ -16,7 +30,7 @@ declare @settingBD varchar(500)
 		IF NOT EXISTS ( SELECT TOP (1) * FROM sysservers WHERE srvname = 'SvrPublisher_transactional' )
 		begin
 			EXEC master.dbo.sp_addlinkedserver @server = N'SvrPublisher_transactional', @srvproduct=N'SQLSERVER', @provider=N'SQLNCLI11', @datasrc=@serverName
-			EXEC master.dbo.sp_addlinkedsrvlogin @rmtsrvname=N'SvrPublisher_transactional',@useself=N'False',@locallogin=NULL,@rmtuser=N'replication',@rmtpassword='replication'
+			EXEC master.dbo.sp_addlinkedsrvlogin @rmtsrvname=N'SvrPublisher_transactional',@useself=N'False',@locallogin=NULL,@rmtuser=@userNameSQL,@rmtpassword=@passwordSQL
 			EXEC master.dbo.sp_serveroption @server=N'SvrPublisher_transactional', @optname=N'collation compatible', @optvalue=N'false'
 			EXEC master.dbo.sp_serveroption @server=N'SvrPublisher_transactional', @optname=N'data access', @optvalue=N'true'
 			EXEC master.dbo.sp_serveroption @server=N'SvrPublisher_transactional', @optname=N'dist', @optvalue=N'false'

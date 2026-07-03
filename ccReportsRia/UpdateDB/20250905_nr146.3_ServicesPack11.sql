@@ -942,8 +942,68 @@ END
 '
     exec (@sql)
 
-     SET @process = ''
-    SET @sql = ''
+     SET @process = 'ALTER VIEW [dbo].[RepViewInCallsDetail]'
+    SET @sql = 'ALTER VIEW [dbo].[RepViewInCallsDetail] AS  
+SELECT [date] AS receptionDate,
+    cal_final,
+    inboundId AS inboundId,
+    ACDGroup AS campaign,
+    ModelName,
+    callStatusId,
+    callStatus,
+    dispositionId,
+    disposition AS disposition_InCallsDetail,
+    subDispositionId,
+    subDisposition AS sub_Disposition,
+    dnisId,
+    dnis AS didNumber,
+    userId,
+    [user] as agentUsername,
+    callKey AS call_Key,
+    [source],
+    [destinationNumber],
+    callbackDate,
+    [cal_tWait] as queueTime,
+    ANI AS aniNumber,
+    queueTime AS queue_Time,
+    xferTime,
+    ringingTime,
+    dialogTime AS dialog_Time,
+    mohTime AS hold_Time,
+    twrapup,
+    AverageHandleTime AS handleTime,
+    extension,
+    agentName as [user],
+    whoHangUp AS endedBy,
+    recibeCallBy
+    [year],
+    [month],
+    [day],
+    [hour],
+    [minutes],
+    provedorId,
+    provider AS provider_InCallsDetail,
+    trunk AS trunk_InCallsDetail,
+    fileMoved,
+    [CapturedData],
+    Dato1,
+    Dato2,
+    Dato3,
+    Dato4,
+    Dato5,
+    callid AS call_Id,
+    grabId,
+    nameDNI,
+    numDNI,
+    collectCall,
+    timeTotalInCallSec,
+    timeTotalInCallMin,
+    statusCallByIVR,
+    IVR_ID,
+    callHung,
+    areaId,
+    area
+FROM RepInCallsDetail WITH (NOLOCK);'
     exec (@sql)
 
     SET @process = ''

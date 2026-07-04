@@ -551,12 +551,15 @@ BEGIN
 			''systemTranslated_Resultado_ID_'' + cast(srm.RESULTADO_ID as varchar)  resultado,
 			''systemTranslated_Resultado_Envio_'' + cast(a.statusSystemsId as varchar)  resultado_de_envio		
 	from smsccoLogDial a with (nolock)
-	inner join SmsRemesasMuñozDay srm on srm.TDCT = a.callkey
+	inner join SmsRemesasMuñozDay srm on srm.TDCT = a.registryClient
 	inner join ccSmsSegments ss on ss.name = srm.SegmentoMC
 	where a.smsDate between @from and @to
 	)
 	
 	Insert into RepSMSDayReportBySegments
+	(id_credito,credito,fecha_foto,meses_vencidos,seg_cuenta,fila,locacion,dia_corte,SegmentId,segmentoMC,semana,dia_semana,telefonos1,resultado1,resultado_de_envio1,telefonos2,resultado2,
+	resultado_de_envio2,telefonos3,resultado3,resultado_de_envio3,telefonos4,resultado4,resultado_de_envio4,telefonos5,resultado5,resultado_de_envio5,telefonos6,resultado6,resultado_de_envio6,
+	telefonos7,resultado7,resultado_de_envio7,telefonos8,resultado8,resultado_de_envio8,telefonos9,resultado9,resultado_de_envio9,telefonos10,resultado10,resultado_de_envio10,estado_funcional,corte_real)
 	select
 		id_credito,
 		credito,
@@ -603,7 +606,7 @@ BEGIN
 	from SMSBySegments
 	group by id_credito,fecha_foto,credito
 END'
-	EXEC(@sql)
+	--EXEC(@sql)
 	-------------------------------------------------- Ulises Espinosa End -----------------------------------------------------------------------------------
 
 	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version

@@ -491,6 +491,7 @@ begin
 	where date >= @from AND date < @to
 
 	insert into RepChatsEffectiveness
+	(date,inboundId,inbound,ntotalChat,nanswerChat,nabndChat,avgAnswerTime,avgQueueTime,avgAbandonTimeChat,year,month,day,hour,minutes)
 	select 
 		[date], inboundId, descripcion [inbound]
 		, ntotalChat, nanswer [nanswerChat], nabnd [nabnd]

@@ -3528,6 +3528,8 @@ BEGIN
         )
 
     INSERT INTO RepSpecialTimes
+    (date,campaignId,inboundId,campACDDescription,sessionTime,readyTime,dialogTime,notReadyTime,other,descripcion,descripcion_count,count,
+    descripcion_time,time,timeSeconds,year,month,day,hour,minutes)
     SELECT a.timeGroup AS [date]
         ,a.cam_id AS [campaignId]
         ,a.inbound_id AS [inboundId]
@@ -3984,6 +3986,8 @@ group by convert(datetime,convert(varchar(14),A.timegroup,121)+''00:00'',121),us
  )
 
  insert into RepDetailAgent
+ (userId,[user],userName,date,sessionTime,activeTime,talkingtTime,holdTime,unavaibleTime,talkingPercent,waitpercent,readyPercent,adherencia,totalCalls,callsByHour,
+ complete,completeByHourHideAndRename,percentComplete,year,month,day,hour,minutes)
  select A.userId,A.[user],A.userName,A.[date],A.sessionTime
  ,A.sessionTime - isnull(B.tnot_av,0) as [activeTime]
  ,isnull(C.txfer+C.tring+C.tdialog+C.tnotes,0) as [talkingtTime]
@@ -6008,6 +6012,9 @@ BEGIN
     
     
     INSERT INTO RepAgentGI
+    (date,userId,[user],login,tlog,tunknown,tav,tnotav,tother,tprob,tChatting,tundefined,nxferin,nanswerin,nabndxferin,nabndringin,nabnddlgin,abndaxferin,nnoanswerin,nlostin,tdialogin,tnotesin,
+    tringin,txferin,nxferout,nanswerout,nabndxferout,nabndringout,nabnddlgout,abndaxferout,nnoanswerout,nlostout,tdialogout,tnotesout,tringout,txferout,nother,nmohin,nmohout,nwhagin,nwhagout,
+    nwhcliin,nwhcliout,year,month,day,hour,minutes,tManual)
     SELECT A.timegroup AS [date]
         ,A.user_id AS userId
         ,u.Nombres + '' '' + u.ApellidoPaterno + '' '' + u.ApellidoMaterno AS [user]

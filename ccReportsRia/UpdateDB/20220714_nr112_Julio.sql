@@ -113,6 +113,30 @@ SET @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
 
 		EXEC (@Sql)
 
+	SET @process = 'CREATE TABLE [dbo].[ccWhatsOringCountry]'
+SET @sql = 'if exists(select * from sys.tables where name =''ccWhatsOringCountry'') begin
+Drop table [ccWhatsOringCountry]
+end
+'
+EXEC(@sql)
+
+SET @process = 'CREATE TABLE [dbo].[ccWhatsOringCountry]'
+SET @sql = 'if not exists(select * from sys.tables where name =''ccWhatsOringCountry'') begin
+CREATE TABLE [dbo].[ccWhatsOringCountry](
+	[CodeCountry] [varchar](10) NOT NULL,
+	[country] [varchar](255) NOT NULL,	
+	[TagTranslate] [varchar](100) NOT NULL,
+	[length] [int] NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[length] DESC,
+	[CodeCountry] ASC
+	
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+end
+'
+EXEC(@sql)
 
 	set @process = 'K002056 se crean registros de los diferentes paises'
 	set @sql = 'if not exists(select * from ccWhatsOringCountry) begin

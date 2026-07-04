@@ -521,55 +521,7 @@ if @action = 1	begin
 end'
 	EXEC(@sql)
 
-	set @process = 'K002056 crea el procedure ccspRepWhatsAppDetailConversationIn'
-	set @sql = 'CREATE procedure [dbo].[ccspRepWhatsAppDetailConversationIn]
-@action as tinyint,
-@from as datetime = null,
-@to as datetime = null
-
-AS
-if @from is null
-	select @from = convert(datetime,convert(varchar(11),getdate()))
-	set @from=DATEADD(dd,-1,@from)
-if @to is null
-	select @to = getdate()
-
-if @action = 1	begin
-
-    delete from RepWhatsAppDetailConversationIn where date >= @from AND date < @to
-
-	INSERT INTO RepWhatsAppDetailConversationIn
-	(date,inboundid,campaign,conversationid,dispositionId,disposition,subDispositionId,subDisposition,associatedPhoneNumberWhatsApp,userId,agentName,
-	contactPhoneNumberWhatsApp,contactCountry,waitTimeWhatsApp,conversationTimeWhatsApp,billedWhatsApp,year,month,day,hour,minutes)
-	select A.requestDate as [date] ---A.conversationDate
-     ,A.inboundId as inboundid
-	 ,B.descripcion as campaign	
-	 ,A.conversationId as conversationid
-	 ,A.disposition as dispositionId
-	 ,isnull(disposition.Description,'''') as disposition
-	 ,A.subDisposition as subDispositionId
-	 ,isnull(subDisposition.califSubDesc,'''') as subDisposition
-	 ,A.phoneACD as associatedPhoneNumberWhatsApp
-	 ,A.agentId as userId
-	 ,isnull([user].Nombres+'' ''+ [user].ApellidoPaterno+'' ''+[user].ApellidoMaterno,'''') as agentName
-	 ,A.clientId as contactPhoneNumberWhatsApp
-	 ,dbo.GetCountryWhatsApp(A.clientId) contactCountry
-	 ,A.tQueue as waitTimeWhatsApp
-	 ,isnull(A.tConversation,A.tChatting) as conversationTimeWhatsApp	
-	 ,case when A.FirstMessageAgent is not null then 1 else 0 end as billedAmountWhatsApp
-	 ,DATEPART(yyyy,A.requestDate) [year]
-	 ,datepart(mm,A.requestDate) [month]
-	 ,datepart(dd,A.requestDate) [day]
-	 ,datepart(hh,A.requestDate) [hour]
-	 ,datepart(mi,A.requestDate) [minutes]
-	 from ccWhatsAppConversations A
-	inner join ccinbound B on A.inboundId=B.Inbound_id
-	left join cctipocalif disposition on disposition.calif_id=A.disposition
-	left join cctipocalifsub subDisposition on subDisposition.califSub_id=A.subDisposition
-	left join ccUserView [user] on [user].User_id=A.agentId
-	where A.requestDate between @from AND @to
-end'
-	EXEC(@sql)
+	
 -------------------------------Preview K004009 DetalleMarcación --------------------------------
 	set @process = 'alter table RepOutDialDetail'
 	set @sql = '

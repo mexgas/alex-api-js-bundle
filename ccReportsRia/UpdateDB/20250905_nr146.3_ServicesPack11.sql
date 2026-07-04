@@ -39,6 +39,16 @@ BEGIN
 
 	BEGIN TRY
 
+    SET @process = 'K061001 Report Filters Catalog'
+    SET @sql = '
+if not exists (select * from Filters  where id = 33) begin
+    insert into Filters (id, name, type, xmlParentNode, xmlChildNode) 
+    values (33, ''inboundCamps'', ''33'', ''InboundCamps'', ''InboundCamp'')
+end
+
+update ReportsFilters set filterName = ''inboundCamps'' where id=3010 and filterName = ''acds''
+'
+EXEC (@sql)
 	
     SET @process = 'CREATE CLUSTERED INDEX CIX_RepOutTrunkBusy_Date'
     SET @sql = 'IF NOT EXISTS (

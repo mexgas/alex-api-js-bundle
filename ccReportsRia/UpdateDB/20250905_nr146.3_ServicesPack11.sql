@@ -956,7 +956,7 @@ END
     SET @sql = 'ALTER VIEW [dbo].[RepViewInCallsDetail] AS  
 SELECT [date] AS receptionDate,
     cal_final,
-    inboundId AS inboundId,
+    inboundId AS inboundCamp,
     ACDGroup AS campaign,
     ModelName,
     callStatusId,

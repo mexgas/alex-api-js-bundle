@@ -515,6 +515,8 @@ if @action = 1	begin
     delete from RepWhatsAppDetailConversationIn where date >= @from AND date < @to
 
 	INSERT INTO RepWhatsAppDetailConversationIn
+	(date,inboundid,campaign,conversationid,dispositionId,disposition,subDispositionId,subDisposition,associatedPhoneNumberWhatsApp,userId,agentName,
+	contactPhoneNumberWhatsApp,contactCountry,waitTimeWhatsApp,conversationTimeWhatsApp,billedWhatsApp,year,month,day,hour,minutes)
 	select A.requestDate as [date] ---A.conversationDate
      ,A.inboundId as inboundid
 	 ,B.descripcion as campaign	

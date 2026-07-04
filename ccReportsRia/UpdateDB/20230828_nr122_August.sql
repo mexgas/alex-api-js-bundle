@@ -2784,6 +2784,7 @@ begin
 	)
 
 	insert into RepAgentKPI
+	(date,login,userId,[user],totalCalls,callsIn,callsOut,finishedCalls10,finishedCalls20,finishedCalls30,whoHung,callsAvgTime,year,month,day,hour,minutes)
 	select Snd.cal_Inicio,Fst.Login as login , Fst.user_id as [userId]
 	,Nombres + isnull('' ''+ApellidoPaterno, '''') + isnull('' ''+ApellidoMaterno, '''') as [user]
 	,Total as totalCalls, Cin as callsIn

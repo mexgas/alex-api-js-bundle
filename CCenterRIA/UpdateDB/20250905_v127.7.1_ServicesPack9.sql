@@ -2148,12 +2148,12 @@ BEGIN
         CAST(Inbound_id AS INT) AS CampId,
         cci.descripcion AS Description,
         isnull(cci.IDArea, -1) AS AreaID,
-        CAST(chat AS SMALLINT) AS CampaignType,
+        CAST(cci.chat AS SMALLINT) AS CampaignType,
         CAST(isnull(cci.cam_id,-1) AS INT) AS RelatedCampId
     from ccCamps ccc
     INNER JOIN ccInbound cci ON cci.IDArea = ccc.IDArea
     where ccc.cam_id = @Id
-        and chat IN (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,'',''))
+        and cci.chat IN (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,'',''))
         and isnull(cci.cam_id,-1) > 0
 
 END

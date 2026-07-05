@@ -1672,7 +1672,7 @@ where id = 4020'
      set @process = 'Se inserta el reporte para Reporte Conversaciones de WA detalle de conversacion Salida'
      set @sql='if not exists (select 1 from ccmenus where menu_id =14010)
         begin
-            INSERT INTO ccmenus 
+            INSERT INTO ccmenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release)
                 VALUES (
                     14010, 
                     ''Detalle de conversaciones|Conversations Detail'', 

@@ -20584,7 +20584,7 @@ BEGIN
           AND ConversationType = @ConversationType
     )
     BEGIN
-        INSERT INTO ccWhatsAppGlobalIdsRelationship
+        INSERT INTO ccWhatsAppGlobalIdsRelationship(GlobalId,ConversationId,ConversationType)
         VALUES (@globalId, @ConversationId, @ConversationType);
     END
     IF(@returnInfo = 1)
@@ -20592,7 +20592,7 @@ BEGIN
         SELECT @globalId AS GlobalId;
     END
 END'
-     EXEC(@sql);
+ --    EXEC(@sql);
 
      SET @process = 'create index IX_ccWhatsAppGlobalIds_Main'
      SET @sql = 'IF NOT EXISTS (

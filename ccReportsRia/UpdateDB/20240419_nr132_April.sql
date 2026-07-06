@@ -606,7 +606,7 @@ BEGIN
 	from SMSBySegments
 	group by id_credito,fecha_foto,credito
 END'
-	--EXEC(@sql)
+	EXEC(@sql)
 	-------------------------------------------------- Ulises Espinosa End -----------------------------------------------------------------------------------
 
 	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version

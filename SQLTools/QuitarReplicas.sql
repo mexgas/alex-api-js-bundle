@@ -462,6 +462,20 @@ END
 CLOSE cur_jobs;
 DEALLOCATE cur_jobs;
 
+-- =============================================
+-- Clean Up Linked Servers and Jobs Related to Transactional Replication
+-- =============================================
+IF EXISTS (SELECT * FROM sys.servers WHERE name = 'SvrPublisher_transactional')
+BEGIN    
+    EXEC master.dbo.sp_dropserver @server = 'SvrPublisher_transactional', @droplogins='droplogins'
+    PRINT 'Dropped linked server: SvrPublisher_transactional';
+END;
+
+DECLARE @jobList TABLE (rownum INT IDENTITY(1,1), jobName NVARCHAR(255));
+INSERT INTO @jobList (jobName)
+SELECT name
+
+
 PRINT 'Proceso terminado';
 GO
 

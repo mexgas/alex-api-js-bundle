@@ -471,10 +471,6 @@ BEGIN
     PRINT 'Dropped linked server: SvrPublisher_transactional';
 END;
 
-DECLARE @jobList TABLE (rownum INT IDENTITY(1,1), jobName NVARCHAR(255));
-INSERT INTO @jobList (jobName)
-SELECT name
-
 
 PRINT 'Proceso terminado';
 GO

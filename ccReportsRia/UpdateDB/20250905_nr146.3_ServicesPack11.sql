@@ -1016,12 +1016,107 @@ SELECT [date] AS receptionDate,
 FROM RepInCallsDetail WITH (NOLOCK);'
     exec (@sql)
 
-    SET @process = ''
-    SET @sql = ''
-    exec (@sql)
+	SET @process = 'Drop View RepViewAgentGIUnion';
+    SET @sql = '
+    IF OBJECT_ID(N''dbo.RepViewAgentGIUnion'', ''V'') IS NOT NULL
+    BEGIN
+        DROP VIEW [dbo].[RepViewAgentGIUnion];
+    END';
+    EXEC(@sql);
 
     SET @process = ''
-    SET @sql = ''
+    SET @sql = 'CREATE VIEW [dbo].[RepViewAgentGIUnion] AS
+	select [date],userId,[user],[login]
+	,sum(tlog) tlog
+	,sum(tunknown) tunknown
+	,sum(tav) tav
+	,sum(tnotav) tnotav
+	,sum(tother) tother
+	,sum(tprob) tprob
+	,sum(tChatting) tChatting
+	,sum(tundefined) tundefined
+	,sum(nxferin) nxferin
+	,sum(nanswerin) nanswerin
+	,sum(nabndxferin) nabndxferin
+	,sum(nabndringin) nabndringin
+	,sum(nabnddlgin) nabnddlgin
+	,sum(abndaxferin) abndaxferin
+	,sum(nnoanswerin) nnoanswerin
+	,sum(nlostin) nlostin
+	,sum(tdialogin) tdialogin
+	,sum(tnotesin) tnotesin
+	,sum(tringin) tringin
+	,sum(txferin) txferin
+	,sum(nxferout) nxferout
+	,sum(nanswerout) nanswerout
+	,sum(nabndxferout) nabndxferout
+	,sum(nabndringout) nabndringout
+	,sum(nabnddlgout) nabnddlgout
+	,sum(abndaxferout) abndaxferout
+	,sum(nnoanswerout) nnoanswerout
+	,sum(nlostout) nlostout
+	,sum(tdialogout) tdialogout
+	,sum(tnotesout) tnotesout
+	,sum(tringout) tringout
+	,sum(txferout) txferout
+	,sum(nother) nother
+	,sum(nmohin) nmohin
+	,sum(nmohout) nmohout
+	,sum(nwhagin) nwhagin
+	,sum(nwhagout) nwhagout
+	,sum(nwhcliin) nwhcliin
+	,sum(nwhcliout) nwhcliout
+	,[year],[month],[day],[hour],[minutes]
+	,0 tManual,0 tauxiliarready
+	,0 tnotavg
+	from RepAgentGI_VersionOld
+	group by [date],userId,[user],[login],[year],[month],[day],[hour],[minutes]
+	union
+	select [date],userId,[user],[login]
+	,tlog
+	,tunknown
+	,tav
+	,tnotav
+	,tother
+	,tprob
+	,tChatting
+	,tundefined
+	,nxferin
+	,nanswerin
+	,nabndxferin
+	,nabndringin
+	,nabnddlgin
+	,abndaxferin
+	,nnoanswerin
+	,nlostin
+	,tdialogin
+	,tnotesin
+	,tringin
+	,txferin
+	,nxferout
+	,nanswerout
+	,nabndxferout
+	,nabndringout
+	,nabnddlgout
+	,abndaxferout
+	,nnoanswerout
+	,nlostout
+	,tdialogout
+	,tnotesout
+	,tringout
+	,txferout
+	,nother
+	,nmohin
+	,nmohout
+	,nwhagin
+	,nwhagout
+	,nwhcliin
+	,nwhcliout
+	,[year],[month],[day],[hour],[minutes]
+	,tManual
+	,0 tauxiliarready
+	,0 tnotavg
+	from RepAgentGI'
     exec (@sql)
 
      SET @process = ''

@@ -3255,7 +3255,7 @@ BEGIN
             return(0)
         end
 
-        insert into [ccAgentMsgRelationFiles]    values(@MsgId,@camId,@CampType)
+        insert into [ccAgentMsgRelationFiles](MsgId,CamId,CamType)    values(@MsgId,@camId,@CampType)
 
         select @campName
 
@@ -4757,7 +4757,7 @@ BEGIN
                         return(0)
                 end
 
-                insert into [ccAgentMsgRelationFiles]    values(@MsgId,@camId,@CampType)
+                insert into [ccAgentMsgRelationFiles](MsgId,CamId,CamType)    values(@MsgId,@camId,@CampType)
 
                 select @campName
 

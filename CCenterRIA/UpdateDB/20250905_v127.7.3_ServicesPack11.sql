@@ -966,8 +966,49 @@ END;'
     exec (@sql)
 
 
-    SET @process = ''
-    SET @sql = ''
+    SET @process = 'ALTER TABLE ccCamps DROP COLUMN chat'
+    SET @sql = 'DECLARE @SchemaName sysname = ''dbo'';
+DECLARE @TableName  sysname = ''ccCamps'';
+DECLARE @ColumnName sysname = ''chat'';
+DECLARE @Sql        nvarchar(max);
+
+IF COL_LENGTH(@SchemaName + ''.'' + @TableName, @ColumnName) IS NOT NULL
+BEGIN
+    SET @Sql = N'''';
+
+    -- Eliminar DEFAULT constraints asociados a la columna
+    SELECT @Sql = @Sql +
+        N''ALTER TABLE '' + QUOTENAME(@SchemaName) + N''.'' + QUOTENAME(@TableName) +
+        N'' DROP CONSTRAINT '' + QUOTENAME(dc.name) + N'';'' + CHAR(13)
+    FROM sys.default_constraints dc
+    INNER JOIN sys.columns c
+        ON c.default_object_id = dc.object_id
+    INNER JOIN sys.tables t
+        ON t.object_id = c.object_id
+    INNER JOIN sys.schemas s
+        ON s.schema_id = t.schema_id
+    WHERE s.name = @SchemaName
+      AND t.name = @TableName
+      AND c.name = @ColumnName;
+
+    IF @Sql <> N''''
+    BEGIN
+        EXEC sp_executesql @Sql;
+        PRINT ''Default constraint eliminado.'';
+    END
+
+    -- Eliminar la columna
+    SET @Sql = N''ALTER TABLE '' + QUOTENAME(@SchemaName) + N''.'' + QUOTENAME(@TableName) +
+               N'' DROP COLUMN '' + QUOTENAME(@ColumnName) + N'';'';
+
+    EXEC sp_executesql @Sql;
+
+    PRINT ''Columna chat eliminada correctamente de dbo.ccCamps.'';
+END
+ELSE
+BEGIN
+    PRINT ''La columna chat no existe en dbo.ccCamps.'';
+END'
     exec (@sql)
     
 

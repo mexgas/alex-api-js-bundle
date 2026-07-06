@@ -6100,9 +6100,14 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaGetRecordsImportStatus]
 		SET nocount off'
 EXEC(@sql)
 
+SET @process = 'CREATE TABLE [dbo].[ccWhatsOringCountry]'
+SET @sql = 'if exists(select * from sys.tables where name =''ccWhatsOringCountry'') begin
+Drop table [ccWhatsOringCountry]
+end
+'
+EXEC(@sql)
 
-SET @process = 'Cambio para permitir números internacionales en la carga de whatsapp - 
-Creación de la tabla ccWhatsOringCountry'
+SET @process = 'CREATE TABLE [dbo].[ccWhatsOringCountry]'
 SET @sql = 'if not exists(select * from sys.tables where name =''ccWhatsOringCountry'') begin
 CREATE TABLE [dbo].[ccWhatsOringCountry](
 	[CodeCountry] [varchar](10) NOT NULL,
@@ -6117,9 +6122,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 end
-else begin
-	truncate table [ccWhatsOringCountry]
-end'
+'
 EXEC(@sql)
 
 SET @process = 'Cambio para permitir números internacionales en la carga de whatsapp -

@@ -3637,21 +3637,17 @@ BEGIN
 END
 
 ELSE IF @Option = 15
-BEGIN
-            --SELECT DISTINCT
-            --CAST(Inbound_id AS INT) AS CampId,descripcion AS Description,isnull(IDArea, -1) AS AreaID,CAST(chat AS SMALLINT) AS CampaignType,CAST(isnull(cam_id,-1) AS INT) AS RelatedCampId
-            --FROM ccInbound NOLOCK where cam_id = @Id and chat IN (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,'',''))
-
+BEGIN            
     select
         CAST(Inbound_id AS INT) AS CampId,
         cci.descripcion AS Description,
         isnull(cci.IDArea, -1) AS AreaID,
-        CAST(chat AS SMALLINT) AS CampaignType,
+        CAST(cci.chat AS SMALLINT) AS CampaignType,
         CAST(isnull(cci.cam_id,-1) AS INT) AS RelatedCampId
     from ccCamps ccc
     INNER JOIN ccInbound cci ON cci.IDArea = ccc.IDArea
     where ccc.cam_id = @Id
-        and chat IN (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,'',''))
+        and cci.chat IN (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,'',''))
         and isnull(cci.cam_id,-1) > 0
 
 END
@@ -19747,20 +19743,17 @@ END
 
 ELSE IF @Option = 15
 BEGIN
-            --SELECT DISTINCT
-            --CAST(Inbound_id AS INT) AS CampId,descripcion AS Description,isnull(IDArea, -1) AS AreaID,CAST(chat AS SMALLINT) AS CampaignType,CAST(isnull(cam_id,-1) AS INT) AS RelatedCampId
-            --FROM ccInbound NOLOCK where cam_id = @Id and chat IN (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,'',''))
-
+           
     select
         CAST(Inbound_id AS INT) AS CampId,
         cci.descripcion AS Description,
         isnull(cci.IDArea, -1) AS AreaID,
-        CAST(chat AS SMALLINT) AS CampaignType,
+        CAST(cci.chat AS SMALLINT) AS CampaignType,
         CAST(isnull(cci.cam_id,-1) AS INT) AS RelatedCampId
     from ccCamps ccc
     INNER JOIN ccInbound cci ON cci.IDArea = ccc.IDArea
     where ccc.cam_id = @Id
-        and chat IN (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,'',''))
+        and cci.chat IN (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,'',''))
         and isnull(cci.cam_id,-1) > 0
 
 END
@@ -20591,7 +20584,7 @@ BEGIN
           AND ConversationType = @ConversationType
     )
     BEGIN
-        INSERT INTO ccWhatsAppGlobalIdsRelationship
+        INSERT INTO ccWhatsAppGlobalIdsRelationship(GlobalId,ConversationId,ConversationType)
         VALUES (@globalId, @ConversationId, @ConversationType);
     END
     IF(@returnInfo = 1)

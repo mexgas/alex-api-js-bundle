@@ -8796,7 +8796,42 @@ END'
     END'
     exec (@sql)
 
-    
+    SET @process = 'INSERT ccMenus 12000'
+    SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccMenus WHERE menu_id = 12000)
+    BEGIN
+        INSERT INTO ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release) VALUES (12000,''WhatsApp de entrada|Inbound WhatsApp'',12000,''A'',7,3,'''',''01fca49b34e37efff01faa6808ea7fb401278e754bbe713c58f023954497efc8537ce0372c9ec527e453b7d0af15f0ca'');
+    END'
+    exec (@sql)
+
+    SET @process = 'INSERT ccMenus 12010'
+    SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccMenus WHERE menu_id = 12010)
+    BEGIN
+        INSERT INTO ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release) VALUES (12010,''Detalle de conversaciones|Conversations Detail'',12000,''B'',7,3,'''',''accb20a46285ea9856ace61e5e3ffd452de1f55f20c7a005ce8e05a503060fb18beee994719b6abd36ad36efaffd0370'');
+    END'
+    exec (@sql)
+
+    SET @process = 'INSERT ccMenus 12015'
+    SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccMenus WHERE menu_id = 12015)
+    BEGIN
+        INSERT INTO ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release) VALUES (12015,''Detalle de desasignaciones|Deassignments details'',12000,''B'',7,3,'''',''e9befc66956d7d9fd76131b32eb489783a31ee84a8ad9fde96e1d89b26627cac8fc4fa52f426845fa98a3f91eb0ff8041e6f05eb13fe339c90f00002d2d06235'');
+    END'
+    exec (@sql)
+
+    SET @process = 'INSERT ccMenus 12017'
+    SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccMenus WHERE menu_id = 12017)
+    BEGIN
+        INSERT INTO ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release) VALUES (12017,''Detalle de conversaciones enviadas a SPAM|Detail of conversations sent to SPAM'',12000,''B'',7,3,'''',''accb20a46285ea9856ace61e5e3ffd4582792fe13e066f048a0c3f937dc1daf96bdd2edb9f23d5b4b486f46011c61eb08915ca96b688576ca7a25b2b03170981862172d92a203b6c9051ce2f5670037d'');
+    END'
+    exec (@sql)
+
+    SET @process = 'INSERT ccMenus 12020'
+    SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccMenus WHERE menu_id = 12020)
+    BEGIN
+        INSERT INTO ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release) VALUES (12020,''Conversaciones por campaña|Conversations by Campaign'',12000,''B'',7,3,'''',''2605c8244920fb599fb936a4bf94521a7284d5e414815e8ef15fa8f6b0040db16a54ce29b02250a22a8cb87c41c6f3b30e3860a31b59d733442bb174a555b7b2'');
+    END'
+    exec (@sql)
+
+
     SET @process = 'CW-11359 ALTER PROCEDURE [dbo].[ccspRepInDIDResume]'
     SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepInDIDResume]
 
@@ -8890,25 +8925,192 @@ BEGIN
 END;'
     exec (@sql)
 
-    SET @process = ''
-    SET @sql = ''
+    SET @process = 'Insert translations report 2140'
+	SET @sql = 'if not exists (select 1 from TranslatedReports where id = 2140)
+	BEGIN
+		insert into TranslatedReports values (2140,''EstadoAgente|Campaign|newCallKey'')
+	END'
+	EXEC(@sql)
+
+    SET @process = 'DROP ccspRepAgentHistory'
+    SET @sql = 'if exists (select * from sys.procedures where name = N''ccspRepAgentHistory'')
+    begin
+            DROP PROCEDURE ccspRepAgentHistory;
+    end'
     exec (@sql)
+
+    SET @process = 'CREATE ccspRepAgentHistory 2140'
+    SET @sql = 'CREATE PROCEDURE [dbo].[ccspRepAgentHistory]
+	(
+		@action TINYINT,
+		@from   DATETIME = NULL,
+		@to     DATETIME = NULL
+	)
+	AS
+	BEGIN
+		SET NOCOUNT ON;
+
+		IF @from IS NULL
+			SET @from = CONVERT(date, GETDATE());
+
+		IF @to IS NULL
+			SET @to = GETDATE();
+
+		SET @from = CONVERT(date, @from);
+
+		IF @action = 1
+		BEGIN
+
+			DELETE FROM RepAgentHistory WHERE [date] >= @from AND [date] < @to;
+
+			;WITH eventos AS
+			(
+				SELECT
+					cl.User_id,
+					cu.Login,
+					cu.IDArea,
+					cl.Fecha AS FechaEvento,
+					cl.TipoMov,
+					LAG(cl.Fecha) OVER
+					(
+						PARTITION BY cl.User_id
+						ORDER BY cl.Fecha
+					) AS FechaAnterior,
+					
+					LAG(cl.TipoMov) OVER
+					(
+						PARTITION BY cl.User_id
+						ORDER BY cl.Fecha
+					) AS TipoMovAnterior
+					
+				FROM ccLogLogin cl
+				INNER JOIN ccUsers cu
+					ON cl.User_id = cu.User_id
+				WHERE cl.Fecha >= DATEADD(DAY, -1, @from)
+				  AND cl.Fecha < @to
+				  AND cu.TipoUser_id = 1
+			)
+			INSERT INTO RepAgentHistory
+			(
+				AgentName,
+				[date],
+				EstadoAgente,
+				TiempoEstado,
+				Campaign,
+				CallKey,
+				userId,
+				AreaId
+			)
+			SELECT
+				Login,
+				FechaAnterior,
+				''systemTranslated_offline'',--''Disconnect'',
+				CONVERT
+				( CHAR(8),DATEADD ( SECOND, DATEDIFF(SECOND, FechaAnterior, FechaEvento), 0 ),108),
+				''systemTranslated_value_empty'',
+				''systemTranslated_value_empty'',
+				User_id,
+				IDArea
+			FROM eventos
+			WHERE TipoMov = 1
+			  AND TipoMovAnterior = 0
+			  AND FechaAnterior IS NOT NULL
+			  AND FechaEvento >= @from
+			  AND FechaEvento < @to;
+
+			;WITH statusLabels (Id, Description) AS
+				(
+					SELECT * FROM
+					(
+						VALUES
+							(0, ''systemTranslated_offline''),
+							(1, ''systemTranslated_validating''),
+							(2, ''systemTranslated_unavailable''),
+							(3, ''systemTranslated_ready''),
+							(4, ''systemTranslated_engaged''),
+							(5, ''systemTranslated_call_transfer''),
+							(6, ''systemTranslated_wrap_up''),
+							(21,''systemTranslated_dialing''),
+							(24,''systemTranslated_engaged_chat''),
+							(30,''systemTranslated_reconnecting''),
+							(31,''systemTranslated_ready_preview''),
+							(32,''systemTranslated_preview''),
+							(33,''systemTranslated_assisted_call''),
+							(34,''systemTranslated_engaged_whats''),
+							(35,''systemTranslated_idle_preview''),
+							(36,''systemTranslated_engaged_email''),
+							(37,''systemTranslated_custom_ready''),
+							(39,''systemTranslated_inbox_transfer'')
+							--(pending, ''engaged-preview'')
+					) AS DatosFijos(Id, Description)
+				)
+
+			INSERT INTO RepAgentHistory
+			(
+				AgentName,
+				[date],
+				EstadoAgente,
+				TiempoEstado,
+				Campaign,
+				CallKey,
+				userId,
+				AreaId
+			)
+			SELECT
+				u.Login,
+				lad.fecha,
+				tsa.Description,
+				CONVERT ( CHAR(8), DATEADD(SECOND, CAST(lad.tStatus AS INT), 0), 108),
+				ISNULL ( NULLIF(LTRIM(cin.descripcion), ''''), ISNULL(LTRIM(c.cam_descripcion), ''N/A'') ),
+				ISNULL( NULLIF(LTRIM(co.cal_key), ''''), ISNULL(LTRIM(ci.cal_key), ''N/A'')),
+				lad.User_id,
+				u.IdArea
+
+			FROM ccLogAgentesDia lad
+			INNER JOIN ccUsers u ON lad.User_id = u.User_id
+			INNER JOIN statusLabels tsa ON lad.TipoStatusAge_id = tsa.Id
+			LEFT JOIN ccCamps c ON lad.IdCampEsp = c.cam_id
+			LEFT JOIN ccInbound cin ON lad.IdCampEsp = cin.Inbound_id
+			LEFT JOIN ccoCallsOut co ON lad.callID = co.cal_id
+			LEFT JOIN ccCallsIn ci ON lad.callID = ci.cal_id
+			WHERE lad.fecha >= @from
+			  AND lad.fecha < @to
+			  AND lad.TipoStatusAge_id IN (0,1, 2, 3, 4, 5, 6, 21,24,30,31,32,33,34,35,36,37,39)
+	END
+	END'
+    exec (@sql)
+	
+	SET @process = 'Delete view RepViewAgentHistory'
+	SET @sql = '
+	IF EXISTS (SELECT * FROM sys.views WHERE name = N''RepViewAgentHistory'')
+	BEGIN
+		DROP VIEW RepViewAgentHistory;
+	END'
+	EXEC(@sql)
 
     SET @process = ''
-    SET @sql = ''
+    SET @sql = 'CREATE VIEW RepViewAgentHistory AS
+		SELECT 
+			AgentName, 
+			[date] as newDate, 
+			EstadoAgente, 
+			TiempoEstado, 
+			Campaign, 
+			CallKey as newCallKey, 
+			userId, 
+			AreaId
+		FROM 
+			RepAgentHistory;'
     exec (@sql)
 
-     SET @process = ''
-    SET @sql = ''
-    exec (@sql)
+        SET @process = 'Insert status de numero no valido para reportes'
+    SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccSMSResult WHERE resultId = 8)
+BEGIN
+    INSERT INTO ccSMSResult (resultId, description, translatedDesc) 
+    VALUES (8, ''Invalid number'', ''systemTranslated_invalidNumber'');
+END'
 
-    SET @process = ''
-    SET @sql = ''
-    exec (@sql)
-
-     SET @process = ''
-    SET @sql = ''
-    exec (@sql)
+exec (@sql)
 
     SET @process = ''
     SET @sql = ''

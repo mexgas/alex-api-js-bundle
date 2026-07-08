@@ -1541,10 +1541,17 @@ from result crlp ''
 return(0)
 END
 set nocount OFF'
-		EXEC(@sql)				
+		EXEC(@sql)		
+		
+		SET @process = 'DROP TRIGGER dbo.trigZonaHoraria;'
+		SET @sql = 'IF OBJECT_ID(N''dbo.trigZonaHoraria'', N''TR'') IS NOT NULL
+BEGIN
+    DROP TRIGGER dbo.trigZonaHoraria;
+END'
+		EXEC(@sql)
 
 		SET @process = 'Alter SP trigZonaHoraria Se modifica para validar si el zipCodeSchedule es 1 para no validar por telefono'
-		SET @sql = 'ALTER TRIGGER [dbo].[trigZonaHoraria] ON [dbo].[ccoCallsOutSource]
+		SET @sql = 'CREATE TRIGGER [dbo].[trigZonaHoraria] ON [dbo].[ccoCallsOutSource]
 FOR INSERT,UPDATE
 AS
 SET NOCOUNT ON
@@ -1637,6 +1644,10 @@ while @i<=@count begin
 end
 return @tel
 end'
+		EXEC(@sql)
+
+		SET @process = 'DISABLE TRIGGER dbo.trigZonaHoraria'
+		SET @sql = 'DISABLE TRIGGER dbo.trigZonaHoraria ON dbo.ccoCallsOutSource;'
 		EXEC(@sql)
 
 		

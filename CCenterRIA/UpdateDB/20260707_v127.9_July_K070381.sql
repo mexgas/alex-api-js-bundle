@@ -340,6 +340,97 @@ BEGIN
 END'
     exec (@sql)
 
+    -- =====================================================================
+    -- K070381 - Migrar cctipoCalif_IA a IDENTITY
+    -- Motivo: la tabla se creo originalmente "Sin identity" (calif_id
+    -- calculado a mano con MAX(calif_id)+1), y en algun punto de
+    -- ServicesPack9 la SP dejo de calcularlo, provocando "Cannot insert
+    -- the value NULL into column calif_id" al crear una calificacion IA
+    -- nueva. Ademas, el calculo manual MAX+1 es una condicion de carrera
+    -- real en un sistema concurrente (dos altas simultaneas pueden
+    -- calcular el mismo id). Se resuelve pasando la columna a IDENTITY,
+    -- que es atomico.
+    --
+    -- ADVERTENCIA - REPLICACION: cctipoCalif_IA puede ser articulo de
+    -- replicacion (transaccional/snapshot) en instalaciones existentes.
+    -- Este bloque ABORTA si detecta que la tabla sigue siendo articulo
+    -- de una publicacion -- en ese caso, el despliegue de esta version
+    -- DEBE ejecutarse con la opcion "Eliminar Replicas" activa en el
+    -- instalador (installGroup.replicationRemove) antes de correr este
+    -- script. La replica se debe volver a agregar y resincronizar
+    -- despues (el instalador ya contempla este flujo para actualizaciones).
+    -- =====================================================================
+
+    SET @process = 'K070381 - Migrar cctipoCalif_IA a IDENTITY'
+
+    IF EXISTS (
+        SELECT 1 FROM sysarticles a
+        INNER JOIN syspublications p ON a.pubid = p.pubid
+        WHERE a.name = 'cctipoCalif_IA'
+    )
+    BEGIN
+        RAISERROR('cctipoCalif_IA sigue siendo articulo de replicacion. Ejecutar el update con "Eliminar Replicas" activo en el instalador antes de aplicar este script.', 16, 1)
+    END
+
+    IF NOT EXISTS (
+        SELECT 1 FROM sys.columns
+        WHERE object_id = OBJECT_ID('dbo.cctipoCalif_IA') AND name = 'calif_id' AND is_identity = 1
+    )
+    BEGIN
+        IF EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_ccDispositionExtractionData_Calif')
+            ALTER TABLE dbo.ccDispositionExtractionData DROP CONSTRAINT FK_ccDispositionExtractionData_Calif
+
+        EXEC sp_rename 'dbo.cctipoCalif_IA', 'cctipoCalif_IA_old'
+        EXEC sp_rename 'dbo.cctipoCalifIA', 'cctipoCalifIA_old', 'OBJECT'
+
+        CREATE TABLE dbo.cctipoCalif_IA (
+            calif_id smallint IDENTITY(1,1) NOT NULL,
+            Name_cal varchar(150) NULL,
+            Description_cal varchar(100) NULL,
+            CanReprogram bit DEFAULT 0,
+            autoCallback bit DEFAULT 0,
+            ReturnCall smallint DEFAULT 0,
+            Color varchar(15) NULL,
+            AplTransfer bit DEFAULT 0,
+            TransferOpcion smallint DEFAULT 0,
+            DestinyIVR bit DEFAULT 0,
+            DestinyIVR_camp smallint DEFAULT 0,
+            DestinyIVR_number VARCHAR(20) NULL,
+            DestinyIVR_directory smallint DEFAULT 0,
+            AplExtDate bit DEFAULT 0,
+            ExtDescription varchar(150) NULL,
+            AplBlackList bit NULL,
+            Cali_StatusIA bit NULL,
+            DirectoryNumberFlag bit DEFAULT 1,
+            CONSTRAINT cctipoCalifIA PRIMARY KEY CLUSTERED (calif_id)
+        )
+
+        SET IDENTITY_INSERT dbo.cctipoCalif_IA ON
+
+        INSERT INTO dbo.cctipoCalif_IA (
+            calif_id, Name_cal, Description_cal, CanReprogram, autoCallback, ReturnCall, Color,
+            AplTransfer, TransferOpcion, DestinyIVR, DestinyIVR_camp, DestinyIVR_number,
+            DestinyIVR_directory, AplExtDate, ExtDescription, AplBlackList, Cali_StatusIA, DirectoryNumberFlag
+        )
+        SELECT
+            calif_id, Name_cal, Description_cal, CanReprogram, autoCallback, ReturnCall, Color,
+            AplTransfer, TransferOpcion, DestinyIVR, DestinyIVR_camp, DestinyIVR_number,
+            DestinyIVR_directory, AplExtDate, ExtDescription, AplBlackList, Cali_StatusIA, DirectoryNumberFlag
+        FROM dbo.cctipoCalif_IA_old
+
+        SET IDENTITY_INSERT dbo.cctipoCalif_IA OFF
+
+        DECLARE @maxCalifId INT
+        SELECT @maxCalifId = ISNULL(MAX(calif_id), 0) FROM dbo.cctipoCalif_IA
+        DBCC CHECKIDENT ('dbo.cctipoCalif_IA', RESEED, @maxCalifId)
+
+        ALTER TABLE dbo.ccDispositionExtractionData
+            ADD CONSTRAINT FK_ccDispositionExtractionData_Calif FOREIGN KEY (calif_id)
+            REFERENCES dbo.cctipoCalif_IA (calif_id)
+
+        DROP TABLE dbo.cctipoCalif_IA_old
+    END
+
     COMMIT TRAN
 
 END TRY

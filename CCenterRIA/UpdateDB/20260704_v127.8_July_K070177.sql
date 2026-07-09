@@ -61,7 +61,7 @@ BEGIN
     UNION ALL
 
     SELECT
-        0                                  AS CalificationId,
+        CAST(0 AS SMALLINT)                AS CalificationId,
         ''systemTranslated_NoDisposition'' AS Calification,
         ''''                               AS GraphColor,
         COUNT(*)                           AS Total

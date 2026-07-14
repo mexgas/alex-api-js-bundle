@@ -22,7 +22,7 @@ BEGIN TRY
     --
     -- PASOS FUERA DEL TRAN (DDL de procedimientos):
     --   A. ccspRepOutDialDetail: revertir a version K070300 (sin campType)
-    --   B. ccspRepOutCallsDetail: agregar campType + [username]='N/A' para CampType=9 (IA)
+    --   B. ccspRepOutCallsDetail: agregar campType + ModelName + [username]='N/A' para CampType=9 (IA)
     --   C. ccspRepCatalogos: type=39 campaignType + @isJustVoiceFilter incluye 4010 y 4020
     -- =====================================================================
 
@@ -74,6 +74,15 @@ FROM RepOutDialDetail WITH (NOLOCK);
 
     IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE Name = 'campType' AND Object_ID = OBJECT_ID('dbo.RepOutCallsDetail'))
         ALTER TABLE dbo.RepOutCallsDetail ADD campType TINYINT NULL;
+
+    -- -----------------------------------------------------------------
+    -- 0b. ModelName: nueva columna en RepOutCallsDetail (nombre del agente
+    --     virtual, mismo patron que RepOutDialDetail.ModelName en el 4010)
+    -- -----------------------------------------------------------------
+    SET @process = 'K070305 - ADD ModelName to RepOutCallsDetail'
+
+    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE Name = 'ModelName' AND Object_ID = OBJECT_ID('dbo.RepOutCallsDetail'))
+        ALTER TABLE dbo.RepOutCallsDetail ADD ModelName VARCHAR(255) NULL;
 
     -- -----------------------------------------------------------------
     -- 3a. Filters: registrar campaignType en catalogo maestro
@@ -128,6 +137,7 @@ SELECT
     [login]        [agentName],
     [username]     [login],
     [campaign],
+    [ModelName],
     [duration],
     [ncost],
     [iva],
@@ -461,7 +471,7 @@ AS
         (
             [date], [callKey], [telephone], [transfer], [dialog], [nque], [wrapup],
             [CallDisposition], [extension], [userId], [login], [username],
-            [campaignId], [campaign], [duration], [ncost], [iva], [total],
+            [campaignId], [campaign], [ModelName], [duration], [ncost], [iva], [total],
             [ByCarrier], [Calltypes], [dialType], [whoHangUp], [subDisposition],
             [dialResult], [calId], [year], [month], [day], [hour], [minutes],
             [trunk], [data1], [data2], [data3], [data4], [data5],
@@ -487,6 +497,7 @@ AS
             END AS [username],
             camps.cam_id AS [campaignId],
             ISNULL(camps.cam_descripcion, 'systemTranslated_NoCampaign') AS [campaign],
+            ISNULL(va.nameAgent, 'NA') AS [ModelName],
             (CEILING((ISNULL(Call.totalCall_Time, 0) + ISNULL(Call.cal_tMsg, 0)) / 60.0) * 60) AS [duration],
             CONVERT(DECIMAL(10, 2), dbo.fnGetCstoTarifa(
                 Call.tipoLlamada_id,
@@ -564,6 +575,7 @@ AS
         LEFT JOIN ccTipoCalifOUT    Tipo  (NOLOCK) ON Call.calif_id      = Tipo.calif_id
         LEFT JOIN ccUserView        Usr   (NOLOCK) ON Usr.[user_id]      = Call.[user_id]
         LEFT JOIN ccCamps           camps (NOLOCK) ON camps.[cam_id]     = Call.[cam_id]
+        LEFT JOIN ccVirtualAgent    va    (NOLOCK) ON va.idAgent         = Call.virtualAgentId
         LEFT JOIN ccStatusLlamada   sta   (NOLOCK) ON Call.statuscall_id = sta.statuscall_id
         LEFT JOIN cstoProvedor      prov  (NOLOCK) ON prov.[provedor_id] = Call.[provedor_id]
         LEFT JOIN cstoTipoLlamada   tl    (NOLOCK) ON tl.[tipoLlamada_id] = ld.[tipoLlamada_id]

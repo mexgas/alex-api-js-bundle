@@ -18,7 +18,7 @@ BEGIN TRY
     --   0. RepOutCallsDetail: nueva columna campType TINYINT NULL
     --   3a. Filters: registrar campaignType en catalogo (idempotente)
     --   3b. ReportsFilters: agregar campaignType para reporte 4020
-    --   3c. RepViewOutCallsDetail: exponer campType
+    --   3c. RepViewOutCallsDetail: exponer campType + reposicionar/renombrar originNumber a ANI despues de telephone
     --
     -- PASOS FUERA DEL TRAN (DDL de procedimientos):
     --   A. ccspRepOutDialDetail: revertir a version K070300 (sin campType)
@@ -96,17 +96,19 @@ FROM RepOutDialDetail WITH (NOLOCK);
     END
 
     -- -----------------------------------------------------------------
-    -- 3c. ALTER VIEW RepViewOutCallsDetail: agregar campType
+    -- 3c. ALTER VIEW RepViewOutCallsDetail: agregar campType + columna ANI
+    --     (reposiciona originNumber despues de telephone, alias ANI para
+    --     tomar el resource 'Numero ANI' en vez de 'Numero origen')
     -- -----------------------------------------------------------------
-    SET @process = 'K070305 - ALTER VIEW RepViewOutCallsDetail'
+    SET @process = 'K070305 - ALTER VIEW RepViewOutCallsDetail (campType + ANI)'
 
     EXEC('
 ALTER VIEW [dbo].[RepViewOutCallsDetail] AS
 SELECT
     [date],
     [callKey],
-    [originNumber],
     [telephone],
+    [originNumber] AS [ANI],
     [transfer]     AS transferTime,
     [queueTimes],
     [ringingTime],

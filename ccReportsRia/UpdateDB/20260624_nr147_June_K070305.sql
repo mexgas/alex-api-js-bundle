@@ -85,6 +85,17 @@ FROM RepOutDialDetail WITH (NOLOCK);
         ALTER TABLE dbo.RepOutCallsDetail ADD ModelName VARCHAR(255) NULL;
 
     -- -----------------------------------------------------------------
+    -- 0c. CapturedData: nueva columna en RepOutCallsDetail (JSON de datos
+    --     capturados por agentes virtuales, mismo patron que
+    --     RepOutDialDetail/RepInCallsDetail en 4010/3010; habilita el
+    --     patron de columnas dinamicas _Ex, criterio 11)
+    -- -----------------------------------------------------------------
+    SET @process = 'K070305 - ADD CapturedData to RepOutCallsDetail'
+
+    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE Name = 'CapturedData' AND Object_ID = OBJECT_ID('dbo.RepOutCallsDetail'))
+        ALTER TABLE dbo.RepOutCallsDetail ADD CapturedData VARCHAR(MAX) DEFAULT '';
+
+    -- -----------------------------------------------------------------
     -- 3a. Filters: registrar campaignType en catalogo maestro
     -- -----------------------------------------------------------------
     SET @process = 'K070305 - Filters campaignType catalogo maestro'
@@ -154,6 +165,7 @@ SELECT
     [hour],
     [minutes],
     [trunk],
+    [CapturedData],
     [data1]        [Dato1],
     [data2]        [Dato2],
     [data3]        [Dato3],
@@ -477,7 +489,7 @@ AS
             [trunk], [data1], [data2], [data3], [data4], [data5],
             [MessageTime], [grabId], [areaId], [area],
             originNumber, callbackDate, queueTimes, ringingTime,
-            callStatusId, [campType]
+            callStatusId, [campType], [CapturedData]
         )
         SELECT
             Call.cal_inicio AS [date],
@@ -569,7 +581,8 @@ AS
                 WHEN camps.CampType = 9 THEN CAST(9 AS TINYINT)
                 WHEN camps.CampType = 6 THEN CAST(6 AS TINYINT)
                 ELSE                         CAST(0 AS TINYINT)
-            END AS campType
+            END AS campType,
+            ISNULL(codia.CapturedData, '') AS CapturedData
         FROM ccoCallsOut Call (NOLOCK)
         LEFT JOIN ccoLogDials       ld    (NOLOCK) ON Call.cal_id        = ld.cal_id
         LEFT JOIN ccTipoCalifOUT    Tipo  (NOLOCK) ON Call.calif_id      = Tipo.calif_id
@@ -590,11 +603,39 @@ AS
         LEFT JOIN Ria_grabacion     rc    (NOLOCK) ON rc.cal_id          = Call.cal_id
                                                   AND rc.tipo_llamada    = 2
         LEFT JOIN dbo.ccRIACat_Areas AS ar (NOLOCK) ON ar.IDArea         = camps.IDArea
+        LEFT JOIN ccoCallsOutDispositionIA codia (NOLOCK) ON codia.call_id = Call.cal_id
         WHERE Call.cal_inicio >= @from
           AND Call.cal_inicio <  @to
           AND Call.cal_manual IN (0, 2)
           AND ld.TipoDialingMode IS NOT NULL
         ORDER BY DATE;
+
+        -- ---------------------------------------------------------------
+        -- Poblar ReportJsonKeys (reporte 4020) con las llaves del JSON de
+        -- CapturedData, mismo patron usado por ccspRepInCallsDetail (3010)
+        -- para habilitar el patron de columnas dinamicas _Ex en el
+        -- reporte C# (CapturedDataDetailReport.EnsureDbJsonKeys).
+        -- ---------------------------------------------------------------
+        DECLARE @processId INT = 4020;
+
+        DELETE FROM dbo.ReportJsonKeys
+        WHERE id = @processId
+          AND ReportDate BETWEEN @from AND @to;
+
+        INSERT INTO dbo.ReportJsonKeys (id, ReportDate, JsonKey)
+        SELECT
+            @processId AS id,
+            CONVERT(DATE, d.[date], 121) AS ReportDate,
+            j.[key]
+        FROM dbo.RepOutCallsDetail d
+        CROSS APPLY OPENJSON(d.CapturedData) j
+        WHERE d.[date] >= @from
+          AND d.[date] <  @to
+          AND d.CapturedData IS NOT NULL
+          AND d.CapturedData <> ''
+          AND d.CapturedData <> 'NULL'
+          AND ISJSON(d.CapturedData) = 1
+        GROUP BY j.[key], CONVERT(DATE, d.[date], 121);
     END
 GO
 

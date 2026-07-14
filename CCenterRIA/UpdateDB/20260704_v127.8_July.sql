@@ -1,11 +1,119 @@
-USE CCenterRIA
-GO
+/*******************************/
+/*******************************/
+/*
+Author: Equipo Galatea
+Date: 2026/07/04
+Description: July Release - K070177 (Dashboard Campana IA de Entrada) + K070381 (Extraccion de datos en Calificaciones IA)
+Database: CCenterRia
+Required version: 127.7
+IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
+*/
+USE CCenterRIA;
 
-DECLARE @process VARCHAR(100)
-DECLARE @sql NVARCHAR(MAX)
+SET NOCOUNT ON
+DECLARE @version INT, @versionFix INT
+DECLARE @actualVersion INT, @actualVersionFix INT
+DECLARE @sql VARCHAR(max)
+DECLARE @errorGenerated VARCHAR(max)
+DECLARE @process VARCHAR(max)
+DECLARE @versionALL VARCHAR(max);
+/* Version to release (use the version of your own databse)*/
+/*******************************************************************************************************
+Importante:la variable @version puede tener 2 valores dependiendo la necesidad que se tenga el primer ejemplo
+set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a 118 en caso de que se tenga la version 119 y se vaya a agragar un fix
+sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
+    SET @version = 127 --**********actualizar a 124 sin fix
+    SET @versionfix = 8
+    /* Actual version (use your own script to do it)*/
+    EXEC @actualVersion = ccsp_getVersion 'BD'
+    EXEC @actualVersionFix = ccsp_getVersion 'BDF'
+    SELECT @versionALL = valor
+    FROM ccsettings
+    WHERE setting_id = 77;
+    SELECT @actualVersionFix = cast(isnull(max(value), '0') AS INT)
+    FROM dbo.fn_RIASplitDelimited(@versionALL, '.')
+    WHERE id = 5;
+    --- Validacion para cuando pasamos a una nueva version LTS
+    declare @versioMajer int= case when @version > @actualVersion then 1 else 0 end
+    IF @version > @actualVersion
+    BEGIN
+    SET @actualVersionFix = 0
+    select @version,@actualVersion,@versioMajer
+    END
+    IF @version >= @actualVersion and @versionfix >= @actualVersionFix
+    BEGIN
+    BEGIN TRAN
+    BEGIN TRY
 
-BEGIN TRAN
-BEGIN TRY
+    -- =====================================================================
+    -- K070177 - Calificaciones de campana de llamadas de entrada (IA) en Dashboard
+    -- BD: CCenterRIA
+    -- Cambios:
+    --   1. SP ccsp_GalateaGetCalifDayIA: conteo del dia de calificaciones
+    --      puestas por agentes virtuales en campanas IA de entrada, para la
+    --      card "Calificaciones" del Dashboard (grafica de pastel + desglose).
+    -- Notas:
+    --   - Devuelve TODAS las calificaciones configuradas en la campana
+    --     (ccCalifCampIA) aunque tengan 0 usos, para que la card muestre el
+    --     catalogo completo.
+    --   - Fila con CalificationId = 0 representa "Sin calificacion":
+    --     llamadas atendidas (statusCall_id = 13) del dia sin calificacion.
+    --     El front traduce la etiqueta (ES/EN/PT).
+    --   - Registros con calificacion cuentan sin filtrar status (una llamada
+    --     reencolada/abandonada puede conservar la calif del agente virtual).
+    --   - Porcentajes se calculan en el front.
+    -- =====================================================================
+    SET @process = 'K070177 - DROP ccsp_GalateaGetCalifDayIA'
+    SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaGetCalifDayIA'')
+    begin
+            DROP PROCEDURE ccsp_GalateaGetCalifDayIA;
+    end'
+    exec (@sql)
+
+    SET @process = 'K070177 - CREATE ccsp_GalateaGetCalifDayIA'
+    SET @sql = '
+CREATE PROCEDURE [dbo].[ccsp_GalateaGetCalifDayIA]
+    @InboundId SMALLINT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @today DATETIME = CONVERT(DATETIME, CONVERT(VARCHAR(11), GETDATE(), 101));
+
+    SELECT
+        cat.calif_id                       AS CalificationId,
+        cat.Name_cal                       AS Calification,
+        ISNULL(cat.Color, '''')            AS GraphColor,
+        ISNULL(cnt.Total, 0)               AS Total
+    FROM ccCalifCampIA rel WITH (NOLOCK)
+    INNER JOIN cctipoCalif_IA cat WITH (NOLOCK)
+        ON cat.calif_id = rel.calif_id
+    LEFT JOIN (
+        SELECT calif_id, COUNT(*) AS Total
+        FROM ccCallsIn WITH (NOLOCK)
+        WHERE cal_Inicio > @today
+          AND Inbound_id = @InboundId
+          AND ISNULL(calif_id, 0) > 0
+        GROUP BY calif_id
+    ) cnt ON cnt.calif_id = cat.calif_id
+    WHERE rel.cam_id = @InboundId
+      AND rel.tipo = 0
+
+    UNION ALL
+
+    SELECT
+        CAST(0 AS SMALLINT)                AS CalificationId,
+        ''systemTranslated_NoDisposition'' AS Calification,
+        ''''                               AS GraphColor,
+        COUNT(*)                           AS Total
+    FROM ccCallsIn WITH (NOLOCK)
+    WHERE cal_Inicio > @today
+      AND Inbound_id = @InboundId
+      AND statusCall_id = 13
+      AND ISNULL(calif_id, 0) = 0
+END
+'
+    exec (@sql)
 
     -- =====================================================================
     -- K070381 - Mejoras en la extraccion de datos (Calificaciones IA)
@@ -25,28 +133,21 @@ BEGIN TRY
     --      patron que listas separadas por coma via fn_RIASplitDelimited).
     --   5. ALTER ccsp_ManageQuantumDispositions (Action=3): se deja de leer
     --      cci.ExtDescription (texto libre, no cumplia el contrato
-    --      documentado por Quantum) como fuente de required_data. No se
-    --      borra la columna ExtDescription por si algun otro consumidor
-    --      la usa; solo se deja de usar para este fin.
+    --      documentado por Quantum) como fuente de required_data.
     --   6. ALTER ccsp_ManageQuantumDispositions: se agrega Action=7, que
     --      devuelve los items de extraccion requeridos por calificacion
-    --      (calif_id, Name, Type, Description) para toda la campana, para
-    --      que la capa de aplicacion arme required_data:
-    --      [{name,type,description}] al sincronizar con Quantum.
-    --      Se agrega como Action independiente (no como segundo result
-    --      set de Action=3) porque el helper base de acceso a datos en
-    --      C# (InvokeStoreProcedureWithResults) solo lee un result set
-    --      por llamada -- mismo patron que el resto del repositorio.
+    --      para toda la campana, para que la capa de aplicacion arme
+    --      required_data: [{name,type,description}] al sincronizar con
+    --      Quantum.
+    --   7. Migracion de cctipoCalif_IA a IDENTITY (ver detalle abajo).
     -- Notas:
-    --   - Sin FOR JSON / OPENJSON (SQL Server 2012, guardarraiz cw-database
-    --     y cw-reports-asp): el JSON de required_data se arma en C#.
-    --   - Type en catalogo: 0=Numero, 1=Texto, 2=Fecha (mapeo a
-    --     number/string/date se hace en capa de aplicacion).
+    --   - Sin FOR JSON / OPENJSON (SQL Server 2012): el JSON de
+    --     required_data se arma en C#.
+    --   - Type en catalogo: 0=Numero, 1=Texto, 2=Fecha.
     -- =====================================================================
-
-    SET @process = 'K070381 - Tabla ccExtractionDataCatalog'
-
-    IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'ccExtractionDataCatalog')
+    SET @process = 'K070381 - CREATE TABLE ccExtractionDataCatalog'
+    SET @sql = '
+    IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = ''ccExtractionDataCatalog'')
     BEGIN
         CREATE TABLE dbo.ccExtractionDataCatalog (
             Id              INT IDENTITY(1,1) NOT NULL,
@@ -61,10 +162,12 @@ BEGIN TRY
             CONSTRAINT UQ_ccExtractionDataCatalog_Key UNIQUE ([Key])
         )
     END
+'
+    exec (@sql)
 
-    SET @process = 'K070381 - Tabla ccDispositionExtractionData'
-
-    IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'ccDispositionExtractionData')
+    SET @process = 'K070381 - CREATE TABLE ccDispositionExtractionData'
+    SET @sql = '
+    IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = ''ccDispositionExtractionData'')
     BEGIN
         CREATE TABLE dbo.ccDispositionExtractionData (
             calif_id         SMALLINT NOT NULL,
@@ -76,12 +179,17 @@ BEGIN TRY
                 REFERENCES dbo.ccExtractionDataCatalog (Id)
         )
     END
+'
+    exec (@sql)
 
-    SET @process = 'K070381 - SP ccsp_GalateaAdminExtractionDataCatalog'
+    SET @process = 'K070381 - DROP ccsp_GalateaAdminExtractionDataCatalog'
+    SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminExtractionDataCatalog'')
+    begin
+            DROP PROCEDURE ccsp_GalateaAdminExtractionDataCatalog;
+    end'
+    exec (@sql)
 
-    IF OBJECT_ID('ccsp_GalateaAdminExtractionDataCatalog') IS NOT NULL
-        DROP PROCEDURE ccsp_GalateaAdminExtractionDataCatalog
-
+    SET @process = 'K070381 - CREATE ccsp_GalateaAdminExtractionDataCatalog'
     SET @sql = '
 CREATE PROCEDURE [dbo].[ccsp_GalateaAdminExtractionDataCatalog]
     @Option      SMALLINT,           -- 1=CREATE, 2=READ (list), 3=UPDATE, 4=DEACTIVATE
@@ -137,14 +245,18 @@ BEGIN
     BEGIN
         UPDATE ccExtractionDataCatalog SET Active = 0 WHERE Id = @Id
     END
-END'
+END
+'
     exec (@sql)
 
-    SET @process = 'K070381 - SP ccsp_GalateaAdminDispositionExtractionData'
+    SET @process = 'K070381 - DROP ccsp_GalateaAdminDispositionExtractionData'
+    SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminDispositionExtractionData'')
+    begin
+            DROP PROCEDURE ccsp_GalateaAdminDispositionExtractionData;
+    end'
+    exec (@sql)
 
-    IF OBJECT_ID('ccsp_GalateaAdminDispositionExtractionData') IS NOT NULL
-        DROP PROCEDURE ccsp_GalateaAdminDispositionExtractionData
-
+    SET @process = 'K070381 - CREATE ccsp_GalateaAdminDispositionExtractionData'
     SET @sql = '
 CREATE PROCEDURE [dbo].[ccsp_GalateaAdminDispositionExtractionData]
     @Option              SMALLINT,          -- 1=SAVE (delete+insert), 2=GET
@@ -180,12 +292,13 @@ BEGIN
         WHERE rel.calif_id = @CalifId
         ORDER BY cat.Name
     END
-END'
+END
+'
     exec (@sql)
 
-    SET @process = 'K070381 - ALTER ccsp_ManageQuantumDispositions (Action=3: fix required_data)'
-
-    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_ManageQuantumDispositions]
+    SET @process = 'K070381 - ALTER ccsp_ManageQuantumDispositions (Action=3 fix + Action=7 extraction data)'
+    SET @sql = '
+ALTER PROCEDURE [dbo].[ccsp_ManageQuantumDispositions]
         @Action INT,
         @CampId INT = NULL,
         @AgentId INT = NULL,
@@ -336,7 +449,8 @@ BEGIN
         AND cat.Active = 1
         ORDER BY ccci.calif_id
     END
-END'
+END
+'
     exec (@sql)
 
     -- =====================================================================
@@ -346,9 +460,8 @@ END'
     -- ServicesPack9 la SP dejo de calcularlo, provocando "Cannot insert
     -- the value NULL into column calif_id" al crear una calificacion IA
     -- nueva. Ademas, el calculo manual MAX+1 es una condicion de carrera
-    -- real en un sistema concurrente (dos altas simultaneas pueden
-    -- calcular el mismo id). Se resuelve pasando la columna a IDENTITY,
-    -- que es atomico.
+    -- real en un sistema concurrente. Se resuelve pasando la columna a
+    -- IDENTITY, que es atomico.
     --
     -- ADVERTENCIA - REPLICACION: cctipoCalif_IA puede ser articulo de
     -- replicacion (transaccional/snapshot) en instalaciones existentes.
@@ -356,30 +469,28 @@ END'
     -- de una publicacion -- en ese caso, el despliegue de esta version
     -- DEBE ejecutarse con la opcion "Eliminar Replicas" activa en el
     -- instalador (installGroup.replicationRemove) antes de correr este
-    -- script. La replica se debe volver a agregar y resincronizar
-    -- despues (el instalador ya contempla este flujo para actualizaciones).
+    -- script.
     -- =====================================================================
-
     SET @process = 'K070381 - Migrar cctipoCalif_IA a IDENTITY'
-
+    SET @sql = '
     IF NOT EXISTS (
         SELECT 1 FROM sys.columns
-        WHERE object_id = OBJECT_ID('dbo.cctipoCalif_IA') AND name = 'calif_id' AND is_identity = 1
+        WHERE object_id = OBJECT_ID(''dbo.cctipoCalif_IA'') AND name = ''calif_id'' AND is_identity = 1
     )
     BEGIN
         IF EXISTS (
             SELECT 1 FROM sysarticles a
             INNER JOIN syspublications p ON a.pubid = p.pubid
-            WHERE a.name = 'cctipoCalif_IA'
+            WHERE a.name = ''cctipoCalif_IA''
         )
         BEGIN
-            RAISERROR('cctipoCalif_IA sigue siendo articulo de replicacion. Ejecutar el update con "Eliminar Replicas" activo en el instalador antes de aplicar este script.', 16, 1)
+            RAISERROR(''cctipoCalif_IA sigue siendo articulo de replicacion. Ejecutar el update con "Eliminar Replicas" activo en el instalador antes de aplicar este script.'', 16, 1)
         END
-        IF EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_ccDispositionExtractionData_Calif')
+        IF EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = ''FK_ccDispositionExtractionData_Calif'')
             ALTER TABLE dbo.ccDispositionExtractionData DROP CONSTRAINT FK_ccDispositionExtractionData_Calif
 
-        EXEC sp_rename 'dbo.cctipoCalif_IA', 'cctipoCalif_IA_old'
-        EXEC sp_rename 'dbo.cctipoCalifIA', 'cctipoCalifIA_old', 'OBJECT'
+        EXEC sp_rename ''dbo.cctipoCalif_IA'', ''cctipoCalif_IA_old''
+        EXEC sp_rename ''dbo.cctipoCalifIA'', ''cctipoCalifIA_old'', ''OBJECT''
 
         CREATE TABLE dbo.cctipoCalif_IA (
             calif_id smallint IDENTITY(1,1) NOT NULL,
@@ -420,7 +531,7 @@ END'
 
         DECLARE @maxCalifId INT
         SELECT @maxCalifId = ISNULL(MAX(calif_id), 0) FROM dbo.cctipoCalif_IA
-        DBCC CHECKIDENT ('dbo.cctipoCalif_IA', RESEED, @maxCalifId)
+        DBCC CHECKIDENT (''dbo.cctipoCalif_IA'', RESEED, @maxCalifId)
 
         ALTER TABLE dbo.ccDispositionExtractionData
             ADD CONSTRAINT FK_ccDispositionExtractionData_Calif FOREIGN KEY (calif_id)
@@ -428,14 +539,18 @@ END'
 
         DROP TABLE dbo.cctipoCalif_IA_old
     END
+'
+    exec (@sql)
 
-    COMMIT TRAN
-
-END TRY
-BEGIN CATCH
-    ROLLBACK TRAN
-    DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE()
-    DECLARE @ErrorSeverity INT = ERROR_SEVERITY()
-    DECLARE @ErrorState INT = ERROR_STATE()
-    RAISERROR('K070381 failed at process [%s]: %s', @ErrorSeverity, @ErrorState, @process, @ErrorMessage)
-END CATCH
+    /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
+        EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
+        EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)
+        COMMIT TRAN
+        END TRY
+        BEGIN CATCH
+       /* Error generated based on sintax */
+       SELECT @errorGenerated = 'DB script version: ' + cast(@version AS NVARCHAR) + '''.''' + cast(@versionfix AS NVARCHAR) + ''' Error process: ''' + @process + ''' Line: ''' + cast(error_line() AS NVARCHAR) + ''' Number: ''' + cast(@@error AS NVARCHAR) + ''' Message: ''' + error_message()
+       RAISERROR (@errorGenerated, 11, 1)
+       ROLLBACK TRAN
+   END CATCH
+END

@@ -211,16 +211,15 @@ BEGIN
     IF @Action = 3 --Get Quantum Dispositions by camp
     BEGIN
         -- Result set 1: cabecera de disposiciones (sin ExtDescription -- K070381)
+        -- Name/Transfer agregados para alinear con el contrato de sprint7TeamChido (Marco):
+        -- Transfer usa AplTransfer (ya existente desde ServicesPack9), no la tabla
+        -- ccCalif_IA_TransferConfig de K070405 (no existe todavia en este repo).
         SELECT
             cci.calif_id AS [Id],
+        cci.Name_cal AS [Name],
         cci.Description_cal AS [Description],
         CAST(CASE WHEN cci.CanReprogram = 1 OR cci.autoCallback = 1 THEN 1 ELSE 0 END AS INT) AS Callback,
-        CAST(CASE
-        WHEN cci.TransferOpcion = 1 THEN 2 /*Modificar esta parte para que mande si es asistida o ciega*/ ELSE 0 END  AS INT) AS Fallback,
-        CAST(CASE
-        WHEN cci.TransferOpcion = 2  THEN 2 /*Modificar esta parte para que mande si es asistida o ciega*/ ELSE 0  END AS INT) AS Success,
-        CAST(CASE
-        WHEN cci.TransferOpcion = 3 THEN 2 /*Modificar esta parte para que mande si es asistida o ciega*/ ELSE 0 END AS INT) AS Ivr
+        CAST(CASE WHEN cci.AplTransfer = 1 THEN 1 ELSE 0 END AS INT) AS Transfer
         FROM dbo.ccCalifCampIA AS ccci INNER JOIN dbo.cctipoCalif_IA AS cci
         ON cci.calif_id = ccci.calif_id
         WHERE ccci.tipo = @CampType
@@ -363,20 +362,19 @@ END'
 
     SET @process = 'K070381 - Migrar cctipoCalif_IA a IDENTITY'
 
-    IF EXISTS (
-        SELECT 1 FROM sysarticles a
-        INNER JOIN syspublications p ON a.pubid = p.pubid
-        WHERE a.name = 'cctipoCalif_IA'
-    )
-    BEGIN
-        RAISERROR('cctipoCalif_IA sigue siendo articulo de replicacion. Ejecutar el update con "Eliminar Replicas" activo en el instalador antes de aplicar este script.', 16, 1)
-    END
-
     IF NOT EXISTS (
         SELECT 1 FROM sys.columns
         WHERE object_id = OBJECT_ID('dbo.cctipoCalif_IA') AND name = 'calif_id' AND is_identity = 1
     )
     BEGIN
+        IF EXISTS (
+            SELECT 1 FROM sysarticles a
+            INNER JOIN syspublications p ON a.pubid = p.pubid
+            WHERE a.name = 'cctipoCalif_IA'
+        )
+        BEGIN
+            RAISERROR('cctipoCalif_IA sigue siendo articulo de replicacion. Ejecutar el update con "Eliminar Replicas" activo en el instalador antes de aplicar este script.', 16, 1)
+        END
         IF EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_ccDispositionExtractionData_Calif')
             ALTER TABLE dbo.ccDispositionExtractionData DROP CONSTRAINT FK_ccDispositionExtractionData_Calif
 

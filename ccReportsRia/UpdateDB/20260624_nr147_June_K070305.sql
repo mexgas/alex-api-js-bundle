@@ -38,6 +38,11 @@ BEGIN TRY
     -- R2. ROLLBACK 4010 — Revertir RepOutDialDetailView a estado K070300
     --     Mantiene ValidationMode e IsAICampaign; quita campType
     -- -----------------------------------------------------------------
+    SET @process = 'K070305 - Garantizar columna IsAICampaign en RepOutDialDetail (por si el servidor no tiene el 14 Script)'
+
+    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE Name = 'IsAICampaign' AND Object_ID = OBJECT_ID('dbo.RepOutDialDetail'))
+        ALTER TABLE dbo.RepOutDialDetail ADD IsAICampaign BIT NULL;
+
     SET @process = 'K070305 - ROLLBACK: revertir RepOutDialDetailView sin campType'
 
     EXEC('

@@ -2521,38 +2521,7 @@ set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altert
         begin
         ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
         end'
-    EXEC(@sql)
-
-    set @process = 'Alter SP ccspRepOutSMSAnswDetailByCamp Se agrega columna smsccoLogDial.message'
-    set @sql='ALTER PROCEDURE [dbo].[ccspRepOutSMSAnswDetailByCamp] 
-@action as tinyint,
-@from as datetime = NULL,
-@to as datetime = NULL
-AS
-
-IF @from IS NULL
-    SELECT @from = convert(DATETIME, convert(VARCHAR(11), getdate()))
-
-IF @to IS NULL
-    SELECT @to = getdate()
-
-IF @action = 1
-BEGIN
-    --Borrar lo que esta para no repetir
-    DELETE
-    FROM RepOutSMSAnswDetailByCamp WITH (ROWLOCK)
-    WHERE date >= @from AND date < @to
-
-    INSERT INTO RepOutSMSAnswDetailByCamp
-    SELECT smsDate date, cam.cam_id camId, cam_descripcion campaignName,isnull(smslog.Message,src.message) message, phone senderNumber, cam.cam_id campaignId
-    FROM smsccoLogDial smslog (nolock)
-        LEFT JOIN cccamps cam on cam.cam_id=smslog.cam_id
-        LEFT JOIN smsoutSourceMessage src on src.smsout_id=smslog.smsout_id
-    WHERE smsDate >= @from AND smsDate < @to
-    ORDER BY smsDate
-END
-'
-    EXEC(@sql)
+    EXEC(@sql)    
 
     
 

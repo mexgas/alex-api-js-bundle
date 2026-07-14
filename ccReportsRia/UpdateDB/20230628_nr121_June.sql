@@ -46,38 +46,7 @@ BEGIN
 			BEGIN
 				DROP PROCEDURE [dbo].[ccspRepOutSMSAnswDetailByCamp]
 			END'
-	EXEC(@sql)
-
-	SET @process = 'New SP ccspRepOutSMSAnswDetailByCamp'
-	SET @sql = 'CREATE PROCEDURE [dbo].[ccspRepOutSMSAnswDetailByCamp] 
-@action as tinyint,
-@from as datetime = NULL,
-@to as datetime = NULL
-AS
-
-IF @from IS NULL
-	SELECT @from = convert(DATETIME, convert(VARCHAR(11), getdate()))
-
-IF @to IS NULL
-	SELECT @to = getdate()
-
-IF @action = 1
-BEGIN
-	--Borrar lo que esta para no repetir
-	DELETE
-	FROM RepOutSMSAnswDetailByCamp WITH (ROWLOCK)
-	WHERE date >= @from AND date < @to
-
-	INSERT INTO RepOutSMSAnswDetailByCamp
-	SELECT smsDate date, cam.cam_id camId, cam_descripcion campaignName, smslog.message, phone senderNumber, cam.cam_id campaignId
-	FROM smsccoLogDial smslog (nolock)
-		LEFT JOIN cccamps cam on cam.cam_id=smslog.cam_id
-		LEFT JOIN smsoutSourceMessage src on src.smsout_id=smslog.smsout_id
-	WHERE smsDate >= @from AND smsDate < @to
-	ORDER BY smsDate
-END		
-	'
-	EXEC(@Sql)	
+	EXEC(@sql)		
 
 	SET @process = 'Drop SP ccspRepOutSMSSentMessagesDetail'
 	SET @sql = 'IF EXISTS(SELECT 1 FROM sys.procedures WHERE Name = ''ccspRepOutSMSSentMessagesDetail'')
@@ -955,7 +924,6 @@ begin
 	where date >= @from AND date < @to
 
 	insert into RepChatsEffectiveness
-	(date,inboundId,inbound,ntotalChat,nanswerChat,nabndChat,avgAnswerTime,avgQueueTime,avgAbandonTimeChat,year,month,day,hour,minutes)
 	select 
 		[date], inboundId, descripcion [inbound]
 		, ntotalChat, nanswer [nanswerChat], nabnd [nabnd]
@@ -3279,17 +3247,10 @@ begin
 	)
 
 	insert into RepAgentKPI
-	(date,login,userId,[user],totalCalls,callsIn,callsOut,finishedCalls10,finishedCalls20,finishedCalls30,whoHung,callsAvgTime,year,month,day,hour,minutes)
-	select Snd.cal_Inicio [date],
-	Fst.Login as [login] , Fst.user_id as [userId]
+	select Snd.cal_Inicio,Fst.Login as login , Fst.user_id as [userId]
 	,Nombres + isnull('' ''+ApellidoPaterno, '''') + isnull('' ''+ApellidoMaterno, '''') as [user]
-	,Total as totalCalls
-	, Cin as callsIn
-	,Cout as callsOut
-	, C10 as [finishedCalls10]
-	, C20 as [finishedCalls20]
-	, C30 as [finishedCalls30]
-	, cal_whoHung as whoHung
+	,Total as totalCalls, Cin as callsIn
+	,Cout as callsOut, C10 as [finishedCalls10], C20 as [finishedCalls20], C30 as [finishedCalls30], cal_whoHung as whoHung
 	,isnull(avg_fCalc, 0) as callsAvgTime
 	,datepart(yyyy,Snd.cal_Inicio) [year]
 	,datepart(mm,Snd.cal_Inicio) [mounth]

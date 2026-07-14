@@ -948,8 +948,15 @@ END
 '
     exec (@sql)
 
-    SET @process = 'ALTER PROCEDURE [dbo].[ccspRepOutSMSAnswDetailByCamp] '
-    SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepOutSMSAnswDetailByCamp] 
+    SET @process = 'Drop SP ccspRepOutSMSAnswDetailByCamp'
+    SET @sql = 'IF EXISTS(SELECT 1 FROM sys.procedures WHERE Name = ''ccspRepOutSMSAnswDetailByCamp'')
+            BEGIN
+                DROP PROCEDURE [dbo].[ccspRepOutSMSAnswDetailByCamp]
+            END'
+    EXEC(@sql)
+
+    SET @process = 'CREATE PROCEDURE [dbo].[ccspRepOutSMSAnswDetailByCamp] '
+    SET @sql = 'CREATE PROCEDURE [dbo].[ccspRepOutSMSAnswDetailByCamp] 
 @action as tinyint,
 @from as datetime = NULL,
 @to as datetime = NULL

@@ -22,8 +22,8 @@ BEGIN TRY
     --
     -- PASOS FUERA DEL TRAN (DDL de procedimientos):
     --   A. ccspRepOutDialDetail: revertir a version K070300 (sin campType)
-    --   B. ccspRepOutCallsDetail: agregar campType
-    --   C. ccspRepCatalogos: type=39 campaignType (sin cambios vs version previa)
+    --   B. ccspRepOutCallsDetail: agregar campType + [username]='N/A' para CampType=9 (IA)
+    --   C. ccspRepCatalogos: type=39 campaignType + @isJustVoiceFilter incluye 4010 y 4020
     -- =====================================================================
 
     -- -----------------------------------------------------------------
@@ -474,7 +474,10 @@ AS
             Call.cal_extension AS [extension],
             ISNULL(Usr.user_id, 0) AS [userId],
             ISNULL(Usr.ApellidoPaterno + ' ' + ISNULL(Usr.ApellidoMaterno, '') + ' ' + Usr.Nombres, '') AS [login],
-            ISNULL(CONVERT(VARCHAR(255), Usr.[LOGIN]), 'systemTranslated_NoUserName') AS [username],
+            CASE
+                WHEN camps.CampType = 9 THEN 'N/A'
+                ELSE ISNULL(CONVERT(VARCHAR(255), Usr.[LOGIN]), 'systemTranslated_NoUserName')
+            END AS [username],
             camps.cam_id AS [campaignId],
             ISNULL(camps.cam_descripcion, 'systemTranslated_NoCampaign') AS [campaign],
             (CEILING((ISNULL(Call.totalCall_Time, 0) + ISNULL(Call.cal_tMsg, 0)) / 60.0) * 60) AS [duration],
@@ -622,7 +625,7 @@ BEGIN
 
             IF @userId <> 0
             BEGIN
-                DECLARE @isJustVoiceFilter BIT = CASE WHEN @menuId IN (4010) THEN 1 ELSE 0 END
+                DECLARE @isJustVoiceFilter BIT = CASE WHEN @menuId IN (4010, 4020) THEN 1 ELSE 0 END
 
                 SET @SQL = ' DECLARE @tablatemp TABLE (id INT, description VARCHAR(100) NULL)
                     INSERT INTO @tablatemp

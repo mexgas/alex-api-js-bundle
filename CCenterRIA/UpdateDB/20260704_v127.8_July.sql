@@ -296,7 +296,7 @@ END
 '
     exec (@sql)
 
-    SET @process = 'K070381 - ALTER ccsp_ManageQuantumDispositions (Action=3 fix + Action=7 extraction data)'
+    SET @process = 'K070381 - ALTER ccsp_ManageQuantumDispositions (Action=3 fix + Action=7 extraction data, preservando limpieza de Marco/K070405: sin Action=5, Transfer via ccCalif_IA_TransferConfig)'
     SET @sql = '
 ALTER PROCEDURE [dbo].[ccsp_ManageQuantumDispositions]
         @Action INT,
@@ -323,16 +323,29 @@ BEGIN
     END
     IF @Action = 3 --Get Quantum Dispositions by camp
     BEGIN
-        -- Result set 1: cabecera de disposiciones (sin ExtDescription -- K070381)
-        -- Name/Transfer agregados para alinear con el contrato de sprint7TeamChido (Marco):
-        -- Transfer usa AplTransfer (ya existente desde ServicesPack9), no la tabla
-        -- ccCalif_IA_TransferConfig de K070405 (no existe todavia en este repo).
+        -- Result set 1: cabecera de disposiciones (sin ExtDescription -- K070381).
+        -- Transfer usa dbo.ccCalif_IA_TransferConfig (K070405, ya vigente en produccion),
+        -- no AplTransfer solo -- mantener alineado con el SP que Marco ya desplego.
         SELECT
             cci.calif_id AS [Id],
         cci.Name_cal AS [Name],
         cci.Description_cal AS [Description],
         CAST(CASE WHEN cci.CanReprogram = 1 OR cci.autoCallback = 1 THEN 1 ELSE 0 END AS INT) AS Callback,
-        CAST(CASE WHEN cci.AplTransfer = 1 THEN 1 ELSE 0 END AS INT) AS Transfer
+        CAST(
+            CASE
+                WHEN cci.AplTransfer = 1 AND EXISTS (
+                    SELECT 1
+                    FROM dbo.ccCalif_IA_TransferConfig AS ccitc
+                    WHERE ccitc.DispositionId = cci.calif_id
+                      AND (
+                          NULLIF(ccitc.DestinationNumber, '''') IS NOT NULL
+                          OR ISNULL(ccitc.DestinationCampId, 0) > 0
+                          OR ISNULL(ccitc.DestinationDirectoryId, 0) > 0
+                      )
+                ) THEN 1
+                ELSE 0
+            END
+        AS INT) AS Transfer
         FROM dbo.ccCalifCampIA AS ccci INNER JOIN dbo.cctipoCalif_IA AS cci
         ON cci.calif_id = ccci.calif_id
         WHERE ccci.tipo = @CampType
@@ -346,58 +359,6 @@ BEGIN
              WHERE ID = @VoiceId),
             ''''
         ) AS QuantumVoiceId;
-    END
-
-    IF @Action = 5 -- Get Transfer Status
-    BEGIN
-        IF @CampType = 0
-        BEGIN
-            SELECT
-                 CASE
-                -- 1. If both transfer options are disabled (0), return FALSE (0).
-                WHEN ISNULL(cie.TransferToHumanAgents, 0) = 0
-                     AND ISNULL(cie.TransferOnSuccessfulHandling, 0) = 0 THEN CAST(0 AS BIT)
-
-                -- 2. LOGICAL VALIDATION:
-                -- Ensure that all active configurations are valid and have no missing requirements.
-                WHEN
-                    (
-                        -- Validate ''TransferToHumanAgents'' integrity
-                        CASE
-                            WHEN cie.TransferToHumanAgents = 2 THEN 1 -- Valid: External transfer
-                            WHEN cie.TransferToHumanAgents = 1 AND ISNULL(ci2.idForNonComprehension, 0) <> 0 THEN 1 -- Valid: Campaign transfer with assigned ID
-                            WHEN cie.TransferToHumanAgents = 0 THEN 1 -- Valid: Option is disabled, skip validation
-                            ELSE 0 -- Invalid: Option enabled but missing target campaign ID
-                        END = 1
-                    )
-                    AND -- ALL enabled configurations must be valid simultaneously
-                    (
-                        -- Validate ''TransferOnSuccessfulHandling'' integrity
-                        CASE
-                            WHEN cie.TransferOnSuccessfulHandling = 2 THEN 1 -- Valid: External transfer
-                            WHEN cie.TransferOnSuccessfulHandling = 1 AND ISNULL(ci2.idForSuccessfulTransaction, 0) <> 0 THEN 1 -- Valid: Campaign transfer with assigned ID
-                            WHEN cie.TransferOnSuccessfulHandling = 0 THEN 1 -- Valid: Option is disabled, skip validation
-                            ELSE 0 -- Invalid: Option enabled but missing target campaign ID
-                        END = 1
-                    )
-                    THEN CAST(1 AS BIT)
-
-                ELSE CAST(0 AS BIT)
-            END
-            FROM dbo.ccInboundExtend AS cie
-            INNER JOIN dbo.ccInbound AS ci2
-            ON ci2.Inbound_id = cie.Inbound_id
-            WHERE cie.Inbound_id= @CampId;
-        END
-        ELSE
-        BEGIN
-            SELECT
-            CASE
-                WHEN EXISTS (SELECT 1 FROM dbo.ccInbound WHERE cam_id = @CampId)
-                THEN CAST(1 AS BIT)
-                ELSE CAST(0 AS BIT)
-            END AS ExisteCampana;
-        END
     END
 
     IF @Action = 6 -- Agent Id By Campaign

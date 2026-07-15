@@ -606,6 +606,44 @@ END
 '
     exec (@sql)
 
+    -- =====================================================================
+    -- Sprint6_finalPart (David Medina) - transferencias de entrada IA
+    -- Guarda el id del agente virtual en ccCallsIn para que el StateMachine
+    -- pueda leer la info del agente virtual al procesar la llamada de
+    -- entrada (ya existia el equivalente de salida via ccoCallsOut.virtualAgentId).
+    -- Se llama desde InBridgeAgentQuantumHelper (cw-service-telephony,
+    -- rama demo/sprint6_finalpart). Confirmado vigente para Sprint 7 por
+    -- David Medina (autor) el 2026-07-15 -- es independiente del rediseno
+    -- de transferencias por calificacion, solo persiste el agente virtual.
+    -- =====================================================================
+    SET @process = 'Sprint6_finalPart - ALTER TABLE ccCallsIn ADD virtualAgentId'
+    SET @sql = '
+    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(''dbo.ccCallsIn'') AND name = ''virtualAgentId'')
+    BEGIN
+        ALTER TABLE dbo.ccCallsIn ADD virtualAgentId INT NULL
+    END
+    '
+    exec (@sql)
+
+    SET @process = 'Sprint6_finalPart - DROP ccsp_UpdateVirtualAgentId si existe'
+    SET @sql = '
+    IF OBJECT_ID(''dbo.ccsp_UpdateVirtualAgentId'', ''P'') IS NOT NULL
+        DROP PROCEDURE dbo.ccsp_UpdateVirtualAgentId
+    '
+    exec (@sql)
+
+    SET @process = 'Sprint6_finalPart - CREATE ccsp_UpdateVirtualAgentId'
+    SET @sql = '
+CREATE PROCEDURE dbo.ccsp_UpdateVirtualAgentId
+    @callId INT,
+    @virtualAgentId INT
+AS
+BEGIN
+    UPDATE dbo.ccCallsIn SET virtualAgentId = @virtualAgentId WHERE cal_id = @callId
+END
+'
+    exec (@sql)
+
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
         EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)

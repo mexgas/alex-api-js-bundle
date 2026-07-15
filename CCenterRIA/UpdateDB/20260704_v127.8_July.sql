@@ -503,6 +503,109 @@ END
 '
     exec (@sql)
 
+    SET @process = 'K070300 - CREATE TABLE ccLogTransfers_IA (captura de transferencias IA para reporte de Agentes Virtuales)'
+    SET @sql = '
+    IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = ''ccLogTransfers_IA'')
+    BEGIN
+        CREATE TABLE dbo.ccLogTransfers_IA (
+            cal_id INT NOT NULL,
+            tipo TINYINT NOT NULL,
+            modo TINYINT NOT NULL,
+            destino VARCHAR(50) NULL,
+            tAntesXfer INT NULL,
+            tDespuesXfer INT NULL,
+            fechaFin DATETIME NOT NULL,
+            pbxId TINYINT NULL,
+            channel INT NULL,
+            tipoLlamada_id SMALLINT NULL,
+            callerAni VARCHAR(50) NULL,
+            replkey UNIQUEIDENTIFIER NOT NULL CONSTRAINT DF_ccLogTransfers_IA_replkey DEFAULT (NEWSEQUENTIALID()),
+            destination VARCHAR(50) NULL,
+            destination_name VARCHAR(50) NULL,
+            rowguid UNIQUEIDENTIFIER NOT NULL ROWGUIDCOL CONSTRAINT DF_ccLogTransfers_IA_rowguid DEFAULT (NEWSEQUENTIALID()),
+            CONSTRAINT PK_ccLogTransfers_IA PRIMARY KEY CLUSTERED (cal_id, tipo)
+        )
+    END
+
+    IF OBJECT_ID(''dbo.ccsp_InsertLogTransfers_IA'', ''P'') IS NOT NULL
+        DROP PROCEDURE dbo.ccsp_InsertLogTransfers_IA
+    '
+    exec (@sql)
+
+    SET @process = 'K070300 - CREATE ccsp_InsertLogTransfers_IA'
+    SET @sql = '
+CREATE PROCEDURE dbo.ccsp_InsertLogTransfers_IA
+    @cal_id INT,
+    @tipo TINYINT,
+    @modo TINYINT,
+    @fechaFin DATETIME
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO dbo.ccLogTransfers_IA (cal_id, tipo, modo, fechaFin)
+    VALUES (@cal_id, @tipo, @modo, @fechaFin);
+END
+'
+    exec (@sql)
+
+    SET @process = 'KM28005 - DROP ccsp_ValidateZipCodeCampSchedule si existe'
+    SET @sql = '
+    IF OBJECT_ID(''dbo.ccsp_ValidateZipCodeCampSchedule'', ''P'') IS NOT NULL
+        DROP PROCEDURE dbo.ccsp_ValidateZipCodeCampSchedule
+    '
+    exec (@sql)
+
+    SET @process = 'KM28005 - CREATE ccsp_ValidateZipCodeCampSchedule (valida CP contra horario real de campana, CW-11164/CW-11166)'
+    SET @sql = '
+CREATE PROCEDURE dbo.ccsp_ValidateZipCodeCampSchedule
+    @campId  INT,
+    @zipCode NVARCHAR(5)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @offset INT;
+    SELECT @offset = WinterTimeDifference
+    FROM ccTimeZoneAreaCP
+    WHERE ZipCode = @zipCode;
+
+    IF @offset IS NULL
+    BEGIN
+        SELECT CAST(1 AS BIT) AS IsAllowed;
+        RETURN;
+    END
+
+    SET DATEFIRST 1;
+
+    DECLARE @utcNow DATETIME = GETUTCDATE();
+    DECLARE @localTime DATETIME = DATEADD(HOUR, @offset, @utcNow);
+    DECLARE @h  INT = DATEPART(HH, @localTime);
+    DECLARE @m  INT = DATEPART(MI, @localTime);
+    DECLARE @dw INT = DATEPART(DW, @localTime);
+
+    SELECT CAST(
+        CASE WHEN EXISTS (
+            SELECT 1
+            FROM ccHorarios h
+            INNER JOIN ccCampsHorarios ch ON h.horario_id = ch.Horario_id
+            WHERE ch.cam_id = @campId
+              AND ( @h > h.HoraInicio OR (@h = h.HoraInicio AND @m >= h.MinInicio) )
+              AND ( @h < h.HoraFin    OR (@h = h.HoraFin    AND @m <= h.MinFin)    )
+              AND (
+                    (@dw = 1 AND h.Lunes     = 1) OR
+                    (@dw = 2 AND h.Martes    = 1) OR
+                    (@dw = 3 AND h.Miercoles = 1) OR
+                    (@dw = 4 AND h.Jueves    = 1) OR
+                    (@dw = 5 AND h.Viernes   = 1) OR
+                    (@dw = 6 AND h.Sabado    = 1) OR
+                    (@dw = 7 AND h.Domingo   = 1)
+              )
+        ) THEN 1 ELSE 0 END
+    AS BIT) AS IsAllowed;
+END
+'
+    exec (@sql)
+
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
         EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)

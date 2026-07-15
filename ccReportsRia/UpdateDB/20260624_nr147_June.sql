@@ -1133,6 +1133,28 @@ END
 '
     exec (@sql)
 
+    SET @process = 'K070300 - ReportsTotals fila de totales reportes 4010 y 3010'
+    SET @sql = '
+    IF EXISTS (SELECT 1 FROM ReportsTotals WHERE id = 4010)
+        UPDATE ReportsTotals SET totalColumns = ''count:telephone'' WHERE id = 4010
+    ELSE
+        INSERT INTO ReportsTotals (id, totalColumns) VALUES (4010, ''count:telephone'')
+
+    IF EXISTS (SELECT 1 FROM ReportsTotals WHERE id = 3010)
+        UPDATE ReportsTotals SET totalColumns = ''count:call_Id'' WHERE id = 3010
+    ELSE
+        INSERT INTO ReportsTotals (id, totalColumns) VALUES (3010, ''count:call_Id'')
+    '
+    exec (@sql)
+
+    SET @process = 'K070300 - Filters id=37 scope de usuario (Acds/Acd)'
+    SET @sql = '
+    UPDATE Filters
+    SET xmlParentNode = ''Acds'', xmlChildNode = ''Acd''
+    WHERE id = 37
+    '
+    exec (@sql)
+
     	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version
 
 		COMMIT TRAN

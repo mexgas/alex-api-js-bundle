@@ -136,9 +136,17 @@ pipeline {
                         }
                     }
 
-                    compareDatabaseWithRetry('CCenterRIA')
-                    compareDatabaseWithRetry('CCRecorderRIA')
-                    compareDatabaseWithRetry('CCReportsRIA')
+                    parallel(                        
+                        'Compare CCenterRIA': {
+                            compareDatabaseWithRetry('CCenterRIA')
+                        },
+                        'Compare CCRecorderRIA': {
+                            compareDatabaseWithRetry('CCRecorderRIA')
+                        },
+                        'Compare CCReportsRIA': {
+                            compareDatabaseWithRetry('CCReportsRIA')
+                        }
+                    )
                 }
             }
         }

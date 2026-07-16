@@ -39,6 +39,16 @@ BEGIN
 
 	BEGIN TRY
 
+    SET @process = 'K061001 Report Filters Catalog'
+    SET @sql = '
+if not exists (select * from Filters  where id = 33) begin
+    insert into Filters (id, name, type, xmlParentNode, xmlChildNode) 
+    values (33, ''inboundCamps'', ''33'', ''InboundCamps'', ''InboundCamp'')
+end
+
+update ReportsFilters set filterName = ''inboundCamps'' where id=3010 and filterName = ''acds''
+'
+EXEC (@sql)
 	
     SET @process = 'CREATE CLUSTERED INDEX CIX_RepOutTrunkBusy_Date'
     SET @sql = 'IF NOT EXISTS (
@@ -52,6 +62,32 @@ BEGIN
         ON dbo.RepOutTrunkBusy([date]);
     END'
     exec (@sql)
+	
+	SET @process = '#8379 CREATE NONCLUSTERED INDEX IX_ccoLogDials_fecha_cal_id_MKTIntervalos'
+    SET @sql = 'IF NOT EXISTS (
+        SELECT 1
+        FROM sys.indexes
+        WHERE name = ''IX_ccoLogDials_fecha_cal_id_MKTIntervalos''
+          AND object_id = OBJECT_ID(''dbo.ccoLogDials'')
+    )
+    BEGIN
+        CREATE NONCLUSTERED INDEX IX_ccoLogDials_fecha_cal_id_MKTIntervalos
+		ON dbo.ccoLogDials
+		(
+			fecha,
+			cal_id
+		)
+		INCLUDE
+		(
+			cam_id,
+			tipoResDial_id,
+			tDialing,
+			answerbit,
+			canceledNoAgents
+		);
+    END'
+    exec (@sql)
+	
 
     SET @process = 'DROP INDEX IX_RepOutTrunkBusy'
     SET @sql = 'IF EXISTS (
@@ -946,7 +982,7 @@ END
     SET @sql = 'ALTER VIEW [dbo].[RepViewInCallsDetail] AS  
 SELECT [date] AS receptionDate,
     cal_final,
-    inboundId AS inboundId,
+    inboundId AS inboundCamp,
     ACDGroup AS campaign,
     ModelName,
     callStatusId,
@@ -1006,28 +1042,778 @@ SELECT [date] AS receptionDate,
 FROM RepInCallsDetail WITH (NOLOCK);'
     exec (@sql)
 
-    SET @process = ''
-    SET @sql = ''
-    exec (@sql)
+	SET @process = 'Drop View RepViewAgentGIUnion';
+    SET @sql = '
+    IF OBJECT_ID(N''dbo.RepViewAgentGIUnion'', ''V'') IS NOT NULL
+    BEGIN
+        DROP VIEW [dbo].[RepViewAgentGIUnion];
+    END';
+    EXEC(@sql);
 
     SET @process = ''
-    SET @sql = ''
+    SET @sql = 'CREATE VIEW [dbo].[RepViewAgentGIUnion] AS
+	select [date],userId,[user],[login]
+	,sum(tlog) tlog
+	,sum(tunknown) tunknown
+	,sum(tav) tav
+	,sum(tnotav) tnotav
+	,sum(tother) tother
+	,sum(tprob) tprob
+	,sum(tChatting) tChatting
+	,sum(tundefined) tundefined
+	,sum(nxferin) nxferin
+	,sum(nanswerin) nanswerin
+	,sum(nabndxferin) nabndxferin
+	,sum(nabndringin) nabndringin
+	,sum(nabnddlgin) nabnddlgin
+	,sum(abndaxferin) abndaxferin
+	,sum(nnoanswerin) nnoanswerin
+	,sum(nlostin) nlostin
+	,sum(tdialogin) tdialogin
+	,sum(tnotesin) tnotesin
+	,sum(tringin) tringin
+	,sum(txferin) txferin
+	,sum(nxferout) nxferout
+	,sum(nanswerout) nanswerout
+	,sum(nabndxferout) nabndxferout
+	,sum(nabndringout) nabndringout
+	,sum(nabnddlgout) nabnddlgout
+	,sum(abndaxferout) abndaxferout
+	,sum(nnoanswerout) nnoanswerout
+	,sum(nlostout) nlostout
+	,sum(tdialogout) tdialogout
+	,sum(tnotesout) tnotesout
+	,sum(tringout) tringout
+	,sum(txferout) txferout
+	,sum(nother) nother
+	,sum(nmohin) nmohin
+	,sum(nmohout) nmohout
+	,sum(nwhagin) nwhagin
+	,sum(nwhagout) nwhagout
+	,sum(nwhcliin) nwhcliin
+	,sum(nwhcliout) nwhcliout
+	,[year],[month],[day],[hour],[minutes]
+	,0 tManual,0 tauxiliarready
+	,0 tnotavg
+	from RepAgentGI_VersionOld
+	group by [date],userId,[user],[login],[year],[month],[day],[hour],[minutes]
+	union
+	select [date],userId,[user],[login]
+	,tlog
+	,tunknown
+	,tav
+	,tnotav
+	,tother
+	,tprob
+	,tChatting
+	,tundefined
+	,nxferin
+	,nanswerin
+	,nabndxferin
+	,nabndringin
+	,nabnddlgin
+	,abndaxferin
+	,nnoanswerin
+	,nlostin
+	,tdialogin
+	,tnotesin
+	,tringin
+	,txferin
+	,nxferout
+	,nanswerout
+	,nabndxferout
+	,nabndringout
+	,nabnddlgout
+	,abndaxferout
+	,nnoanswerout
+	,nlostout
+	,tdialogout
+	,tnotesout
+	,tringout
+	,txferout
+	,nother
+	,nmohin
+	,nmohout
+	,nwhagin
+	,nwhagout
+	,nwhcliin
+	,nwhcliout
+	,[year],[month],[day],[hour],[minutes]
+	,tManual
+	,0 tauxiliarready
+	,0 tnotavg
+	from RepAgentGI'
     exec (@sql)
 
-     SET @process = ''
-    SET @sql = ''
+    SET @process = '#8379 ALTER PROCEDURE [dbo].[ccspRepOutDials]'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepOutDials]
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+AS
+
+if @from is null
+    select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null 
+    select @to = getdate()
+
+if @action = 1 
+begin
+    declare @total decimal(10,2)
+        
+        
+
+    select @total = count(*) from ccologdials as a WITH(NOLOCK, INDEX(IX_ccoLogDials_fecha_cal_id_MKTIntervalos))
+    inner join ccTipoResultadoDial as b (NOLOCK) on (a.tipoResDial_id = b.tipoResDial_id)
+    where fecha >= @from and fecha < @to        
+    and cal_id is not null
+        
+    delete from RepOutDials where date >= @from AND date < @to
+        
+        
+    ;with tmpRepOutDials as(
+    select  DATEADD(HOUR, DATEDIFF(HOUR, 0, fecha), 0) as fecha ,cal_id
+    ,a.tipoResDial_id, descripcion,cam_id
+    from ccologdials as a WITH(NOLOCK, INDEX(IX_ccoLogDials_fecha_cal_id_MKTIntervalos))
+    inner join ccTipoResultadoDial as b (NOLOCK) on (a.tipoResDial_id = b.tipoResDial_id)
+    where fecha >= @from and fecha < @to        
+    and a.cal_id is not null
+    and cam_id>0
+    )
+
+    
+   insert into RepOutDials
+
+    select fecha as [date]      
+    ,isnull(a.cam_id,0) as campaignId, isnull(c.cam_descripcion,'''') as campaign
+    , isnull(min(d.idwg),1) as workgroupId, isnull(min(wgname),'''') as workgroup, isnull(min(c.idarea),1) as areaId, isnull(min(areaname),'''') as area
+        
+    ,a.tipoResDial_id, descripcion,
+    descripcion + ''_Count'' as descripcion_count,
+    count(*) as count,
+    descripcion + ''_Avg'' as descripcion_avg,
+    convert(decimal(10,2), (count(*)/@total)*100.00) as avg,
+    datepart(yyyy,fecha) AS [year],
+    datepart(mm,fecha) as [month],
+    datepart(dd,fecha) as [day],
+    datepart(hh,fecha) as [hour],
+    0 as [minutes]
+    from  tmpRepOutDials as a
+    left join ccCampsView as c (NOLOCK) on (a.cam_id = c.cam_id)
+    left join ccRIACampEspWG as d (NOLOCK) on a.cam_id = d.IdCampEsp and d.tipo = 1 
+    left join ccRIACat_WorkGroup as e (NOLOCK) on (d.idwg = e.idwg)
+    left join ccRIAAreaWorkGroup as f (NOLOCK) on (e.idwg = f.idwg)
+    left join ccRIACat_Areas as g (NOLOCK) on (c.idarea = g.idarea)     
+    group by fecha ,        
+    a.cam_id, c.cam_descripcion, a.tipoResDial_id, descripcion  
+    
+end'
     exec (@sql)
 
-    SET @process = ''
-    SET @sql = ''
+    SET @process = '#8379 ALTER PROCEDURE [dbo].[ccSpCreateIndexReport]'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccSpCreateIndexReport]  
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+declare @tIndexMerge table(id int identity,tableName varchar(255),status bit)
+declare @sql nvarchar(max),@tableName varchar(255),@id int
+declare @column varchar(255),@indexName varchar(255)
+
+/****************************INDICES PARA REPORTES *******************************/
+if not exists (select * from sys.indexes where name = N''IX_ccoCallsOut13'' and object_id = OBJECT_ID(N''ccoCallsOut''))
+begin
+   CREATE NONCLUSTERED INDEX IX_ccoCallsOut13
+ON [dbo].[ccoCallsOut] ([cal_Inicio])
+INCLUDE ([cal_id],[cal_telefono],[cal_puerto],[cam_id],[User_id],[statusCall_id],[calif_id],[cal_tDialog],[cal_tNotas],[cal_tXfer],[cal_tRing],[cal_manual],[cal_tMoh],[cal_whoHung],[cal_twait])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_RIA_GRABACION_11'' and object_id = OBJECT_ID(N''RIA_GRABACION''))
+begin
+CREATE NONCLUSTERED INDEX IX_RIA_GRABACION_11
+ON [dbo].[RIA_GRABACION] ([tipo_llamada],[cal_id])
+INCLUDE ([grab_id])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_ccLogTransfers_3'' and object_id = OBJECT_ID(N''ccLogtransfers''))
+begin
+   CREATE NONCLUSTERED INDEX IX_ccLogTransfers_3
+ON [dbo].[ccLogtransfers] ([fechaFin])
+INCLUDE ([cal_id],[tipo],[modo],[destino],[tAntesXfer],[tDespuesXfer])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_ccLogAgentesDia_6'' and object_id = OBJECT_ID(N''ccLogAgentesDia''))
+begin
+   CREATE NONCLUSTERED INDEX IX_ccLogAgentesDia_6
+ON [dbo].[ccLogAgentesDia] ([fecha])
+INCLUDE ([User_id],[TipoStatusAge_id],[tStatus])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_ccLogAgentesNotReady_5'' and object_id = OBJECT_ID(N''cclogagentesnotready''))
+begin
+   CREATE NONCLUSTERED INDEX IX_ccLogAgentesNotReady_5
+ON [dbo].[cclogagentesnotready] ([fecha])
+INCLUDE ([User_id],[TipoNotReady_id],[tStatus])
+end
+    
+if not exists (select * from sys.indexes where name = N''IX_ccLogLogin_6'' and object_id = OBJECT_ID(N''ccloglogin''))
+begin
+   CREATE NONCLUSTERED INDEX IX_ccLogLogin_6
+ON [dbo].[ccloglogin] ([fecha])
+INCLUDE ([User_id],[Extension],[TipoMov])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_ccoLogDials_fecha_cal_id_MKTIntervalos'' and object_id = OBJECT_ID(N''ccoLogDials''))
+begin
+CREATE NONCLUSTERED INDEX IX_ccoLogDials_fecha_cal_id_MKTIntervalos
+ON dbo.ccoLogDials
+(
+    fecha,
+    cal_id
+)
+INCLUDE
+(
+    cam_id,
+    tipoResDial_id,
+    tDialing,
+    answerbit,
+    canceledNoAgents
+)
+end
+
+if not exists (select * from sys.indexes where name = N''IX_ccCallsIn_8'' and object_id = OBJECT_ID(N''ccCallsIn''))
+begin
+CREATE NONCLUSTERED INDEX IX_ccCallsIn_8
+ON [dbo].[ccCallsIn] ([IVR_id])
+INCLUDE ([cal_id])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_ccCallsIn_9'' and object_id = OBJECT_ID(N''ccCallsIn''))
+begin
+CREATE NONCLUSTERED INDEX IX_ccCallsIn_9
+ON [dbo].[ccCallsIn] ([cal_Inicio])
+INCLUDE ([cal_id])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_tmpSessionTimeGroup_1'' and object_id = OBJECT_ID(N''tmpSessionTimeGroup''))
+begin
+CREATE NONCLUSTERED INDEX IX_tmpSessionTimeGroup_1
+ON [dbo].[tmpSessionTimeGroup] ([user_id])
+INCLUDE ([timegroup],[tlog])
+end
+   
+if not exists (select * from sys.indexes where name = N''IX_tmpccLogAgentesDia_2'' and object_id = OBJECT_ID(N''tmpccLogAgentesDia''))
+begin
+CREATE NONCLUSTERED INDEX IX_tmpccLogAgentesDia_2
+ON [dbo].[tmpccLogAgentesDia] ([userId],[timeGroup])
+INCLUDE ([TipoStatusAge_id],[tStatus])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_tmpTimesInboundData_1'' and object_id = OBJECT_ID(N''tmpTimesInboundData''))
+begin
+CREATE NONCLUSTERED INDEX IX_tmpTimesInboundData_1
+ON [dbo].[tmpTimesInboundData] ([statusCall_id])
+INCLUDE ([timegroup],[Inbound_id],[nabnd],[tque],[txfer],[tring])
+end
+    
+if not exists (select * from sys.indexes where name = N''IX_tmpTimesInboundData_2'' and object_id = OBJECT_ID(N''tmpTimesInboundData''))
+begin
+CREATE NONCLUSTERED INDEX IX_tmpTimesInboundData_2
+ON [dbo].[tmpTimesInboundData] ([cal_id])
+INCLUDE ([Inbound_id],[User_id])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_tmpTimesOutboundData_1'' and object_id = OBJECT_ID(N''tmpTimesOutboundData''))
+begin
+CREATE NONCLUSTERED INDEX IX_tmpTimesOutboundData_1
+ON [dbo].[tmpTimesOutboundData] ([timegroup],[cal_id])
+INCLUDE ([User_id])
+end
+    
+if not exists (select * from sys.indexes where name = N''IX_tmpTimesOutboundData_2'' and object_id = OBJECT_ID(N''tmpTimesOutboundData''))
+begin
+CREATE NONCLUSTERED INDEX IX_tmpTimesOutboundData_2
+ON [dbo].[tmpTimesOutboundData] ([cal_manual])
+INCLUDE ([timegroup],[User_id],[nabnd_xfer],[nabnd_ring],[tdialog],[tnotes],[cal_id])
+end
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes i
+    WHERE i.name = ''IX_ccoLogDials_cal_id_logDial''
+      AND i.object_id = OBJECT_ID(''dbo.ccoLogDials'')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX [IX_ccoLogDials_cal_id_logDial]
+    ON [dbo].[ccoLogDials] ([cal_id] desc)
+    INCLUDE ([logDial_id])
+END
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes i
+    WHERE i.name = ''IX_ccoLogDials_fecha_repOutDialDetail''
+      AND i.object_id = OBJECT_ID(''dbo.ccoLogDials'')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX IX_ccoLogDials_fecha_repOutDialDetail
+    ON dbo.ccoLogDials
+    (
+        fecha ASC
+    )
+    INCLUDE
+    (
+        logDial_id,
+        callout_id,
+        cam_id,
+        tipoResDial_id,
+        Telefono,
+        Puerto,
+        tDialing,
+        tBusy,
+        answerbit,
+        TipoDialingMode,
+        cal_id,
+        canceledNoAgents,
+        disconnectCause,
+        tipoLlamada_id,
+        manualCRM
+    );
+END
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes i
+    WHERE i.name = ''IX_ccoLogDialsData_logDial_repOutDialDetail''
+      AND i.object_id = OBJECT_ID(''dbo.ccoLogDialsData'')
+)
+BEGIN
+
+    CREATE NONCLUSTERED INDEX IX_ccoLogDialsData_logDial_repOutDialDetail
+    ON dbo.ccoLogDialsData
+    (
+        logDial_id
+    )
+    INCLUDE
+    (
+        Data1,
+        Data2,
+        Data3,
+        Data4,
+        Data5
+    );
+END
+
+IF NOT EXISTS (
+    SELECT 1 
+    FROM sys.indexes 
+    WHERE name = ''CIX_RepOutDialDetail_date''
+    AND object_id = OBJECT_ID(''RepOutDialDetail'')
+)
+BEGIN
+    CREATE CLUSTERED INDEX CIX_RepOutDialDetail_date
+    ON dbo.RepOutDialDetail([date]);
+END
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes i
+    WHERE i.name = ''IX_ccoCallsOut_cal_id_repOutDialDetail''
+      AND i.object_id = OBJECT_ID(''dbo.ccoCallsOut'')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX IX_ccoCallsOut_cal_id_repOutDialDetail
+    ON dbo.ccoCallsOut
+    (
+        cal_id
+    )
+    INCLUDE
+    (
+        callout_id,
+        User_id,
+        cal_key,
+        calif_id,
+        califSub_id,
+        cal_manual,
+        file_moved
+    );
+END
+
+IF NOT EXISTS (
+    SELECT 1 
+    FROM sys.indexes 
+    WHERE name = ''IX_smsoutSourceMessage_smsout_id''
+    AND object_id = OBJECT_ID(''smsoutSourceMessage'')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX IX_smsoutSourceMessage_smsout_id
+    ON dbo.smsoutSourceMessage (smsout_id)
+    INCLUDE ([message]);
+END
+
+IF NOT EXISTS (
+    SELECT 1 
+    FROM sys.indexes 
+    WHERE name = ''IX_smsccoLogDial_smsDate''
+    AND object_id = OBJECT_ID(''smsccoLogDial'')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX IX_smsccoLogDial_smsDate
+    ON dbo.smsccoLogDial (smsDate)
+    INCLUDE (smsout_id, cam_id, phone, [Message], statusSystemsId, Bill, logId, registryClient)
+END
+
+/**************************** INDICES Reportes *******************************/
+set @column=''date''
+delete from @tIndexMerge
+
+insert into @tIndexMerge(tableName,status)
+SELECT     
+    t.TABLE_NAME,0
+FROM 
+    INFORMATION_SCHEMA.COLUMNS c
+INNER JOIN 
+    INFORMATION_SCHEMA.TABLES t 
+    ON c.TABLE_NAME = t.TABLE_NAME AND c.TABLE_SCHEMA = t.TABLE_SCHEMA
+WHERE 
+    t.TABLE_NAME LIKE ''Rep%''
+    AND c.COLUMN_NAME = ''date''
+    AND t.TABLE_TYPE = ''BASE TABLE''
+ORDER BY 
+    t.TABLE_SCHEMA, t.TABLE_NAME;
+
+while exists(select 1 from @tIndexMerge where status=0) begin
+    select top 1 @tableName=tableName,@id=id from @tIndexMerge where status=0 
+    set @indexName=N''IX_''+ @tableName+''_date'' 
+
+    set @sql=''
+-- Validar que NO exista ya un indice equivalente NONCLUSTERED ([date])
+if not exists
+(
+    SELECT 1
+    FROM sys.indexes i
+    WHERE i.object_id = OBJECT_ID(@tableName)
+      AND i.is_hypothetical = 0
+      AND i.type = 2 -- NONCLUSTERED
+      AND i.is_primary_key = 0
+      AND i.is_unique_constraint = 0
+
+      -- Debe tener exactamente una columna key
+      AND
+      (
+          SELECT COUNT(*)
+          FROM sys.index_columns ic
+          WHERE ic.object_id = i.object_id
+            AND ic.index_id = i.index_id
+            AND ic.is_included_column = 0
+      ) = 1
+
+      -- No debe tener columnas INCLUDE
+      AND
+      (
+          SELECT COUNT(*)
+          FROM sys.index_columns ic
+          WHERE ic.object_id = i.object_id
+            AND ic.index_id = i.index_id
+            AND ic.is_included_column = 1
+      ) = 0
+
+      -- La unica columna key debe ser [date]
+      AND exists
+      (
+          SELECT 1
+          FROM sys.index_columns ic
+          INNER JOIN sys.columns c
+              ON ic.object_id = c.object_id
+             AND ic.column_id = c.column_id
+          WHERE ic.object_id = i.object_id
+            AND ic.index_id = i.index_id
+            AND ic.is_included_column = 0
+            AND ic.key_ordinal = 1
+            AND c.name=@column
+      )
+)
+
+-- Seguridad adicional: evitar duplicar nombre del indice
+and not exists
+(
+    select 1
+    from sys.indexes
+    where name = @indexName
+      and object_id = OBJECT_ID(@tableName)
+)
+
+-- Validar que la columna exista en la tabla
+and exists
+(
+    select 1
+    from sys.columns
+    where name = @column
+      and object_id = object_id(@tableName)
+)
+
+begin
+    CREATE NONCLUSTERED INDEX ''+@indexName+''
+    ON [dbo].[''+@tableName+''] ([date])
+end
+    ''
+
+    EXEC sp_executesql @sql, 
+    N''@tableName varchar(255),@column varchar(255),@indexName varchar(255)'', 
+    @tableName = @tableName, 
+    @indexName = @indexName,
+    @column = @column;
+    --print (@sql)
+
+    update @tIndexMerge set status=1 where @id=id
+end
+
+
+    
+if not exists (select * from sys.indexes where name = N''IX_RepAgentNotReadyDet_2'' and object_id = OBJECT_ID(N''RepAgentNotReadyDet''))
+begin
+CREATE NONCLUSTERED INDEX IX_RepAgentNotReadyDet_2
+ON [dbo].[RepAgentNotReadyDet] ([tiponotreadyId],[startDate])
+INCLUDE ([userId],[status],[statusTime])
+end
+
+ 
+
+end'
     exec (@sql)
 
-     SET @process = ''
-    SET @sql = ''
+	SET @process = '#8379 DROP INDEX IX_ccoLogDials_8'
+    SET @sql = 'IF EXISTS (
+        SELECT 1
+        FROM sys.indexes
+        WHERE name = ''IX_ccoLogDials_8''
+          AND object_id = OBJECT_ID(''dbo.ccoLogDials'')
+    )
+    BEGIN
+        DROP INDEX IX_ccoLogDials_8
+        ON dbo.ccoLogDials;
+    END'
     exec (@sql)
 
-    SET @process = ''
-    SET @sql = ''
+    SET @process = '#8379 ALTER PROCEDURE [dbo].[ccspRepMKTIntervalosSalidas]'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepMKTIntervalosSalidas] 
+@action as tinyint, @from as datetime = null, @to as datetime = null	
+AS
+SET NOCOUNT ON
+if @from is null
+	select @from = convert(datetime, convert(varchar(11), getdate()))
+if @to is null
+	select @to = getdate()
+
+if @action = 1
+BEGIN
+	
+	DECLARE @tresRing AS SMALLINT
+	EXEC @tresRing = ccspConfigTresRing;						
+			
+delete RepMKTIntervalosSalida with(rowlock) where date >= @from and date < @to;
+
+IF OBJECT_ID(''tempdb..#tPersonal'') IS NOT NULL drop table #tPersonal
+IF OBJECT_ID(''tempdb..#tDisp'') IS NOT NULL drop table #tDisp;
+IF OBJECT_ID(''tempdb..#callOut'') IS NOT NULL drop table #callOut;
+IF OBJECT_ID(''tempdb..#OutboundCalls'') IS NOT NULL drop table #OutboundCalls;
+IF OBJECT_ID(''tempdb..#OutboundCallGroup'') IS NOT NULL drop table #OutboundCallGroup;
+
+select count(distinct user_id) as uid
+	,sum(tlog) tlog
+,DATEADD(mi, CASE WHEN DATEPART(mi, timegroup_next) in (15,45) THEN - 15 ELSE 0 END, timegroup_next) timegroup_next
+into #tPersonal
+from TmpSessionTimeGroup
+group by DATEADD(mi, CASE WHEN DATEPART(mi, timegroup_next) in (15,45) THEN - 15 ELSE 0 END, timegroup_next)
+	
+select 
+DATEADD(mi, 
+case when DATEPART(mi,timeGroupNext)= 15 then -15 
+	else 0 end
+, timeGroupNext) as timeGroupNext
+,sum(case when TipoStatusAge_id=2 then tStatus else 0 end) tnodispo
+,sum(case when TipoStatusAge_id=2 then tStatus else 0 end) tdispo
+into #tDisp
+from tmpccLogAgentesDia
+where TipoStatusAge_id in (2,3)
+group by DATEADD(mi, 
+case when DATEPART(mi,timeGroupNext)= 15 then -15 
+	else 0 end
+, timeGroupNext) 
+
+	SELECT cal_id,dateStartDetail, dateEndDetail,timegroup_next
+		, user_id, ntotal AS Recibidas, nanswer AS [Contestadas], nabnd_dialog AS [Abandonadas], nhangup AS SinAgentes, statusCall_id, tque, 
+		txfer, tring, tdialog, tnotes, cal_tMoh
+	INTO #callOut
+	FROM tmpTimesOutboundData
+
+	CREATE CLUSTERED INDEX IX_callOut_cal_id ON #callOut(cal_id)
+	
+	SELECT lo.cal_id
+	,co.cal_id AS callId
+	,co.dateStartDetail
+	,co.dateEndDetail	
+	,CASE WHEN co.statusCall_id = 13 THEN co.timegroup_next ELSE dbo.getTimegroup(DATEADD(ss, tDialing, lo.fecha),1) END AS timegroup_next	
+	,Recibidas
+	,co.user_id AS userId
+	,cam_id AS cam_id
+	,CASE WHEN Recibidas > 0 AND tipoResDial_id = 2 THEN 1 ELSE 0 END Ocupado
+	,CASE WHEN Recibidas > 0 AND tipoResDial_id = 3 THEN 1 ELSE 0 END NoContestan
+	,CASE WHEN Recibidas > 0 AND tipoResDial_id = 4 THEN 1 ELSE 0 END Fax
+	,CASE WHEN Recibidas > 0 AND tipoResDial_id = 11 THEN 1 ELSE 0 END Buzon
+	,CASE WHEN Recibidas > 0 AND tipoResDial_id = 5 THEN 1 ELSE 0 END SinTono
+	,CASE WHEN Recibidas > 0 AND tipoResDial_id = 10 THEN 1 ELSE 0 END NoService
+	,CASE WHEN Recibidas > 0 AND tipoResDial_id = 8 THEN 1 ELSE 0 END Otro
+	,CASE WHEN Recibidas > 0 AND tipoResDial_id = 12 THEN 1 ELSE 0 END Congestion
+	,CASE WHEN Recibidas > 0 AND tipoResDial_id = 13 THEN 1 ELSE 0 END Cancelado
+	,CASE WHEN Recibidas > 0 AND tipoResDial_id = 1 THEN 1 ELSE 0 END [Contactos] --contactos sistema
+	,[Contestadas]
+	,CASE WHEN statusCall_id IN (6, 10, 11, 12, 14, 15, 16)
+			OR (
+				canceledNoAgents <> 0 AND answerbit = 1
+				)
+			OR ([Abandonadas] > 0) THEN 1 ELSE 0 END AS [Abandonadas]
+	,SinAgentes
+	,CASE WHEN statuscall_id IN (15, 16) THEN 1 ELSE 0 END AS NoContestadas
+	,CASE WHEN statuscall_id IN (11, 10, 12, 14) AND tring <= @tresRing THEN 1 ELSE 0 END AS CortadasRing
+	,CASE WHEN statuscall_id IN (11, 10, 12, 14) AND tring > @tresRing THEN 1 ELSE 0 END AS CortadasDespRing
+	,[Abandonadas] AS CortadasDlg
+	,CASE WHEN statuscall_id = 13 THEN co.txfer + co.tring + co.tdialog + co.tnotes + co.cal_tMoh ELSE 0 END TMO
+	,CASE WHEN statuscall_id = 13 THEN 1 ELSE NULL END countStatus13
+	,co.tdialog
+	,co.cal_tMoh AS TiempoTotalHold
+	,co.tnotes
+	,co.txfer + co.tring AS TiempoTotalRing
+	,co.tque
+	,co.txfer + co.tring + co.tdialog + co.tnotes  [Ocupacion]
+	,co.statuscall_id
+	,co.tring
+	,tipoResDial_id
+INTO #OutboundCalls
+FROM ccologdials(NOLOCK) lo
+LEFT JOIN #callOut co
+	ON co.cal_id = lo.cal_id
+WHERE lo.fecha >= @from
+		AND lo.fecha < @to
+
+SELECT 
+dateadd(mi, case when datepart(mi,timegroup_next) in (15,45) then -15 else 0 end,timegroup_next) as timegroup_next
+,count(distinct userId )as Staff
+,sum(Recibidas) as Recibidas
+,sum(Ocupado) as Ocupado
+,sum(NoContestan) as NoContestan	
+,sum(Fax) as Fax
+,sum(Buzon) as Buzon
+,sum(SinTono) as SinTono
+,sum(NoService) as nout_service	
+,sum(Otro) as Other	
+,sum(Congestion) as Congestion
+,sum(Cancelado) as Cancelado
+,sum(Contactos) as contacted
+,sum(Contestadas) as Answered
+,sum(Abandonadas) as abandonedCalls
+,sum(SinAgentes) as SinAgentes
+,sum(NoContestadas) as NoContestadas
+,sum(CortadasRing) as nabndxferout
+,sum(CortadasDespRing) as nabndringout
+,sum(CortadasDlg) nabnddlgout
+,isnull(SUM([Ocupacion])/nullif(COUNT(case when statuscall_id=13 then 1 end),0),0)  as TMO
+,isnull(SUM(tdialog)/nullif(COUNT(case when statuscall_id=13 then 1 end),0),0) as promDialogo
+,sum(TiempoTotalHold) as holdTime
+,sum(tnotes) as tnotesout
+,sum(TiempoTotalRing) as tringout
+,isnull(sum(tque)*1.0/nullif(COUNT(case when statuscall_id=13 then 1 end),0),0)  as avrAnswer
+, case when count(case when statusCall_id=13 then 1 end ) = 0 or count(case when tipoResDial_id=1 then 1 end) = 0 then 0.00
+else convert(decimal(10,2),sum(Abandonadas)*100.0/count(case when tipoResDial_id=1 then 1 end) ) end as AvgAbandon
+,Cam_id
+,sum([Ocupacion]) as sumTime
+INTO #OutboundCallGroup
+FROM #OutboundCalls co
+group by dateadd(mi, case when datepart(mi,timegroup_next) in (15,45) then -15 else 0 end,timegroup_next),cam_id
+
+insert into RepMKTIntervalosSalida
+select convert(datetime, convert([date],oc.timegroup_next,121)) as [date]
+,convert(varchar(5),oc.timegroup_next,108) rango1
+,convert(varchar(5),dateadd(mi,30,oc.timegroup_next),108) rango2
+,oc.Staff
+,oc.Recibidas
+,oc.Ocupado
+,oc.NoContestan
+,oc.Fax
+,oc.Buzon
+,oc.SinTono
+,oc.nout_service
+,oc.Other
+,oc.Congestion
+,oc.Cancelado
+,oc.contacted
+,oc.Answered
+,oc.abandonedCalls
+,oc.SinAgentes
+,oc.NoContestadas
+,oc.nabndxferout
+,oc.nabndringout
+,oc.nabnddlgout
+,oc.TMO
+,oc.promDialogo
+,oc.holdTime
+,oc.tnotesout
+,oc.tringout
+,isnull(d.tdispo,0) as readyTime
+,isnull(d.tnodispo,0) as notReadyTime
+,isnull(l.tlog,0) as Personal
+,oc.avrAnswer
+,isnull(case when l.tlog=0 then 0.00 else convert(decimal(10,2), (oc.tnotesout+d.tnodispo)*100.0/L.tlog) end,0.00) as Reductor
+,oc.AvgAbandon
+,case when l.tlog is null or l.tlog =0  then 0.00 else convert(decimal(10,2), oc.sumTime*100.0/L.tlog,0) end as OcupacionCOPC
+,oc.Cam_id
+from #OutboundCallGroup oc
+left join #tPersonal L on oc.timegroup_next=L.timegroup_next
+left join #tDisp d on oc.timegroup_next=d.timeGroupNext
+
+IF OBJECT_ID(''tempdb..#tPersonal'') IS NOT NULL drop table #tPersonal
+IF OBJECT_ID(''tempdb..#tDisp'') IS NOT NULL drop table #tDisp;
+IF OBJECT_ID(''tempdb..#callOut'') IS NOT NULL drop table #callOut;
+IF OBJECT_ID(''tempdb..#OutboundCalls'') IS NOT NULL drop table #OutboundCalls;
+IF OBJECT_ID(''tempdb..#OutboundCallGroup'') IS NOT NULL drop table #OutboundCallGroup;
+END'
+    exec (@sql)
+
+    SET @process = 'Drop SP ccspRepOutSMSAnswDetailByCamp'
+    SET @sql = 'IF EXISTS(SELECT 1 FROM sys.procedures WHERE Name = ''ccspRepOutSMSAnswDetailByCamp'')
+BEGIN
+    DROP PROCEDURE [dbo].[ccspRepOutSMSAnswDetailByCamp]
+END'
+    EXEC(@sql)
+
+    SET @process = 'CREATE PROCEDURE [dbo].[ccspRepOutSMSAnswDetailByCamp] '
+    SET @sql = 'CREATE PROCEDURE [dbo].[ccspRepOutSMSAnswDetailByCamp] 
+@action as tinyint,
+@from as datetime = NULL,
+@to as datetime = NULL
+AS
+
+IF @from IS NULL
+    SELECT @from = convert(DATETIME, convert(VARCHAR(11), getdate()))
+
+IF @to IS NULL
+    SELECT @to = getdate()
+
+IF @action = 1
+BEGIN
+    --Borrar lo que esta para no repetir
+    DELETE
+    FROM RepOutSMSAnswDetailByCamp WITH (ROWLOCK)
+    WHERE date >= @from AND date < @to
+
+    INSERT INTO RepOutSMSAnswDetailByCamp
+    SELECT smsDate date, cam.cam_id camId, cam_descripcion campaignName,isnull(smslog.Message,src.message) message, phone senderNumber, cam.cam_id campaignId
+    FROM smsccoLogDial smslog (nolock)
+        LEFT JOIN cccamps cam on cam.cam_id=smslog.cam_id
+        LEFT JOIN smsoutSourceMessage src on src.smsout_id=smslog.smsout_id
+    WHERE smsDate >= @from AND smsDate < @to
+END
+'
     exec (@sql)
 
     SET @process = ''

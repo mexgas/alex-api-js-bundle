@@ -46,39 +46,7 @@ BEGIN
 			BEGIN
 				DROP PROCEDURE [dbo].[ccspRepOutSMSAnswDetailByCamp]
 			END'
-	EXEC(@sql)
-
-	SET @process = 'New SP ccspRepOutSMSAnswDetailByCamp'
-	SET @sql = '
-		CREATE PROCEDURE [dbo].[ccspRepOutSMSAnswDetailByCamp] 
-		@action as tinyint,
-		@from as datetime = NULL,
-		@to as datetime = NULL
-		AS
-
-		IF @from IS NULL
-			SELECT @from = convert(DATETIME, convert(VARCHAR(11), getdate()))
-
-		IF @to IS NULL
-			SELECT @to = getdate()
-
-		IF @action = 1
-		BEGIN
-			--Borrar lo que esta para no repetir
-			DELETE
-			FROM RepOutSMSAnswDetailByCamp WITH (ROWLOCK)
-			WHERE date >= @from AND date < @to
-
-			INSERT INTO RepOutSMSAnswDetailByCamp
-			SELECT smsDate date, cam.cam_id camId, cam_descripcion campaignName, message, phone senderNumber, cam.cam_id campaignId
-			FROM smsccoLogDial smslog (nolock)
-				LEFT JOIN cccamps cam on cam.cam_id=smslog.cam_id
-				LEFT JOIN smsoutSourceMessage src on src.smsout_id=smslog.smsout_id
-			WHERE smsDate >= @from AND smsDate < @to
-			ORDER BY smsDate
-		END
-	'
-	EXEC(@Sql)	
+	EXEC(@sql)		
 
 	SET @process = 'Drop SP ccspRepOutSMSSentMessagesDetail'
 	SET @sql = 'IF EXISTS(SELECT 1 FROM sys.procedures WHERE Name = ''ccspRepOutSMSSentMessagesDetail'')

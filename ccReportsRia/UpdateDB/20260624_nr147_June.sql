@@ -443,6 +443,33 @@ BEGIN
         IF OBJECT_ID(''tempdb..#dials'')           IS NOT NULL DROP TABLE #dials;
         IF OBJECT_ID(''tempdb..#codeSip'')         IS NOT NULL DROP TABLE #codeSip;
         IF OBJECT_ID(''tempdb..#relationCodeSip'') IS NOT NULL DROP TABLE #relationCodeSip;
+
+        -- ---------------------------------------------------------------
+        -- Poblar ReportJsonKeys (reporte 4010) con las llaves del JSON de
+        -- CapturedData. Este bloque se agregaba en ServicesPack11 y se
+        -- perdio al revertir este SP a la version K070300 (sin campType);
+        -- se restaura aqui para no dejar sin catalogo al reporte 4010.
+        -- ---------------------------------------------------------------
+        DECLARE @processId INT = 4010;
+
+        DELETE FROM dbo.ReportJsonKeys
+        WHERE id = @processId
+          AND ReportDate BETWEEN @from AND @to;
+
+        INSERT INTO dbo.ReportJsonKeys (id, ReportDate, JsonKey)
+        SELECT
+            @processId AS id,
+            CONVERT(DATE, d.[date], 121) AS ReportDate,
+            j.[key]
+        FROM dbo.RepOutDialDetail d
+        CROSS APPLY OPENJSON(d.CapturedData) j
+        WHERE d.[date] >= @from
+          AND d.[date] <  @to
+          AND d.CapturedData IS NOT NULL
+          AND d.CapturedData <> ''''
+          AND d.CapturedData <> ''NULL''
+          AND ISJSON(d.CapturedData) = 1
+        GROUP BY j.[key], CONVERT(DATE, d.[date], 121);
     END
 END
 '

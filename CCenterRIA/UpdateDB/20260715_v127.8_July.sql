@@ -502,6 +502,31 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 		';
 
 		EXEC(@sql);
+
+		SET @process = 'K070407 cctipoCalif_IA - Alter Table Add CallbackTries and CallbackInterval MAGV'
+		SET @sql = '
+			IF NOT EXISTS (
+				SELECT 1
+				FROM INFORMATION_SCHEMA.COLUMNS
+				WHERE TABLE_NAME = ''cctipoCalif_IA''
+					AND COLUMN_NAME = ''CallbackTries''
+			)
+			BEGIN
+				ALTER TABLE cctipoCalif_IA ADD CallbackTries INT NULL
+			END
+
+			IF NOT EXISTS (
+				SELECT 1
+				FROM INFORMATION_SCHEMA.COLUMNS
+				WHERE TABLE_NAME = ''cctipoCalif_IA''
+					AND COLUMN_NAME = ''CallbackInterval''
+			)
+			BEGIN
+				ALTER TABLE cctipoCalif_IA ADD CallbackInterval INT NULL
+			END
+		';
+
+		EXEC(@sql);
 		SET @process = 'K070407 CREATE TABLE dbo.ccCalif_IA_TransferOptionCatalog MAGV'
 		SET @sql = 'IF OBJECT_ID(''dbo.ccCalif_IA_TransferOptionCatalog'', ''U'') IS NULL
 		BEGIN

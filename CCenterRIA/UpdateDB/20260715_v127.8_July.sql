@@ -67,7 +67,7 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 
     SET @process = ''
     SET @sql = ''
-    EXEC(@sql)<
+    EXEC(@sql)
     ------------------------------------END Release Sprint 7 ----------------------------------------
 
 	

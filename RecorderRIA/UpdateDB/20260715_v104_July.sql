@@ -120,7 +120,7 @@ begin
 
     SET @process = ''
     SET @sql = ''
-    EXEC(@sql)<
+    EXEC(@sql)
     ------------------------------------END Release Sprint 7 ----------------------------------------
 
     update trec_parametros set par_valor = @Version where par_id = 30

@@ -900,60 +900,6 @@ end'
 	EXEC(@Sql)
 
 
-	set @process = 'DEV3-466 DROP PROCEDURE ccspRepChatsEffectiveness'
-	set @Sql= 'if exists (select * from sys.procedures where name = N''ccspRepChatsEffectiveness'')
-    begin
-       DROP PROCEDURE ccspRepChatsEffectiveness;
-    end'
-	EXEC(@Sql)	
-
-	set @process = 'DEV3-466 CREATE PROCEDURE ccspRepChatsEffectiveness'
-	set @Sql= 'CREATE PROCEDURE [dbo].[ccspRepChatsEffectiveness]
-@action as tinyint,
-@from as datetime = null,
-@to as datetime = null
-AS
-
-if @from is null
-	select @from = convert(datetime,convert(varchar(11),getdate()))
-select @to = getdate()
-
-if @action = 1
-begin
-	delete from RepChatsEffectiveness with(rowlock)
-	where date >= @from AND date < @to
-
-	insert into RepChatsEffectiveness
-	select 
-		[date], inboundId, descripcion [inbound]
-		, ntotalChat, nanswer [nanswerChat], nabnd [nabnd]
-		, case when nAnswer = 0 then 0 else convert(decimal(10,2),convert(decimal(10,0),nAnswerTime)/convert(decimal(10,0),nAnswer)) end [avgAnswerTime]	
-		, case when nAnswer = 0 then 0 else convert(decimal(10,2),convert(decimal(10,0),tSumQueue)/convert(decimal(10,0),nAnswer)) end [avgQueueTime]	
-		, case when nabnd = 0 then 0 else convert(decimal(10,2),convert(decimal(10,0),tSumAbandon)/convert(decimal(10,0),nabnd)) end [avgAbandonTime]
-		, YEAR(date) [year], MONTH(date) [month]
-		, DAY(date) [day], datepart(HOUR,date) [hh], datepart(MINUTE,date) [minutes]
-	FROM (SELECT
-		CONVERT(smalldatetime,CONVERT(varchar(13), requestDate,121)+ '':00'',121) [date],
-		inboundId, 
-		d.descripcion, 
-		count(*) [ntotalChat]
-		,sum(case when chatStatus = 4 then 1 else 0 end) [nAnswer]
-		,sum(case when chatStatus = 4 then
-			case when firstMessageTime is null then 0
-			else ISNULL(datediff(ss,chatdate,firstMessageTime),0) end 
-			else 0 end) [nAnswerTime]
-		,sum(case when chatStatus = 4 then tQueue else 0 end) [tSumQueue]
-		,sum(case when chatStatus = 9 then 1 else 0 end) [nabnd]
-		,sum(case when chatStatus = 9 then tQueue else 0 end) [tSumAbandon]
-		FROM ccRIaChats a INNER JOIN ccinbound d on (a.inboundId = d.inbound_id)
-		where requestDate >= @from AND requestDate < @to
-		group by CONVERT(smalldatetime,CONVERT(varchar(13),a.requestDate,121)+ '':00'',121), inboundId, d.descripcion		
-	) x
-	
-end'
-	EXEC(@Sql)
-
-
 	set @process = 'DEV3-466 UPDATE ReportsTotals'
 	set @Sql= 'update ReportsTotals set totalColumns =''sum:ntotalChat|sum:nanswerChat|sum:nabndChat|avg:avgAnswerTime|avg:avgQueueTime|avg:avgAbandonTimeChat'' where id = 3135'
 	EXEC(@Sql)	
@@ -3191,79 +3137,7 @@ BEGIN
 END;
 
 '
-	EXEC(@sql)
-
-	set @process = 'DEV1-339 Alter SP ccspRepAgentKPI Se modifica para no ocupar tabla temporal y agrupar por dia avg_fCalc'
-	set @sql = 'ALTER PROCEDURE [dbo].[ccspRepAgentKPI]
-@action as tinyint,
-@from as datetime = null,
-@to as datetime = null
-AS
-
-
-SET NOCOUNT ON
-
-if @from is null
-	select @from = convert(datetime,convert(varchar(11),getdate()))
-if @to is null
-	select @to = getdate()
-
-if(@to = convert(datetime,convert(varchar(11),getdate(),121)+''03:00:00'',121)) AND @from = DATEADD(dd,-1,@to)
-BEGIN	
-	select @from = convert(datetime,convert(varchar(11),@from))
-END
-
-if @action = 1
-begin
-	delete RepAgentKPI with(rowlock) where date >= @from AND date < @to
-	
-	;with callTemp as(	
-	select  User_id, statusCall_id, cal_tDialog, convert(date, cal_Inicio, 121) as cal_Inicio, cal_whoHung, 0  as callType
-	from ccoCallsOut with(nolock)
-	where cal_inicio between @from and @to and cal_manual < 3
-	union all
-	select  User_id, statusCall_id, cal_tDialog, convert(date, cal_Inicio, 121) as cal_Inicio, cal_whoHung, 1 as callType
-	from ccCallsIn with(nolock)
-	where cal_inicio between @from and @to 
-	) 
-	, Conteos as(
-	select user_id, cal_Inicio, 1 Total, case callType when 1 then 1 else 0 end Cin, case callType when 0 then 1 else 0 end Cout,
-	case when statusCall_id in (11,13,15,16,17) and cal_tDialog<10 then 1 else 0 end C10,
-	case when statusCall_id in (11,13,15,16,17) and cal_tDialog<20 then 1 else 0 end C20,
-	case when statusCall_id in (11,13,15,16,17) and cal_tDialog<30 then 1 else 0 end C30,
-	cal_whoHung from callTemp
-	)
-	, Trd as(	
-	select  User_id, cast((AVG(convert(bigint,fecha_Calc_ms)))/1000.0 as decimal(10,0)) avg_fCalc
-	, CONVERT(date,fecha_Dispo,121) as fecha_Dispo
-	from ccLogAgentesDia_Dialog with(nolock)
-	where fecha_Dialog between @from and @to 
-	group by User_id,CONVERT(date,fecha_Dispo,121)
-	)
-	, Snd as(
-	select user_id, cal_Inicio, sum(Total) Total, sum(Cin) Cin, sum(Cout) Cout,
-	sum(C10) C10, sum(C20) C20, sum(C30) C30, sum(cal_whoHung) cal_whoHung
-	from Conteos group by user_id, cal_Inicio
-	)
-
-	insert into RepAgentKPI
-	select Snd.cal_Inicio,Fst.Login as login , Fst.user_id as [userId]
-	,Nombres + isnull('' ''+ApellidoPaterno, '''') + isnull('' ''+ApellidoMaterno, '''') as [user]
-	,Total as totalCalls, Cin as callsIn
-	,Cout as callsOut, C10 as [finishedCalls10], C20 as [finishedCalls20], C30 as [finishedCalls30], cal_whoHung as whoHung
-	,isnull(avg_fCalc, 0) as callsAvgTime
-	,datepart(yyyy,Snd.cal_Inicio) [year]
-	,datepart(mm,Snd.cal_Inicio) [mounth]
-	,datepart(dd,Snd.cal_Inicio) [day]
-	,0 as [hour]
-	,0 as [minute]
-	from Snd
-	inner join ccUserView Fst on Fst.User_id = Snd.User_id
-	left join Trd on Trd.User_id=Snd.User_id and Trd.fecha_Dispo=Snd.cal_Inicio
-
-end'
-	EXEC(@sql)
-
+	EXEC(@sql)	
 
 	set @process = 'DEV1-339 Alter SP ccspRepAgentNotReadyDet para cuando se regenera se valida que no tenga datos repetidos if(@to = convert(datetime,convert(varchar(11),getdate(),121)+''03:00:00'',121)) AND @from = DATEADD(dd,-1,@to)'
 	set @sql = 'ALTER PROCEDURE [dbo].[ccspRepAgentNotReadyDet] @action AS TINYINT, @from AS DATETIME = NULL, @to AS DATETIME = NULL

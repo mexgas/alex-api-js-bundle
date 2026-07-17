@@ -2,7 +2,7 @@
 /*******************************/
 /*
 Author: Equipo Galatea
-Date: 2026/07/04
+Date: 2026/07/15
 Description: July Release - K070177 (Dashboard Campana IA de Entrada) + K070381 (Extraccion de datos en Calificaciones IA)
 Database: CCenterRia
 Required version: 127.7

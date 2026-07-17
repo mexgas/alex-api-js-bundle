@@ -3,7 +3,7 @@
 /*******************************/
 /*
 Author: Equipo Galatea
-Date: 2026/06/24
+Date: 2026/07/15
 Description: K070305 - Reporte Detalle de llamada contestada para agentes virtuales (4020)
 
 Database: CCReportsRIA

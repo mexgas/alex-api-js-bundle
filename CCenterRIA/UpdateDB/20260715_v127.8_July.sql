@@ -7200,6 +7200,19 @@ EXEC(@sql);
     -- KR243002 - se realizaron cambios en los sp ccsp_DLRGetDialInfo y ccsp_DLRgetDialPrefix
 	-- para obtener la configuración de grabación por campaña
     -- =====================================================================
+	SET @process = 'KR243002 ccCampsExtend - Alter Table Add CanRecordVoicemail'
+SET @sql = '
+    IF NOT EXISTS (
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_NAME = ''ccCampsExtend''
+            AND COLUMN_NAME = ''CanRecordVoicemail''
+    )
+    BEGIN
+        ALTER TABLE dbo.ccCampsExtend ADD CanRecordVoicemail BIT NULL
+    END'
+EXEC(@sql);
+
 	SET @process = 'KR243002 Drop Procedure ccsp_DLRGetDialInfo '
 SET @sql = '
     IF EXISTS (SELECT * from sys.procedures WHERE name = N''ccsp_DLRGetDialInfo'')

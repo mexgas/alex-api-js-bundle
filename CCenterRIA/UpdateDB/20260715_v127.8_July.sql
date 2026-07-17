@@ -3859,6 +3859,30 @@ EXEC(@sql)
     -- y la transcripción de la llamada.
     -- el state machine consulta esa información, para poder mostrarla en la UI 
     -- =============================================================================
+	SET @process = 'K070407 ccoCallsOutSource - Alter Table Add DispositionId and PendingTriesByDisposition MAGV'
+	SET @sql = '
+		IF NOT EXISTS (
+			SELECT 1
+			FROM INFORMATION_SCHEMA.COLUMNS
+			WHERE TABLE_NAME = ''ccoCallsOutSource''
+				AND COLUMN_NAME = ''DispositionId''
+		)
+		BEGIN
+			ALTER TABLE ccoCallsOutSource ADD DispositionId SMALLINT NULL
+		END
+
+		IF NOT EXISTS (
+			SELECT 1
+			FROM INFORMATION_SCHEMA.COLUMNS
+			WHERE TABLE_NAME = ''ccoCallsOutSource''
+				AND COLUMN_NAME = ''PendingTriesByDisposition''
+		)
+		BEGIN
+			ALTER TABLE ccoCallsOutSource ADD PendingTriesByDisposition INT NULL
+		END
+	';
+	EXEC(@sql);
+
 	SET @process = 'K070407 Drop procedure SaveDispositionsAI MAGV'
 	SET @sql = 'IF EXISTS (SELECT * FROM sysobjects WHERE name=''SaveDispositionsAI'')
 		BEGIN

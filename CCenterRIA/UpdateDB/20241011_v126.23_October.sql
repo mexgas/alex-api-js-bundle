@@ -4103,10 +4103,6 @@ END
 '
          EXEC (@Sql)
 
-        -- SET @process = 'feature/KR179003 Alter SP ccsp_AvrsSyncronization'
-        -- SET @sql = ''
-        -- EXEC(@sql);
-
 --------------------------- End Jesus 125.20231211.0.18 ----------------------------------------------------------------------------------
 
 

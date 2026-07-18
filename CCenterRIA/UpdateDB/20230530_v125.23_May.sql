@@ -58,6 +58,41 @@ BEGIN
 	BEGIN TRY
 
 	---------------------------------------BEGIN HUGO LONGORIA ---------------------------------------------------------
+	set @process = 'KR06700 DROP ccTrunkConfiguration'
+	set @sql = 'DECLARE 
+    @SchemaName SYSNAME,
+    @TableName  SYSNAME,
+    @Sql        NVARCHAR(MAX);
+
+SELECT
+    @SchemaName = SCHEMA_NAME(t.schema_id),
+    @TableName  = t.name
+FROM sys.key_constraints kc
+INNER JOIN sys.tables t
+    ON t.object_id = kc.parent_object_id
+WHERE kc.name = ''PK_ccTrunkConfiguration''
+  AND kc.type = ''PK'';
+
+IF @TableName IS NOT NULL
+   AND @TableName <> ''ccTrunkConfiguration''
+BEGIN
+    SET @Sql =
+        N''ALTER TABLE ''
+        + QUOTENAME(@SchemaName)
+        + N''.''
+        + QUOTENAME(@TableName)
+        + N'' DROP CONSTRAINT ''
+        + QUOTENAME(''PK_ccTrunkConfiguration'')
+        + N'';'';
+
+    PRINT @Sql;
+    EXEC sys.sp_executesql @Sql;
+END
+ELSE
+BEGIN
+    PRINT ''No se eliminó el constraint. No existe o pertenece a ccTrunkConfiguration.'';
+END;'
+    EXEC(@sql)
 
 	set @process = 'KR06700 DROP ccTrunkConfiguration'
 	set @sql = 'IF EXISTS (SELECT 1 
@@ -93,7 +128,7 @@ BEGIN
 			[TrunkId] ASC
 		)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 100) ON [PRIMARY]
 		) ON [PRIMARY]'
-    EXEC(@sql)
+   -- EXEC(@sql)
 
 	set @process = 'KR06700 DROP ccsp_DLRGetTrunkConfig'
 	set @sql = 'IF EXISTS(SELECT 1 FROM sys.procedures WHERE Name = ''ccsp_DLRGetTrunkConfig'')
